@@ -54,85 +54,152 @@
     <div id="listaModelos" class="row g-3"></div>
   </div>
 
-  <div id="editar-modelo" class="card mb-4 p-3 shadow-sm">
-    <h5 class="mb-3 text-warning">
-      <i class="bi bi-pencil-square"></i> Editar Modelo
-    </h5>
-
-    <form id="editarForm" class="row g-3">
-
-      <div class="col-md-3">
-        <label class="form-label fw-bold">Cliente</label>
-        <select class="form-select" id="filtroCliente">
-          <option value="">Selecione</option>
-        </select>
+  <div id="editar-modelo" class="modelos-action-card is-edit mb-4">
+    <div class="mac-header">
+      <div class="mac-title">
+        <div class="mac-icon">
+          <i class="bi bi-pencil-square"></i>
+        </div>
+        <div>
+          <div class="fw-bold">Editar Modelo</div>
+          <div class="mac-subtitle">
+            Ajuste meta/hora, tempo de montagem, blank e (opcional) correção de código.
+          </div>
+        </div>
       </div>
+      <span class="badge text-bg-warning">UPDATE</span>
+    </div>
 
-      <div class="col-md-4">
-        <label class="form-label fw-bold">Modelo (código + fase + linha)</label>
-        <select class="form-select" name="modelo" id="selectEditar" required>
-          <option value="">Selecione o cliente primeiro</option>
-        </select>
-      </div>
+    <div class="mac-body">
+      <form id="editarForm" class="row g-3">
 
-      <div class="col-md-3">
-        <label class="form-label fw-bold">Nova Meta/Hora</label>
-        <input class="form-control" name="meta_padrao" type="number" step="0.01"
-               placeholder="Deixe vazio para manter">
-      </div>
+        <div class="col-md-3">
+          <label class="form-label">Cliente</label>
+          <select class="form-select" id="filtroCliente">
+            <option value="">Selecione</option>
+          </select>
+        </div>
 
-      <div class="col-md-3">
-        <label class="form-label fw-bold">Novo Tempo de Montagem (s)</label>
-        <input class="form-control" name="tempo_montagem" type="number" step="0.01"
-               placeholder="Deixe vazio para manter">
-      </div>
+        <div class="col-md-4">
+          <label class="form-label">Modelo (código + fase + linha)</label>
+          <select class="form-select" name="modelo" id="selectEditar" required>
+            <option value="">Selecione o cliente primeiro</option>
+          </select>
+        </div>
 
-      <div class="col-md-3">
-        <label class="form-label fw-bold">Placas por blank</label>
-        <input class="form-control" name="blank" type="number" min="1"
-               placeholder="Deixe vazio para manter">
-      </div>
+        <div class="col-md-3">
+          <label class="form-label">Nova Meta/Hora</label>
+          <input class="form-control" name="meta_padrao" type="number" step="0.01"
+                 placeholder="Deixe vazio para manter">
+        </div>
 
-      <div class="col-md-3">
-        <label class="form-label fw-bold">Corrigir Código (opcional)</label>
-        <input class="form-control" name="novo_codigo" type="text"
-               placeholder="Só se digitou errado">
-      </div>
+        <div class="col-md-3">
+          <label class="form-label">Novo Tempo de Montagem (s)</label>
+          <input class="form-control" name="tempo_montagem" type="number" step="0.01"
+                 placeholder="Deixe vazio para manter">
+        </div>
 
-      <div class="col-md-12">
-        <button class="btn btn-warning w-100 fw-bold text-white">Atualizar</button>
-      </div>
+        <div class="col-md-3">
+          <label class="form-label">Placas por blank</label>
+          <input class="form-control" name="blank" type="number" min="1"
+                 placeholder="Deixe vazio para manter">
+        </div>
 
-    </form>
+        <div class="col-md-3">
+          <label class="form-label">Corrigir Código (opcional)</label>
+          <input class="form-control" name="novo_codigo" type="text"
+                 placeholder="Só se digitou errado">
+        </div>
+
+        <div class="col-md-12">
+          <button class="btn btn-warning w-100 fw-bold text-white">
+            <i class="bi bi-check2-circle"></i> Atualizar
+          </button>
+        </div>
+
+      </form>
+    </div>
   </div>
 
-  <div id="excluir-modelo" class="card mb-4 p-3 shadow-sm">
-    <h5 class="mb-3 text-danger">
-      <i class="bi bi-trash3 fw-bold"></i> Excluir Modelo
-    </h5>
-
-    <form id="excluirForm" class="row g-3">
-
-      <div class="col-md-3">
-        <label class="form-label fw-bold">Cliente</label>
-        <select class="form-select" id="filtroClienteExcluir">
-          <option value="">Selecione</option>
-        </select>
+  <!-- EXCLUIR (refatorado visual) -->
+  <div id="excluir-modelo" class="modelos-action-card is-delete mb-4">
+    <div class="mac-header">
+      <div class="mac-title">
+        <div class="mac-icon">
+          <i class="bi bi-trash3"></i>
+        </div>
+        <div>
+          <div class="fw-bold">Excluir Modelo</div>
+          <div class="mac-subtitle">
+            Remoção definitiva. Confirme cliente e selecione o modelo correto (fase e linha).
+          </div>
+        </div>
       </div>
+      <span class="badge text-bg-danger">DELETE</span>
+    </div>
 
-      <div class="col-md-4">
-        <label class="form-label fw-bold">Modelo (código + fase + linha)</label>
-        <select class="form-select" name="modelo" id="selectExcluir" required>
-          <option value="">Selecione o cliente primeiro</option>
-        </select>
-      </div>
+    <div class="mac-body">
+      <form id="excluirForm" class="row g-3">
 
-      <div class="col-md-3 d-flex align-items-end">
-        <button class="btn btn-danger w-100 fw-bold text-white">Excluir</button>
-      </div>
-    </form>
+        <div class="col-md-3">
+          <label class="form-label">Cliente</label>
+          <select class="form-select" id="filtroClienteExcluir">
+            <option value="">Selecione</option>
+          </select>
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label">Modelo (código + fase + linha)</label>
+          <select class="form-select" name="modelo" id="selectExcluir" required>
+            <option value="">Selecione o cliente primeiro</option>
+          </select>
+        </div>
+
+        <div class="col-md-3 d-flex align-items-end">
+          <button class="btn btn-danger w-100 fw-bold text-white">
+            <i class="bi bi-exclamation-triangle"></i> Excluir
+          </button>
+        </div>
+      </form>
+    </div>
   </div>
 
+</div>
+
+<!-- Modal: Histórico -->
+<div class="modal fade" id="modalModeloHistorico" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content shadow" id="modalModeloHistoricoContent">
+      <div class="modal-header">
+        <div>
+          <h6 class="modal-title mb-1" id="modalHistTitulo">Histórico do modelo</h6>
+          <div class="hist-meta" id="modalHistSubtitulo">—</div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+
+      <div class="modal-body">
+        <div id="histLoading" class="d-none">
+          <div class="d-flex align-items-center gap-2">
+            <div class="spinner-border" role="status"></div>
+            <div class="fw-semibold">Carregando histórico...</div>
+          </div>
+        </div>
+
+        <div id="histEmpty" class="hist-empty d-none">
+          Nenhuma alteração registrada para este modelo.
+        </div>
+
+        <ul class="list-group hist-list" id="histList"></ul>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-outline-secondary" data-bs-dismiss="modal">
+          Fechar
+        </button>
+      </div>
+    </div>
+  </div>
 </div>
 {% endblock %}
 
@@ -152,7 +219,17 @@ document.addEventListener('DOMContentLoaded', () => {
   const formEditar = document.getElementById('editarForm');
   const formExcluir = document.getElementById('excluirForm');
 
+  // Modal histórico
+  const histModalEl = document.getElementById('modalModeloHistorico');
+  const histModal = histModalEl ? bootstrap.Modal.getOrCreateInstance(histModalEl) : null;
+  const elHistTitle = document.getElementById('modalHistTitulo');
+  const elHistSub = document.getElementById('modalHistSubtitulo');
+  const elHistLoading = document.getElementById('histLoading');
+  const elHistEmpty = document.getElementById('histEmpty');
+  const elHistList = document.getElementById('histList');
+
   let modelosCache = [];
+  const historyCache = new Map(); 
 
   function showMessage(texto, tipo='success') {
     const div = document.createElement('div');
@@ -198,19 +275,36 @@ document.addEventListener('DOMContentLoaded', () => {
       const tempo = (m.tempo_montagem ?? '-');
       const meta = (m.meta ?? 0);
 
+      const codigo = String(m.codigo ?? '').trim();
+      const fase = String(m.fase ?? '').trim();
+      const linha = String(m.linha ?? '').trim();
+
       col.innerHTML = `
         <div class="card-modelo shadow-sm">
           <div class="d-flex justify-content-between">
-            <div class="codigo">${escapeHtml(m.codigo)}</div>
+            <div class="codigo">${escapeHtml(codigo)}</div>
             <div class="cliente">${escapeHtml(m.cliente)}</div>
           </div>
 
           <div class="linha"><strong>Setor:</strong> ${escapeHtml(m.setor)}</div>
-          <div class="linha"><strong>Linha:</strong> ${escapeHtml(m.linha)}</div>
+          <div class="linha"><strong>Linha:</strong> ${escapeHtml(linha)}</div>
           <div class="linha"><strong>Meta/hora:</strong> ${escapeHtml(meta)}</div>
           <div class="linha"><strong>Tempo de montagem:</strong> ${escapeHtml(tempo)} s</div>
           <div class="linha"><strong>Placas por blank:</strong> ${escapeHtml(m.blank)}</div>
-          <div class="linha"><strong>Fase:</strong> ${escapeHtml(m.fase)}</div>
+
+          <div class="linha modelo-fase-row">
+            <div><strong>Fase:</strong> ${escapeHtml(fase)}</div>
+            <button
+              type="button"
+              class="btn btn-sm btn-outline-primary btn-history"
+              data-hist="1"
+              data-codigo="${escapeHtml(codigo)}"
+              data-fase="${escapeHtml(fase)}"
+              data-linha="${escapeHtml(linha)}"
+            >
+              <i class="bi bi-clock-history"></i> Histórico
+            </button>
+          </div>
         </div>
       `;
 
@@ -303,6 +397,153 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  function setHistLoading(isLoading) {
+    if (!elHistLoading || !elHistEmpty || !elHistList) return;
+    elHistLoading.classList.toggle('d-none', !isLoading);
+  }
+
+  function setHistEmpty(isEmpty) {
+    if (!elHistEmpty || !elHistList) return;
+    elHistEmpty.classList.toggle('d-none', !isEmpty);
+  }
+
+  function clearHistList() {
+    if (elHistList) elHistList.innerHTML = '';
+  }
+
+  function fmtWhen(isoStr) {
+    if (!isoStr) return '—';
+    const d = new Date(isoStr);
+    if (Number.isNaN(d.getTime())) return String(isoStr);
+    return d.toLocaleString([], {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  }
+
+  function renderHistoryItems(items) {
+    clearHistList();
+
+    if (!items || !items.length) {
+      setHistEmpty(true);
+      return;
+    }
+
+    setHistEmpty(false);
+
+    const frag = document.createDocumentFragment();
+
+    for (const it of items) {
+      const li = document.createElement('li');
+      li.className = 'list-group-item';
+
+      const who = it.changed_by_username || `user#${it.changed_by_user_id || '—'}`;
+      const when = fmtWhen(it.changed_at);
+      const action = String(it.action || '').toUpperCase();
+
+      let changesHtml = '';
+
+      const changes = it.changes || {};
+      const diff = changes.diff || {};
+      const changedFields = changes.changed_fields || [];
+
+      if (action === 'UPDATE' && changedFields.length) {
+        const rows = changedFields.map((k) => {
+          const before = diff?.[k]?.before;
+          const after = diff?.[k]?.after;
+          return `
+            <div class="d-flex justify-content-between gap-2">
+              <div class="fw-semibold">${escapeHtml(k)}</div>
+              <div class="text-end">
+                <span class="text-muted">${escapeHtml(before)}</span>
+                <span class="mx-2">→</span>
+                <span class="fw-bold">${escapeHtml(after)}</span>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        changesHtml = `<div class="hist-changes">${rows}</div>`;
+      } else if (action === 'DELETE') {
+        changesHtml = `<div class="hist-changes text-danger fw-semibold">Modelo excluído.</div>`;
+      } else if (action === 'CREATE') {
+        changesHtml = `<div class="hist-changes text-success fw-semibold">Modelo cadastrado.</div>`;
+      } else {
+        changesHtml = `<div class="hist-changes text-muted">—</div>`;
+      }
+
+      li.innerHTML = `
+        <div class="d-flex align-items-start justify-content-between flex-wrap gap-2">
+          <div>
+            <div class="fw-bold">${escapeHtml(action)}</div>
+            <div class="hist-meta">
+              <i class="bi bi-person-circle"></i> ${escapeHtml(who)}
+              &nbsp;·&nbsp;
+              <i class="bi bi-calendar2-week"></i> ${escapeHtml(when)}
+            </div>
+          </div>
+        </div>
+        ${changesHtml}
+      `;
+
+      frag.appendChild(li);
+    }
+
+    elHistList.appendChild(frag);
+  }
+
+  async function fetchHistory(codigo, fase, linha) {
+    const key = `${codigo}||${fase}||${linha}`;
+    if (historyCache.has(key)) return historyCache.get(key);
+
+    const qs = new URLSearchParams({ codigo, fase, linha, limit: '50' }).toString();
+    const r = await fetch(`/api/modelos/history?${qs}`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+    if (!r.ok) throw new Error('Falha ao buscar histórico');
+
+    const data = await r.json();
+    const list = Array.isArray(data) ? data : [];
+    historyCache.set(key, list);
+    return list;
+  }
+
+  // Clique no botão Histórico (delegação)
+  elLista.addEventListener('click', async (ev) => {
+    const btn = ev.target.closest('button[data-hist="1"]');
+    if (!btn || !histModal) return;
+
+    const codigo = (btn.getAttribute('data-codigo') || '').trim();
+    const fase = (btn.getAttribute('data-fase') || '').trim();
+    const linha = (btn.getAttribute('data-linha') || '').trim();
+
+    if (elHistTitle) elHistTitle.textContent = `Histórico do modelo`;
+    if (elHistSub) elHistSub.textContent = `${codigo} · ${fase} · ${linha}`;
+
+    clearHistList();
+    setHistEmpty(false);
+    setHistLoading(true);
+
+    histModal.show();
+
+    try {
+      const items = await fetchHistory(codigo, fase, linha);
+      setHistLoading(false);
+      renderHistoryItems(items);
+    } catch (e) {
+      setHistLoading(false);
+      clearHistList();
+      setHistEmpty(true);
+    }
+  });
+
+  // ao atualizar/excluir, invalida cache do histórico (para refletir mudança no modal)
+  function invalidateHistoryCacheFor(codigo, fase, linha) {
+    const key = `${codigo}||${fase}||${linha}`;
+    historyCache.delete(key);
+  }
+
   elBusca.addEventListener('input', applySearchFilter);
 
   elFiltroCliente.addEventListener('change', () => {
@@ -338,6 +579,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const data = await r.json();
 
     showMessage(data.mensagem || 'Modelo atualizado.', data.sucesso ? 'success' : 'danger');
+
+    // invalida cache do histórico deste modelo
+    invalidateHistoryCacheFor(codigo, fase, linha);
+
     await loadModelos();
   });
 
@@ -366,6 +611,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const data = await r.json();
 
     showMessage(data.mensagem || 'Modelo excluído.', data.sucesso ? 'danger' : 'warning');
+
+    invalidateHistoryCacheFor(codigo, fase, linha);
+
     await loadModelos();
   });
 

@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from flask_login import login_required
+from flask_login import login_required, current_user
 
 from app.services import modelos_service
 from app.services.employees_service import buscar_funcionario
@@ -10,23 +10,48 @@ bp = Blueprint("api", __name__)
 
 
 @bp.route("/modelos", methods=["GET"])
+@login_required
 def listar():
     return jsonify(modelos_service.listar_modelos())
 
 
 @bp.route("/modelos", methods=["POST"])
+@login_required
 def cadastrar():
-    return jsonify(modelos_service.cadastrar_modelo(request.form))
+    return jsonify(modelos_service.cadastrar_modelo(request.form, user=current_user))
 
 
 @bp.route("/modelos", methods=["PUT"])
+@login_required
 def atualizar_modelo():
-    return jsonify(modelos_service.atualizar_modelo(request.form))
+    return jsonify(modelos_service.atualizar_modelo(request.form, user=current_user))
 
 
 @bp.route("/modelos", methods=["DELETE"])
+@login_required
 def excluir():
-    return jsonify(modelos_service.excluir_modelo(request.form))
+    return jsonify(modelos_service.excluir_modelo(request.form, user=current_user))
+
+
+@bp.route("/modelos/history", methods=["GET"])
+@login_required
+def modelos_history():
+    """
+    Retorna histórico filtrado corretamente por:
+    - codigo
+    - fase (TOP/BOTTOM)
+    - linha (SMD-xx)
+    """
+    codigo = request.args.get("codigo", "").strip()
+    fase = request.args.get("fase", "").strip()
+    linha = request.args.get("linha", "").strip()
+    limit = int(request.args.get("limit", "50") or "50")
+
+    if not codigo or not fase:
+        return jsonify([])
+
+    data = modelos_service.listar_historico_modelo(codigo=codigo, fase=fase, linha=linha, limit=limit)
+    return jsonify(data)
 
 
 @bp.route("/modelos/calculo_rapido", methods=["POST"])
