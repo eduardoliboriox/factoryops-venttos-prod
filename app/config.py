@@ -7,7 +7,9 @@ class Config:
     ENVIRONMENT = os.getenv("ENVIRONMENT", "production")
 
     PREFERRED_URL_SCHEME = "https"
-    BASE_URL = os.getenv("BASE_URL")
+
+    _BASE_URL_RAW = os.getenv("BASE_URL")
+    BASE_URL = _BASE_URL_RAW.rstrip("/") if _BASE_URL_RAW else None
 
     # =========================
     # APP / BRAND (PWA + UI)
