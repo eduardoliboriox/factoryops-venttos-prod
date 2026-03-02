@@ -97,10 +97,17 @@
         <i class="bi bi-calculator"></i> Cálculos
       </a>
 
+      {# =========================================================
+         DASHBOARD (GERAL) — TEMPORARIAMENTE DESABILITADO
+         Motivo: acesso/admin agora é feito via inicio.html.
+         Para reativar, remova este comentário.
+         ========================================================= #}
+      {#
       <a href="{{ url_for('pages.dashboard') }}"
          class="{% if active_menu == 'dashboard' %}active{% endif %}">
         <i class="bi bi-graph-up"></i> Dashboard (Geral)
       </a>
+      #}
 
       <hr class="my-3">
 
