@@ -69,7 +69,9 @@
         <td>{{ u.full_name }}</td>
         <td>{{ u.setor }}</td>
         <td>
-          {% if u.is_active %}
+          {% if u.is_blocked %}
+            <span class="badge bg-danger">Bloqueado</span>
+          {% elif u.is_active %}
             <span class="badge bg-success">Ativo</span>
           {% else %}
             <span class="badge bg-warning text-dark">Pendente</span>
@@ -99,13 +101,13 @@
                       onchange="this.form.submit()">
 
                 <option value="none"
-                  {% if not u.is_admin and not u.extra_authorized %}selected{% endif %}>
+                  {% if not u.is_admin and not u.is_blocked %}selected{% endif %}>
                   Sem alteração
                 </option>
 
-                <option value="extra"
-                  {% if u.extra_authorized %}selected{% endif %}>
-                  Autorizado a Extra
+                <option value="blocked"
+                  {% if u.is_blocked %}selected{% endif %}>
+                  Usuário bloqueado
                 </option>
 
                 <option value="admin"
