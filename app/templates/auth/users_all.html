@@ -12,7 +12,7 @@
     <a href="{{ url_for('pages.dashboard') }}" class="btn btn-outline-secondary">
       <i class="bi bi-arrow-left"></i> Voltar
     </a>
-    
+
     <a href="{{ url_for('auth.admin_users') }}" class="btn btn-outline-primary">
       <i class="bi bi-shield-lock"></i> Usuários pendentes
     </a>
@@ -41,99 +41,116 @@
 {% endblock %}
 
 {% block content %}
-<div class="card shadow-sm p-3">
 
-  <div class="d-flex mb-3">
-    <input type="text"
-           id="search"
-           class="form-control me-2"
-           placeholder="Buscar por nome, usuário ou setor">
-    <i class="bi bi-search fs-4 text-muted"></i>
+<div class="document-mobile-wrapper">
+  <div class="document-desktop-canvas">
+
+    <div class="card shadow-sm p-3">
+
+      <div class="d-flex mb-3">
+        <input type="text"
+               id="search"
+               class="form-control me-2"
+               placeholder="Buscar por nome, usuário ou setor">
+        <i class="bi bi-search fs-4 text-muted"></i>
+      </div>
+
+      <table class="table table-hover align-middle">
+        <thead>
+          <tr>
+            <th>Usuário</th>
+            <th>Nome</th>
+            <th>Setor</th>
+            <th>Status</th>
+            <th class="text-end">Ações</th>
+          </tr>
+        </thead>
+
+        <tbody id="usersTable">
+          {% for u in users %}
+          <tr>
+            <td>{{ u.username }}</td>
+            <td>{{ u.full_name }}</td>
+            <td>{{ u.setor }}</td>
+            <td>
+              {% if u.extra_authorized %}
+                <span class="badge bg-danger">Bloqueado</span>
+              {% elif u.is_active %}
+                <span class="badge bg-success">Ativo</span>
+              {% else %}
+                <span class="badge bg-warning text-dark">Pendente</span>
+              {% endif %}
+            </td>
+
+            <td class="text-end">
+
+              {% if not u.is_active %}
+                <a href="{{ url_for('auth.approve_user_route', user_id=u.id) }}"
+                   class="btn btn-sm btn-outline-success">
+                  Aprovar
+                </a>
+
+                <a href="{{ url_for('auth.reject_user_route', user_id=u.id) }}"
+                   class="btn btn-sm btn-outline-danger">
+                  Negar
+                </a>
+
+              {% else %}
+                <form method="post"
+                      action="{{ url_for('auth.update_user_role_route', user_id=u.id) }}"
+                      class="d-inline">
+
+                  <select name="role"
+                          class="form-select form-select-sm d-inline w-auto"
+                          onchange="this.form.submit()">
+
+                    <option value="none"
+                      {% if not u.is_admin and not u.extra_authorized %}selected{% endif %}>
+                      Sem alteração
+                    </option>
+
+                    <option value="blocked"
+                      {% if u.extra_authorized %}selected{% endif %}>
+                      Usuário bloqueado
+                    </option>
+
+                    <option value="admin"
+                      {% if u.is_admin %}selected{% endif %}>
+                      Tornar Admin
+                    </option>
+
+                  </select>
+                </form>
+              {% endif %}
+
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+    </div>
+
   </div>
-
-  <table class="table table-hover align-middle">
-    <thead>
-      <tr>
-        <th>Usuário</th>
-        <th>Nome</th>
-        <th>Setor</th>
-        <th>Status</th>
-        <th class="text-end">Ações</th>
-      </tr>
-    </thead>
-
-    <tbody id="usersTable">
-      {% for u in users %}
-      <tr>
-        <td>{{ u.username }}</td>
-        <td>{{ u.full_name }}</td>
-        <td>{{ u.setor }}</td>
-        <td>
-          {% if u.extra_authorized %}
-            <span class="badge bg-danger">Bloqueado</span>
-          {% elif u.is_active %}
-            <span class="badge bg-success">Ativo</span>
-          {% else %}
-            <span class="badge bg-warning text-dark">Pendente</span>
-          {% endif %}
-        </td>
-
-        <td class="text-end">
-
-          {% if not u.is_active %}
-            <a href="{{ url_for('auth.approve_user_route', user_id=u.id) }}"
-               class="btn btn-sm btn-outline-success">
-              Aprovar
-            </a>
-
-            <a href="{{ url_for('auth.reject_user_route', user_id=u.id) }}"
-               class="btn btn-sm btn-outline-danger">
-              Negar
-            </a>
-
-          {% else %}
-            <form method="post"
-                  action="{{ url_for('auth.update_user_role_route', user_id=u.id) }}"
-                  class="d-inline">
-
-              <select name="role"
-                      class="form-select form-select-sm d-inline w-auto"
-                      onchange="this.form.submit()">
-
-                <option value="none"
-                  {% if not u.is_admin and not u.extra_authorized %}selected{% endif %}>
-                  Sem alteração
-                </option>
-
-                <option value="blocked"
-                  {% if u.extra_authorized %}selected{% endif %}>
-                  Usuário bloqueado
-                </option>
-
-                <option value="admin"
-                  {% if u.is_admin %}selected{% endif %}>
-                  Tornar Admin
-                </option>
-
-              </select>
-            </form>
-          {% endif %}
-
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-
 </div>
 
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/document-fit.js') }}?v={{ APP_VERSION }}"></script>
+
 <script>
-document.getElementById("search").addEventListener("input", function () {
-  const value = this.value.toLowerCase();
-  document.querySelectorAll("#usersTable tr").forEach(row => {
-    row.style.display = row.innerText.toLowerCase().includes(value)
-      ? "" : "none";
+(function () {
+  const input = document.getElementById("search");
+  if (!input) return;
+
+  input.addEventListener("input", function () {
+    const value = (this.value || "").toLowerCase();
+    document.querySelectorAll("#usersTable tr").forEach(row => {
+      row.style.display = row.innerText.toLowerCase().includes(value)
+        ? "" : "none";
+    });
   });
-});
+})();
 </script>
 {% endblock %}
