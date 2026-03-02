@@ -138,161 +138,238 @@
 
 {% block scripts %}
 <script>
-$(document).ready(function(){
+document.addEventListener('DOMContentLoaded', () => {
+  const elLista = document.getElementById('listaModelos');
+  const elBusca = document.getElementById('buscaModelo');
+
+  const elFiltroCliente = document.getElementById('filtroCliente');
+  const elSelectEditar = document.getElementById('selectEditar');
+
+  const elFiltroClienteExcluir = document.getElementById('filtroClienteExcluir');
+  const elSelectExcluir = document.getElementById('selectExcluir');
+
+  const elMsg = document.getElementById('mensagemModelos');
+  const formEditar = document.getElementById('editarForm');
+  const formExcluir = document.getElementById('excluirForm');
 
   let modelosCache = [];
 
-  function carregarModelos() {
-    fetch('/api/modelos')
-      .then(r => r.json())
-      .then(data => {
-        modelosCache = data;
+  function showMessage(texto, tipo='success') {
+    const div = document.createElement('div');
+    div.className = `alert alert-${tipo} alert-dismissible fade show`;
+    div.role = 'alert';
+    div.innerHTML = `
+      ${texto}
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
 
-        const container = $('#listaModelos');
-        container.empty();
+    elMsg.innerHTML = '';
+    elMsg.appendChild(div);
 
-        if (data.length === 0) {
-          container.html('<p class="text-muted">Nenhum modelo cadastrado.</p>');
-          return;
-        }
-
-        data.forEach(m => {
-          container.append(`
-            <div class="col-md-4 col-lg-3">
-              <div class="card-modelo shadow-sm">
-                <div class="d-flex justify-content-between">
-                  <div class="codigo">${m.codigo}</div>
-                  <div class="cliente">${m.cliente}</div>
-                </div>
-
-                <div class="linha"><strong>Setor:</strong> ${m.setor}</div>
-                <div class="linha"><strong>Linha:</strong> ${m.linha}</div>
-                <div class="linha"><strong>Meta/hora:</strong> ${m.meta}</div>
-                <div class="linha"><strong>Tempo de montagem:</strong> ${m.tempo_montagem ?? '-'} s</div>
-                <div class="linha"><strong>Placas por blank:</strong> ${m.blank}</div>
-                <div class="linha"><strong>Fase:</strong> ${m.fase}</div>
-              </div>
-            </div>
-          `);
-        });
-
-        popularFiltros();
-      });
+    setTimeout(() => {
+      const bsAlert = bootstrap.Alert.getOrCreateInstance(div);
+      bsAlert.close();
+    }, 2000);
   }
 
-  function popularFiltros() {
-    const clientes = [...new Set(modelosCache.map(m => m.cliente))];
-    const filtroCliente = $('#filtroCliente');
-    const filtroClienteExcluir = $('#filtroClienteExcluir');
+  function escapeHtml(s) {
+    return String(s ?? '')
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#39;');
+  }
 
-    filtroCliente.empty().append('<option value="">Selecione</option>');
-    clientes.forEach(c => filtroCliente.append(`<option value="${c}">${c}</option>`));
+  function renderCards(data) {
+    elLista.innerHTML = '';
 
-    filtroClienteExcluir.empty().append('<option value="">Selecione</option>');
-    clientes.forEach(c => {
-      filtroClienteExcluir.append(`<option value="${c}">${c}</option>`);
+    if (!data || !data.length) {
+      elLista.innerHTML = '<p class="text-muted mb-0">Nenhum modelo cadastrado.</p>';
+      return;
+    }
+
+    const frag = document.createDocumentFragment();
+
+    data.forEach(m => {
+      const col = document.createElement('div');
+      col.className = 'col-md-4 col-lg-3';
+
+      const tempo = (m.tempo_montagem ?? '-');
+      const meta = (m.meta ?? 0);
+
+      col.innerHTML = `
+        <div class="card-modelo shadow-sm">
+          <div class="d-flex justify-content-between">
+            <div class="codigo">${escapeHtml(m.codigo)}</div>
+            <div class="cliente">${escapeHtml(m.cliente)}</div>
+          </div>
+
+          <div class="linha"><strong>Setor:</strong> ${escapeHtml(m.setor)}</div>
+          <div class="linha"><strong>Linha:</strong> ${escapeHtml(m.linha)}</div>
+          <div class="linha"><strong>Meta/hora:</strong> ${escapeHtml(meta)}</div>
+          <div class="linha"><strong>Tempo de montagem:</strong> ${escapeHtml(tempo)} s</div>
+          <div class="linha"><strong>Placas por blank:</strong> ${escapeHtml(m.blank)}</div>
+          <div class="linha"><strong>Fase:</strong> ${escapeHtml(m.fase)}</div>
+        </div>
+      `;
+
+      frag.appendChild(col);
+    });
+
+    elLista.appendChild(frag);
+  }
+
+  function fillClienteSelects() {
+    const clientes = Array.from(new Set((modelosCache || []).map(m => m.cliente).filter(Boolean))).sort();
+
+    elFiltroCliente.innerHTML = '<option value="">Selecione</option>';
+    elFiltroClienteExcluir.innerHTML = '<option value="">Selecione</option>';
+
+    for (const c of clientes) {
+      const o1 = document.createElement('option');
+      o1.value = c;
+      o1.textContent = c;
+      elFiltroCliente.appendChild(o1);
+
+      const o2 = document.createElement('option');
+      o2.value = c;
+      o2.textContent = c;
+      elFiltroClienteExcluir.appendChild(o2);
+    }
+  }
+
+  function fillModelSelect(selectEl, cliente) {
+    selectEl.innerHTML = '';
+
+    if (!cliente) {
+      const opt = document.createElement('option');
+      opt.value = '';
+      opt.textContent = 'Selecione o cliente primeiro';
+      selectEl.appendChild(opt);
+      return;
+    }
+
+    const modelos = (modelosCache || []).filter(m => m.cliente === cliente);
+
+    if (!modelos.length) {
+      const opt = document.createElement('option');
+      opt.value = '';
+      opt.textContent = 'Nenhum modelo para este cliente';
+      selectEl.appendChild(opt);
+      return;
+    }
+
+    const first = document.createElement('option');
+    first.value = '';
+    first.textContent = 'Selecione';
+    selectEl.appendChild(first);
+
+    for (const m of modelos) {
+      const opt = document.createElement('option');
+      opt.value = `${m.codigo}|${m.fase}|${m.linha}`;
+      opt.textContent = `${m.codigo} — ${m.fase} — ${m.linha}`;
+      selectEl.appendChild(opt);
+    }
+  }
+
+  function applySearchFilter() {
+    const termo = (elBusca.value || '').toLowerCase().trim();
+    const cols = elLista.querySelectorAll('.col-md-4, .col-lg-3');
+
+    cols.forEach(col => {
+      const ok = col.textContent.toLowerCase().includes(termo);
+      col.style.display = ok ? '' : 'none';
     });
   }
 
-  $('#filtroCliente').on('change', function(){
-    const cliente = $(this).val();
-    const selectEditar = $('#selectEditar');
+  async function loadModelos() {
+    try {
+      const r = await fetch('/api/modelos', { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+      if (!r.ok) throw new Error('Falha ao buscar modelos');
 
-    selectEditar.empty();
+      const data = await r.json();
+      modelosCache = Array.isArray(data) ? data : [];
 
-    if (!cliente) {
-      selectEditar.append('<option value="">Selecione o cliente primeiro</option>');
-      return;
+      renderCards(modelosCache);
+      fillClienteSelects();
+      fillModelSelect(elSelectEditar, elFiltroCliente.value);
+      fillModelSelect(elSelectExcluir, elFiltroClienteExcluir.value);
+
+      applySearchFilter();
+    } catch (e) {
+      modelosCache = [];
+      elLista.innerHTML = '<p class="text-danger mb-0">Erro ao carregar modelos.</p>';
     }
-
-    modelosCache
-      .filter(m => m.cliente === cliente)
-      .forEach(m => {
-        selectEditar.append(`
-          <option value="${m.codigo}|${m.fase}|${m.linha}">
-            ${m.codigo} — ${m.fase} — ${m.linha}
-          </option>
-        `);
-      });
-  });
-
-  $('#filtroClienteExcluir').on('change', function(){
-    const cliente = $(this).val();
-    const selectExcluir = $('#selectExcluir');
-
-    selectExcluir.empty();
-
-    if (!cliente) {
-      selectExcluir.append('<option value="">Selecione o cliente primeiro</option>');
-      return;
-    }
-
-    modelosCache
-      .filter(m => m.cliente === cliente)
-      .forEach(m => {
-        selectExcluir.append(`
-          <option value="${m.codigo}|${m.fase}|${m.linha}">
-            ${m.codigo} — ${m.fase} — ${m.linha}
-          </option>
-        `);
-      });
-  });
-
-  function mostrarMensagem(texto, tipo='success') {
-    const div = $(`
-      <div class="alert alert-${tipo} alert-dismissible fade show">
-        ${texto}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-      </div>
-    `);
-    $('#mensagemModelos').html(div);
-    setTimeout(() => div.alert('close'), 2000);
   }
 
-  $('#editarForm').on('submit', async function(e){
+  elBusca.addEventListener('input', applySearchFilter);
+
+  elFiltroCliente.addEventListener('change', () => {
+    fillModelSelect(elSelectEditar, elFiltroCliente.value);
+  });
+
+  elFiltroClienteExcluir.addEventListener('change', () => {
+    fillModelSelect(elSelectExcluir, elFiltroClienteExcluir.value);
+  });
+
+  formEditar.addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    const fd = new FormData(this);
-    const [codigo, fase, linha] = fd.get('modelo').split('|');
+    const fd = new FormData(formEditar);
+    const modelo = fd.get('modelo');
+
+    if (!modelo) {
+      showMessage('Selecione um modelo para editar.', 'warning');
+      return;
+    }
+
+    const parts = String(modelo).split('|');
+    const codigo = parts[0] || '';
+    const fase = parts[1] || '';
+    const linha = parts[2] || '';
 
     fd.append('codigo', codigo);
     fd.append('fase', fase);
     fd.append('linha', linha);
     fd.delete('modelo');
 
-    const r = await fetch('/api/modelos', { method:'PUT', body: fd });
+    const r = await fetch('/api/modelos', { method: 'PUT', body: fd });
     const data = await r.json();
 
-    mostrarMensagem(data.mensagem || 'Modelo atualizado com sucesso!', data.sucesso ? 'success' : 'danger');
-    carregarModelos();
+    showMessage(data.mensagem || 'Modelo atualizado.', data.sucesso ? 'success' : 'danger');
+    await loadModelos();
   });
 
-  $('#excluirForm').on('submit', async function(e){
+  formExcluir.addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    const fd = new FormData(this);
-    const [codigo, fase, linha] = fd.get('modelo').split('|');
+    const fd = new FormData(formExcluir);
+    const modelo = fd.get('modelo');
+
+    if (!modelo) {
+      showMessage('Selecione um modelo para excluir.', 'warning');
+      return;
+    }
+
+    const parts = String(modelo).split('|');
+    const codigo = parts[0] || '';
+    const fase = parts[1] || '';
+    const linha = parts[2] || '';
 
     fd.append('codigo', codigo);
     fd.append('fase', fase);
     fd.append('linha', linha);
     fd.delete('modelo');
 
-    const r = await fetch('/api/modelos', { method:'DELETE', body: fd });
+    const r = await fetch('/api/modelos', { method: 'DELETE', body: fd });
     const data = await r.json();
 
-    mostrarMensagem(data.mensagem || 'Modelo excluído com sucesso!', data.sucesso ? 'danger' : 'warning');
-    carregarModelos();
+    showMessage(data.mensagem || 'Modelo excluído.', data.sucesso ? 'danger' : 'warning');
+    await loadModelos();
   });
 
-  $('#buscaModelo').on('input', function () {
-    const termo = $(this).val().toLowerCase();
-    $('#listaModelos .col-md-4').each(function () {
-      $(this).toggle($(this).text().toLowerCase().includes(termo));
-    });
-  });
-
-  carregarModelos();
+  loadModelos();
 });
 </script>
 {% endblock %}

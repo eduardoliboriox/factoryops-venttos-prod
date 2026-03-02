@@ -1,12 +1,38 @@
+import math
+import time
+
 from app.repositories import modelos_repository
 from app.repositories.modelos_repository import buscar_ultimo_modelo
-import math
 
 
 LINHAS_VALIDAS = {
     "SMD-01", "SMD-02", "SMD-03", "SMD-04", "SMD-05",
     "SMD-06", "SMD-07", "SMD-08", "SMD-09"
 }
+
+_MODELOS_CACHE_TTL_SECONDS = 10
+_modelos_cache_value = None
+_modelos_cache_expires_at = 0.0
+
+
+def _cache_get():
+    global _modelos_cache_value, _modelos_cache_expires_at
+    now = time.time()
+    if _modelos_cache_value is not None and now < _modelos_cache_expires_at:
+        return _modelos_cache_value
+    return None
+
+
+def _cache_set(value):
+    global _modelos_cache_value, _modelos_cache_expires_at
+    _modelos_cache_value = value
+    _modelos_cache_expires_at = time.time() + _MODELOS_CACHE_TTL_SECONDS
+
+
+def _cache_invalidate():
+    global _modelos_cache_value, _modelos_cache_expires_at
+    _modelos_cache_value = None
+    _modelos_cache_expires_at = 0.0
 
 
 def resumo_dashboard():
@@ -42,20 +68,28 @@ def listar_codigos():
 
 
 def listar():
+    cached = _cache_get()
+    if cached is not None:
+        return cached
+
     modelos = modelos_repository.listar_modelos()
-    return [
+
+    payload = [
         {
-            "codigo": m["codigo"],
-            "cliente": m["cliente"],
-            "setor": m["setor"],
-            "linha": m["linha"],
-            "meta": float(m["meta_padrao"]) if m["meta_padrao"] is not None else 0,
-            "tempo_montagem": m["tempo_montagem"],
-            "blank": m["blank"],
-            "fase": m["fase"]
+            "codigo": m.get("codigo"),
+            "cliente": m.get("cliente"),
+            "setor": m.get("setor"),
+            "linha": m.get("linha"),
+            "meta": float(m["meta_padrao"]) if m.get("meta_padrao") is not None else 0,
+            "tempo_montagem": m.get("tempo_montagem"),
+            "blank": m.get("blank"),
+            "fase": m.get("fase")
         }
-        for m in modelos
+        for m in (modelos or [])
     ]
+
+    _cache_set(payload)
+    return payload
 
 
 # Compatibilidade com o app/routes/api.py atual
@@ -72,6 +106,7 @@ def cadastrar_modelo(dados):
 
     try:
         modelos_repository.inserir(dados)
+        _cache_invalidate()
         return {"sucesso": True, "mensagem": "Modelo cadastrado"}
     except Exception as e:
         print("ERRO AO CADASTRAR:", e)
@@ -88,6 +123,7 @@ def excluir_modelo(dados):
 
     try:
         modelos_repository.excluir(codigo, fase, linha)
+        _cache_invalidate()
         return {"sucesso": True, "mensagem": "Modelo excluído com sucesso"}
     except Exception as e:
         print("ERRO AO EXCLUIR:", e)
@@ -119,8 +155,13 @@ def atualizar_modelo(dados):
     if not campos:
         return {"sucesso": False, "mensagem": "Nada para atualizar"}
 
-    modelos_repository.atualizar(codigo, fase, linha, campos)
-    return {"sucesso": True, "mensagem": "Modelo atualizado"}
+    try:
+        modelos_repository.atualizar(codigo, fase, linha, campos)
+        _cache_invalidate()
+        return {"sucesso": True, "mensagem": "Modelo atualizado"}
+    except Exception as e:
+        print("ERRO AO ATUALIZAR:", e)
+        return {"sucesso": False, "mensagem": "Erro ao atualizar modelo"}
 
 
 def calcular_meta(dados):
