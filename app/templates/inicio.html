@@ -52,6 +52,20 @@
             <i class="bi bi-graph-up me-1"></i>
             Dashboard
           </a>
+
+          {% if current_user.is_authenticated and current_user.is_admin %}
+          <a class="btn btn-outline-dark"
+             href="{{ url_for('auth.admin_users') }}">
+            <i class="bi bi-person-check me-1"></i>
+            Aprovar usuários
+          </a>
+
+          <a class="btn btn-outline-dark"
+             href="{{ url_for('auth.admin_users_all') }}">
+            <i class="bi bi-people me-1"></i>
+            Todos os usuários
+          </a>
+          {% endif %}
         </div>
       </div>
     </div>

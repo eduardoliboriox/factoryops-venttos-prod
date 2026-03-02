@@ -5,6 +5,7 @@ from werkzeug.security import generate_password_hash
 from app.utils.text import normalize_username
 from datetime import datetime, timedelta
 
+
 def get_user_by_id(user_id):
     with get_db() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
@@ -13,6 +14,7 @@ def get_user_by_id(user_id):
                 (user_id,)
             )
             return cur.fetchone()
+
 
 def get_user_by_provider(provider, provider_id):
     with get_db() as conn:
@@ -25,6 +27,7 @@ def get_user_by_provider(provider, provider_id):
                 (provider, provider_id),
             )
             return cur.fetchone()
+
 
 def create_user(data):
     with get_db() as conn:
@@ -46,6 +49,7 @@ def create_user(data):
             conn.commit()
             return cur.fetchone()
 
+
 def get_user_by_username(username: str):
     """
     Busca usuário por username de forma accent-insensitive.
@@ -53,7 +57,6 @@ def get_user_by_username(username: str):
     - Normaliza TODOS os usernames do banco
     - Compara em Python (fonte da verdade)
     """
-
     username_norm = normalize_username(username)
 
     with get_db() as conn:
@@ -71,6 +74,7 @@ def get_user_by_username(username: str):
             return user
 
     return None
+
 
 def create_local_user(data):
     with get_db() as conn:
@@ -98,6 +102,7 @@ def create_local_user(data):
             conn.commit()
             return cur.fetchone()
 
+
 def list_pending_users(search=None):
     with get_db() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
@@ -123,6 +128,7 @@ def list_pending_users(search=None):
                 )
             return cur.fetchall()
 
+
 def approve_user(user_id):
     with get_db() as conn:
         with conn.cursor() as cur:
@@ -131,6 +137,7 @@ def approve_user(user_id):
                 (user_id,),
             )
             conn.commit()
+
 
 def deny_user(user_id):
     with get_db() as conn:
@@ -141,12 +148,14 @@ def deny_user(user_id):
             )
             conn.commit()
 
+
 def count_users():
     with get_db() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
             cur.execute("SELECT COUNT(*) AS total FROM users")
             row = cur.fetchone()
             return row["total"]
+
 
 def list_all_users(search=None):
     with get_db() as conn:
@@ -169,6 +178,7 @@ def list_all_users(search=None):
                 )
             return cur.fetchall()
 
+
 def update_user_password(user_id: int, new_password: str):
     password_hash = generate_password_hash(new_password)
 
@@ -184,23 +194,41 @@ def update_user_password(user_id: int, new_password: str):
             )
             conn.commit()
 
+
 def update_user_role(user_id: int, role: str):
-    fields = {
-        "admin": ("is_admin", True),
-        "extra": ("extra_authorized", True),
-        "none": ("is_admin", False, "extra_authorized", False),
-    }
+    """
+    Perfis:
+    - admin: is_admin = TRUE, extra_authorized = FALSE
+    - blocked: extra_authorized = TRUE (novo significado: usuário bloqueado)
+    - none: remove admin e remove bloqueio
+
+    Observação:
+    - Mantém compatibilidade: se a UI antiga enviar "extra", trata como "blocked".
+    """
+    role = (role or "").strip().lower()
+    if role == "extra":
+        role = "blocked"
 
     with get_db() as conn:
         with conn.cursor() as cur:
             if role == "admin":
                 cur.execute(
-                    "UPDATE users SET is_admin=TRUE WHERE id=%s",
+                    """
+                    UPDATE users
+                    SET is_admin=TRUE,
+                        extra_authorized=FALSE
+                    WHERE id=%s
+                    """,
                     (user_id,)
                 )
-            elif role == "extra":
+            elif role == "blocked":
                 cur.execute(
-                    "UPDATE users SET extra_authorized=TRUE WHERE id=%s",
+                    """
+                    UPDATE users
+                    SET is_admin=FALSE,
+                        extra_authorized=TRUE
+                    WHERE id=%s
+                    """,
                     (user_id,)
                 )
             else:
@@ -214,6 +242,7 @@ def update_user_role(user_id: int, role: str):
                     (user_id,)
                 )
         conn.commit()
+
 
 def get_user_by_matricula(matricula: str):
     """
@@ -232,6 +261,7 @@ def get_user_by_matricula(matricula: str):
             """, (matricula_normalizada,))
             return cur.fetchone()
 
+
 def update_profile_image(user_id: int, image_path: str):
     with get_db() as conn:
         with conn.cursor() as cur:
@@ -244,6 +274,7 @@ def update_profile_image(user_id: int, image_path: str):
                 (image_path, user_id),
             )
         conn.commit()
+
 
 def create_password_reset_token(user_id: int):
     token = str(uuid.uuid4())
@@ -259,6 +290,7 @@ def create_password_reset_token(user_id: int):
 
     return token
 
+
 def get_password_reset_token(token: str):
     with get_db() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
@@ -270,6 +302,7 @@ def get_password_reset_token(token: str):
                   AND expires_at > now()
             """, (token,))
             return cur.fetchone()
+
 
 def mark_token_as_used(token: str):
     with get_db() as conn:

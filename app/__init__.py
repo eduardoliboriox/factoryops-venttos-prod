@@ -10,6 +10,7 @@ from app.routes.api import bp as api_bp
 from app.auth.routes import bp as auth_bp
 from app.auth.models import User
 
+
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
@@ -39,7 +40,6 @@ def create_app():
             "now": datetime.utcnow,
             "ENVIRONMENT": app.config.get("ENVIRONMENT", "production"),
 
-            # APP / BRAND
             "APP_NAME": app.config.get("APP_NAME", "SMT Manager"),
             "APP_SHORT_NAME": app.config.get("APP_SHORT_NAME", "SMT Manager"),
             "APP_DESCRIPTION": app.config.get("APP_DESCRIPTION", ""),
@@ -47,6 +47,34 @@ def create_app():
             "APP_LANG": app.config.get("APP_LANG", "pt-BR"),
             "APP_VERSION": app.config.get("APP_VERSION", "dev"),
         }
+
+    @app.before_request
+    def block_restricted_users():
+        from flask import request, redirect, url_for, flash
+        from flask_login import current_user, logout_user
+
+        if not current_user.is_authenticated:
+            return None
+
+        if not getattr(current_user, "is_blocked", False):
+            return None
+
+        endpoint = (request.endpoint or "")
+
+        allowed_prefixes = (
+            "auth.logout",
+            "pages.privacy_policy",
+            "pages.cookie_policy",
+            "pages.offline_page",
+            "pages.pwa_manifest",
+            "static",
+        )
+        if endpoint.startswith(allowed_prefixes):
+            return None
+
+        logout_user()
+        flash("Seu acesso está bloqueado. Fale com um administrador.", "danger")
+        return redirect(url_for("auth.login"))
 
     app.register_blueprint(pages_bp)
     app.register_blueprint(api_bp, url_prefix="/api")
