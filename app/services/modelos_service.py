@@ -67,6 +67,15 @@ def listar_codigos():
     return modelos_repository.listar_codigos()
 
 
+def _to_float_2(v):
+    if v is None or v == "":
+        return None
+    try:
+        return round(float(v), 2)
+    except Exception:
+        return None
+
+
 def listar():
     cached = _cache_get()
     if cached is not None:
@@ -81,7 +90,7 @@ def listar():
             "setor": m.get("setor"),
             "linha": m.get("linha"),
             "meta": float(m["meta_padrao"]) if m.get("meta_padrao") is not None else 0,
-            "tempo_montagem": m.get("tempo_montagem"),
+            "tempo_montagem": _to_float_2(m.get("tempo_montagem")),
             "blank": m.get("blank"),
             "fase": m.get("fase")
         }
@@ -92,7 +101,6 @@ def listar():
     return payload
 
 
-# Compatibilidade com o app/routes/api.py atual
 def listar_modelos():
     return listar()
 
