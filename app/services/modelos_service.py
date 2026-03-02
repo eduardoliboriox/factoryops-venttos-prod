@@ -236,8 +236,13 @@ def calcular_perda_producao(meta_hora, producao_real):
         minutos += 1
         segundos = 0
 
+    if segundos == 0:
+        tempo_fmt = f"{minutos} minutos"
+    else:
+        tempo_fmt = f"{minutos} minutos e {segundos:02d} segundos"
+
     return {
-        "tempo_perdido": f"{minutos} minutos e {segundos:02d} segundos",
+        "tempo_perdido": tempo_fmt,
         "pecas_faltantes": int(meta_hora - producao_real)
     }
 
