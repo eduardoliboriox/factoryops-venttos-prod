@@ -1,0 +1,112 @@
+
+.modelos-action-card {
+  border: 1px solid rgba(15, 23, 42, 0.10);
+  border-radius: 14px;
+  background: #fff;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+}
+
+.modelos-action-card .mac-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.modelos-action-card .mac-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.modelos-action-card .mac-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  font-size: 18px;
+}
+
+.modelos-action-card .mac-subtitle {
+  font-size: 12px;
+  color: rgba(15, 23, 42, 0.65);
+  margin-top: 2px;
+}
+
+.modelos-action-card .mac-body {
+  padding: 16px;
+}
+
+.modelos-action-card .form-label {
+  font-weight: 700;
+  color: rgba(15, 23, 42, 0.80);
+}
+
+.modelos-action-card .form-control,
+.modelos-action-card .form-select {
+  border-radius: 12px;
+  border-color: rgba(15, 23, 42, 0.14);
+}
+
+.modelos-action-card .form-control:focus,
+.modelos-action-card .form-select:focus {
+  box-shadow: 0 0 0 .2rem rgba(13, 110, 253, 0.12);
+}
+
+.modelos-action-card.is-edit .mac-icon {
+  background: rgba(255, 193, 7, 0.15);
+  color: #a06a00;
+}
+
+.modelos-action-card.is-edit .mac-header {
+  background: linear-gradient(180deg, rgba(255, 193, 7, 0.10), transparent);
+}
+
+.modelos-action-card.is-delete .mac-icon {
+  background: rgba(220, 53, 69, 0.12);
+  color: #b02a37;
+}
+
+.modelos-action-card.is-delete .mac-header {
+  background: linear-gradient(180deg, rgba(220, 53, 69, 0.08), transparent);
+}
+
+.modelo-fase-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.btn-history {
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-weight: 700;
+  font-size: 12px;
+}
+
+#modalModeloHistorico .modal-header {
+  border-bottom: 1px solid rgba(15, 23, 42, 0.10);
+}
+
+.hist-list .list-group-item {
+  border-color: rgba(15, 23, 42, 0.10);
+}
+
+.hist-meta {
+  font-size: 12px;
+  color: rgba(15, 23, 42, 0.70);
+}
+
+.hist-changes {
+  font-size: 13px;
+  margin-top: 6px;
+}
+
+.hist-empty {
+  color: rgba(15, 23, 42, 0.65);
+  font-size: 14px;
+}
