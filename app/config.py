@@ -52,3 +52,7 @@ class Config:
     # ==========================
     SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY")
     SENDGRID_FROM = os.getenv("SENDGRID_FROM")
+
+    # Opcional: útil para testes em develop sem entregar emails reais
+    SENDGRID_SANDBOX_MODE = os.getenv("SENDGRID_SANDBOX_MODE", "false").lower() == "true"
+    SENDGRID_REPLY_TO = os.getenv("SENDGRID_REPLY_TO")
