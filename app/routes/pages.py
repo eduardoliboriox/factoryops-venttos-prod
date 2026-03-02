@@ -73,6 +73,12 @@ def smt_calcular():
     return render_template("calcular.html", active_menu="smt_calcular")
 
 
+@bp.route("/smt/estudo-tempo")
+@login_required
+def smt_estudo_tempo():
+    return render_template("estudo_tempo.html", active_menu="smt_estudo_tempo")
+
+
 @bp.route("/privacy-policy")
 def privacy_policy():
     return render_template("legal/privacy.html")

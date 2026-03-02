@@ -1,0 +1,488 @@
+{% extends "layouts/app.html" %}
+{% block title %}SMT · Estudo de Tempo{% endblock %}
+
+{% block page_title %}
+<div class="d-flex align-items-center w-100">
+  <span class="me-auto">
+    SMT Manager - Estudo de Tempo
+  </span>
+
+  <div class="ms-auto d-flex gap-2">
+    <a href="{{ url_for('pages.inicio') }}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left"></i> Voltar
+    </a>
+
+    <button class="btn btn-outline-purple"
+            type="button"
+            onclick="toggleFullscreen()">
+      <i class="bi bi-arrows-fullscreen"></i>
+    </button>
+
+    <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-danger">
+      <i class="bi bi-box-arrow-right"></i> Sair
+    </a>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<style>
+  .ts-card {
+    border: 1px solid rgba(15, 23, 42, 0.10);
+    border-radius: 14px;
+    background: #fff;
+    overflow: hidden;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+  }
+  .ts-card .ts-header {
+    padding: 14px 16px;
+    border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+    background: linear-gradient(180deg, rgba(25, 135, 84, 0.10), transparent);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+  }
+  .ts-muted { color: rgba(15, 23, 42, 0.65); font-size: 12px; }
+  .ts-badge { font-weight: 800; }
+  .ts-table th { white-space: nowrap; }
+  .ts-table td { vertical-align: middle; }
+  .balance-ok { background: rgba(25, 135, 84, 0.10); color: #146c43; font-weight: 800; }
+  .balance-bad { background: rgba(220, 53, 69, 0.10); color: #b02a37; font-weight: 800; }
+</style>
+
+<div class="container-fluid">
+
+  <div class="row g-3 mb-3">
+    <div class="col-12 col-lg-5">
+      <div class="ts-card">
+        <div class="ts-header">
+          <div>
+            <div class="fw-bold">Criar novo estudo</div>
+            <div class="ts-muted">Cabeçalho (produto, metas, parâmetros)</div>
+          </div>
+          <span class="badge text-bg-success ts-badge">MVP</span>
+        </div>
+
+        <div class="p-3">
+          <div id="tsMsgCreate"></div>
+
+          <form id="formCreateStudy" class="row g-2">
+            <div class="col-12">
+              <label class="form-label fw-bold">Produto</label>
+              <input class="form-control" name="produto" placeholder="Ex: CONJUNTO 9" required>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label fw-bold">Cliente</label>
+              <input class="form-control" name="cliente" placeholder="Ex: HARMAN">
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label fw-bold">Linha</label>
+              <input class="form-control" name="linha" placeholder="Ex: SMD-01">
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label fw-bold">UPH Meta</label>
+              <input class="form-control" name="uph_meta" type="number" value="70" min="0">
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label fw-bold">HC Meta</label>
+              <input class="form-control" name="hc_meta" type="number" step="0.01" value="16" min="0">
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label fw-bold">Perda padrão</label>
+              <input class="form-control" name="perda_padrao" type="number" step="0.01" value="0.10" min="0" max="0.80">
+              <div class="ts-muted">0.10 = 10% (mesma lógica do Excel)</div>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label fw-bold">Horas do turno</label>
+              <input class="form-control" name="horas_turno" type="number" step="0.01" value="8.30" min="1" max="24">
+              <div class="ts-muted">Usado para calcular UPD</div>
+            </div>
+
+            <div class="col-12">
+              <label class="form-label fw-bold">Informações adicionais</label>
+              <textarea class="form-control" name="info_adicionais" rows="2" placeholder="Opcional"></textarea>
+            </div>
+
+            <div class="col-12 d-flex gap-2 flex-wrap mt-2">
+              <button class="btn btn-success">
+                <i class="bi bi-plus-circle"></i> Criar estudo
+              </button>
+
+              <button type="button" class="btn btn-outline-secondary" onclick="loadStudies()">
+                <i class="bi bi-arrow-repeat"></i> Atualizar lista
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-lg-7">
+      <div class="ts-card">
+        <div class="ts-header">
+          <div>
+            <div class="fw-bold">Estudos recentes</div>
+            <div class="ts-muted">Selecione um para ver a tabela no formato da engenharia</div>
+          </div>
+          <button class="btn btn-outline-dark btn-sm" onclick="loadStudies()">
+            <i class="bi bi-list"></i> Carregar
+          </button>
+        </div>
+
+        <div class="p-3">
+          <div class="d-flex gap-2 flex-wrap mb-2">
+            <select id="studySelect" class="form-select" style="max-width: 520px;"></select>
+            <button class="btn btn-primary" onclick="openSelectedStudy()">
+              <i class="bi bi-eye"></i> Abrir
+            </button>
+            <button class="btn btn-outline-danger" onclick="deleteSelectedStudy()">
+              <i class="bi bi-trash"></i> Excluir
+            </button>
+          </div>
+
+          <div class="ts-muted">
+            Dica: UPH Real = (3600 / TempoCiclo) * (1 - perda). BALANCE aparece quando UPH Real &lt; UPH Meta.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="studyArea" class="ts-card d-none">
+    <div class="ts-header">
+      <div>
+        <div class="fw-bold" id="studyTitle">—</div>
+        <div class="ts-muted" id="studySubtitle">—</div>
+      </div>
+
+      <div class="d-flex gap-2 flex-wrap">
+        <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalAddOp">
+          <i class="bi bi-plus-lg"></i> Nova operação
+        </button>
+      </div>
+    </div>
+
+    <div class="p-3">
+      <div class="row g-2 mb-2">
+        <div class="col-md-3">
+          <div class="ts-muted">UPH META</div>
+          <div class="fs-4 fw-bold" id="kpiUphMeta">—</div>
+        </div>
+        <div class="col-md-3">
+          <div class="ts-muted">HC META</div>
+          <div class="fs-4 fw-bold" id="kpiHcMeta">—</div>
+        </div>
+        <div class="col-md-3">
+          <div class="ts-muted">TOTAL OPERAÇÕES</div>
+          <div class="fs-4 fw-bold" id="kpiTotalOps">—</div>
+        </div>
+        <div class="col-md-3">
+          <div class="ts-muted">TOTAL TEMPO (s)</div>
+          <div class="fs-4 fw-bold" id="kpiTotalTempo">—</div>
+        </div>
+      </div>
+
+      <div id="tsMsgOps"></div>
+
+      <div class="table-responsive">
+        <table class="table table-sm table-bordered ts-table align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>N</th>
+              <th>OPERAÇÃO</th>
+              <th>Tempo Ciclo (s)</th>
+              <th>Posto</th>
+              <th>HC</th>
+              <th>UPH (Real)</th>
+              <th>UPD</th>
+              <th>BALANCE</th>
+              <th style="width: 90px;"></th>
+            </tr>
+          </thead>
+          <tbody id="opsTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Modal: Add Operation -->
+<div class="modal fade" id="modalAddOp" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Nova operação</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        <form id="formAddOp" class="row g-2">
+          <div class="col-md-2">
+            <label class="form-label fw-bold">N</label>
+            <input class="form-control" name="ordem" type="number" value="1" min="1" required>
+          </div>
+
+          <div class="col-md-10">
+            <label class="form-label fw-bold">Operação</label>
+            <input class="form-control" name="operacao" placeholder="Ex: TESTE (ETIQUETA + REVISÃO + MARCAÇÃO)" required>
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-bold">Tempo ciclo (s)</label>
+            <input class="form-control" name="tempo_ciclo_sec" type="number" step="0.01" min="0.01" placeholder="Ex: 46.20" required>
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-bold">Posto</label>
+            <input class="form-control" name="posto_trabalho" type="number" value="1" min="1" required>
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-bold">HC</label>
+            <input class="form-control" name="hc" type="number" step="0.01" value="1.00" min="0.01" required>
+          </div>
+        </form>
+
+        <div class="ts-muted mt-2">
+          UPH Real será calculado automaticamente no backend usando a perda padrão do estudo.
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button class="btn btn-primary" onclick="submitAddOp()">
+          <i class="bi bi-save"></i> Salvar operação
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let TS = {
+  studies: [],
+  currentStudyId: null
+};
+
+function showMsg(containerId, text, type='success') {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+
+  if (!text) { el.innerHTML = ''; return; }
+
+  el.innerHTML = `
+    <div class="alert alert-${type} alert-dismissible fade show mb-2" role="alert">
+      ${text}
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  `;
+}
+
+async function loadStudies() {
+  showMsg('tsMsgCreate', '', 'success');
+
+  const resp = await fetch('/api/time-studies?limit=50', { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+  const data = await resp.json();
+
+  TS.studies = Array.isArray(data) ? data : [];
+  const sel = document.getElementById('studySelect');
+  if (!sel) return;
+
+  sel.innerHTML = '';
+  TS.studies.forEach(s => {
+    const opt = document.createElement('option');
+    opt.value = s.id;
+    opt.textContent = `#${s.id} · ${s.produto} · UPH ${s.uph_meta} · ${s.linha || '—'} · ${new Date(s.created_at).toLocaleString()}`;
+    sel.appendChild(opt);
+  });
+
+  if (!TS.studies.length) {
+    const opt = document.createElement('option');
+    opt.value = '';
+    opt.textContent = 'Nenhum estudo ainda';
+    sel.appendChild(opt);
+  }
+}
+
+async function createStudy(e) {
+  e.preventDefault();
+
+  const fd = new FormData(e.target);
+
+  const resp = await fetch('/api/time-studies', {
+    method: 'POST',
+    body: fd,
+    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+  });
+
+  const data = await resp.json();
+
+  if (!resp.ok || !data.sucesso) {
+    showMsg('tsMsgCreate', data.erro || 'Erro ao criar estudo', 'danger');
+    return;
+  }
+
+  showMsg('tsMsgCreate', `Estudo criado (#${data.study.id}).`, 'success');
+  e.target.reset();
+  await loadStudies();
+
+  TS.currentStudyId = data.study.id;
+  document.getElementById('studySelect').value = String(data.study.id);
+  await openSelectedStudy();
+}
+
+async function openSelectedStudy() {
+  const sel = document.getElementById('studySelect');
+  const studyId = Number(sel.value || 0);
+  if (!studyId) return;
+
+  await openStudy(studyId);
+}
+
+async function openStudy(studyId) {
+  const resp = await fetch(`/api/time-studies/${studyId}`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+  const data = await resp.json();
+
+  if (!resp.ok || !data.sucesso) {
+    showMsg('tsMsgOps', data.erro || 'Erro ao abrir estudo', 'danger');
+    return;
+  }
+
+  TS.currentStudyId = studyId;
+
+  const area = document.getElementById('studyArea');
+  area.classList.remove('d-none');
+
+  const s = data.study || {};
+  const totals = data.totals || {};
+  const ops = data.operations || [];
+
+  document.getElementById('studyTitle').textContent = `${s.produto || '—'} · Estudo #${s.id}`;
+  document.getElementById('studySubtitle').textContent =
+    `Cliente: ${s.cliente || '—'} · Linha: ${s.linha || '—'} · Perda: ${Number(s.perda_padrao || 0).toFixed(2)} · Turno: ${Number(s.horas_turno || 0).toFixed(2)}h`;
+
+  document.getElementById('kpiUphMeta').textContent = totals.uph_meta ?? '—';
+  document.getElementById('kpiHcMeta').textContent = totals.hc_meta ?? '—';
+  document.getElementById('kpiTotalOps').textContent = totals.total_ops ?? 0;
+  document.getElementById('kpiTotalTempo').textContent = (totals.total_tempo_sec ?? 0).toFixed(1);
+
+  const tbody = document.getElementById('opsTableBody');
+  tbody.innerHTML = '';
+
+  ops.forEach(op => {
+    const tr = document.createElement('tr');
+
+    const bal = (op.balance || 'OK').toUpperCase();
+    const balClass = bal === 'OK' ? 'balance-ok' : 'balance-bad';
+
+    tr.innerHTML = `
+      <td class="fw-bold">${op.ordem ?? ''}</td>
+      <td>${(op.operacao || '').replaceAll('<','&lt;')}</td>
+      <td>${Number(op.tempo_ciclo_sec || 0).toFixed(2)}</td>
+      <td>${op.posto_trabalho ?? ''}</td>
+      <td>${Number(op.hc || 0).toFixed(2)}</td>
+      <td class="fw-bold">${op.uph_real ?? 0}</td>
+      <td>${op.upd ?? 0}</td>
+      <td class="${balClass} text-center">${bal}</td>
+      <td class="text-center">
+        <button class="btn btn-sm btn-outline-danger" onclick="deleteOp(${op.id})">
+          <i class="bi bi-trash"></i>
+        </button>
+      </td>
+    `;
+
+    tbody.appendChild(tr);
+  });
+
+  // Preenche "N" default no modal (próximo número)
+  const nextN = ops.length ? (Math.max(...ops.map(o => Number(o.ordem || 0))) + 1) : 1;
+  const nInput = document.querySelector('#formAddOp input[name="ordem"]');
+  if (nInput) nInput.value = String(nextN);
+
+  showMsg('tsMsgOps', '', 'success');
+}
+
+async function submitAddOp() {
+  const studyId = TS.currentStudyId;
+  if (!studyId) return;
+
+  const form = document.getElementById('formAddOp');
+  const fd = new FormData(form);
+
+  const resp = await fetch(`/api/time-studies/${studyId}/operations`, {
+    method: 'POST',
+    body: fd,
+    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+  });
+
+  const data = await resp.json();
+
+  if (!resp.ok || !data.sucesso) {
+    showMsg('tsMsgOps', data.erro || 'Erro ao salvar operação', 'danger');
+    return;
+  }
+
+  const modalEl = document.getElementById('modalAddOp');
+  const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+  modal.hide();
+
+  form.reset();
+  await openStudy(studyId);
+}
+
+async function deleteOp(opId) {
+  if (!opId) return;
+
+  const resp = await fetch(`/api/time-studies/operations/${opId}`, {
+    method: 'DELETE',
+    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+  });
+
+  const data = await resp.json();
+
+  if (!resp.ok || !data.sucesso) {
+    showMsg('tsMsgOps', data.erro || 'Erro ao excluir operação', 'danger');
+    return;
+  }
+
+  await openStudy(TS.currentStudyId);
+}
+
+async function deleteSelectedStudy() {
+  const sel = document.getElementById('studySelect');
+  const studyId = Number(sel.value || 0);
+  if (!studyId) return;
+
+  const resp = await fetch(`/api/time-studies/${studyId}`, {
+    method: 'DELETE',
+    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+  });
+
+  const data = await resp.json();
+
+  if (!resp.ok || !data.sucesso) {
+    showMsg('tsMsgCreate', data.erro || 'Erro ao excluir estudo', 'danger');
+    return;
+  }
+
+  TS.currentStudyId = null;
+  document.getElementById('studyArea').classList.add('d-none');
+  await loadStudies();
+  showMsg('tsMsgCreate', `Estudo #${studyId} excluído.`, 'success');
+}
+
+document.getElementById('formCreateStudy').addEventListener('submit', createStudy);
+
+loadStudies();
+</script>
+{% endblock %}
