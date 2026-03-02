@@ -26,96 +26,188 @@
 {% endblock %}
 
 {% block content %}
+<style>
+  /* Estilo local (somente nesta página) — não afeta outras telas */
+  .smt-action-card {
+    border: 1px solid rgba(15, 23, 42, 0.10);
+    border-radius: 14px;
+    background: #fff;
+    overflow: hidden;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+  }
+  .smt-action-card .sac-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 16px;
+    border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+    background: linear-gradient(180deg, rgba(13, 110, 253, 0.08), transparent);
+  }
+  .smt-action-card .sac-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .smt-action-card .sac-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    display: grid;
+    place-items: center;
+    font-size: 18px;
+    background: rgba(13, 110, 253, 0.12);
+    color: #0d6efd;
+  }
+  .smt-action-card .sac-subtitle {
+    font-size: 12px;
+    color: rgba(15, 23, 42, 0.65);
+    margin-top: 2px;
+  }
+  .smt-action-card .sac-body { padding: 16px; }
+
+  .smt-action-card .form-label {
+    font-weight: 700;
+    color: rgba(15, 23, 42, 0.80);
+  }
+  .smt-action-card .form-control,
+  .smt-action-card .form-select {
+    border-radius: 12px;
+    border-color: rgba(15, 23, 42, 0.14);
+  }
+  .smt-action-card .form-control:focus,
+  .smt-action-card .form-select:focus {
+    box-shadow: 0 0 0 .2rem rgba(13, 110, 253, 0.12);
+  }
+
+  .hint {
+    font-size: 12px;
+    color: rgba(15, 23, 42, 0.65);
+    margin-top: 6px;
+  }
+</style>
+
 <div class="container-fluid">
 
   <div id="mensagemCadastro"></div>
 
-  <div class="card shadow-sm p-4">
-    <h5 class="mb-3 text-primary"><i class="bi bi-file-earmark-plus text-primary"></i> Novo Modelo</h5>
-
-    <form id="cadastroForm" class="row g-4">
-
-      <div class="col-md-3">
-        <label class="form-label fw-semibold">Código</label>
-        <input class="form-control form-control-lg" name="codigo" required>
+  <div class="smt-action-card mb-4">
+    <div class="sac-header">
+      <div class="sac-title">
+        <div class="sac-icon">
+          <i class="bi bi-file-earmark-plus"></i>
+        </div>
+        <div>
+          <div class="fw-bold">Novo Modelo</div>
+          <div class="sac-subtitle">
+            Preencha os dados e cadastre (sem alterar a lógica existente).
+          </div>
+        </div>
       </div>
 
-      <div class="col-md-3">
-        <label class="form-label fw-semibold">Cliente</label>
-        <input class="form-control form-control-lg" name="cliente" required>
-      </div>
+      <span class="badge text-bg-primary">CREATE</span>
+    </div>
 
-      <div class="col-md-2">
-        <label class="form-label fw-semibold">Setor</label>
-        <select class="form-select form-select-lg" name="setor">
-          <option>SMT</option>
-          <option>PTH</option>
-          <option>IM</option>
-          <option>PA</option>
-          <option>VTT</option>
-        </select>
-      </div>
+    <div class="sac-body">
+      <form id="cadastroForm" class="row g-3">
 
-      <div class="col-md-2">
-        <label class="form-label fw-semibold">Linha</label>
-        <select class="form-select form-select-lg" name="linha" required>
-          <option value="SMD-01">SMD-01</option>
-          <option value="SMD-02">SMD-02</option>
-          <option value="SMD-03">SMD-03</option>
-          <option value="SMD-04">SMD-04</option>
-          <option value="SMD-05">SMD-05</option>
-          <option value="SMD-06">SMD-06</option>
-          <option value="SMD-07">SMD-07</option>
-          <option value="SMD-08">SMD-08</option>
-          <option value="SMD-09">SMD-09</option>
-        </select>
-      </div>
+        <div class="col-md-3">
+          <label class="form-label">Código</label>
+          <input class="form-control form-control-lg" name="codigo" required placeholder="Ex: ABC123">
+          <div class="hint">Use o código do modelo conforme padrão interno.</div>
+        </div>
 
-      <div class="col-md-2">
-        <label class="form-label fw-semibold">Meta por hora</label>
-        <input class="form-control form-control-lg" name="meta_padrao" type="number" required>
-      </div>
+        <div class="col-md-3">
+          <label class="form-label">Cliente</label>
+          <input class="form-control form-control-lg" name="cliente" required placeholder="Ex: Cliente X">
+          <div class="hint">Cliente associado ao modelo.</div>
+        </div>
 
-      <div class="col-md-2">
-        <label class="form-label fw-semibold">Tempo de montagem (seg)</label>
-        <input
-          class="form-control form-control-lg"
-          name="tempo_montagem"
-          type="number"
-          step="0.01"
-          min="0"
-          placeholder="Ex: 19.55"
-        >
-      </div>
+        <div class="col-md-2">
+          <label class="form-label">Setor</label>
+          <select class="form-select form-select-lg" name="setor">
+            <option>SMT</option>
+            <option>PTH</option>
+            <option>IM</option>
+            <option>PA</option>
+            <option>VTT</option>
+          </select>
+          <div class="hint">Área produtiva / setor responsável.</div>
+        </div>
 
-      <div class="col-md-2">
-        <label class="form-label fw-semibold">Placas por Blank</label>
-        <input
-          class="form-control form-control-lg"
-          name="blank"
-          type="number"
-          min="1"
-          value="1"
-          required
-        >
-      </div>
+        <div class="col-md-2">
+          <label class="form-label">Linha</label>
+          <select class="form-select form-select-lg" name="linha" required>
+            <option value="SMD-01">SMD-01</option>
+            <option value="SMD-02">SMD-02</option>
+            <option value="SMD-03">SMD-03</option>
+            <option value="SMD-04">SMD-04</option>
+            <option value="SMD-05">SMD-05</option>
+            <option value="SMD-06">SMD-06</option>
+            <option value="SMD-07">SMD-07</option>
+            <option value="SMD-08">SMD-08</option>
+            <option value="SMD-09">SMD-09</option>
+          </select>
+          <div class="hint">Selecione a linha correta (SMD-01 … SMD-09).</div>
+        </div>
 
-      <div class="col-md-2">
-        <label class="form-label fw-semibold">Fase</label>
-        <select class="form-select form-select-lg" name="fase">
-          <option>TOP</option>
-          <option>BOTTOM</option>
-        </select>
-      </div>
+        <div class="col-md-2">
+          <label class="form-label">Meta por hora</label>
+          <input class="form-control form-control-lg" name="meta_padrao" type="number" required placeholder="Ex: 570">
+          <div class="hint">Meta operacional padrão do modelo.</div>
+        </div>
 
-      <div class="col-12 mt-3">
-        <button type="submit" class="btn btn-primary btn-lg px-4">
-          <i class="bi bi-save"></i> Cadastrar Modelo
-        </button>
-      </div>
+        <div class="col-md-3">
+          <label class="form-label">Tempo de montagem (seg)</label>
+          <input
+            class="form-control form-control-lg"
+            name="tempo_montagem"
+            type="number"
+            step="0.01"
+            min="0"
+            placeholder="Ex: 19.55"
+          >
+          <div class="hint">Opcional. Use cronômetro/medições (ex.: 19.55).</div>
+        </div>
 
-    </form>
+        <div class="col-md-3">
+          <label class="form-label">Placas por Blank</label>
+          <input
+            class="form-control form-control-lg"
+            name="blank"
+            type="number"
+            min="1"
+            value="1"
+            required
+          >
+          <div class="hint">Ex.: 1 (placa individual) · 2, 4, 6… (por blank).</div>
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label">Fase</label>
+          <select class="form-select form-select-lg" name="fase">
+            <option>TOP</option>
+            <option>BOTTOM</option>
+          </select>
+          <div class="hint">TOP ou BOTTOM conforme setup.</div>
+        </div>
+
+        <div class="col-12">
+          <div class="d-flex gap-2 flex-wrap">
+            <button id="btnCadastroSubmit" type="submit" class="btn btn-primary btn-lg px-4">
+              <i class="bi bi-save"></i> Cadastrar Modelo
+            </button>
+
+            <button type="reset" class="btn btn-outline-secondary btn-lg px-4">
+              <i class="bi bi-eraser"></i> Limpar
+            </button>
+          </div>
+        </div>
+
+      </form>
+    </div>
   </div>
+
 </div>
 {% endblock %}
 
@@ -142,19 +234,33 @@ function mostrarMensagemCadastro(texto, tipo='success') {
 document.getElementById('cadastroForm').addEventListener('submit', async e => {
     e.preventDefault();
 
-    const fd = new FormData(e.target);
+    const btn = document.getElementById('btnCadastroSubmit');
+    if (btn) {
+      btn.disabled = true;
+      btn.dataset.original = btn.innerHTML;
+      btn.innerHTML = `<span class="spinner-border spinner-border-sm me-2" role="status"></span> Salvando...`;
+    }
 
-    const resp = await fetch('/api/modelos', {
-        method: 'POST',
-        body: fd,
-        headers: { 'X-Requested-With': 'XMLHttpRequest' }
-    });
+    try {
+      const fd = new FormData(e.target);
 
-    const data = await resp.json();
+      const resp = await fetch('/api/modelos', {
+          method: 'POST',
+          body: fd,
+          headers: { 'X-Requested-With': 'XMLHttpRequest' }
+      });
 
-    mostrarMensagemCadastro(data.mensagem, data.sucesso ? 'success' : 'danger');
+      const data = await resp.json();
 
-    if (data.sucesso) e.target.reset();
+      mostrarMensagemCadastro(data.mensagem, data.sucesso ? 'success' : 'danger');
+
+      if (data.sucesso) e.target.reset();
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = btn.dataset.original || `<i class="bi bi-save"></i> Cadastrar Modelo`;
+      }
+    }
 });
 </script>
 {% endblock %}
