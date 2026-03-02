@@ -63,24 +63,6 @@
       </div>
     </div>
 
-    {% if user.user_type == "CLT" %}
-    <h5 class="mb-3">Remuneração (CLT)</h5>
-
-    <div class="row g-3 mb-4">
-      <div class="col-md-6">
-        <label class="form-label">Remuneração mensal (base)</label>
-        <input name="remuneracao_mensal"
-               class="form-control"
-               placeholder="Ex: 1.951,70"
-               inputmode="decimal"
-               value="{{ profile.remuneracao_mensal if profile and profile.remuneracao_mensal is not none }}">
-        <small class="text-muted d-block mt-1">
-          Usado para calcular adicional noturno e reflexo DSR nas provisões.
-        </small>
-      </div>
-    </div>
-    {% endif %}
-
     <h5 class="mb-3">Contato & Endereço</h5>
 
     <input name="phone"
