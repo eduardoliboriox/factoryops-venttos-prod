@@ -51,7 +51,8 @@
 
       "smt_modelos": "Modelos",
       "smt_cadastro": "Cadastro",
-      "smt_calcular": "Cálculos"
+      "smt_calcular": "Cálculos",
+      "smt_estudo_tempo": "Estudo de Tempo"
     } %}
 
     <span class="username fw-bold">
@@ -96,6 +97,11 @@
       <a href="{{ url_for('pages.smt_calcular') }}"
          class="{% if active_menu == 'smt_calcular' %}active{% endif %}">
         <i class="bi bi-calculator"></i> Cálculos
+      </a>
+
+      <a href="{{ url_for('pages.smt_estudo_tempo') }}"
+         class="{% if active_menu == 'smt_estudo_tempo' %}active{% endif %}">
+        <i class="bi bi-stopwatch"></i> Estudo de Tempo
       </a>
 
       {# =========================================================
@@ -164,6 +170,14 @@
       <i class="bi bi-calculator"></i>
     </div>
     <small>Cálculos</small>
+  </a>
+
+  <a href="{{ url_for('pages.smt_estudo_tempo') }}"
+     class="bottom-item {% if active_menu == 'smt_estudo_tempo' %}active{% endif %}">
+    <div class="bottom-icon">
+      <i class="bi bi-stopwatch"></i>
+    </div>
+    <small>Tempo</small>
   </a>
 
   <a href="{{ url_for('auth.my_profile') }}"
