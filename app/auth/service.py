@@ -17,7 +17,6 @@ from app.auth.repository import (
     create_password_reset_token,
     get_password_reset_token,
     mark_token_as_used,
-
 )
 
 from app.auth.profile_repository import (
@@ -200,7 +199,7 @@ def confirm_employee_extra(identifier: str, password: str):
     identifier = identifier.strip()
 
     user = get_user_by_matricula(identifier)
-    
+
     if not user:
         from app.auth.repository import get_user_by_username
         user = get_user_by_username(identifier)
@@ -251,25 +250,29 @@ def save_profile_image(user_id: int, file):
 # =====================================================
 # RESET SENHA
 # =====================================================
+def _build_external_url(path: str) -> str:
+    """
+    Gera URL externa priorizando BASE_URL (Railway/proxy),
+    e cai para url_for(_external=True) quando BASE_URL não existir.
+    """
+    path = "/" + (path or "").lstrip("/")
+    base = (current_app.config.get("BASE_URL") or "").rstrip("/")
+    if base:
+        return f"{base}{path}"
+
+    from flask import url_for
+    return url_for(path, _external=True)
+
+
 def request_password_reset(email: str):
-    """
-    Fluxo:
-    - Não revela se o email existe (rota já faz mensagem genérica)
-    - Gera token (1h)
-    - Envia link por email usando SendGrid (ou SMTP fallback)
-    """
     from app.extensions import get_db
     from psycopg.rows import dict_row
     from app.services.email_service import send_email
     from flask import url_for
 
-    email = (email or "").strip()
-    if not email:
-        return None
-
     with get_db() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
-            cur.execute("SELECT * FROM users WHERE LOWER(email)=LOWER(%s)", (email,))
+            cur.execute("SELECT * FROM users WHERE email=%s", (email,))
             user = cur.fetchone()
 
     if not user:
@@ -277,23 +280,19 @@ def request_password_reset(email: str):
 
     token = create_password_reset_token(user["id"])
 
-    base_url = current_app.config.get("BASE_URL")
-    if base_url:
-        reset_url = f"{base_url}/auth/reset-password/{token}"
+    base = (current_app.config.get("BASE_URL") or "").rstrip("/")
+    if base:
+        reset_url = f"{base}/auth/reset-password/{token}"
     else:
-        reset_url = url_for(
-            "auth.reset_password_route",
-            token=token,
-            _external=True
-        )
+        reset_url = url_for("auth.reset_password_route", token=token, _external=True)
 
-    subject = f"Redefinição de senha - {current_app.config.get('APP_NAME', 'SMT Manager')}"
+    subject = "Redefinição de senha - SMT Manager"
     body = f"""
 Olá {user.get('full_name') or user.get('username')},
 
-Recebemos uma solicitação para redefinir sua senha no {current_app.config.get('APP_NAME', 'SMT Manager')}.
+Você solicitou a redefinição de senha no SMT Manager.
 
-Para criar uma nova senha, acesse o link abaixo:
+Clique no link abaixo para criar uma nova senha:
 
 {reset_url}
 
@@ -302,9 +301,13 @@ Este link expira em 1 hora.
 Se você não solicitou isso, ignore este email.
 """
 
-    send_email(user["email"], subject, body)
+    ok = send_email(user["email"], subject, body)
+
+    if not ok:
+        current_app.logger.error("Password reset email failed to send (SendGrid/SMTP).")
 
     return token
+
 
 def reset_password(token: str, new_password: str):
     token_data = get_password_reset_token(token)
