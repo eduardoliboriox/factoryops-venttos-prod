@@ -1,6 +1,7 @@
 import math
 import time
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
+from typing import Optional
 
 from app.repositories import modelos_repository
 from app.repositories.modelos_repository import buscar_ultimo_modelo
@@ -78,7 +79,6 @@ def _to_decimal_str_2(v):
         return None
     try:
         d = Decimal(str(v)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
-        # Formata sempre com 2 casas
         return f"{d:.2f}"
     except (InvalidOperation, ValueError, TypeError):
         return None
@@ -98,7 +98,6 @@ def listar():
             "setor": m.get("setor"),
             "linha": m.get("linha"),
             "meta": float(m["meta_padrao"]) if m.get("meta_padrao") is not None else 0,
-            # IMPORTANTE: tempo_montagem como string "55.86"
             "tempo_montagem": _to_decimal_str_2(m.get("tempo_montagem")),
             "blank": m.get("blank"),
             "fase": m.get("fase")
@@ -114,7 +113,20 @@ def listar_modelos():
     return listar()
 
 
-def cadastrar_modelo(dados):
+def _audit_user(user) -> tuple[Optional[int], Optional[str]]:
+    """
+    Extrai identificadores do usuário autenticado para auditoria.
+    Mantém compatibilidade caso user venha None.
+    """
+    if not user:
+        return None, None
+
+    user_id = getattr(user, "id", None)
+    username = getattr(user, "username", None) or getattr(user, "email", None) or None
+    return user_id, username
+
+
+def cadastrar_modelo(dados, user=None):
     linha = (dados.get("linha") or "").strip()
     if not linha:
         return {"sucesso": False, "mensagem": "Linha não informada"}
@@ -122,7 +134,8 @@ def cadastrar_modelo(dados):
         return {"sucesso": False, "mensagem": "Linha inválida"}
 
     try:
-        modelos_repository.inserir(dados)
+        uid, uname = _audit_user(user)
+        modelos_repository.inserir(dados, audit_user_id=uid, audit_username=uname)
         _cache_invalidate()
         return {"sucesso": True, "mensagem": "Modelo cadastrado"}
     except Exception as e:
@@ -130,7 +143,7 @@ def cadastrar_modelo(dados):
         return {"sucesso": False, "mensagem": str(e)}
 
 
-def excluir_modelo(dados):
+def excluir_modelo(dados, user=None):
     codigo = (dados.get("codigo") or "").strip()
     fase = (dados.get("fase") or "").strip()
     linha = (dados.get("linha") or "").strip()
@@ -139,7 +152,8 @@ def excluir_modelo(dados):
         return {"sucesso": False, "mensagem": "Código, fase e linha são obrigatórios"}
 
     try:
-        modelos_repository.excluir(codigo, fase, linha)
+        uid, uname = _audit_user(user)
+        modelos_repository.excluir(codigo, fase, linha, audit_user_id=uid, audit_username=uname)
         _cache_invalidate()
         return {"sucesso": True, "mensagem": "Modelo excluído com sucesso"}
     except Exception as e:
@@ -147,7 +161,7 @@ def excluir_modelo(dados):
         return {"sucesso": False, "mensagem": "Erro ao excluir modelo"}
 
 
-def atualizar_modelo(dados):
+def atualizar_modelo(dados, user=None):
     codigo = (dados.get("codigo") or "").strip()
     fase = (dados.get("fase") or "").strip()
     linha = (dados.get("linha") or "").strip()
@@ -158,11 +172,9 @@ def atualizar_modelo(dados):
     campos = {}
 
     if dados.get("meta_padrao"):
-        # Mantém compatibilidade, mas não perde casas no DB (DB vai ser numeric)
         campos["meta_padrao"] = float(dados["meta_padrao"])
 
     if dados.get("tempo_montagem"):
-        # Idem: DB vai guardar com 2 casas (numeric(10,2))
         campos["tempo_montagem"] = float(dados["tempo_montagem"])
 
     if dados.get("blank"):
@@ -175,12 +187,17 @@ def atualizar_modelo(dados):
         return {"sucesso": False, "mensagem": "Nada para atualizar"}
 
     try:
-        modelos_repository.atualizar(codigo, fase, linha, campos)
+        uid, uname = _audit_user(user)
+        modelos_repository.atualizar(codigo, fase, linha, campos, audit_user_id=uid, audit_username=uname)
         _cache_invalidate()
         return {"sucesso": True, "mensagem": "Modelo atualizado"}
     except Exception as e:
         print("ERRO AO ATUALIZAR:", e)
         return {"sucesso": False, "mensagem": "Erro ao atualizar modelo"}
+
+
+def listar_historico_modelo(codigo: str, fase: str, linha: str, limit: int = 50):
+    return modelos_repository.listar_historico(codigo=codigo, fase=fase, linha=linha, limit=limit)
 
 
 def calcular_meta(dados):
