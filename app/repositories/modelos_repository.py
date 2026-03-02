@@ -23,9 +23,9 @@ def _resolve_linha_column() -> Optional[str]:
         return _LINHA_COL_CACHE
 
     candidates = [
-        "linha",         # esperado
-        "line",          # inglês
-        "linha_smd",     # variações comuns
+        "linha",         
+        "line",          
+        "linha_smd",     
         "linha_padrao",
         "linha_nome",
         "linha_producao",
@@ -113,10 +113,9 @@ def inserir(dados):
     """
     Compatível com banco com/sem coluna de linha.
 
-    Observação:
-    - tempo_montagem pode ser INTEGER no banco atual.
-    - frontend pode enviar decimal (ex.: "22.19")
-    - converte texto -> numeric -> int (trunca)
+    Importante:
+    - tempo_montagem NÃO deve ser forçado para int (precisa manter 2 casas decimais).
+    - espera-se que no banco a coluna esteja como NUMERIC(10,2).
     """
     linha_col = _resolve_linha_column()
 
@@ -139,7 +138,6 @@ def inserir(dados):
         dados["fase"],
     ]
 
-    # Se existir coluna de linha (qualquer nome), inclui
     if linha_col:
         cols = ["codigo", "cliente", "setor", linha_col, "meta_padrao", "tempo_montagem", "blank", "fase"]
         vals = [
@@ -158,7 +156,7 @@ def inserir(dados):
             VALUES (
                 %s, %s, %s, %s,
                 NULLIF(%s, '')::numeric,
-                NULLIF(%s, '')::numeric::int,
+                NULLIF(%s, '')::numeric,
                 NULLIF(%s, '')::int,
                 %s
             )
@@ -167,13 +165,12 @@ def inserir(dados):
         params = tuple(vals)
 
     else:
-        # Schema legado: sem linha
         query = sql.SQL("""
             INSERT INTO modelos ({cols})
             VALUES (
                 %s, %s, %s,
                 NULLIF(%s, '')::numeric,
-                NULLIF(%s, '')::numeric::int,
+                NULLIF(%s, '')::numeric,
                 NULLIF(%s, '')::int,
                 %s
             )
@@ -225,14 +222,14 @@ def atualizar(codigo, fase, linha, campos):
     Compatível com banco com/sem coluna de linha.
     Casts por campo:
     - meta_padrao: numeric
-    - tempo_montagem: numeric -> int
+    - tempo_montagem: numeric (mantém decimais)
     - blank: int
     """
     linha_col = _resolve_linha_column()
 
     casts = {
         "meta_padrao": "::numeric",
-        "tempo_montagem": "::numeric::int",
+        "tempo_montagem": "::numeric",
         "blank": "::int",
     }
 
