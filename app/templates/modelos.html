@@ -54,6 +54,7 @@
     <div id="listaModelos" class="row g-3"></div>
   </div>
 
+  <!-- EDITAR (refatorado visual) -->
   <div id="editar-modelo" class="modelos-action-card is-edit mb-4">
     <div class="mac-header">
       <div class="mac-title">
@@ -121,6 +122,7 @@
     </div>
   </div>
 
+  <!-- EXCLUIR (refatorado visual) -->
   <div id="excluir-modelo" class="modelos-action-card is-delete mb-4">
     <div class="mac-header">
       <div class="mac-title">
@@ -165,6 +167,7 @@
 
 </div>
 
+<!-- Modal: Histórico -->
 <div class="modal fade" id="modalModeloHistorico" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered modal-lg">
     <div class="modal-content shadow" id="modalModeloHistoricoContent">
@@ -227,8 +230,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const elHistList = document.getElementById('histList');
 
   let modelosCache = [];
-  const historyCache = new Map(); 
-  
+  const historyCache = new Map(); // key => array (cache simples por sessão)
+
   function showMessage(texto, tipo='success') {
     const div = document.createElement('div');
     div.className = `alert alert-${tipo} alert-dismissible fade show`;
@@ -399,14 +402,115 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!elHistLoading || !elHistEmpty || !elHistList) return;
     elHistLoading.classList.toggle('d-none', !isLoading);
   }
+
   function setHistEmpty(isEmpty) {
     if (!elHistEmpty || !elHistList) return;
     elHistEmpty.classList.toggle('d-none', !isEmpty);
   }
+
   function clearHistList() {
     if (elHistList) elHistList.innerHTML = '';
   }
 
+  function fmtWhen(isoStr) {
+    if (!isoStr) return '—';
+    const d = new Date(isoStr);
+    if (Number.isNaN(d.getTime())) return String(isoStr);
+    return d.toLocaleString([], {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  }
+
+  function renderHistoryItems(items) {
+    clearHistList();
+
+    if (!items || !items.length) {
+      setHistEmpty(true);
+      return;
+    }
+
+    setHistEmpty(false);
+
+    const frag = document.createDocumentFragment();
+
+    for (const it of items) {
+      const li = document.createElement('li');
+      li.className = 'list-group-item';
+
+      const who = it.changed_by_username || `user#${it.changed_by_user_id || '—'}`;
+      const when = fmtWhen(it.changed_at);
+      const action = String(it.action || '').toUpperCase();
+
+      let changesHtml = '';
+
+      const changes = it.changes || {};
+      const diff = changes.diff || {};
+      const changedFields = changes.changed_fields || [];
+
+      if (action === 'UPDATE' && changedFields.length) {
+        const rows = changedFields.map((k) => {
+          const before = diff?.[k]?.before;
+          const after = diff?.[k]?.after;
+          return `
+            <div class="d-flex justify-content-between gap-2">
+              <div class="fw-semibold">${escapeHtml(k)}</div>
+              <div class="text-end">
+                <span class="text-muted">${escapeHtml(before)}</span>
+                <span class="mx-2">→</span>
+                <span class="fw-bold">${escapeHtml(after)}</span>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        changesHtml = `<div class="hist-changes">${rows}</div>`;
+      } else if (action === 'DELETE') {
+        changesHtml = `<div class="hist-changes text-danger fw-semibold">Modelo excluído.</div>`;
+      } else if (action === 'CREATE') {
+        changesHtml = `<div class="hist-changes text-success fw-semibold">Modelo cadastrado.</div>`;
+      } else {
+        changesHtml = `<div class="hist-changes text-muted">—</div>`;
+      }
+
+      li.innerHTML = `
+        <div class="d-flex align-items-start justify-content-between flex-wrap gap-2">
+          <div>
+            <div class="fw-bold">${escapeHtml(action)}</div>
+            <div class="hist-meta">
+              <i class="bi bi-person-circle"></i> ${escapeHtml(who)}
+              &nbsp;·&nbsp;
+              <i class="bi bi-calendar2-week"></i> ${escapeHtml(when)}
+            </div>
+          </div>
+        </div>
+        ${changesHtml}
+      `;
+
+      frag.appendChild(li);
+    }
+
+    elHistList.appendChild(frag);
+  }
+
+  async function fetchHistory(codigo, fase, linha) {
+    const key = `${codigo}||${fase}||${linha}`;
+    if (historyCache.has(key)) return historyCache.get(key);
+
+    const qs = new URLSearchParams({ codigo, fase, linha, limit: '50' }).toString();
+    const r = await fetch(`/api/modelos/history?${qs}`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+    if (!r.ok) throw new Error('Falha ao buscar histórico');
+
+    const data = await r.json();
+    const list = Array.isArray(data) ? data : [];
+    historyCache.set(key, list);
+    return list;
+  }
+
+  // Clique no botão Histórico (delegação)
   elLista.addEventListener('click', async (ev) => {
     const btn = ev.target.closest('button[data-hist="1"]');
     if (!btn || !histModal) return;
@@ -419,11 +523,27 @@ document.addEventListener('DOMContentLoaded', () => {
     if (elHistSub) elHistSub.textContent = `${codigo} · ${fase} · ${linha}`;
 
     clearHistList();
-    setHistEmpty(true);
-    setHistLoading(false);
+    setHistEmpty(false);
+    setHistLoading(true);
 
     histModal.show();
+
+    try {
+      const items = await fetchHistory(codigo, fase, linha);
+      setHistLoading(false);
+      renderHistoryItems(items);
+    } catch (e) {
+      setHistLoading(false);
+      clearHistList();
+      setHistEmpty(true);
+    }
   });
+
+  // ao atualizar/excluir, invalida cache do histórico (para refletir mudança no modal)
+  function invalidateHistoryCacheFor(codigo, fase, linha) {
+    const key = `${codigo}||${fase}||${linha}`;
+    historyCache.delete(key);
+  }
 
   elBusca.addEventListener('input', applySearchFilter);
 
@@ -460,6 +580,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const data = await r.json();
 
     showMessage(data.mensagem || 'Modelo atualizado.', data.sucesso ? 'success' : 'danger');
+
+    // invalida cache do histórico deste modelo
+    invalidateHistoryCacheFor(codigo, fase, linha);
+
     await loadModelos();
   });
 
@@ -488,6 +612,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const data = await r.json();
 
     showMessage(data.mensagem || 'Modelo excluído.', data.sucesso ? 'danger' : 'warning');
+
+    invalidateHistoryCacheFor(codigo, fase, linha);
+
     await loadModelos();
   });
 
