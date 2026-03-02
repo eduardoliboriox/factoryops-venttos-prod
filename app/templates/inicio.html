@@ -30,7 +30,6 @@
 
 <div class="container-fluid p-0">
 
-  <!-- ====== CONTEÚDO ORIGINAL (MANTIDO) ====== -->
   <div class="card border-0 shadow-sm mb-3">
     <div class="card-body">
       <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
@@ -41,7 +40,7 @@
           </div>
         </div>
 
-        <div class="d-flex gap-2">
+        <div class="d-flex gap-2 flex-wrap">
           <a class="btn btn-outline-secondary"
              href="{{ url_for('auth.my_profile') }}">
             <i class="bi bi-person-circle me-1"></i>
@@ -49,10 +48,73 @@
           </a>
 
           <a class="btn btn-primary"
-             href="{{ url_for('pages.smt_modelos') }}">
-            <i class="bi bi-table me-1"></i>
-            Modelos
+             href="{{ url_for('pages.dashboard') }}">
+            <i class="bi bi-graph-up me-1"></i>
+            Dashboard
           </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm mb-3">
+    <div class="card-body">
+      <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <div>
+          <div class="text-muted small mb-1">SMT</div>
+          <h5 class="fw-bold mb-0">Resumo do SMT</h5>
+          <div class="text-muted small mt-1">
+            Visão rápida do status atual (atualiza automaticamente).
+          </div>
+        </div>
+
+        <div class="text-muted small">
+          <i class="bi bi-clock-history me-1"></i>
+          Última atualização: <span id="homeLastUpdate">—</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-3 mt-0">
+    <div class="col-md-4">
+      <div class="card p-3 shadow-sm h-100">
+        <div class="d-flex align-items-center justify-content-between">
+          <div>
+            <h6 class="text-muted mb-1">Modelos cadastrados</h6>
+            <div id="cardModelos" class="display-6 fw-bold">—</div>
+          </div>
+          <div class="fs-2 text-muted">
+            <i class="bi bi-collection"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card p-3 shadow-sm h-100">
+        <div class="d-flex align-items-center justify-content-between">
+          <div>
+            <h6 class="text-muted mb-1">Média de meta/hora</h6>
+            <div id="cardMediaMeta" class="display-6 fw-bold">—</div>
+          </div>
+          <div class="fs-2 text-muted">
+            <i class="bi bi-speedometer2"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card p-3 shadow-sm h-100">
+        <div class="d-flex align-items-center justify-content-between">
+          <div>
+            <h6 class="text-muted mb-1">Último modelo</h6>
+            <div id="cardUltimo" class="display-6 fw-bold">—</div>
+          </div>
+          <div class="fs-2 text-muted">
+            <i class="bi bi-box-seam"></i>
+          </div>
         </div>
       </div>
     </div>
@@ -60,7 +122,7 @@
 
   <div class="row g-3">
 
-    <div class="col-12 col-lg-6">
+    <div class="col-12 col-lg-8">
       <div class="card h-100 shadow-sm">
         <div class="card-body">
           <div class="d-flex align-items-start justify-content-between">
@@ -72,37 +134,37 @@
               </p>
             </div>
             <div class="fs-3 text-muted">
-              <i class="bi bi-speedometer2"></i>
+              <i class="bi bi-lightning-charge"></i>
             </div>
           </div>
 
-          <div class="d-grid gap-2">
-            <div class="d-flex gap-2 flex-wrap">
-              <a class="btn btn-outline-secondary"
-                 href="{{ url_for('pages.smt_modelos') }}">
-                <i class="bi bi-table me-1"></i>
-                Modelos
-              </a>
+          <div class="d-flex gap-2 flex-wrap">
+            <a class="btn btn-primary"
+               href="{{ url_for('pages.smt_modelos') }}">
+              <i class="bi bi-table me-1"></i>
+              Modelos
+            </a>
 
-              <a class="btn btn-outline-secondary"
-                 href="{{ url_for('pages.smt_cadastro') }}">
-                <i class="bi bi-plus-lg me-1"></i>
-                Cadastro
-              </a>
+            <a class="btn btn-warning text-white"
+               href="{{ url_for('pages.smt_cadastro') }}">
+              <i class="bi bi-plus-lg me-1"></i>
+              Cadastro
+            </a>
 
-              <a class="btn btn-outline-secondary"
-                 href="{{ url_for('pages.smt_calcular') }}">
-                <i class="bi bi-calculator me-1"></i>
-                Cálculos
-              </a>
-            </div>
+            <a class="btn btn-success"
+               href="{{ url_for('pages.smt_calcular') }}">
+              <i class="bi bi-calculator me-1"></i>
+              Cálculos
+            </a>
           </div>
+
+          <hr class="my-3">
 
         </div>
       </div>
     </div>
 
-    <div class="col-12 col-lg-6">
+    <div class="col-12 col-lg-4">
       <div class="card h-100 shadow-sm">
         <div class="card-body">
           <div class="d-flex align-items-start justify-content-between">
@@ -110,7 +172,7 @@
               <div class="text-muted small mb-1">Geral</div>
               <h5 class="fw-bold mb-2">Dashboard</h5>
               <p class="text-muted mb-3">
-                Visão geral do sistema (área nova). Você pode evoluir os cards depois.
+                Visão geral do sistema (área nova).
               </p>
             </div>
             <div class="fs-3 text-muted">
@@ -124,64 +186,18 @@
               <i class="bi bi-arrow-right-circle me-1"></i>
               Ir para Dashboard
             </a>
+
+            <a class="btn btn-outline-secondary"
+               href="{{ url_for('auth.my_profile') }}">
+              <i class="bi bi-person-circle me-1"></i>
+              Meu Perfil
+            </a>
           </div>
 
         </div>
       </div>
     </div>
 
-  </div>
-
-  <!-- ====== CONTEÚDO DO ANTIGO smt/dashboard.html (ADICIONADO) ====== -->
-  <div class="card border-0 shadow-sm mt-3">
-    <div class="card-body">
-      <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
-        <div>
-          <div class="text-muted small mb-1">SMT</div>
-          <h5 class="fw-bold mb-0">Resumo do SMT</h5>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="row g-3 mb-3 mt-0">
-    <div class="col-md-4">
-      <div class="card p-3">
-        <h6 class="text-muted mb-1">Modelos cadastrados</h6>
-        <div id="cardModelos" class="display-6 fw-bold">—</div>
-      </div>
-    </div>
-
-    <div class="col-md-4">
-      <div class="card p-3">
-        <h6 class="text-muted mb-1">Média de meta/hora</h6>
-        <div id="cardMediaMeta" class="display-6 fw-bold">—</div>
-      </div>
-    </div>
-
-    <div class="col-md-4">
-      <div class="card p-3">
-        <h6 class="text-muted mb-1">Último modelo</h6>
-        <div id="cardUltimo" class="display-6 fw-bold">—</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="card p-3">
-    <h6 class="mb-1">Atalhos</h6>
-    <div class="d-flex gap-2 flex-wrap mt-2">
-      <a href="{{ url_for('pages.smt_cadastro') }}" class="btn btn-primary">
-        <i class="bi bi-plus-lg"></i> Novo Modelo
-      </a>
-
-      <a href="{{ url_for('pages.smt_modelos') }}" class="btn btn-outline-primary">
-        <i class="bi bi-table"></i> Ver Modelos
-      </a>
-
-      <a href="{{ url_for('pages.smt_calcular') }}" class="btn btn-success">
-        <i class="bi bi-calculator"></i> Cálculos
-      </a>
-    </div>
   </div>
 
 </div>
@@ -191,23 +207,44 @@
 {% block scripts %}
 <script>
 async function fetchStats() {
-  const resp = await fetch('/api/modelos');
-  const modelos = await resp.json();
+  try {
+    const resp = await fetch('/api/modelos', { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+    if (!resp.ok) throw new Error('Falha ao buscar modelos');
 
-  document.getElementById('cardModelos').textContent = modelos.length || 0;
+    const modelos = await resp.json();
 
-  if (modelos.length) {
-    const metas = modelos.map(d => Number(d.meta) || 0);
-    const soma = metas.reduce((a, b) => a + b, 0);
+    const elModelos = document.getElementById('cardModelos');
+    const elMedia = document.getElementById('cardMediaMeta');
+    const elUltimo = document.getElementById('cardUltimo');
+    const elLast = document.getElementById('homeLastUpdate');
 
-    document.getElementById('cardMediaMeta').textContent =
-      (soma / modelos.length).toFixed(0);
+    if (elModelos) elModelos.textContent = (modelos && modelos.length) ? modelos.length : 0;
 
-    document.getElementById('cardUltimo').textContent =
-      modelos[modelos.length - 1].codigo;
-  } else {
-    document.getElementById('cardMediaMeta').textContent = '—';
-    document.getElementById('cardUltimo').textContent = '—';
+    if (modelos && modelos.length) {
+      const metas = modelos.map(d => Number(d.meta) || 0);
+      const soma = metas.reduce((a, b) => a + b, 0);
+
+      if (elMedia) elMedia.textContent = (soma / modelos.length).toFixed(0);
+      if (elUltimo) elUltimo.textContent = modelos[modelos.length - 1].codigo || '—';
+    } else {
+      if (elMedia) elMedia.textContent = '—';
+      if (elUltimo) elUltimo.textContent = '—';
+    }
+
+    if (elLast) {
+      const now = new Date();
+      elLast.textContent = now.toLocaleString([], { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+    }
+  } catch (e) {
+    const elModelos = document.getElementById('cardModelos');
+    const elMedia = document.getElementById('cardMediaMeta');
+    const elUltimo = document.getElementById('cardUltimo');
+    const elLast = document.getElementById('homeLastUpdate');
+
+    if (elModelos) elModelos.textContent = '—';
+    if (elMedia) elMedia.textContent = '—';
+    if (elUltimo) elUltimo.textContent = '—';
+    if (elLast) elLast.textContent = '—';
   }
 }
 
