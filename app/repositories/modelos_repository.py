@@ -1,15 +1,18 @@
 from __future__ import annotations
 
-from typing import Optional
+from typing import Optional, Any
 
 from psycopg.rows import dict_row
 from psycopg import sql
+from psycopg.types.json import Json
 
 from app.extensions import get_db
 
 
 _LINHA_COL_CACHE: Optional[str] = None
 _LINHA_COL_CHECKED: bool = False
+
+_AUDIT_READY: bool = False
 
 
 def _resolve_linha_column() -> Optional[str]:
@@ -52,6 +55,46 @@ def _resolve_linha_column() -> Optional[str]:
     _LINHA_COL_CACHE = None
     _LINHA_COL_CHECKED = True
     return None
+
+
+def _ensure_audit_schema():
+    """
+    Cria tabela/índices de auditoria de forma idempotente.
+    Não depende de Alembic. Seguro para prod e dev.
+    """
+    global _AUDIT_READY
+    if _AUDIT_READY:
+        return
+
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS modelos_audit (
+                    id BIGSERIAL PRIMARY KEY,
+                    codigo TEXT NOT NULL,
+                    fase TEXT NOT NULL,
+                    linha TEXT,
+                    action TEXT NOT NULL, -- CREATE / UPDATE / DELETE
+                    changed_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+                    changed_by_user_id BIGINT,
+                    changed_by_username TEXT,
+                    changes JSONB
+                )
+            """)
+
+            cur.execute("""
+                CREATE INDEX IF NOT EXISTS idx_modelos_audit_lookup
+                ON modelos_audit (codigo, fase, linha, changed_at DESC)
+            """)
+
+            cur.execute("""
+                CREATE INDEX IF NOT EXISTS idx_modelos_audit_changed_at
+                ON modelos_audit (changed_at DESC)
+            """)
+
+        conn.commit()
+
+    _AUDIT_READY = True
 
 
 def listar_codigos():
@@ -109,7 +152,52 @@ def buscar_ultimo_modelo():
             return row["codigo"] if row else None
 
 
-def inserir(dados):
+def _select_modelo_row(cur, codigo: str, fase: str, linha: Optional[str]) -> Optional[dict]:
+    """
+    Busca o registro atual do modelo para auditoria.
+    Compatível com banco com/sem coluna linha.
+    """
+    linha_col = _resolve_linha_column()
+
+    if linha_col:
+        q = sql.SQL("""
+            SELECT
+              codigo, cliente, setor, {linha_col} AS linha,
+              meta_padrao, tempo_montagem, blank, fase
+            FROM modelos
+            WHERE codigo = %s AND fase = %s AND {linha_col} = %s
+            LIMIT 1
+        """).format(linha_col=sql.Identifier(linha_col))
+        cur.execute(q, (codigo, fase, linha))
+        return cur.fetchone()
+
+    q = """
+        SELECT codigo, cliente, setor, NULL::text AS linha,
+               meta_padrao, tempo_montagem, blank, fase
+        FROM modelos
+        WHERE codigo = %s AND fase = %s
+        LIMIT 1
+    """
+    cur.execute(q, (codigo, fase))
+    return cur.fetchone()
+
+
+def _audit_insert(cur, *, codigo: str, fase: str, linha: Optional[str],
+                  action: str, user_id: Optional[int], username: Optional[str],
+                  changes: Optional[dict]):
+    _ensure_audit_schema()
+
+    cur.execute(
+        """
+        INSERT INTO modelos_audit
+            (codigo, fase, linha, action, changed_by_user_id, changed_by_username, changes)
+        VALUES (%s, %s, %s, %s, %s, %s, %s::jsonb)
+        """,
+        (codigo, fase, linha, action, user_id, username, Json(changes) if changes is not None else None)
+    )
+
+
+def inserir(dados, *, audit_user_id: Optional[int] = None, audit_username: Optional[str] = None):
     """
     Compatível com banco com/sem coluna de linha.
 
@@ -147,7 +235,6 @@ def inserir(dados):
         params = tuple(vals)
 
     else:
-        # Banco legado: ainda insere sem linha (mas UI vai mostrar linha como NULL)
         cols = [
             "codigo",
             "cliente",
@@ -181,79 +268,172 @@ def inserir(dados):
         params = tuple(vals)
 
     with get_db() as conn:
-        with conn.cursor() as cur:
+        with conn.cursor(row_factory=dict_row) as cur:
             cur.execute(query, params)
+
+            codigo = str(dados.get("codigo") or "").strip()
+            fase = str(dados.get("fase") or "").strip()
+            linha = (dados.get("linha") or "").strip() or None
+
+            if codigo and fase:
+                _audit_insert(
+                    cur,
+                    codigo=codigo,
+                    fase=fase,
+                    linha=linha,
+                    action="CREATE",
+                    user_id=audit_user_id,
+                    username=audit_username,
+                    changes={"created": True}
+                )
+
         conn.commit()
 
 
-def excluir(codigo, fase, linha):
+def excluir(codigo, fase, linha, *, audit_user_id: Optional[int] = None, audit_username: Optional[str] = None):
     """
     Compatível com banco com/sem coluna de linha:
     - Se existir linha_col: usa no WHERE
     - Se não existir: ignora linha e remove por (codigo, fase)
+
+    Também registra auditoria (DELETE) com snapshot do que existia.
     """
     linha_col = _resolve_linha_column()
 
-    if linha_col:
-        query = sql.SQL("DELETE FROM modelos WHERE codigo = %s AND fase = %s AND {} = %s").format(
-            sql.Identifier(linha_col)
-        )
-        params = (codigo, fase, linha)
-    else:
-        query = sql.SQL("DELETE FROM modelos WHERE codigo = %s AND fase = %s")
-        params = (codigo, fase)
-
     with get_db() as conn:
-        with conn.cursor() as cur:
+        with conn.cursor(row_factory=dict_row) as cur:
+            before = _select_modelo_row(cur, codigo, fase, linha)
+
+            if linha_col:
+                query = sql.SQL("DELETE FROM modelos WHERE codigo = %s AND fase = %s AND {} = %s").format(
+                    sql.Identifier(linha_col)
+                )
+                params = (codigo, fase, linha)
+            else:
+                query = sql.SQL("DELETE FROM modelos WHERE codigo = %s AND fase = %s")
+                params = (codigo, fase)
+
             cur.execute(query, params)
+
+            if before:
+                _audit_insert(
+                    cur,
+                    codigo=codigo,
+                    fase=fase,
+                    linha=(before.get("linha") or linha or None),
+                    action="DELETE",
+                    user_id=audit_user_id,
+                    username=audit_username,
+                    changes={"before": before, "deleted": True}
+                )
+
         conn.commit()
 
 
-def atualizar_meta(codigo, nova_meta):
-    with get_db() as conn:
-        with conn.cursor() as cur:
-            cur.execute(
-                "UPDATE modelos SET meta_padrao = %s WHERE codigo = %s",
-                (nova_meta, codigo)
-            )
-        conn.commit()
-
-
-def atualizar(codigo, fase, linha, campos):
+def atualizar(codigo, fase, linha, campos, *, audit_user_id: Optional[int] = None, audit_username: Optional[str] = None):
     """
     Compatível com banco com/sem coluna de linha.
     Casts por campo:
     - meta_padrao: numeric
     - tempo_montagem: numeric (mantém decimais)
     - blank: int
+
+    Auditoria (UPDATE):
+    - salva before/after apenas dos campos alterados
+    - salva também chave do modelo (codigo/fase/linha)
     """
     linha_col = _resolve_linha_column()
 
     casts = {
-        "meta_padrao": "::numeric",
-        "tempo_montagem": "::numeric",
-        "blank": "::int",
+        "meta_padrao": sql.SQL("::numeric"),
+        "tempo_montagem": sql.SQL("::numeric"),
+        "blank": sql.SQL("::int"),
     }
 
-    sets = ", ".join(f"{k} = %s{casts.get(k, '')}" for k in campos)
-    valores = list(campos.values())
+    set_parts = []
+    values: list[Any] = []
 
-    if linha_col:
-        query = sql.SQL(f"""
-            UPDATE modelos
-            SET {sets}
-            WHERE codigo = %s AND fase = %s AND {sql.Identifier(linha_col).as_string(get_db()).strip('"')} = %s
-        """)
-        valores.extend([codigo, fase, linha])
-    else:
-        query = sql.SQL(f"""
-            UPDATE modelos
-            SET {sets}
-            WHERE codigo = %s AND fase = %s
-        """)
-        valores.extend([codigo, fase])
+    for k, v in campos.items():
+        cast = casts.get(k)
+        if cast is not None:
+            set_parts.append(sql.SQL("{} = %s").format(sql.Identifier(k)) + cast)
+        else:
+            set_parts.append(sql.SQL("{} = %s").format(sql.Identifier(k)))
+        values.append(v)
 
     with get_db() as conn:
-        with conn.cursor() as cur:
-            cur.execute(query, valores)
+        with conn.cursor(row_factory=dict_row) as cur:
+            before = _select_modelo_row(cur, codigo, fase, linha)
+
+            if linha_col:
+                where_sql = sql.SQL("WHERE codigo = %s AND fase = %s AND {} = %s").format(sql.Identifier(linha_col))
+                values_where = [codigo, fase, linha]
+            else:
+                where_sql = sql.SQL("WHERE codigo = %s AND fase = %s")
+                values_where = [codigo, fase]
+
+            q = sql.SQL("UPDATE modelos SET ") + sql.SQL(", ").join(set_parts) + sql.SQL(" ") + where_sql
+            cur.execute(q, values + values_where)
+
+            new_codigo = str(campos.get("codigo") or codigo).strip()
+            after = _select_modelo_row(cur, new_codigo, fase, linha)
+
+            if before:
+                changes = {}
+                for key in campos.keys():
+                    changes[key] = {
+                        "before": before.get(key),
+                        "after": (after.get(key) if after else None),
+                    }
+
+                _audit_insert(
+                    cur,
+                    codigo=new_codigo,
+                    fase=fase,
+                    linha=(after.get("linha") if after else (before.get("linha") or linha or None)),
+                    action="UPDATE",
+                    user_id=audit_user_id,
+                    username=audit_username,
+                    changes={
+                        "changed_fields": list(campos.keys()),
+                        "diff": changes
+                    }
+                )
+
         conn.commit()
+
+
+def listar_historico(codigo: str, fase: str, linha: Optional[str], limit: int = 50):
+    """
+    Retorna histórico do modelo (filtra corretamente por codigo + fase + linha).
+    """
+    _ensure_audit_schema()
+
+    codigo = (codigo or "").strip()
+    fase = (fase or "").strip()
+    linha = (linha or "").strip() or None
+
+    if not codigo or not fase:
+        return []
+
+    with get_db() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                """
+                SELECT
+                  id,
+                  action,
+                  changed_at,
+                  changed_by_username,
+                  changed_by_user_id,
+                  changes
+                FROM modelos_audit
+                WHERE codigo = %s
+                  AND fase = %s
+                  AND (linha IS NOT DISTINCT FROM %s)
+                ORDER BY changed_at DESC
+                LIMIT %s
+                """,
+                (codigo, fase, linha, limit)
+            )
+            return cur.fetchall() or []
