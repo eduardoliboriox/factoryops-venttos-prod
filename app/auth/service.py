@@ -252,14 +252,24 @@ def save_profile_image(user_id: int, file):
 # RESET SENHA
 # =====================================================
 def request_password_reset(email: str):
+    """
+    Fluxo:
+    - Não revela se o email existe (rota já faz mensagem genérica)
+    - Gera token (1h)
+    - Envia link por email usando SendGrid (ou SMTP fallback)
+    """
     from app.extensions import get_db
     from psycopg.rows import dict_row
     from app.services.email_service import send_email
     from flask import url_for
 
+    email = (email or "").strip()
+    if not email:
+        return None
+
     with get_db() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
-            cur.execute("SELECT * FROM users WHERE email=%s", (email,))
+            cur.execute("SELECT * FROM users WHERE LOWER(email)=LOWER(%s)", (email,))
             user = cur.fetchone()
 
     if not user:
@@ -267,19 +277,23 @@ def request_password_reset(email: str):
 
     token = create_password_reset_token(user["id"])
 
-    reset_url = url_for(
-        "auth.reset_password_route",
-        token=token,
-        _external=True
-    )
+    base_url = current_app.config.get("BASE_URL")
+    if base_url:
+        reset_url = f"{base_url}/auth/reset-password/{token}"
+    else:
+        reset_url = url_for(
+            "auth.reset_password_route",
+            token=token,
+            _external=True
+        )
 
-    subject = "Redefinição de senha - WorkCost"
+    subject = f"Redefinição de senha - {current_app.config.get('APP_NAME', 'SMT Manager')}"
     body = f"""
 Olá {user.get('full_name') or user.get('username')},
 
-Você solicitou a redefinição de senha.
+Recebemos uma solicitação para redefinir sua senha no {current_app.config.get('APP_NAME', 'SMT Manager')}.
 
-Clique no link abaixo para criar uma nova senha:
+Para criar uma nova senha, acesse o link abaixo:
 
 {reset_url}
 
