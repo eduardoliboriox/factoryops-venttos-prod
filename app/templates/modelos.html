@@ -54,7 +54,6 @@
     <div id="listaModelos" class="row g-3"></div>
   </div>
 
-  <!-- EDITAR (refatorado visual) -->
   <div id="editar-modelo" class="modelos-action-card is-edit mb-4">
     <div class="mac-header">
       <div class="mac-title">
@@ -230,7 +229,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const elHistList = document.getElementById('histList');
 
   let modelosCache = [];
-  const historyCache = new Map(); // key => array (cache simples por sessão)
+  const historyCache = new Map(); 
 
   function showMessage(texto, tipo='success') {
     const div = document.createElement('div');
