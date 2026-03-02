@@ -127,3 +127,83 @@ def api_confirm_extra():
 
     result = confirm_employee_extra(matricula, password)
     return jsonify(result), (200 if result["success"] else 401)
+
+
+# ==========================================================
+# TIME STUDY (ESTUDO DE TEMPO)
+# ==========================================================
+from app.services import time_studies_service
+
+
+@bp.route("/time-studies", methods=["GET"])
+@login_required
+def time_studies_list():
+    limit = int(request.args.get("limit", "50") or "50")
+    data = time_studies_service.list_studies(limit=limit)
+    return jsonify(data)
+
+
+@bp.route("/time-studies", methods=["POST"])
+@login_required
+def time_studies_create():
+    try:
+        study = time_studies_service.create_study(request.form, user=current_user)
+        return jsonify({"sucesso": True, "study": study})
+    except ValueError as e:
+        return jsonify({"sucesso": False, "erro": str(e)}), 400
+    except Exception:
+        return jsonify({"sucesso": False, "erro": "Erro ao criar estudo"}), 500
+
+
+@bp.route("/time-studies/<int:study_id>", methods=["GET"])
+@login_required
+def time_studies_get(study_id: int):
+    detail = time_studies_service.get_study_detail(study_id)
+    if not detail:
+        return jsonify({"sucesso": False, "erro": "Estudo não encontrado"}), 404
+    return jsonify({"sucesso": True, **detail})
+
+
+@bp.route("/time-studies/<int:study_id>", methods=["DELETE"])
+@login_required
+def time_studies_delete(study_id: int):
+    try:
+        time_studies_service.delete_study(study_id)
+        return jsonify({"sucesso": True})
+    except Exception:
+        return jsonify({"sucesso": False, "erro": "Erro ao excluir estudo"}), 500
+
+
+@bp.route("/time-studies/<int:study_id>/operations", methods=["POST"])
+@login_required
+def time_studies_add_operation(study_id: int):
+    try:
+        op = time_studies_service.add_operation(study_id, request.form)
+        return jsonify({"sucesso": True, "operation": op})
+    except ValueError as e:
+        return jsonify({"sucesso": False, "erro": str(e)}), 400
+    except Exception:
+        return jsonify({"sucesso": False, "erro": "Erro ao adicionar operação"}), 500
+
+
+@bp.route("/time-studies/operations/<int:op_id>", methods=["PUT"])
+@login_required
+def time_studies_update_operation(op_id: int):
+    data = request.get_json(silent=True) or {}
+    try:
+        op = time_studies_service.update_operation(op_id, data)
+        return jsonify({"sucesso": True, "operation": op})
+    except ValueError as e:
+        return jsonify({"sucesso": False, "erro": str(e)}), 400
+    except Exception:
+        return jsonify({"sucesso": False, "erro": "Erro ao atualizar operação"}), 500
+
+
+@bp.route("/time-studies/operations/<int:op_id>", methods=["DELETE"])
+@login_required
+def time_studies_delete_operation(op_id: int):
+    try:
+        time_studies_service.delete_operation(op_id)
+        return jsonify({"sucesso": True})
+    except Exception:
+        return jsonify({"sucesso": False, "erro": "Erro ao excluir operação"}), 500
