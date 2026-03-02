@@ -1,5 +1,6 @@
 import math
 import time
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 
 from app.repositories import modelos_repository
 from app.repositories.modelos_repository import buscar_ultimo_modelo
@@ -67,12 +68,19 @@ def listar_codigos():
     return modelos_repository.listar_codigos()
 
 
-def _to_float_2(v):
+def _to_decimal_str_2(v):
+    """
+    Retorna string com 2 casas decimais (ex: '55.86').
+    - Evita artefatos de float (ex: 55.859999999)
+    - Mantém consistência na UI
+    """
     if v is None or v == "":
         return None
     try:
-        return round(float(v), 2)
-    except Exception:
+        d = Decimal(str(v)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        # Formata sempre com 2 casas
+        return f"{d:.2f}"
+    except (InvalidOperation, ValueError, TypeError):
         return None
 
 
@@ -90,7 +98,8 @@ def listar():
             "setor": m.get("setor"),
             "linha": m.get("linha"),
             "meta": float(m["meta_padrao"]) if m.get("meta_padrao") is not None else 0,
-            "tempo_montagem": _to_float_2(m.get("tempo_montagem")),
+            # IMPORTANTE: tempo_montagem como string "55.86"
+            "tempo_montagem": _to_decimal_str_2(m.get("tempo_montagem")),
             "blank": m.get("blank"),
             "fase": m.get("fase")
         }
@@ -149,9 +158,11 @@ def atualizar_modelo(dados):
     campos = {}
 
     if dados.get("meta_padrao"):
+        # Mantém compatibilidade, mas não perde casas no DB (DB vai ser numeric)
         campos["meta_padrao"] = float(dados["meta_padrao"])
 
     if dados.get("tempo_montagem"):
+        # Idem: DB vai guardar com 2 casas (numeric(10,2))
         campos["tempo_montagem"] = float(dados["tempo_montagem"])
 
     if dados.get("blank"):

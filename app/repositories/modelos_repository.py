@@ -23,9 +23,9 @@ def _resolve_linha_column() -> Optional[str]:
         return _LINHA_COL_CACHE
 
     candidates = [
-        "linha",         
-        "line",          
-        "linha_smd",     
+        "linha",
+        "line",
+        "linha_smd",
         "linha_padrao",
         "linha_nome",
         "linha_producao",
@@ -114,29 +114,11 @@ def inserir(dados):
     Compatível com banco com/sem coluna de linha.
 
     Importante:
-    - tempo_montagem NÃO deve ser forçado para int (precisa manter 2 casas decimais).
-    - espera-se que no banco a coluna esteja como NUMERIC(10,2).
+    - tempo_montagem precisa manter 2 casas (DB deve ser NUMERIC(10,2))
+    - meta_padrao idem (numeric)
+    - blank é int
     """
     linha_col = _resolve_linha_column()
-
-    base_cols = [
-        "codigo",
-        "cliente",
-        "setor",
-        "meta_padrao",
-        "tempo_montagem",
-        "blank",
-        "fase",
-    ]
-    base_vals = [
-        dados["codigo"],
-        dados["cliente"],
-        dados["setor"],
-        dados["meta_padrao"],
-        dados.get("tempo_montagem"),
-        dados["blank"],
-        dados["fase"],
-    ]
 
     if linha_col:
         cols = ["codigo", "cliente", "setor", linha_col, "meta_padrao", "tempo_montagem", "blank", "fase"]
@@ -144,7 +126,7 @@ def inserir(dados):
             dados["codigo"],
             dados["cliente"],
             dados["setor"],
-            dados.get("linha"),
+            (dados.get("linha") or "").strip() or None,
             dados["meta_padrao"],
             dados.get("tempo_montagem"),
             dados["blank"],
@@ -154,7 +136,7 @@ def inserir(dados):
         query = sql.SQL("""
             INSERT INTO modelos ({cols})
             VALUES (
-                %s, %s, %s, %s,
+                %s, %s, %s, NULLIF(%s, '')::text,
                 NULLIF(%s, '')::numeric,
                 NULLIF(%s, '')::numeric,
                 NULLIF(%s, '')::int,
@@ -165,6 +147,26 @@ def inserir(dados):
         params = tuple(vals)
 
     else:
+        # Banco legado: ainda insere sem linha (mas UI vai mostrar linha como NULL)
+        cols = [
+            "codigo",
+            "cliente",
+            "setor",
+            "meta_padrao",
+            "tempo_montagem",
+            "blank",
+            "fase",
+        ]
+        vals = [
+            dados["codigo"],
+            dados["cliente"],
+            dados["setor"],
+            dados["meta_padrao"],
+            dados.get("tempo_montagem"),
+            dados["blank"],
+            dados["fase"],
+        ]
+
         query = sql.SQL("""
             INSERT INTO modelos ({cols})
             VALUES (
@@ -174,9 +176,9 @@ def inserir(dados):
                 NULLIF(%s, '')::int,
                 %s
             )
-        """).format(cols=sql.SQL(", ").join(sql.Identifier(c) for c in base_cols))
+        """).format(cols=sql.SQL(", ").join(sql.Identifier(c) for c in cols))
 
-        params = tuple(base_vals)
+        params = tuple(vals)
 
     with get_db() as conn:
         with conn.cursor() as cur:
@@ -240,7 +242,7 @@ def atualizar(codigo, fase, linha, campos):
         query = sql.SQL(f"""
             UPDATE modelos
             SET {sets}
-            WHERE codigo = %s AND fase = %s AND {linha_col} = %s
+            WHERE codigo = %s AND fase = %s AND {sql.Identifier(linha_col).as_string(get_db()).strip('"')} = %s
         """)
         valores.extend([codigo, fase, linha])
     else:
