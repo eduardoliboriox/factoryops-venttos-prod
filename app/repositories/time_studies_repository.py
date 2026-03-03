@@ -1,282 +1,274 @@
 from __future__ import annotations
 
-from typing import Optional, Any
+import math
+import time
+from typing import Optional
 
-from psycopg.rows import dict_row
-
-from app.extensions import get_db
-
-
-_SCHEMA_READY: bool = False
+from app.repositories import time_studies_repository as repo
 
 
-def _ensure_schema():
-    """
-    Garante (idempotente) que a tabela de operações exista.
-    Isso evita crash em ambientes novos/clonados sem Alembic.
-    """
-    global _SCHEMA_READY
-    if _SCHEMA_READY:
+_DETAIL_CACHE_TTL_SECONDS = 5
+_detail_cache: dict[int, tuple[float, dict]] = {}
+
+
+def _cache_get(study_id: int) -> Optional[dict]:
+    now = time.time()
+    item = _detail_cache.get(int(study_id))
+    if not item:
+        return None
+    expires_at, payload = item
+    if now >= expires_at:
+        _detail_cache.pop(int(study_id), None)
+        return None
+    return payload
+
+
+def _cache_set(study_id: int, payload: dict):
+    _detail_cache[int(study_id)] = (time.time() + _DETAIL_CACHE_TTL_SECONDS, payload)
+
+
+def _cache_invalidate(study_id: Optional[int] = None):
+    if study_id is None:
+        _detail_cache.clear()
         return
+    _detail_cache.pop(int(study_id), None)
 
-    with get_db() as conn:
-        with conn.cursor() as cur:
-            cur.execute(
-                """
-                CREATE TABLE IF NOT EXISTS time_study_operations (
-                  id BIGSERIAL PRIMARY KEY,
-                  study_id BIGINT NOT NULL REFERENCES time_studies(id) ON DELETE CASCADE,
-                  ordem INT NOT NULL,
-                  operacao TEXT NOT NULL,
-                  tempo_ciclo_sec NUMERIC(12,2) NOT NULL,
-                  posto_trabalho INT NOT NULL,
-                  hc NUMERIC(12,2) NOT NULL,
-                  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-                  updated_at TIMESTAMPTZ
-                )
-                """
-            )
 
-            cur.execute(
-                """
-                CREATE INDEX IF NOT EXISTS idx_time_study_operations_study_ordem
-                ON time_study_operations (study_id, ordem ASC, id ASC)
-                """
-            )
+# ==========================================================
+# CÁLCULOS
+# ==========================================================
 
-            cur.execute(
-                """
-                CREATE INDEX IF NOT EXISTS idx_time_study_operations_study_id
-                ON time_study_operations (study_id)
-                """
-            )
+def _compute_uph_real(tempo_ciclo_sec: float, perda_padrao: float) -> int:
+    """
+    Baseado no Excel da engenharia:
+    UPH Real ≈ (3600 / TempoCiclo) * (1 - perda_padrao)
 
-        conn.commit()
+    Ex:
+    46.2s -> 3600/46.2=77.9 ; perda 10% -> 70.1 -> 70
+    """
+    if not tempo_ciclo_sec or tempo_ciclo_sec <= 0:
+        return 0
 
-    _SCHEMA_READY = True
+    perda = float(perda_padrao or 0.10)
+    perda = min(max(perda, 0.0), 0.8)  # trava de segurança (0%..80%)
+    uph = (3600.0 / float(tempo_ciclo_sec)) * (1.0 - perda)
+    return int(math.floor(uph))
 
+
+def _compute_upd(uph_real: int, horas_turno: float) -> int:
+    if not uph_real or uph_real <= 0:
+        return 0
+
+    horas = float(horas_turno or 8.30)
+    horas = min(max(horas, 1.0), 24.0)
+    return int(round(uph_real * horas))
+
+
+def _compute_takt_time_sec(uph_meta: int) -> Optional[float]:
+    """
+    Takt Time (s/unidade) para bater a meta por hora (teórico, sem perda):
+    takt = 3600 / UPH_META
+    Ex: UPH_META=70 => 51.43 s por peça
+    """
+    if not uph_meta or uph_meta <= 0:
+        return None
+    return 3600.0 / float(uph_meta)
+
+
+def _compute_cycle_target_with_loss_sec(uph_meta: int, perda_padrao: float) -> Optional[float]:
+    """
+    Tempo alvo (s/peça) considerando perda, coerente com o cálculo do UPH Real:
+    alvo = (3600 * (1 - perda)) / UPH_META
+
+    Se perda = 10% e UPH_META = 70 => 46.29s.
+    """
+    if not uph_meta or uph_meta <= 0:
+        return None
+    perda = float(perda_padrao or 0.10)
+    perda = min(max(perda, 0.0), 0.8)
+    return (3600.0 * (1.0 - perda)) / float(uph_meta)
+
+
+def _compute_upd_meta(uph_meta: int, horas_turno: float) -> int:
+    if not uph_meta or uph_meta <= 0:
+        return 0
+    horas = float(horas_turno or 8.30)
+    horas = min(max(horas, 1.0), 24.0)
+    return int(round(float(uph_meta) * horas))
+
+
+def _balance_status(uph_real: int, uph_meta: int) -> str:
+    if not uph_meta or uph_meta <= 0:
+        return "OK"
+    return "OK" if uph_real >= uph_meta else "BALANCE"
+
+
+def _recommendation_for_op(*, tempo_ciclo_sec: float, uph_meta: int, perda_padrao: float) -> Optional[dict]:
+    """
+    Gera recomendação objetiva quando a operação está abaixo do alvo:
+    - tempo alvo (com perda)
+    - quanto reduzir (s e %)
+    - fator de paralelização equivalente (HC/postos em paralelo)
+    """
+    if not tempo_ciclo_sec or tempo_ciclo_sec <= 0:
+        return None
+
+    target = _compute_cycle_target_with_loss_sec(uph_meta, perda_padrao)
+    if target is None or target <= 0:
+        return None
+
+    tempo = float(tempo_ciclo_sec)
+    if tempo <= target:
+        return {
+            "status": "OK",
+            "cycle_target_sec": float(target),
+            "delta_sec": 0.0,
+            "delta_pct": 0.0,
+            "parallel_factor": 1.0,
+            "parallel_suggested": 1,
+        }
+
+    delta_sec = tempo - target
+    delta_pct = (delta_sec / tempo) * 100.0 if tempo > 0 else 0.0
+    parallel_factor = tempo / target
+    parallel_suggested = int(math.ceil(parallel_factor))
+
+    return {
+        "status": "BALANCE",
+        "cycle_target_sec": float(target),
+        "delta_sec": float(delta_sec),
+        "delta_pct": float(delta_pct),
+        "parallel_factor": float(parallel_factor),
+        "parallel_suggested": int(max(2, parallel_suggested)),
+    }
+
+
+# ==========================================================
+# API / SERVICES
+# ==========================================================
 
 def list_studies(limit: int = 50):
-    limit = int(limit or 50)
-    limit = max(1, min(limit, 200))
-
-    with get_db() as conn:
-        with conn.cursor(row_factory=dict_row) as cur:
-            cur.execute(
-                """
-                SELECT
-                  id,
-                  produto,
-                  cliente,
-                  setor,
-                  linha,
-                  revisao,
-                  numero_estudo,
-                  uph_meta,
-                  hc_meta,
-                  perda_padrao,
-                  horas_turno,
-                  created_at,
-                  created_by_username
-                FROM time_studies
-                ORDER BY created_at DESC
-                LIMIT %s
-                """,
-                (limit,),
-            )
-            return cur.fetchall() or []
+    return repo.list_studies(limit=limit)
 
 
-def get_study(study_id: int) -> Optional[dict]:
-    with get_db() as conn:
-        with conn.cursor(row_factory=dict_row) as cur:
-            cur.execute(
-                """
-                SELECT
-                  id,
-                  produto,
-                  cliente,
-                  setor,
-                  linha,
-                  revisao,
-                  numero_estudo,
-                  uph_meta,
-                  hc_meta,
-                  perda_padrao,
-                  horas_turno,
-                  info_adicionais,
-                  velocidade_esteira,
-                  controlador_inversor,
-                  created_at,
-                  updated_at,
-                  created_by_user_id,
-                  created_by_username
-                FROM time_studies
-                WHERE id = %s
-                """,
-                (study_id,),
-            )
-            return cur.fetchone()
+def create_study(data: dict, user=None):
+    user_id = getattr(user, "id", None) if user else None
+    username = getattr(user, "username", None) if user else None
+    username = username or (getattr(user, "email", None) if user else None)
 
+    produto = (data.get("produto") or "").strip()
+    if not produto:
+        raise ValueError("Produto é obrigatório")
 
-def create_study(data: dict, *, user_id: Optional[int] = None, username: Optional[str] = None) -> dict:
-    with get_db() as conn:
-        with conn.cursor(row_factory=dict_row) as cur:
-            cur.execute(
-                """
-                INSERT INTO time_studies (
-                  produto, cliente, setor, linha, revisao, numero_estudo,
-                  uph_meta, hc_meta, perda_padrao, horas_turno,
-                  info_adicionais, velocidade_esteira, controlador_inversor,
-                  created_by_user_id, created_by_username
-                )
-                VALUES (
-                  %s,%s,%s,%s,%s,%s,
-                  %s,%s,%s,%s,
-                  %s,%s,%s,
-                  %s,%s
-                )
-                RETURNING *
-                """,
-                (
-                    (data.get("produto") or "").strip(),
-                    (data.get("cliente") or "").strip() or None,
-                    (data.get("setor") or "").strip() or None,
-                    (data.get("linha") or "").strip() or None,
-                    (data.get("revisao") or "").strip() or None,
-                    (data.get("numero_estudo") or "").strip() or None,
-                    int(data.get("uph_meta") or 0),
-                    float(data.get("hc_meta") or 0),
-                    float(data.get("perda_padrao") or 0.10),
-                    float(data.get("horas_turno") or 8.30),
-                    (data.get("info_adicionais") or "").strip() or None,
-                    (data.get("velocidade_esteira") or "").strip() or None,
-                    (data.get("controlador_inversor") or "").strip() or None,
-                    user_id,
-                    username,
-                ),
-            )
-            conn.commit()
-            return cur.fetchone()
-
-
-# ==========================================================
-# OPERAÇÕES (TIME STUDY)
-# ==========================================================
-
-def list_operations(study_id: int):
-    _ensure_schema()
-
-    with get_db() as conn:
-        with conn.cursor(row_factory=dict_row) as cur:
-            cur.execute(
-                """
-                SELECT
-                  id,
-                  study_id,
-                  ordem,
-                  operacao,
-                  tempo_ciclo_sec,
-                  posto_trabalho,
-                  hc,
-                  created_at,
-                  updated_at
-                FROM time_study_operations
-                WHERE study_id = %s
-                ORDER BY ordem ASC, id ASC
-                """,
-                (study_id,),
-            )
-            return cur.fetchall() or []
-
-
-def add_operation(study_id: int, data: dict) -> dict:
-    _ensure_schema()
-
-    ordem = int(data.get("ordem") or 0)
-    operacao = (data.get("operacao") or "").strip()
-    tempo_ciclo_sec = float(data.get("tempo_ciclo_sec") or 0)
-    posto_trabalho = int(data.get("posto_trabalho") or 0)
-    hc = float(data.get("hc") or 0)
-
-    with get_db() as conn:
-        with conn.cursor(row_factory=dict_row) as cur:
-            cur.execute(
-                """
-                INSERT INTO time_study_operations (
-                  study_id, ordem, operacao, tempo_ciclo_sec, posto_trabalho, hc
-                )
-                VALUES (%s, %s, %s, %s::numeric, %s, %s::numeric)
-                RETURNING *
-                """,
-                (study_id, ordem, operacao, tempo_ciclo_sec, posto_trabalho, hc),
-            )
-            conn.commit()
-            return cur.fetchone()
-
-
-def update_operation(op_id: int, data: dict) -> dict:
-    _ensure_schema()
-
-    allowed = {"ordem", "operacao", "tempo_ciclo_sec", "posto_trabalho", "hc"}
-
-    sets = []
-    values: list[Any] = []
-
-    for k, v in (data or {}).items():
-        if k not in allowed:
-            continue
-
-        if k in ("ordem", "posto_trabalho"):
-            v = int(v)
-        elif k in ("tempo_ciclo_sec", "hc"):
-            v = float(v)
-        elif k == "operacao":
-            v = (str(v) or "").strip()
-
-        sets.append(f"{k} = %s")
-        values.append(v)
-
-    if not sets:
-        raise ValueError("Nada para atualizar")
-
-    with get_db() as conn:
-        with conn.cursor(row_factory=dict_row) as cur:
-            cur.execute(
-                f"""
-                UPDATE time_study_operations
-                SET {", ".join(sets)}, updated_at = now()
-                WHERE id = %s
-                RETURNING *
-                """,
-                (*values, op_id),
-            )
-            row = cur.fetchone()
-            conn.commit()
-
-            if not row:
-                raise ValueError("Operação não encontrada")
-
-            return row
-
-
-def delete_operation(op_id: int):
-    _ensure_schema()
-
-    with get_db() as conn:
-        with conn.cursor() as cur:
-            cur.execute("DELETE FROM time_study_operations WHERE id = %s", (op_id,))
-        conn.commit()
+    created = repo.create_study(data, user_id=user_id, username=username)
+    _cache_invalidate(created.get("id"))
+    return created
 
 
 def delete_study(study_id: int):
-    """
-    Remove o estudo. As operações caem em cascade (FK ON DELETE CASCADE).
-    Mesmo assim, deixamos o _ensure_schema para garantir consistência.
-    """
-    _ensure_schema()
+    repo.delete_study(study_id)
+    _cache_invalidate(study_id)
 
-    with get_db() as conn:
-        with conn.cursor() as cur:
-            cur.execute("DELETE FROM time_studies WHERE id = %s", (study_id,))
-        conn.commit()
+
+def get_study_detail(study_id: int) -> Optional[dict]:
+    cached = _cache_get(study_id)
+    if cached is not None:
+        return cached
+
+    study = repo.get_study(study_id)
+    if not study:
+        return None
+
+    ops = repo.list_operations(study_id)
+
+    uph_meta = int(study.get("uph_meta") or 0)
+    perda_padrao = float(study.get("perda_padrao") or 0.10)
+    horas_turno = float(study.get("horas_turno") or 8.30)
+
+    computed_ops = []
+    line_uph_bottleneck = None
+    balance_count = 0
+
+    for op in ops:
+        tempo = float(op.get("tempo_ciclo_sec") or 0)
+        uph_real = _compute_uph_real(tempo, perda_padrao)
+        upd = _compute_upd(uph_real, horas_turno)
+        status = _balance_status(uph_real, uph_meta)
+
+        if line_uph_bottleneck is None:
+            line_uph_bottleneck = uph_real
+        else:
+            line_uph_bottleneck = min(line_uph_bottleneck, uph_real)
+
+        if status == "BALANCE":
+            balance_count += 1
+
+        recommendation = _recommendation_for_op(
+            tempo_ciclo_sec=tempo,
+            uph_meta=uph_meta,
+            perda_padrao=perda_padrao,
+        )
+
+        computed_ops.append({
+            **op,
+            "uph_real": uph_real,
+            "upd": upd,
+            "balance": status,
+            "recommendation": recommendation,
+        })
+
+    takt_time_sec = _compute_takt_time_sec(uph_meta)
+    cycle_target_sec = _compute_cycle_target_with_loss_sec(uph_meta, perda_padrao)
+    upd_meta = _compute_upd_meta(uph_meta, horas_turno)
+
+    line_uph_bottleneck = int(line_uph_bottleneck or 0)
+    line_gap_uph = int(max((uph_meta - line_uph_bottleneck), 0)) if uph_meta > 0 else 0
+
+    totals = {
+        "total_tempo_sec": float(sum(float(o.get("tempo_ciclo_sec") or 0) for o in ops)),
+        "total_ops": len(ops),
+        "uph_meta": uph_meta,
+        "hc_meta": float(study.get("hc_meta") or 0),
+        "takt_time_sec": float(takt_time_sec) if takt_time_sec is not None else None,
+        "upd_meta": int(upd_meta),
+        "cycle_target_sec": float(cycle_target_sec) if cycle_target_sec is not None else None,
+        "perda_padrao": float(perda_padrao),
+        "balance_count": int(balance_count),
+        "line_uph_bottleneck": int(line_uph_bottleneck),
+        "line_gap_uph": int(line_gap_uph),
+    }
+
+    payload = {
+        "study": study,
+        "operations": computed_ops,
+        "totals": totals,
+    }
+
+    _cache_set(study_id, payload)
+    return payload
+
+
+def add_operation(study_id: int, data: dict):
+    operacao = (data.get("operacao") or "").strip()
+    if not operacao:
+        raise ValueError("Operação é obrigatória")
+
+    tempo = float(data.get("tempo_ciclo_sec") or 0)
+    if tempo <= 0:
+        raise ValueError("Tempo de ciclo inválido")
+
+    created = repo.add_operation(study_id, data)
+    _cache_invalidate(study_id)
+    return created
+
+
+def update_operation(op_id: int, data: dict):
+    updated = repo.update_operation(op_id, data)
+
+    _cache_invalidate(None)
+    return updated
+
+
+def delete_operation(op_id: int):
+    repo.delete_operation(op_id)
+    _cache_invalidate(None)
