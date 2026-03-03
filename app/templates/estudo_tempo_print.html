@@ -1,0 +1,315 @@
+{% extends "layouts/app_print.html" %}
+{% block title %}Impressão · Estudo de Tempo{% endblock %}
+
+{% block content %}
+<style>
+  :root{
+    --ink:#0f172a;
+    --muted: rgba(15, 23, 42, 0.70);
+    --line: rgba(15, 23, 42, 0.14);
+    --soft: rgba(15, 23, 42, 0.06);
+    --danger: #dc3545;
+    --ok: #198754;
+  }
+
+  body{
+    color: var(--ink);
+  }
+
+  .print-wrap{
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 18px 18px 40px;
+  }
+
+  .print-topbar{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap: 16px;
+    margin-bottom: 14px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .brand{
+    display:flex;
+    flex-direction:column;
+    gap: 2px;
+  }
+  .brand .t1{
+    font-weight: 900;
+    font-size: 18px;
+    letter-spacing: .2px;
+  }
+  .brand .t2{
+    color: var(--muted);
+    font-size: 12px;
+  }
+
+  .actions{
+    display:flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content:flex-end;
+  }
+
+  .meta-grid{
+    display:grid;
+    grid-template-columns: 1.2fr .8fr;
+    gap: 12px;
+    margin: 14px 0 12px;
+  }
+
+  .card{
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 12px 14px;
+    background: #fff;
+  }
+
+  .kv{
+    display:grid;
+    grid-template-columns: 120px 1fr;
+    gap: 6px 10px;
+    font-size: 13px;
+  }
+  .k{ color: var(--muted); font-weight: 700; }
+  .v{ font-weight: 700; }
+
+  .kpis{
+    display:grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+  }
+  .kpi{
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 10px 12px;
+    background: linear-gradient(180deg, var(--soft), transparent);
+  }
+  .kpi .l{ color: var(--muted); font-size: 11px; font-weight: 800; letter-spacing: .4px;}
+  .kpi .n{ font-size: 20px; font-weight: 900; margin-top: 2px; }
+
+  .note{
+    margin-top: 12px;
+    border: 1px solid rgba(13,110,253,0.18);
+    background: rgba(13,110,253,0.06);
+    border-radius: 14px;
+    padding: 10px 12px;
+    font-size: 12px;
+    color: rgba(15,23,42,0.85);
+  }
+
+  .table-wrap{
+    margin-top: 14px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+
+  table{
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+
+  thead th{
+    background: rgba(15,23,42,0.04);
+    border-bottom: 1px solid var(--line);
+    padding: 10px 10px;
+    text-align: center;
+    font-weight: 900;
+    white-space: nowrap;
+  }
+
+  tbody td{
+    border-bottom: 1px solid rgba(15,23,42,0.08);
+    padding: 8px 10px;
+    text-align: center;
+    vertical-align: middle;
+  }
+  tbody tr:last-child td{ border-bottom: none; }
+
+  .col-op{ text-align: left !important; }
+
+  .pill{
+    display:inline-block;
+    min-width: 82px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-weight: 900;
+    font-size: 11px;
+    letter-spacing: .3px;
+    color: #fff;
+    text-align:center;
+  }
+  .pill-ok{ background: var(--ok); }
+  .pill-bal{ background: var(--danger); }
+
+  .row-balance{
+    background: rgba(220, 53, 69, 0.10);
+    box-shadow: inset 5px 0 0 rgba(220, 53, 69, 0.70);
+  }
+
+  .foot{
+    margin-top: 14px;
+    color: var(--muted);
+    font-size: 11px;
+    display:flex;
+    justify-content:space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  /* Impressão */
+  @media print {
+    .no-print{ display:none !important; }
+    .print-wrap{ padding: 0; }
+    a[href]:after{ content:""; } /* evita URLs */
+  }
+</style>
+
+<div class="print-wrap">
+  <div class="print-topbar">
+    <div class="brand">
+      <div class="t1">{{ APP_NAME }} · Estudo de Tempo</div>
+      <div class="t2">Documento para impressão (Time Study)</div>
+    </div>
+
+    <div class="actions no-print">
+      <button class="btn btn-primary btn-sm" onclick="window.print()">
+        <i class="bi bi-printer"></i> Imprimir
+      </button>
+      <button class="btn btn-outline-secondary btn-sm" onclick="window.close()">
+        <i class="bi bi-x-lg"></i> Fechar
+      </button>
+    </div>
+  </div>
+
+  {% if not_found %}
+    <div class="alert alert-danger">
+      Estudo não encontrado.
+    </div>
+  {% else %}
+    <div class="meta-grid">
+      <div class="card">
+        <div class="kv">
+          <div class="k">Estudo</div>
+          <div class="v">#{{ study.id }}</div>
+
+          <div class="k">Produto</div>
+          <div class="v">{{ study.produto or '—' }}</div>
+
+          <div class="k">Cliente</div>
+          <div class="v">{{ study.cliente or '—' }}</div>
+
+          <div class="k">Linha</div>
+          <div class="v">{{ study.linha or '—' }}</div>
+
+          <div class="k">Perda padrão</div>
+          <div class="v">{{ '%.2f'|format(study.perda_padrao or 0) }}</div>
+
+          <div class="k">Horas/turno</div>
+          <div class="v">{{ '%.2f'|format(study.horas_turno or 0) }}h</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="kpis">
+          <div class="kpi">
+            <div class="l">UPH META</div>
+            <div class="n">{{ totals.uph_meta if totals.uph_meta is not none else '—' }}</div>
+          </div>
+          <div class="kpi">
+            <div class="l">HC META</div>
+            <div class="n">{{ totals.hc_meta if totals.hc_meta is not none else '—' }}</div>
+          </div>
+          <div class="kpi">
+            <div class="l">TAKT (s)</div>
+            <div class="n">
+              {% if totals.takt_time_sec is not none %}
+                {{ '%.2f'|format(totals.takt_time_sec) }}
+              {% else %}
+                —
+              {% endif %}
+            </div>
+          </div>
+          <div class="kpi">
+            <div class="l">UPD META</div>
+            <div class="n">{{ totals.upd_meta if totals.upd_meta is not none else '—' }}</div>
+          </div>
+        </div>
+
+        <div class="note mt-2">
+          <strong>Takt Time</strong> = 3600 / UPH Meta. <br>
+          Se <strong>UPH Real</strong> ficar menor que <strong>UPH Meta</strong>, a operação aparece como <strong>BALANCE</strong>.
+        </div>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:60px;">N°</th>
+            <th class="col-op">Operação</th>
+            <th style="width:120px;">Tempo Ciclo (s)</th>
+            <th style="width:80px;">Posto</th>
+            <th style="width:80px;">HC</th>
+            <th style="width:110px;">UPH (Real)</th>
+            <th style="width:90px;">UPD</th>
+            <th style="width:120px;">Balance</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for op in operations %}
+            {% set bal = (op.balance or 'OK')|upper %}
+            <tr class="{% if bal == 'BALANCE' %}row-balance{% endif %}">
+              <td><strong>{{ op.ordem }}</strong></td>
+              <td class="col-op">{{ op.operacao }}</td>
+              <td>{{ '%.2f'|format(op.tempo_ciclo_sec or 0) }}</td>
+              <td>{{ op.posto_trabalho }}</td>
+              <td>{{ '%.2f'|format(op.hc or 0) }}</td>
+              <td><strong>{{ op.uph_real or 0 }}</strong></td>
+              <td>{{ op.upd or 0 }}</td>
+              <td>
+                {% if bal == 'OK' %}
+                  <span class="pill pill-ok">OK</span>
+                {% else %}
+                  <span class="pill pill-bal">BALANCE</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+
+          {% if operations|length == 0 %}
+            <tr>
+              <td colspan="8" style="text-align:center; padding: 16px; color: rgba(15,23,42,0.7);">
+                Nenhuma operação cadastrada neste estudo.
+              </td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="foot">
+      <div>
+        Total operações: <strong>{{ totals.total_ops or 0 }}</strong> ·
+        Total tempo: <strong>{{ '%.1f'|format(totals.total_tempo_sec or 0) }}s</strong>
+      </div>
+      <div>
+        Impresso em: <strong><span id="printNow">—</span></strong>
+      </div>
+    </div>
+  {% endif %}
+</div>
+
+<script class="no-print">
+  (function(){
+    const el = document.getElementById('printNow');
+    if (el) el.textContent = new Date().toLocaleString();
+  })();
+</script>
+{% endblock %}
