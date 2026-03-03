@@ -125,30 +125,19 @@
 
         <div class="col-md-2">
           <label class="form-label">Setor</label>
-          <select class="form-select form-select-lg" name="setor">
-            <option>SMT</option>
-            <option>PTH</option>
-            <option>IM</option>
-            <option>PA</option>
-            <option>VTT</option>
+          <select class="form-select form-select-lg" name="setor" id="setorSelect" required>
+            <option value="SMT" selected>SMT</option>
+            <option value="PTH">PTH</option>
+            <option value="IM">IM</option>
+            <option value="PA">PA</option>
           </select>
-          <div class="hint">Área produtiva / setor responsável.</div>
+          <div class="hint">Selecione o setor para habilitar as linhas corretas.</div>
         </div>
 
         <div class="col-md-2">
           <label class="form-label">Linha</label>
-          <select class="form-select form-select-lg" name="linha" required>
-            <option value="SMD-01">SMD-01</option>
-            <option value="SMD-02">SMD-02</option>
-            <option value="SMD-03">SMD-03</option>
-            <option value="SMD-04">SMD-04</option>
-            <option value="SMD-05">SMD-05</option>
-            <option value="SMD-06">SMD-06</option>
-            <option value="SMD-07">SMD-07</option>
-            <option value="SMD-08">SMD-08</option>
-            <option value="SMD-09">SMD-09</option>
-          </select>
-          <div class="hint">Selecione a linha correta (SMD-01 … SMD-09).</div>
+          <select class="form-select form-select-lg" name="linha" id="linhaSelect" required></select>
+          <div class="hint">As opções mudam conforme o setor selecionado.</div>
         </div>
 
         <div class="col-md-2">
@@ -213,6 +202,45 @@
 
 {% block scripts %}
 <script>
+const LINHAS_POR_SETOR = {
+  IM: ["IM-01","IM-02","IM-03","IM-04","IM-05","IM-06"],
+  PA: ["IP-COM","PA-01","PA-03","PA-04","PA-07","PA-08","PA-09","PA-13","WIFI"],
+  PTH: ["ADE-01","AXI-01","AXI-02","AXI-03","JUM-01","JUM-02","RAD-01","RAD-02","RAD-03","ROU-01","ROU-02","ROU-03"],
+  SMT: ["SMT-01","SMT-02","SMT-03","SMT-04","SMT-05","SMT-06","SMT-07","SMT-08","SMT-09"]
+};
+
+function renderLinhasForSetor(setor, keepValue) {
+  const linhaSelect = document.getElementById('linhaSelect');
+  if (!linhaSelect) return;
+
+  const linhas = LINHAS_POR_SETOR[setor] || [];
+  const previous = keepValue ? (linhaSelect.value || '') : '';
+
+  linhaSelect.innerHTML = '';
+
+  if (!linhas.length) {
+    const opt = document.createElement('option');
+    opt.value = '';
+    opt.textContent = '—';
+    linhaSelect.appendChild(opt);
+    linhaSelect.value = '';
+    return;
+  }
+
+  for (const l of linhas) {
+    const opt = document.createElement('option');
+    opt.value = l;
+    opt.textContent = l;
+    linhaSelect.appendChild(opt);
+  }
+
+  if (previous && linhas.includes(previous)) {
+    linhaSelect.value = previous;
+  } else {
+    linhaSelect.value = linhas[0];
+  }
+}
+
 function mostrarMensagemCadastro(texto, tipo='success') {
     const msgDiv = document.getElementById('mensagemCadastro');
     const div = document.createElement('div');
@@ -230,6 +258,17 @@ function mostrarMensagemCadastro(texto, tipo='success') {
         bsAlert.close();
     }, 2000);
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+  const setorSelect = document.getElementById('setorSelect');
+  if (setorSelect) {
+    renderLinhasForSetor(setorSelect.value, true);
+
+    setorSelect.addEventListener('change', () => {
+      renderLinhasForSetor(setorSelect.value, false);
+    });
+  }
+});
 
 document.getElementById('cadastroForm').addEventListener('submit', async e => {
     e.preventDefault();
@@ -254,7 +293,14 @@ document.getElementById('cadastroForm').addEventListener('submit', async e => {
 
       mostrarMensagemCadastro(data.mensagem, data.sucesso ? 'success' : 'danger');
 
-      if (data.sucesso) e.target.reset();
+      if (data.sucesso) {
+        e.target.reset();
+        const setorSelect = document.getElementById('setorSelect');
+        if (setorSelect) {
+          setorSelect.value = 'SMT';
+          renderLinhasForSetor('SMT', false);
+        }
+      }
     } finally {
       if (btn) {
         btn.disabled = false;
