@@ -47,4 +47,6 @@
   document.addEventListener("DOMContentLoaded", applyDocumentFit);
   window.addEventListener("resize", onResize);
   window.addEventListener("orientationchange", applyDocumentFit);
+
+  window.addEventListener("documentfit:refresh", applyDocumentFit);
 })();
