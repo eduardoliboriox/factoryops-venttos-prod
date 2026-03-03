@@ -18,6 +18,7 @@
     color: var(--ink);
   }
 
+
   .print-wrap{
     max-width: 980px;
     margin: 0 auto;
@@ -196,9 +197,49 @@
     flex-wrap: wrap;
   }
 
+  @page {
+    size: A4;
+    margin: 10mm;
+  }
+
   @media print {
     .no-print{ display:none !important; }
-    .print-wrap{ padding: 0; }
+
+    html, body{
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+
+
+    .print-wrap{
+      box-sizing: border-box;
+      max-width: 190mm;     /* 210mm - 10mm - 10mm */
+      width: 100%;
+      margin: 0 auto;
+      padding: 0;
+    }
+
+    table{
+      table-layout: fixed;
+      width: 100%;
+      font-size: 11px;
+    }
+
+    thead th{
+      padding: 8px 6px;
+      white-space: normal;      
+      word-break: break-word;
+    }
+
+    tbody td{
+      padding: 7px 6px;
+    }
+
+    .col-op{
+      white-space: normal !important;
+      word-break: break-word;
+    }
+
     a[href]:after{ content:""; } /* evita URLs */
     .brand-logo{ -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     .row-balance{ -webkit-print-color-adjust: exact; print-color-adjust: exact; }
