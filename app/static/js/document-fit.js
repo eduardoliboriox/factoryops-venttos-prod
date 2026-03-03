@@ -17,7 +17,6 @@
 
     const isMobile = window.matchMedia("(max-width: 768px)").matches;
 
-    // Desktop: mantém comportamento existente
     if (!isMobile) {
       canvas.style.removeProperty("--doc-scale");
       wrapper.style.removeProperty("height");
