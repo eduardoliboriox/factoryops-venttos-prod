@@ -32,6 +32,18 @@
     border-bottom: 1px solid var(--line);
   }
 
+  .brand-left{
+    display:flex;
+    align-items:flex-start;
+    gap: 12px;
+  }
+  .brand-logo{
+    width: 84px;
+    height: 48px;
+    object-fit: contain;
+    display:block;
+  }
+
   .brand{
     display:flex;
     flex-direction:column;
@@ -162,19 +174,26 @@
     flex-wrap: wrap;
   }
 
-  /* Impressão */
   @media print {
     .no-print{ display:none !important; }
     .print-wrap{ padding: 0; }
     a[href]:after{ content:""; } /* evita URLs */
+    .brand-logo{ -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   }
 </style>
 
 <div class="print-wrap">
   <div class="print-topbar">
-    <div class="brand">
-      <div class="t1">{{ APP_NAME }} · Estudo de Tempo</div>
-      <div class="t2">Documento para impressão (Time Study)</div>
+    <div class="brand-left">
+      <img
+        class="brand-logo"
+        src="{{ url_for('static', filename='images/logos/logo.png') }}"
+        alt="Logo da empresa"
+      >
+      <div class="brand">
+        <div class="t1">{{ APP_NAME }} · Estudo de Tempo</div>
+        <div class="t2">Documento para impressão (Time Study)</div>
+      </div>
     </div>
 
     <div class="actions no-print">
