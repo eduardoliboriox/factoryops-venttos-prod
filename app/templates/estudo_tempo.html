@@ -105,8 +105,18 @@
             </div>
 
             <div class="col-md-6">
+              <label class="form-label fw-bold">Setor</label>
+              <select class="form-select" name="setor" id="tsSetorSelect" required>
+                <option value="SMT" selected>SMT</option>
+                <option value="PTH">PTH</option>
+                <option value="IM">IM</option>
+                <option value="PA">PA</option>
+              </select>
+            </div>
+
+            <div class="col-md-6">
               <label class="form-label fw-bold">Linha</label>
-              <input class="form-control" name="linha" placeholder="Ex: SMD-01">
+              <select class="form-select" name="linha" id="tsLinhaSelect" required></select>
             </div>
 
             <div class="col-md-6">
@@ -348,6 +358,49 @@ function openPrintView() {
   window.open(`/smt/estudo-tempo/print/${id}`, '_blank', 'noopener');
 }
 
+// =============================
+// SETOR → LINHA DINÂMICO
+// =============================
+const TS_LINHAS_POR_SETOR = {
+  IM: ["IM-01","IM-02","IM-03","IM-04","IM-05","IM-06"],
+  PA: ["IP-COM","PA-01","PA-03","PA-04","PA-07","PA-08","PA-09","PA-13","WIFI"],
+  PTH: ["ADE-01","AXI-01","AXI-02","AXI-03","JUM-01","JUM-02","RAD-01","RAD-02","RAD-03","ROU-01","ROU-02","ROU-03"],
+  SMT: ["SMT-01","SMT-02","SMT-03","SMT-04","SMT-05","SMT-06","SMT-07","SMT-08","SMT-09"]
+};
+
+function renderTSLinhas(setor, keepValue=false) {
+  const select = document.getElementById('tsLinhaSelect');
+  if (!select) return;
+
+  const linhas = TS_LINHAS_POR_SETOR[setor] || [];
+  const prev = keepValue ? select.value : null;
+
+  select.innerHTML = '';
+
+  // fallback seguro
+  if (!linhas.length) {
+    const opt = document.createElement('option');
+    opt.value = '';
+    opt.textContent = '—';
+    select.appendChild(opt);
+    select.value = '';
+    return;
+  }
+
+  linhas.forEach(l => {
+    const opt = document.createElement('option');
+    opt.value = l;
+    opt.textContent = l;
+    select.appendChild(opt);
+  });
+
+  if (prev && linhas.includes(prev)) {
+    select.value = prev;
+  } else {
+    select.value = linhas[0];
+  }
+}
+
 async function loadStudies() {
   showMsg('tsMsgCreate', '', 'success');
 
@@ -393,7 +446,12 @@ async function createStudy(e) {
   }
 
   showMsg('tsMsgCreate', `Estudo criado (#${data.study.id}).`, 'success');
+
+  // reset + repopula Linha (senão fica vazio)
   e.target.reset();
+  const setorEl = document.getElementById('tsSetorSelect');
+  if (setorEl) renderTSLinhas(setorEl.value, false);
+
   await loadStudies();
 
   TS.currentStudyId = data.study.id;
@@ -556,8 +614,19 @@ async function deleteSelectedStudy() {
   showMsg('tsMsgCreate', `Estudo #${studyId} excluído.`, 'success');
 }
 
-document.getElementById('formCreateStudy').addEventListener('submit', createStudy);
+document.addEventListener('DOMContentLoaded', () => {
+  // garante linhas ao carregar
+  const setor = document.getElementById('tsSetorSelect');
+  if (setor) {
+    renderTSLinhas(setor.value, true);
+    setor.addEventListener('change', () => renderTSLinhas(setor.value, false));
+  }
 
-loadStudies();
+  // listener do form
+  const formCreate = document.getElementById('formCreateStudy');
+  if (formCreate) formCreate.addEventListener('submit', createStudy);
+
+  loadStudies();
+});
 </script>
 {% endblock %}
