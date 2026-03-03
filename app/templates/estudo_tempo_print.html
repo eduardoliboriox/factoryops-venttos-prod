@@ -10,6 +10,8 @@
     --soft: rgba(15, 23, 42, 0.06);
     --danger: #dc3545;
     --ok: #198754;
+    --info-bg: rgba(13,110,253,0.06);
+    --info-bd: rgba(13,110,253,0.18);
   }
 
   body{
@@ -105,13 +107,24 @@
 
   .note{
     margin-top: 12px;
-    border: 1px solid rgba(13,110,253,0.18);
-    background: rgba(13,110,253,0.06);
+    border: 1px solid var(--info-bd);
+    background: var(--info-bg);
     border-radius: 14px;
     padding: 10px 12px;
     font-size: 12px;
     color: rgba(15,23,42,0.85);
   }
+
+  .balance-summary{
+    margin-top: 10px;
+    border: 1px solid rgba(220, 53, 69, 0.14);
+    background: rgba(220, 53, 69, 0.06);
+    border-radius: 14px;
+    padding: 10px 12px;
+    font-size: 12px;
+    color: rgba(15,23,42,0.88);
+  }
+  .balance-summary strong{ font-weight: 900; }
 
   .table-wrap{
     margin-top: 14px;
@@ -133,6 +146,7 @@
     text-align: center;
     font-weight: 900;
     white-space: nowrap;
+    vertical-align: middle;
   }
 
   tbody td{
@@ -164,6 +178,14 @@
     box-shadow: inset 5px 0 0 rgba(220, 53, 69, 0.70);
   }
 
+  .rec{
+    margin-top: 6px;
+    font-size: 11px;
+    color: rgba(15,23,42,0.82);
+    line-height: 1.25;
+  }
+  .rec strong{ font-weight: 900; }
+
   .foot{
     margin-top: 14px;
     color: var(--muted);
@@ -179,6 +201,9 @@
     .print-wrap{ padding: 0; }
     a[href]:after{ content:""; } /* evita URLs */
     .brand-logo{ -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .row-balance{ -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .pill{ -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .kpi{ -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   }
 </style>
 
@@ -231,6 +256,15 @@
 
           <div class="k">Horas/turno</div>
           <div class="v">{{ '%.2f'|format(study.horas_turno or 0) }}h</div>
+
+          <div class="k">Tempo alvo c/ perda</div>
+          <div class="v">
+            {% if totals.cycle_target_sec is not none %}
+              {{ '%.2f'|format(totals.cycle_target_sec) }}s
+            {% else %}
+              —
+            {% endif %}
+          </div>
         </div>
       </div>
 
@@ -261,9 +295,22 @@
         </div>
 
         <div class="note mt-2">
-          <strong>Takt Time</strong> = 3600 / UPH Meta. <br>
+          <strong>Takt Time</strong> = 3600 / UPH Meta.<br>
+          Como existe <strong>Perda padrão</strong>, a referência prática do OK/BALANCE é o
+          <strong>Tempo alvo c/ perda</strong> (mais apertado).<br>
           Se <strong>UPH Real</strong> ficar menor que <strong>UPH Meta</strong>, a operação aparece como <strong>BALANCE</strong>.
         </div>
+
+        {% if totals.balance_count and totals.balance_count > 0 and totals.uph_meta and totals.uph_meta > 0 %}
+          <div class="balance-summary">
+            <div style="margin-bottom: 4px;"><strong>Resumo do Balanceamento</strong></div>
+            <div>
+              Operações em <strong>BALANCE:</strong> <strong>{{ totals.balance_count }}</strong> ·
+              <strong>UPH gargalo:</strong> <strong>{{ totals.line_uph_bottleneck or 0 }}</strong> ·
+              <strong>Gap vs meta:</strong> <strong>{{ totals.line_gap_uph or 0 }}</strong> UPH
+            </div>
+          </div>
+        {% endif %}
       </div>
     </div>
 
@@ -278,12 +325,13 @@
             <th style="width:80px;">HC</th>
             <th style="width:110px;">UPH (Real)</th>
             <th style="width:90px;">UPD</th>
-            <th style="width:120px;">Balance</th>
+            <th style="width:160px;">Balance</th>
           </tr>
         </thead>
         <tbody>
           {% for op in operations %}
             {% set bal = (op.balance or 'OK')|upper %}
+            {% set rec = op.recommendation %}
             <tr class="{% if bal == 'BALANCE' %}row-balance{% endif %}">
               <td><strong>{{ op.ordem }}</strong></td>
               <td class="col-op">{{ op.operacao }}</td>
@@ -297,6 +345,21 @@
                   <span class="pill pill-ok">OK</span>
                 {% else %}
                   <span class="pill pill-bal">BALANCE</span>
+
+                  {# recomendações (paridade com estudo_tempo.html) #}
+                  {% if rec and rec.status == 'BALANCE' %}
+                    <div class="rec">
+                      {% if rec.cycle_target_sec is not none %}
+                        <strong>Alvo c/ perda:</strong> {{ '%.2f'|format(rec.cycle_target_sec) }}s ·
+                      {% endif %}
+                      {% if rec.delta_sec is not none and rec.delta_pct is not none %}
+                        <strong>Reduzir:</strong> {{ '%.2f'|format(rec.delta_sec) }}s ({{ '%.1f'|format(rec.delta_pct) }}%)<br>
+                      {% endif %}
+                      {% if rec.parallel_factor is not none and rec.parallel_suggested is not none %}
+                        <strong>Ou paralelizar:</strong> ~{{ '%.2f'|format(rec.parallel_factor) }} postos → sugerir <strong>{{ rec.parallel_suggested }}</strong>
+                      {% endif %}
+                    </div>
+                  {% endif %}
                 {% endif %}
               </td>
             </tr>
