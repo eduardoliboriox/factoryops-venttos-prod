@@ -51,13 +51,25 @@
   .ts-table td { vertical-align: middle; text-align: center; }
   .ts-table .ts-col-op { text-align: left !important; }
 
-  .balance-ok { background: rgba(25, 135, 84, 0.10); color: #146c43; font-weight: 800; }
-  .balance-bad { background: rgba(220, 53, 69, 0.10); color: #b02a37; font-weight: 800; }
+  /* Pills (OK / BALANCE) — retângulo arredondado com fundo e letra branca */
+  .ts-status-pill{
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-weight: 900;
+    font-size: 12px;
+    line-height: 1.1;
+    letter-spacing: 0.3px;
+    min-width: 86px;
+    text-align: center;
+  }
+  .ts-status-ok{ background: #198754; color: #fff; }
+  .ts-status-balance{ background: #dc3545; color: #fff; }
 
-  /* Destaque da linha quando precisa de BALANCE */
+  /* Destaque forte da linha quando precisa de BALANCE */
   .ts-row-balance {
-    background: rgba(220, 53, 69, 0.06);
-    box-shadow: inset 4px 0 0 rgba(220, 53, 69, 0.55);
+    background: rgba(220, 53, 69, 0.14);
+    box-shadow: inset 5px 0 0 rgba(220, 53, 69, 0.75);
   }
 
   .ts-kpi-note {
@@ -427,12 +439,14 @@ async function openStudy(studyId) {
   ops.forEach(op => {
     const tr = document.createElement('tr');
 
-    const bal = (op.balance || 'OK').toUpperCase();
-    const balClass = bal === 'OK' ? 'balance-ok' : 'balance-bad';
+    const bal = String(op.balance || 'OK').trim().toUpperCase();
 
-    if (bal !== 'OK') {
+    // BALANCE = precisa de ajuste -> destaca a linha (vermelho)
+    if (bal === 'BALANCE') {
       tr.classList.add('ts-row-balance');
     }
+
+    const pillClass = (bal === 'OK') ? 'ts-status-ok' : 'ts-status-balance';
 
     tr.innerHTML = `
       <td class="fw-bold">${op.ordem ?? ''}</td>
@@ -442,7 +456,9 @@ async function openStudy(studyId) {
       <td>${Number(op.hc || 0).toFixed(2)}</td>
       <td class="fw-bold">${op.uph_real ?? 0}</td>
       <td>${op.upd ?? 0}</td>
-      <td class="${balClass} text-center">${bal}</td>
+      <td class="text-center">
+        <span class="ts-status-pill ${pillClass}">${bal}</span>
+      </td>
       <td class="text-center">
         <button class="btn btn-sm btn-outline-danger" onclick="deleteOp(${op.id})">
           <i class="bi bi-trash"></i>
