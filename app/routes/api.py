@@ -1,9 +1,10 @@
 from flask import Blueprint, request, jsonify
 from flask_login import login_required, current_user
 
-from app.services import modelos_service
+from app.services import modelos_service, production_lines_service, time_studies_service
 from app.services.employees_service import buscar_funcionario
 from app.auth.service import confirm_employee_extra
+
 
 bp = Blueprint("api", __name__)
 
@@ -111,7 +112,6 @@ def api_employee_lookup(matricula):
     return jsonify(buscar_funcionario(matricula))
 
 
-
 @bp.route("/auth/confirm-extra", methods=["POST"])
 def api_confirm_extra():
     data = request.get_json() or {}
@@ -127,12 +127,6 @@ def api_confirm_extra():
 
     result = confirm_employee_extra(matricula, password)
     return jsonify(result), (200 if result["success"] else 401)
-
-
-# ==========================================================
-# TIME STUDY (ESTUDO DE TEMPO)
-# ==========================================================
-from app.services import time_studies_service
 
 
 @bp.route("/time-studies", methods=["GET"])
@@ -207,3 +201,23 @@ def time_studies_delete_operation(op_id: int):
         return jsonify({"sucesso": True})
     except Exception:
         return jsonify({"sucesso": False, "erro": "Erro ao excluir operação"}), 500
+
+
+@bp.route("/production/sectors", methods=["GET"])
+@login_required
+def production_sectors():
+    return jsonify({
+        "sucesso": True,
+        "sectors": production_lines_service.list_sectors()
+    })
+
+
+@bp.route("/production/lines", methods=["GET"])
+@login_required
+def production_lines():
+    setor = request.args.get("setor", "").strip()
+    return jsonify({
+        "sucesso": True,
+        "setor": setor,
+        "lines": production_lines_service.list_lines_by_sector(setor)
+    })
