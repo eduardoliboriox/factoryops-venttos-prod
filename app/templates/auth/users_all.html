@@ -69,9 +69,16 @@
         <tbody id="usersTable">
           {% for u in users %}
           <tr>
-            <td>{{ u.username }}</td>
+            <td>
+              {{ u.username }}
+              {% if owner_id and u.id == owner_id %}
+                <span class="badge bg-dark ms-2">OWNER</span>
+              {% endif %}
+            </td>
+
             <td>{{ u.full_name }}</td>
             <td>{{ u.setor }}</td>
+
             <td>
               {% if u.extra_authorized %}
                 <span class="badge bg-danger">Bloqueado</span>
@@ -96,31 +103,39 @@
                 </a>
 
               {% else %}
-                <form method="post"
-                      action="{{ url_for('auth.update_user_role_route', user_id=u.id) }}"
-                      class="d-inline">
 
-                  <select name="role"
-                          class="form-select form-select-sm d-inline w-auto"
-                          onchange="this.form.submit()">
+                {% if owner_id and u.id == owner_id %}
+                  <span class="text-muted small fw-semibold">
+                    Protegido (não pode ser rebaixado)
+                  </span>
+                {% else %}
+                  <form method="post"
+                        action="{{ url_for('auth.update_user_role_route', user_id=u.id) }}"
+                        class="d-inline">
 
-                    <option value="none"
-                      {% if not u.is_admin and not u.extra_authorized %}selected{% endif %}>
-                      Sem alteração
-                    </option>
+                    <select name="role"
+                            class="form-select form-select-sm d-inline w-auto"
+                            onchange="this.form.submit()">
 
-                    <option value="blocked"
-                      {% if u.extra_authorized %}selected{% endif %}>
-                      Usuário bloqueado
-                    </option>
+                      <option value="none"
+                        {% if not u.is_admin and not u.extra_authorized %}selected{% endif %}>
+                        Sem alteração
+                      </option>
 
-                    <option value="admin"
-                      {% if u.is_admin %}selected{% endif %}>
-                      Tornar Admin
-                    </option>
+                      <option value="blocked"
+                        {% if u.extra_authorized %}selected{% endif %}>
+                        Usuário bloqueado
+                      </option>
 
-                  </select>
-                </form>
+                      <option value="admin"
+                        {% if u.is_admin %}selected{% endif %}>
+                        Tornar Admin
+                      </option>
+
+                    </select>
+                  </form>
+                {% endif %}
+
               {% endif %}
 
             </td>
