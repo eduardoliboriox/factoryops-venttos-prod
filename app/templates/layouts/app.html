@@ -26,6 +26,9 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/modelos.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/document-fit.css') }}">
 
+  {# ✅ Permite CSS específico por página sem quebrar desktop #}
+  {% block styles %}{% endblock %}
+
   <script>
     window.APP_VERSION = "{{ APP_VERSION }}";
   </script>
