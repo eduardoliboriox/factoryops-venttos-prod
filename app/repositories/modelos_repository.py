@@ -1,439 +1,346 @@
-from __future__ import annotations
+import math
+import time
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
+from typing import Optional
 
-from typing import Optional, Any
-
-from psycopg.rows import dict_row
-from psycopg import sql
-from psycopg.types.json import Json
-
-from app.extensions import get_db
+from app.repositories import modelos_repository
+from app.repositories.modelos_repository import buscar_ultimo_modelo
 
 
-_LINHA_COL_CACHE: Optional[str] = None
-_LINHA_COL_CHECKED: bool = False
+# Linhas válidas por setor (fonte: lista fornecida)
+LINHAS_POR_SETOR = {
+    "IM": ["IM-01", "IM-02", "IM-03", "IM-04", "IM-05", "IM-06"],
+    "PA": ["IP-COM", "PA-01", "PA-03", "PA-04", "PA-07", "PA-08", "PA-09", "PA-13", "WIFI"],
+    "PTH": ["ADE-01", "AXI-01", "AXI-02", "AXI-03", "JUM-01", "JUM-02", "RAD-01", "RAD-02", "RAD-03", "ROU-01", "ROU-02", "ROU-03"],
+    "SMT": ["SMT-01", "SMT-02", "SMT-03", "SMT-04", "SMT-05", "SMT-06", "SMT-07", "SMT-08", "SMT-09"],
+}
 
-_AUDIT_READY: bool = False
+SETORES_VALIDOS = set(LINHAS_POR_SETOR.keys())
 
 
-def _resolve_linha_column() -> Optional[str]:
-    """
-    Detecta (uma única vez) qual coluna do banco representa "linha" na tabela modelos.
-    Suporta bancos legados (sem coluna linha) e bancos novos (com linha ou nome alternativo).
-    """
-    global _LINHA_COL_CACHE, _LINHA_COL_CHECKED
+_MODELOS_CACHE_TTL_SECONDS = 10
+_modelos_cache_value = None
+_modelos_cache_expires_at = 0.0
 
-    if _LINHA_COL_CHECKED:
-        return _LINHA_COL_CACHE
 
-    candidates = [
-        "linha",
-        "line",
-        "linha_smd",
-        "linha_padrao",
-        "linha_nome",
-        "linha_producao",
-    ]
-
-    with get_db() as conn:
-        with conn.cursor(row_factory=dict_row) as cur:
-            cur.execute(
-                """
-                SELECT column_name
-                FROM information_schema.columns
-                WHERE table_schema = 'public'
-                  AND table_name = 'modelos'
-                """
-            )
-            cols = {r["column_name"] for r in (cur.fetchall() or [])}
-
-    for c in candidates:
-        if c in cols:
-            _LINHA_COL_CACHE = c
-            _LINHA_COL_CHECKED = True
-            return _LINHA_COL_CACHE
-
-    _LINHA_COL_CACHE = None
-    _LINHA_COL_CHECKED = True
+def _cache_get():
+    global _modelos_cache_value, _modelos_cache_expires_at
+    now = time.time()
+    if _modelos_cache_value is not None and now < _modelos_cache_expires_at:
+        return _modelos_cache_value
     return None
 
 
-def _ensure_audit_schema():
-    """
-    Cria tabela/índices de auditoria de forma idempotente.
-    Não depende de Alembic. Seguro para prod e dev.
-    """
-    global _AUDIT_READY
-    if _AUDIT_READY:
-        return
+def _cache_set(value):
+    global _modelos_cache_value, _modelos_cache_expires_at
+    _modelos_cache_value = value
+    _modelos_cache_expires_at = time.time() + _MODELOS_CACHE_TTL_SECONDS
 
-    with get_db() as conn:
-        with conn.cursor() as cur:
-            cur.execute("""
-                CREATE TABLE IF NOT EXISTS modelos_audit (
-                    id BIGSERIAL PRIMARY KEY,
-                    codigo TEXT NOT NULL,
-                    fase TEXT NOT NULL,
-                    linha TEXT,
-                    action TEXT NOT NULL, -- CREATE / UPDATE / DELETE
-                    changed_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-                    changed_by_user_id BIGINT,
-                    changed_by_username TEXT,
-                    changes JSONB
-                )
-            """)
 
-            cur.execute("""
-                CREATE INDEX IF NOT EXISTS idx_modelos_audit_lookup
-                ON modelos_audit (codigo, fase, linha, changed_at DESC)
-            """)
+def _cache_invalidate():
+    global _modelos_cache_value, _modelos_cache_expires_at
+    _modelos_cache_value = None
+    _modelos_cache_expires_at = 0.0
 
-            cur.execute("""
-                CREATE INDEX IF NOT EXISTS idx_modelos_audit_changed_at
-                ON modelos_audit (changed_at DESC)
-            """)
 
-        conn.commit()
+def _validate_setor_linha(setor_raw: str, linha_raw: str) -> tuple[bool, str]:
+    setor = (setor_raw or "").strip().upper()
+    linha = (linha_raw or "").strip().upper()
 
-    _AUDIT_READY = True
+    if not setor:
+        return False, "Setor não informado"
+    if setor not in SETORES_VALIDOS:
+        return False, "Setor inválido"
+
+    if not linha:
+        return False, "Linha não informada"
+
+    linhas = LINHAS_POR_SETOR.get(setor, [])
+    if linha not in linhas:
+        return False, "Linha inválida para o setor selecionado"
+
+    return True, ""
+
+
+def resumo_dashboard():
+    modelos = modelos_repository.listar_modelos()
+
+    total = len(modelos)
+
+    por_setor = {}
+    por_fase = {}
+
+    for m in modelos:
+        setor = m.get("setor")
+        fase = m.get("fase")
+
+        if setor:
+            por_setor[setor] = por_setor.get(setor, 0) + 1
+
+        if fase:
+            por_fase[fase] = por_fase.get(fase, 0) + 1
+
+    ultimo_modelo = buscar_ultimo_modelo()
+
+    return {
+        "total_modelos": total,
+        "por_setor": por_setor,
+        "por_fase": por_fase,
+        "ultimo_modelo": ultimo_modelo
+    }
 
 
 def listar_codigos():
-    with get_db() as conn:
-        with conn.cursor(row_factory=dict_row) as cur:
-            cur.execute("SELECT codigo FROM modelos ORDER BY codigo")
-            return [r["codigo"] for r in (cur.fetchall() or [])]
+    return modelos_repository.listar_codigos()
+
+
+def _to_decimal_str_2(v):
+    """
+    Retorna string com 2 casas decimais (ex: '55.86').
+    - Evita artefatos de float (ex: 55.859999999)
+    - Mantém consistência na UI
+    """
+    if v is None or v == "":
+        return None
+    try:
+        d = Decimal(str(v)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        return f"{d:.2f}"
+    except (InvalidOperation, ValueError, TypeError):
+        return None
+
+
+def listar():
+    cached = _cache_get()
+    if cached is not None:
+        return cached
+
+    modelos = modelos_repository.listar_modelos()
+
+    payload = [
+        {
+            "codigo": m.get("codigo"),
+            "cliente": m.get("cliente"),
+            "setor": m.get("setor"),
+            "linha": m.get("linha"),
+            "meta": float(m["meta_padrao"]) if m.get("meta_padrao") is not None else 0,
+            "tempo_montagem": _to_decimal_str_2(m.get("tempo_montagem")),
+            "blank": m.get("blank"),
+            "fase": m.get("fase")
+        }
+        for m in (modelos or [])
+    ]
+
+    _cache_set(payload)
+    return payload
 
 
 def listar_modelos():
+    return listar()
+
+
+def _audit_user(user) -> tuple[Optional[int], Optional[str]]:
     """
-    Lista completa para UI/API.
-    Compatível com schema legado que não tem coluna de "linha".
-    - Se existir uma coluna equivalente: retorna como alias 'linha'
-    - Se não existir: retorna 'linha' como NULL
+    Extrai identificadores do usuário autenticado para auditoria.
+    Mantém compatibilidade caso user venha None.
     """
-    linha_col = _resolve_linha_column()
+    if not user:
+        return None, None
 
-    if linha_col:
-        linha_select = sql.SQL("{} AS linha").format(sql.Identifier(linha_col))
-    else:
-        linha_select = sql.SQL("NULL::text AS linha")
-
-    query = sql.SQL("""
-        SELECT
-            codigo,
-            cliente,
-            setor,
-            {linha_select},
-            meta_padrao,
-            tempo_montagem,
-            blank,
-            fase,
-            criado_em
-        FROM modelos
-        ORDER BY criado_em DESC NULLS LAST, codigo ASC
-    """).format(linha_select=linha_select)
-
-    with get_db() as conn:
-        with conn.cursor(row_factory=dict_row) as cur:
-            cur.execute(query)
-            return cur.fetchall() or []
+    user_id = getattr(user, "id", None)
+    username = getattr(user, "username", None) or getattr(user, "email", None) or None
+    return user_id, username
 
 
-def buscar_ultimo_modelo():
-    with get_db() as conn:
-        with conn.cursor(row_factory=dict_row) as cur:
-            cur.execute("""
-                SELECT codigo
-                FROM modelos
-                ORDER BY criado_em DESC NULLS LAST
-                LIMIT 1
-            """)
-            row = cur.fetchone()
-            return row["codigo"] if row else None
+def cadastrar_modelo(dados, user=None):
+    setor = (dados.get("setor") or "").strip()
+    linha = (dados.get("linha") or "").strip()
+
+    ok, err = _validate_setor_linha(setor, linha)
+    if not ok:
+        return {"sucesso": False, "mensagem": err}
+
+    try:
+        uid, uname = _audit_user(user)
+        modelos_repository.inserir(dados, audit_user_id=uid, audit_username=uname)
+        _cache_invalidate()
+        return {"sucesso": True, "mensagem": "Modelo cadastrado"}
+    except Exception as e:
+        print("ERRO AO CADASTRAR:", e)
+        return {"sucesso": False, "mensagem": str(e)}
 
 
-def _select_modelo_row(cur, codigo: str, fase: str, linha: Optional[str]) -> Optional[dict]:
-    """
-    Busca o registro atual do modelo para auditoria.
-    Compatível com banco com/sem coluna linha.
-    """
-    linha_col = _resolve_linha_column()
-
-    if linha_col:
-        q = sql.SQL("""
-            SELECT
-              codigo, cliente, setor, {linha_col} AS linha,
-              meta_padrao, tempo_montagem, blank, fase
-            FROM modelos
-            WHERE codigo = %s AND fase = %s AND {linha_col} = %s
-            LIMIT 1
-        """).format(linha_col=sql.Identifier(linha_col))
-        cur.execute(q, (codigo, fase, linha))
-        return cur.fetchone()
-
-    q = """
-        SELECT codigo, cliente, setor, NULL::text AS linha,
-               meta_padrao, tempo_montagem, blank, fase
-        FROM modelos
-        WHERE codigo = %s AND fase = %s
-        LIMIT 1
-    """
-    cur.execute(q, (codigo, fase))
-    return cur.fetchone()
-
-
-def _audit_insert(cur, *, codigo: str, fase: str, linha: Optional[str],
-                  action: str, user_id: Optional[int], username: Optional[str],
-                  changes: Optional[dict]):
-    _ensure_audit_schema()
-
-    cur.execute(
-        """
-        INSERT INTO modelos_audit
-            (codigo, fase, linha, action, changed_by_user_id, changed_by_username, changes)
-        VALUES (%s, %s, %s, %s, %s, %s, %s::jsonb)
-        """,
-        (codigo, fase, linha, action, user_id, username, Json(changes) if changes is not None else None)
-    )
-
-
-def inserir(dados, *, audit_user_id: Optional[int] = None, audit_username: Optional[str] = None):
-    """
-    Compatível com banco com/sem coluna de linha.
-
-    Importante:
-    - tempo_montagem precisa manter 2 casas (DB deve ser NUMERIC(10,2))
-    - meta_padrao idem (numeric)
-    - blank é int
-    """
-    linha_col = _resolve_linha_column()
-
-    if linha_col:
-        cols = ["codigo", "cliente", "setor", linha_col, "meta_padrao", "tempo_montagem", "blank", "fase"]
-        vals = [
-            dados["codigo"],
-            dados["cliente"],
-            dados["setor"],
-            (dados.get("linha") or "").strip() or None,
-            dados["meta_padrao"],
-            dados.get("tempo_montagem"),
-            dados["blank"],
-            dados["fase"],
-        ]
-
-        query = sql.SQL("""
-            INSERT INTO modelos ({cols})
-            VALUES (
-                %s, %s, %s, NULLIF(%s, '')::text,
-                NULLIF(%s, '')::numeric,
-                NULLIF(%s, '')::numeric,
-                NULLIF(%s, '')::int,
-                %s
-            )
-        """).format(cols=sql.SQL(", ").join(sql.Identifier(c) for c in cols))
-
-        params = tuple(vals)
-
-    else:
-        cols = [
-            "codigo",
-            "cliente",
-            "setor",
-            "meta_padrao",
-            "tempo_montagem",
-            "blank",
-            "fase",
-        ]
-        vals = [
-            dados["codigo"],
-            dados["cliente"],
-            dados["setor"],
-            dados["meta_padrao"],
-            dados.get("tempo_montagem"),
-            dados["blank"],
-            dados["fase"],
-        ]
-
-        query = sql.SQL("""
-            INSERT INTO modelos ({cols})
-            VALUES (
-                %s, %s, %s,
-                NULLIF(%s, '')::numeric,
-                NULLIF(%s, '')::numeric,
-                NULLIF(%s, '')::int,
-                %s
-            )
-        """).format(cols=sql.SQL(", ").join(sql.Identifier(c) for c in cols))
-
-        params = tuple(vals)
-
-    with get_db() as conn:
-        with conn.cursor(row_factory=dict_row) as cur:
-            cur.execute(query, params)
-
-            codigo = str(dados.get("codigo") or "").strip()
-            fase = str(dados.get("fase") or "").strip()
-            linha = (dados.get("linha") or "").strip() or None
-
-            if codigo and fase:
-                _audit_insert(
-                    cur,
-                    codigo=codigo,
-                    fase=fase,
-                    linha=linha,
-                    action="CREATE",
-                    user_id=audit_user_id,
-                    username=audit_username,
-                    changes={"created": True}
-                )
-
-        conn.commit()
-
-
-def excluir(codigo, fase, linha, *, audit_user_id: Optional[int] = None, audit_username: Optional[str] = None):
-    """
-    Compatível com banco com/sem coluna de linha:
-    - Se existir linha_col: usa no WHERE
-    - Se não existir: ignora linha e remove por (codigo, fase)
-
-    Também registra auditoria (DELETE) com snapshot do que existia.
-    """
-    linha_col = _resolve_linha_column()
-
-    with get_db() as conn:
-        with conn.cursor(row_factory=dict_row) as cur:
-            before = _select_modelo_row(cur, codigo, fase, linha)
-
-            if linha_col:
-                query = sql.SQL("DELETE FROM modelos WHERE codigo = %s AND fase = %s AND {} = %s").format(
-                    sql.Identifier(linha_col)
-                )
-                params = (codigo, fase, linha)
-            else:
-                query = sql.SQL("DELETE FROM modelos WHERE codigo = %s AND fase = %s")
-                params = (codigo, fase)
-
-            cur.execute(query, params)
-
-            if before:
-                _audit_insert(
-                    cur,
-                    codigo=codigo,
-                    fase=fase,
-                    linha=(before.get("linha") or linha or None),
-                    action="DELETE",
-                    user_id=audit_user_id,
-                    username=audit_username,
-                    changes={"before": before, "deleted": True}
-                )
-
-        conn.commit()
-
-
-def atualizar(codigo, fase, linha, campos, *, audit_user_id: Optional[int] = None, audit_username: Optional[str] = None):
-    """
-    Compatível com banco com/sem coluna de linha.
-    Casts por campo:
-    - meta_padrao: numeric
-    - tempo_montagem: numeric (mantém decimais)
-    - blank: int
-
-    Auditoria (UPDATE):
-    - salva before/after apenas dos campos alterados
-    - salva também chave do modelo (codigo/fase/linha)
-    """
-    linha_col = _resolve_linha_column()
-
-    casts = {
-        "meta_padrao": sql.SQL("::numeric"),
-        "tempo_montagem": sql.SQL("::numeric"),
-        "blank": sql.SQL("::int"),
-    }
-
-    set_parts = []
-    values: list[Any] = []
-
-    for k, v in campos.items():
-        cast = casts.get(k)
-        if cast is not None:
-            set_parts.append(sql.SQL("{} = %s").format(sql.Identifier(k)) + cast)
-        else:
-            set_parts.append(sql.SQL("{} = %s").format(sql.Identifier(k)))
-        values.append(v)
-
-    with get_db() as conn:
-        with conn.cursor(row_factory=dict_row) as cur:
-            before = _select_modelo_row(cur, codigo, fase, linha)
-
-            if linha_col:
-                where_sql = sql.SQL("WHERE codigo = %s AND fase = %s AND {} = %s").format(sql.Identifier(linha_col))
-                values_where = [codigo, fase, linha]
-            else:
-                where_sql = sql.SQL("WHERE codigo = %s AND fase = %s")
-                values_where = [codigo, fase]
-
-            q = sql.SQL("UPDATE modelos SET ") + sql.SQL(", ").join(set_parts) + sql.SQL(" ") + where_sql
-            cur.execute(q, values + values_where)
-
-            new_codigo = str(campos.get("codigo") or codigo).strip()
-            after = _select_modelo_row(cur, new_codigo, fase, linha)
-
-            if before:
-                changes = {}
-                for key in campos.keys():
-                    changes[key] = {
-                        "before": before.get(key),
-                        "after": (after.get(key) if after else None),
-                    }
-
-                _audit_insert(
-                    cur,
-                    codigo=new_codigo,
-                    fase=fase,
-                    linha=(after.get("linha") if after else (before.get("linha") or linha or None)),
-                    action="UPDATE",
-                    user_id=audit_user_id,
-                    username=audit_username,
-                    changes={
-                        "changed_fields": list(campos.keys()),
-                        "diff": changes
-                    }
-                )
-
-        conn.commit()
-
-
-def listar_historico(codigo: str, fase: str, linha: Optional[str], limit: int = 50):
-    """
-    Retorna histórico do modelo (filtra corretamente por codigo + fase + linha).
-    """
-    _ensure_audit_schema()
-
-    codigo = (codigo or "").strip()
-    fase = (fase or "").strip()
-    linha = (linha or "").strip() or None
+def excluir_modelo(dados, user=None):
+    codigo = (dados.get("codigo") or "").strip()
+    fase = (dados.get("fase") or "").strip()
+    linha = (dados.get("linha") or "").strip()
+    setor = (dados.get("setor") or "").strip()
 
     if not codigo or not fase:
-        return []
+        return {"sucesso": False, "mensagem": "Código e fase são obrigatórios"}
 
-    with get_db() as conn:
-        with conn.cursor(row_factory=dict_row) as cur:
-            cur.execute(
-                """
-                SELECT
-                  id,
-                  action,
-                  changed_at,
-                  changed_by_username,
-                  changed_by_user_id,
-                  changes
-                FROM modelos_audit
-                WHERE codigo = %s
-                  AND fase = %s
-                  AND (linha IS NOT DISTINCT FROM %s)
-                ORDER BY changed_at DESC
-                LIMIT %s
-                """,
-                (codigo, fase, linha, limit)
-            )
-            return cur.fetchall() or []
+    # Se veio setor/linha do frontend, valida coerência (protege contra payload inválido)
+    if setor or linha:
+        ok, err = _validate_setor_linha(setor, linha)
+        if not ok:
+            return {"sucesso": False, "mensagem": err}
+
+    if not linha:
+        # Mantém compatibilidade com telas antigas, mas força linha para não apagar errado em bancos com linha
+        return {"sucesso": False, "mensagem": "Linha é obrigatória"}
+
+    try:
+        uid, uname = _audit_user(user)
+        modelos_repository.excluir(codigo, fase, linha, audit_user_id=uid, audit_username=uname)
+        _cache_invalidate()
+        return {"sucesso": True, "mensagem": "Modelo excluído com sucesso"}
+    except Exception as e:
+        print("ERRO AO EXCLUIR:", e)
+        return {"sucesso": False, "mensagem": "Erro ao excluir modelo"}
+
+
+def atualizar_modelo(dados, user=None):
+    codigo = (dados.get("codigo") or "").strip()
+    fase = (dados.get("fase") or "").strip()
+    linha = (dados.get("linha") or "").strip()
+    setor = (dados.get("setor") or "").strip()
+
+    if not codigo or not fase:
+        return {"sucesso": False, "mensagem": "Código e fase são obrigatórios"}
+
+    ok, err = _validate_setor_linha(setor, linha)
+    if not ok:
+        return {"sucesso": False, "mensagem": err}
+
+    campos = {}
+
+    if dados.get("meta_padrao"):
+        campos["meta_padrao"] = float(dados["meta_padrao"])
+
+    if dados.get("tempo_montagem"):
+        campos["tempo_montagem"] = float(dados["tempo_montagem"])
+
+    if dados.get("blank"):
+        campos["blank"] = int(dados["blank"])
+
+    if dados.get("novo_codigo"):
+        campos["codigo"] = str(dados["novo_codigo"]).strip()
+
+    if not campos:
+        return {"sucesso": False, "mensagem": "Nada para atualizar"}
+
+    try:
+        uid, uname = _audit_user(user)
+        modelos_repository.atualizar(codigo, fase, linha, campos, audit_user_id=uid, audit_username=uname)
+        _cache_invalidate()
+        return {"sucesso": True, "mensagem": "Modelo atualizado"}
+    except Exception as e:
+        print("ERRO AO ATUALIZAR:", e)
+        return {"sucesso": False, "mensagem": "Erro ao atualizar modelo"}
+
+
+def listar_historico_modelo(codigo: str, fase: str, linha: str, limit: int = 50):
+    return modelos_repository.listar_historico(codigo=codigo, fase=fase, linha=linha, limit=limit)
+
+
+def calcular_meta(dados):
+    meta = float(dados["meta_padrao"])
+    pessoas_atual = int(dados["pessoas_atuais"])
+    pessoas_padrao = int(dados["pessoas_padrao"])
+    minutos = int(dados["minutos"])
+
+    meta_ajustada = round(
+        meta * (pessoas_atual / pessoas_padrao) * 0.85
+    )
+
+    qtd = round(meta_ajustada * (minutos / 60))
+
+    return {"resultado": f"{minutos} min → {qtd} peças"}
+
+
+def calcular_perda_producao(meta_hora, producao_real):
+    meta_hora = float(meta_hora)
+    producao_real = float(producao_real)
+
+    if meta_hora <= 0:
+        return {"erro": "Meta inválida"}
+
+    if producao_real >= meta_hora:
+        return {"tempo_perdido": "0 minutos e 00 segundos", "pecas_faltantes": 0}
+
+    minutos_por_peca = 60 / meta_hora
+    tempo_produzido = producao_real * minutos_por_peca
+    tempo_perdido = 60 - tempo_produzido
+
+    minutos = int(tempo_perdido)
+    segundos = int(round((tempo_perdido - minutos) * 60))
+
+    if segundos == 60:
+        minutos += 1
+        segundos = 0
+
+    if segundos == 0:
+        tempo_fmt = f"{minutos} minutos"
+    else:
+        tempo_fmt = f"{minutos} minutos e {segundos:02d} segundos"
+
+    return {
+        "tempo_perdido": tempo_fmt,
+        "pecas_faltantes": int(meta_hora - producao_real)
+    }
+
+
+def calcular_meta_smt(tempo_montagem, blank):
+    tempo = float(tempo_montagem)
+    blank = int(blank)
+
+    if tempo <= 0 or blank <= 0:
+        return {"sucesso": False, "erro": "Valores inválidos"}
+
+    meta_teorica_blanks_float = 3600 / tempo
+    meta_teorica_blanks_int = math.floor(meta_teorica_blanks_float)
+    meta_teorica_placas_int = meta_teorica_blanks_int * blank
+
+    meta_com_perda_blanks = meta_teorica_blanks_float * 0.9
+    meta_com_perda_placas = meta_com_perda_blanks * blank
+
+    meta_final = math.floor(meta_com_perda_placas / blank) * blank
+
+    return {
+        "sucesso": True,
+        "dados": {
+            "meta_hora": meta_final,
+            "meta_teorica_blanks": meta_teorica_blanks_int,
+            "meta_teorica_placas": meta_teorica_placas_int,
+            "meta_com_perda": round(meta_com_perda_placas, 2)
+        }
+    }
+
+
+def calcular_tempo_smt_inverso(meta_hora, blank):
+    try:
+        meta = float(meta_hora)
+        blank = int(blank)
+
+        if meta <= 0 or blank <= 0:
+            return {"sucesso": False, "erro": "Valores inválidos"}
+
+        tempo = (3600 * 0.9 * blank) / meta
+
+        return {"sucesso": True, "dados": {"tempo_montagem": round(tempo, 2)}}
+    except Exception:
+        return {"sucesso": False, "erro": "Erro no cálculo inverso"}
+
+
+def calculo_rapido(meta_hora, minutos, blank=None):
+    meta_hora = float(meta_hora)
+    minutos = float(minutos)
+
+    placas = (meta_hora / 60) * minutos
+
+    if not blank or float(blank) <= 1:
+        return {"placas": round(placas, 2)}
+
+    blank = int(blank)
+    blanks = math.floor(placas / blank)
+
+    return {"blanks": blanks, "placas_reais": blanks * blank}
