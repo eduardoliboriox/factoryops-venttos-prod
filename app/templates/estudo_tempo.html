@@ -46,12 +46,10 @@
   .ts-muted { color: rgba(15, 23, 42, 0.65); font-size: 12px; }
   .ts-badge { font-weight: 800; }
 
-  /* Tabela: centraliza tudo por padrão, exceto coluna Operação */
   .ts-table th { white-space: nowrap; text-align: center; vertical-align: middle; }
   .ts-table td { vertical-align: middle; text-align: center; }
   .ts-table .ts-col-op { text-align: left !important; }
 
-  /* Pills (OK / BALANCE) — retângulo arredondado com fundo e letra branca */
   .ts-status-pill{
     display: inline-block;
     padding: 4px 10px;
@@ -80,243 +78,250 @@
   }
 </style>
 
-<div class="container-fluid">
+<div class="document-mobile-wrapper">
+  <div class="document-desktop-canvas">
 
-  <div class="row g-3 mb-3">
-    <div class="col-12 col-lg-5">
-      <div class="ts-card">
+    <div class="container-fluid">
+
+      <div class="row g-3 mb-3">
+        <div class="col-12 col-lg-5">
+          <div class="ts-card">
+            <div class="ts-header">
+              <div>
+                <div class="fw-bold">Criar novo estudo</div>
+                <div class="ts-muted">Cabeçalho (produto, metas, parâmetros)</div>
+              </div>
+              <span class="badge text-bg-success ts-badge">MVP</span>
+            </div>
+
+            <div class="p-3">
+              <div id="tsMsgCreate"></div>
+
+              <form id="formCreateStudy" class="row g-2">
+                <div class="col-12">
+                  <label class="form-label fw-bold">Produto</label>
+                  <input class="form-control" name="produto" placeholder="Ex: CONJUNTO 9" required>
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">Cliente</label>
+                  <input class="form-control" name="cliente" placeholder="Ex: HARMAN">
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">Linha</label>
+                  <input class="form-control" name="linha" placeholder="Ex: SMD-01">
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">UPH Meta</label>
+                  <input class="form-control" name="uph_meta" type="number" value="70" min="0">
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">HC Meta</label>
+                  <input class="form-control" name="hc_meta" type="number" step="0.01" value="16" min="0">
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">Perda padrão</label>
+                  <input class="form-control" name="perda_padrao" type="number" step="0.01" value="0.10" min="0" max="0.80">
+                  <div class="ts-muted">0.10 = 10% </div>
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">Horas do turno</label>
+                  <input class="form-control" name="horas_turno" type="number" step="0.01" value="8.30" min="1" max="24">
+                  <div class="ts-muted">Usado para calcular UPD</div>
+                </div>
+
+                <div class="col-12">
+                  <label class="form-label fw-bold">Informações adicionais</label>
+                  <textarea class="form-control" name="info_adicionais" rows="2" placeholder="Opcional"></textarea>
+                </div>
+
+                <div class="col-12 d-flex gap-2 flex-wrap mt-2">
+                  <button class="btn btn-success">
+                    <i class="bi bi-plus-circle"></i> Criar estudo
+                  </button>
+
+                  <button type="button" class="btn btn-outline-secondary" onclick="loadStudies()">
+                    <i class="bi bi-arrow-repeat"></i> Atualizar lista
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12 col-lg-7">
+          <div class="ts-card">
+            <div class="ts-header">
+              <div>
+                <div class="fw-bold">Estudos recentes</div>
+                <div class="ts-muted">Selecione um para ver a tabela no formato da engenharia</div>
+              </div>
+              <button class="btn btn-outline-dark btn-sm" onclick="loadStudies()">
+                <i class="bi bi-list"></i> Carregar
+              </button>
+            </div>
+
+            <div class="p-3">
+              <div class="d-flex gap-2 flex-wrap mb-2">
+                <select id="studySelect" class="form-select" style="max-width: 520px;"></select>
+                <button class="btn btn-primary" onclick="openSelectedStudy()">
+                  <i class="bi bi-eye"></i> Abrir
+                </button>
+                <button class="btn btn-outline-danger" onclick="deleteSelectedStudy()">
+                  <i class="bi bi-trash"></i> Excluir
+                </button>
+              </div>
+
+              <div class="ts-kpi-note">
+                <div class="ts-muted mb-1"><strong>O que é Takt Time?</strong></div>
+                <div style="font-size: 13px;">
+                  <strong>Takt Time (s/peça)</strong> é o tempo máximo que cada peça pode levar para você bater a meta.
+                  Aqui usamos: <strong>takt = 3600 / UPH Meta</strong>.
+                  Quando uma operação fica com <strong>UPH Real &lt; UPH Meta</strong>, marcamos como <strong>BALANCE</strong> e a linha fica destacada.
+                </div>
+              </div>
+
+              <div class="ts-muted mt-2">
+                Dica: UPH Real = (3600 / TempoCiclo) * (1 - perda). BALANCE aparece quando UPH Real &lt; UPH Meta.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="studyArea" class="ts-card d-none">
         <div class="ts-header">
           <div>
-            <div class="fw-bold">Criar novo estudo</div>
-            <div class="ts-muted">Cabeçalho (produto, metas, parâmetros)</div>
+            <div class="fw-bold" id="studyTitle">—</div>
+            <div class="ts-muted" id="studySubtitle">—</div>
           </div>
-          <span class="badge text-bg-success ts-badge">MVP</span>
+
+          <div class="d-flex gap-2 flex-wrap">
+            <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalAddOp">
+              <i class="bi bi-plus-lg"></i> Nova operação
+            </button>
+          </div>
         </div>
 
         <div class="p-3">
-          <div id="tsMsgCreate"></div>
-
-          <form id="formCreateStudy" class="row g-2">
-            <div class="col-12">
-              <label class="form-label fw-bold">Produto</label>
-              <input class="form-control" name="produto" placeholder="Ex: CONJUNTO 9" required>
+          <div class="row g-2 mb-2">
+            <div class="col-md-3">
+              <div class="ts-muted">UPH META</div>
+              <div class="fs-4 fw-bold" id="kpiUphMeta">—</div>
             </div>
+            <div class="col-md-3">
+              <div class="ts-muted">HC META</div>
+              <div class="fs-4 fw-bold" id="kpiHcMeta">—</div>
+            </div>
+            <div class="col-md-3">
+              <div class="ts-muted">TAKT TIME (s)</div>
+              <div class="fs-4 fw-bold" id="kpiTaktTime">—</div>
+            </div>
+            <div class="col-md-3">
+              <div class="ts-muted">UPD META</div>
+              <div class="fs-4 fw-bold" id="kpiUpdMeta">—</div>
+            </div>
+          </div>
 
+          <div class="row g-2 mb-2">
             <div class="col-md-6">
-              <label class="form-label fw-bold">Cliente</label>
-              <input class="form-control" name="cliente" placeholder="Ex: HARMAN">
+              <div class="ts-muted">TOTAL OPERAÇÕES</div>
+              <div class="fs-4 fw-bold" id="kpiTotalOps">—</div>
             </div>
-
             <div class="col-md-6">
-              <label class="form-label fw-bold">Linha</label>
-              <input class="form-control" name="linha" placeholder="Ex: SMD-01">
+              <div class="ts-muted">TOTAL TEMPO (s)</div>
+              <div class="fs-4 fw-bold" id="kpiTotalTempo">—</div>
             </div>
+          </div>
 
-            <div class="col-md-6">
-              <label class="form-label fw-bold">UPH Meta</label>
-              <input class="form-control" name="uph_meta" type="number" value="70" min="0">
-            </div>
+          <div id="tsMsgOps"></div>
 
-            <div class="col-md-6">
-              <label class="form-label fw-bold">HC Meta</label>
-              <input class="form-control" name="hc_meta" type="number" step="0.01" value="16" min="0">
-            </div>
-
-            <div class="col-md-6">
-              <label class="form-label fw-bold">Perda padrão</label>
-              <input class="form-control" name="perda_padrao" type="number" step="0.01" value="0.10" min="0" max="0.80">
-              <div class="ts-muted">0.10 = 10% </div>
-            </div>
-
-            <div class="col-md-6">
-              <label class="form-label fw-bold">Horas do turno</label>
-              <input class="form-control" name="horas_turno" type="number" step="0.01" value="8.30" min="1" max="24">
-              <div class="ts-muted">Usado para calcular UPD</div>
-            </div>
-
-            <div class="col-12">
-              <label class="form-label fw-bold">Informações adicionais</label>
-              <textarea class="form-control" name="info_adicionais" rows="2" placeholder="Opcional"></textarea>
-            </div>
-
-            <div class="col-12 d-flex gap-2 flex-wrap mt-2">
-              <button class="btn btn-success">
-                <i class="bi bi-plus-circle"></i> Criar estudo
-              </button>
-
-              <button type="button" class="btn btn-outline-secondary" onclick="loadStudies()">
-                <i class="bi bi-arrow-repeat"></i> Atualizar lista
-              </button>
-            </div>
-          </form>
+          <div class="table-responsive">
+            <table class="table table-sm table-bordered ts-table align-middle">
+              <thead class="table-light">
+                <tr>
+                  <th>N°</th>
+                  <th class="ts-col-op">Operação</th>
+                  <th>Tempo Ciclo (s)</th>
+                  <th>Posto</th>
+                  <th>HC</th>
+                  <th>UPH (Real)</th>
+                  <th>UPD</th>
+                  <th>Balance</th>
+                  <th style="width: 90px;"></th>
+                </tr>
+              </thead>
+              <tbody id="opsTableBody"></tbody>
+            </table>
+          </div>
         </div>
       </div>
+
     </div>
 
-    <div class="col-12 col-lg-7">
-      <div class="ts-card">
-        <div class="ts-header">
-          <div>
-            <div class="fw-bold">Estudos recentes</div>
-            <div class="ts-muted">Selecione um para ver a tabela no formato da engenharia</div>
+    <!-- Modal: Add Operation -->
+    <div class="modal fade" id="modalAddOp" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Nova operação</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
           </div>
-          <button class="btn btn-outline-dark btn-sm" onclick="loadStudies()">
-            <i class="bi bi-list"></i> Carregar
-          </button>
-        </div>
 
-        <div class="p-3">
-          <div class="d-flex gap-2 flex-wrap mb-2">
-            <select id="studySelect" class="form-select" style="max-width: 520px;"></select>
-            <button class="btn btn-primary" onclick="openSelectedStudy()">
-              <i class="bi bi-eye"></i> Abrir
+          <div class="modal-body">
+            <form id="formAddOp" class="row g-2">
+              <div class="col-md-2">
+                <label class="form-label fw-bold">N</label>
+                <input class="form-control" name="ordem" type="number" value="1" min="1" required>
+              </div>
+
+              <div class="col-md-10">
+                <label class="form-label fw-bold">Operação</label>
+                <input class="form-control" name="operacao" placeholder="Ex: TESTE (ETIQUETA + REVISÃO + MARCAÇÃO)" required>
+              </div>
+
+              <div class="col-md-4">
+                <label class="form-label fw-bold">Tempo ciclo (s)</label>
+                <input class="form-control" name="tempo_ciclo_sec" type="number" step="0.01" min="0.01" placeholder="Ex: 46.20" required>
+              </div>
+
+              <div class="col-md-4">
+                <label class="form-label fw-bold">Posto</label>
+                <input class="form-control" name="posto_trabalho" type="number" value="1" min="1" required>
+              </div>
+
+              <div class="col-md-4">
+                <label class="form-label fw-bold">HC</label>
+                <input class="form-control" name="hc" type="number" step="0.01" value="1.00" min="0.01" required>
+              </div>
+            </form>
+
+            <div class="ts-muted mt-2">
+              UPH Real será calculado automaticamente no backend usando a perda padrão do estudo.
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button class="btn btn-primary" onclick="submitAddOp()">
+              <i class="bi bi-save"></i> Salvar operação
             </button>
-            <button class="btn btn-outline-danger" onclick="deleteSelectedStudy()">
-              <i class="bi bi-trash"></i> Excluir
-            </button>
-          </div>
-
-          <div class="ts-kpi-note">
-            <div class="ts-muted mb-1"><strong>O que é Takt Time?</strong></div>
-            <div style="font-size: 13px;">
-              <strong>Takt Time (s/peça)</strong> é o tempo máximo que cada peça pode levar para você bater a meta.
-              Aqui usamos: <strong>takt = 3600 / UPH Meta</strong>.
-              Quando uma operação fica com <strong>UPH Real &lt; UPH Meta</strong>, marcamos como <strong>BALANCE</strong> e a linha fica destacada.
-            </div>
-          </div>
-
-          <div class="ts-muted mt-2">
-            Dica: UPH Real = (3600 / TempoCiclo) * (1 - perda). BALANCE aparece quando UPH Real &lt; UPH Meta.
           </div>
         </div>
       </div>
     </div>
-  </div>
 
-  <div id="studyArea" class="ts-card d-none">
-    <div class="ts-header">
-      <div>
-        <div class="fw-bold" id="studyTitle">—</div>
-        <div class="ts-muted" id="studySubtitle">—</div>
-      </div>
-
-      <div class="d-flex gap-2 flex-wrap">
-        <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalAddOp">
-          <i class="bi bi-plus-lg"></i> Nova operação
-        </button>
-      </div>
-    </div>
-
-    <div class="p-3">
-      <div class="row g-2 mb-2">
-        <div class="col-md-3">
-          <div class="ts-muted">UPH META</div>
-          <div class="fs-4 fw-bold" id="kpiUphMeta">—</div>
-        </div>
-        <div class="col-md-3">
-          <div class="ts-muted">HC META</div>
-          <div class="fs-4 fw-bold" id="kpiHcMeta">—</div>
-        </div>
-        <div class="col-md-3">
-          <div class="ts-muted">TAKT TIME (s)</div>
-          <div class="fs-4 fw-bold" id="kpiTaktTime">—</div>
-        </div>
-        <div class="col-md-3">
-          <div class="ts-muted">UPD META</div>
-          <div class="fs-4 fw-bold" id="kpiUpdMeta">—</div>
-        </div>
-      </div>
-
-      <div class="row g-2 mb-2">
-        <div class="col-md-6">
-          <div class="ts-muted">TOTAL OPERAÇÕES</div>
-          <div class="fs-4 fw-bold" id="kpiTotalOps">—</div>
-        </div>
-        <div class="col-md-6">
-          <div class="ts-muted">TOTAL TEMPO (s)</div>
-          <div class="fs-4 fw-bold" id="kpiTotalTempo">—</div>
-        </div>
-      </div>
-
-      <div id="tsMsgOps"></div>
-
-      <div class="table-responsive">
-        <table class="table table-sm table-bordered ts-table align-middle">
-          <thead class="table-light">
-            <tr>
-              <th>N°</th>
-              <th class="ts-col-op">Operação</th>
-              <th>Tempo Ciclo (s)</th>
-              <th>Posto</th>
-              <th>HC</th>
-              <th>UPH (Real)</th>
-              <th>UPD</th>
-              <th>Balance</th>
-              <th style="width: 90px;"></th>
-            </tr>
-          </thead>
-          <tbody id="opsTableBody"></tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
-</div>
-
-<!-- Modal: Add Operation -->
-<div class="modal fade" id="modalAddOp" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered modal-lg">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Nova operação</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-
-      <div class="modal-body">
-        <form id="formAddOp" class="row g-2">
-          <div class="col-md-2">
-            <label class="form-label fw-bold">N</label>
-            <input class="form-control" name="ordem" type="number" value="1" min="1" required>
-          </div>
-
-          <div class="col-md-10">
-            <label class="form-label fw-bold">Operação</label>
-            <input class="form-control" name="operacao" placeholder="Ex: TESTE (ETIQUETA + REVISÃO + MARCAÇÃO)" required>
-          </div>
-
-          <div class="col-md-4">
-            <label class="form-label fw-bold">Tempo ciclo (s)</label>
-            <input class="form-control" name="tempo_ciclo_sec" type="number" step="0.01" min="0.01" placeholder="Ex: 46.20" required>
-          </div>
-
-          <div class="col-md-4">
-            <label class="form-label fw-bold">Posto</label>
-            <input class="form-control" name="posto_trabalho" type="number" value="1" min="1" required>
-          </div>
-
-          <div class="col-md-4">
-            <label class="form-label fw-bold">HC</label>
-            <input class="form-control" name="hc" type="number" step="0.01" value="1.00" min="0.01" required>
-          </div>
-        </form>
-
-        <div class="ts-muted mt-2">
-          UPH Real será calculado automaticamente no backend usando a perda padrão do estudo.
-        </div>
-      </div>
-
-      <div class="modal-footer">
-        <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
-        <button class="btn btn-primary" onclick="submitAddOp()">
-          <i class="bi bi-save"></i> Salvar operação
-        </button>
-      </div>
-    </div>
   </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
+<script src="{{ url_for('static', filename='js/document-fit.js') }}?v={{ APP_VERSION }}"></script>
 <script>
 let TS = {
   studies: [],
