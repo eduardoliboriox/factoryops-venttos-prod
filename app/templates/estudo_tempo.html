@@ -75,6 +75,24 @@
     border-radius: 12px;
     padding: 10px 12px;
   }
+
+  .ts-mini-help {
+    font-size: 11.5px;
+    color: rgba(15, 23, 42, 0.72);
+    margin-top: 6px;
+    line-height: 1.25;
+  }
+
+  .ts-mini-help strong {
+    color: rgba(15, 23, 42, 0.92);
+  }
+
+  .ts-balance-summary {
+    background: rgba(220, 53, 69, 0.06);
+    border: 1px solid rgba(220, 53, 69, 0.12);
+    border-radius: 12px;
+    padding: 10px 12px;
+  }
 </style>
 
 <div class="container-fluid">
@@ -133,7 +151,7 @@
             <div class="col-md-6">
               <label class="form-label fw-bold">Perda padrão</label>
               <input class="form-control" name="perda_padrao" type="number" step="0.01" value="0.10" min="0" max="0.80">
-              <div class="ts-muted">0.10 = 10% </div>
+              <div class="ts-muted">0.10 = 10%</div>
             </div>
 
             <div class="col-md-6">
@@ -187,8 +205,12 @@
           <div class="ts-kpi-note">
             <div class="ts-muted mb-1"><strong>O que é Takt Time?</strong></div>
             <div style="font-size: 13px;">
-              <strong>Takt Time (s/peça)</strong> é o tempo máximo que cada peça pode levar para você bater a meta.
-              Aqui usamos: <strong>takt = 3600 / UPH Meta</strong>.
+              <strong>Takt Time (s/peça)</strong> é o tempo teórico para bater a meta por hora:
+              <strong>takt = 3600 / UPH Meta</strong>.
+              <br>
+              Como você usa <strong>Perda padrão</strong>, o sistema também calcula um
+              <strong>Tempo alvo com perda</strong> (mais apertado) que é o que define <strong>OK/BALANCE</strong>.
+              <br>
               Quando uma operação fica com <strong>UPH Real &lt; UPH Meta</strong>, marcamos como <strong>BALANCE</strong> e a linha fica destacada.
             </div>
           </div>
@@ -232,6 +254,7 @@
         <div class="col-md-3">
           <div class="ts-muted">TAKT TIME (s)</div>
           <div class="fs-4 fw-bold" id="kpiTaktTime">—</div>
+          <div class="ts-mini-help" id="kpiCycleTargetNote"></div>
         </div>
         <div class="col-md-3">
           <div class="ts-muted">UPD META</div>
@@ -249,6 +272,8 @@
           <div class="fs-4 fw-bold" id="kpiTotalTempo">—</div>
         </div>
       </div>
+
+      <div class="ts-balance-summary mb-2 d-none" id="balanceSummary"></div>
 
       <div id="tsMsgOps"></div>
 
@@ -275,7 +300,6 @@
 
 </div>
 
-<!-- Modal: Add Operation -->
 <div class="modal fade" id="modalAddOp" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered modal-lg">
     <div class="modal-content">
@@ -414,10 +438,8 @@ async function refreshLinhasBySetor(setor, keepValue=false) {
       return;
     }
 
-    // se veio vazio, tenta fallback (pode ser setor novo sem cadastro ainda)
     renderLinhaOptions(TS_LINHAS_FALLBACK[setor] || [], keepValue);
   } catch (e) {
-    // fallback em caso de falha
     renderLinhaOptions(TS_LINHAS_FALLBACK[setor] || [], keepValue);
   }
 }
@@ -468,7 +490,6 @@ async function createStudy(e) {
 
   showMsg('tsMsgCreate', `Estudo criado (#${data.study.id}).`, 'success');
 
-  // reset + repopula Linha (senão fica vazio)
   e.target.reset();
   const setorEl = document.getElementById('tsSetorSelect');
   if (setorEl) await refreshLinhasBySetor(setorEl.value, false);
@@ -486,6 +507,47 @@ async function openSelectedStudy() {
   if (!studyId) return;
 
   await openStudy(studyId);
+}
+
+function escHtml(s) {
+  return (s || '')
+    .replaceAll('&','&amp;')
+    .replaceAll('<','&lt;')
+    .replaceAll('>','&gt;')
+    .replaceAll('"','&quot;')
+    .replaceAll("'","&#039;");
+}
+
+function formatSuggest(rec) {
+  if (!rec || rec.status !== 'BALANCE') return '';
+
+  const target = (rec.cycle_target_sec !== null && rec.cycle_target_sec !== undefined)
+    ? Number(rec.cycle_target_sec).toFixed(2)
+    : null;
+
+  const dsec = (rec.delta_sec !== null && rec.delta_sec !== undefined)
+    ? Number(rec.delta_sec).toFixed(2)
+    : null;
+
+  const dpct = (rec.delta_pct !== null && rec.delta_pct !== undefined)
+    ? Number(rec.delta_pct).toFixed(1)
+    : null;
+
+  const pf = (rec.parallel_factor !== null && rec.parallel_factor !== undefined)
+    ? Number(rec.parallel_factor).toFixed(2)
+    : null;
+
+  const ps = (rec.parallel_suggested !== null && rec.parallel_suggested !== undefined)
+    ? Number(rec.parallel_suggested)
+    : null;
+
+  return `
+    <div class="ts-mini-help">
+      <strong>Alvo c/ perda:</strong> ${target}s ·
+      <strong>Reduzir:</strong> ${dsec}s (${dpct}%)<br>
+      <strong>Ou paralelizar:</strong> ~${pf} postos → sugerir <strong>${ps}</strong>
+    </div>
+  `;
 }
 
 async function openStudy(studyId) {
@@ -518,10 +580,48 @@ async function openStudy(studyId) {
     : '—';
   document.getElementById('kpiTaktTime').textContent = takt;
 
+  const cycleTarget = (totals.cycle_target_sec !== null && totals.cycle_target_sec !== undefined)
+    ? Number(totals.cycle_target_sec).toFixed(2)
+    : null;
+
+  const perda = (totals.perda_padrao !== null && totals.perda_padrao !== undefined)
+    ? Number(totals.perda_padrao).toFixed(2)
+    : null;
+
+  const noteEl = document.getElementById('kpiCycleTargetNote');
+  if (noteEl) {
+    if (cycleTarget) {
+      noteEl.innerHTML = `<strong>Alvo c/ perda (${perda}):</strong> ${cycleTarget}s`;
+    } else {
+      noteEl.innerHTML = '';
+    }
+  }
+
   document.getElementById('kpiUpdMeta').textContent = totals.upd_meta ?? '—';
 
   document.getElementById('kpiTotalOps').textContent = totals.total_ops ?? 0;
   document.getElementById('kpiTotalTempo').textContent = (totals.total_tempo_sec ?? 0).toFixed(1);
+
+  const summary = document.getElementById('balanceSummary');
+  if (summary) {
+    const bc = Number(totals.balance_count || 0);
+    const bottleneck = Number(totals.line_uph_bottleneck || 0);
+    const gap = Number(totals.line_gap_uph || 0);
+    if (bc > 0 && Number(totals.uph_meta || 0) > 0) {
+      summary.classList.remove('d-none');
+      summary.innerHTML = `
+        <div class="ts-muted mb-1"><strong>Resumo do Balanceamento</strong></div>
+        <div style="font-size: 13px;">
+          Operações em <strong>BALANCE:</strong> <strong>${bc}</strong> ·
+          <strong>UPH gargalo da linha:</strong> <strong>${bottleneck}</strong> ·
+          <strong>Gap vs meta:</strong> <strong>${gap}</strong> UPH
+        </div>
+      `;
+    } else {
+      summary.classList.add('d-none');
+      summary.innerHTML = '';
+    }
+  }
 
   const tbody = document.getElementById('opsTableBody');
   tbody.innerHTML = '';
@@ -531,16 +631,17 @@ async function openStudy(studyId) {
 
     const bal = String(op.balance || 'OK').trim().toUpperCase();
 
-    // BALANCE = precisa de ajuste -> destaca a linha (vermelho)
     if (bal === 'BALANCE') {
       tr.classList.add('ts-row-balance');
     }
 
     const pillClass = (bal === 'OK') ? 'ts-status-ok' : 'ts-status-balance';
 
+    const suggestHtml = (bal === 'BALANCE') ? formatSuggest(op.recommendation) : '';
+
     tr.innerHTML = `
       <td class="fw-bold">${op.ordem ?? ''}</td>
-      <td class="ts-col-op">${(op.operacao || '').replaceAll('<','&lt;')}</td>
+      <td class="ts-col-op">${escHtml(op.operacao || '')}</td>
       <td>${Number(op.tempo_ciclo_sec || 0).toFixed(2)}</td>
       <td>${op.posto_trabalho ?? ''}</td>
       <td>${Number(op.hc || 0).toFixed(2)}</td>
@@ -548,6 +649,7 @@ async function openStudy(studyId) {
       <td>${op.upd ?? 0}</td>
       <td class="text-center">
         <span class="ts-status-pill ${pillClass}">${bal}</span>
+        ${suggestHtml}
       </td>
       <td class="text-center">
         <button class="btn btn-sm btn-outline-danger" onclick="deleteOp(${op.id})">
@@ -645,7 +747,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  // listener do form
   const formCreate = document.getElementById('formCreateStudy');
   if (formCreate) formCreate.addEventListener('submit', createStudy);
 
