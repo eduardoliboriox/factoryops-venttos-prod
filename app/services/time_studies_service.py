@@ -32,6 +32,25 @@ def _compute_upd(uph_real: int, horas_turno: float) -> int:
     return int(round(uph_real * horas))
 
 
+def _compute_takt_time_sec(uph_meta: int) -> Optional[float]:
+    """
+    Takt Time (s/unidade) para bater a meta por hora:
+    takt = 3600 / UPH_META
+    Ex: UPH_META=70 => 51.43 s por peça
+    """
+    if not uph_meta or uph_meta <= 0:
+        return None
+    return 3600.0 / float(uph_meta)
+
+
+def _compute_upd_meta(uph_meta: int, horas_turno: float) -> int:
+    if not uph_meta or uph_meta <= 0:
+        return 0
+    horas = float(horas_turno or 8.30)
+    horas = min(max(horas, 1.0), 24.0)
+    return int(round(float(uph_meta) * horas))
+
+
 def _balance_status(uph_real: int, uph_meta: int) -> str:
     if not uph_meta or uph_meta <= 0:
         return "OK"
@@ -83,11 +102,18 @@ def get_study_detail(study_id: int) -> Optional[dict]:
             "balance": status,
         })
 
+    takt_time_sec = _compute_takt_time_sec(uph_meta)
+    upd_meta = _compute_upd_meta(uph_meta, horas_turno)
+
     totals = {
         "total_tempo_sec": float(sum(float(o.get("tempo_ciclo_sec") or 0) for o in ops)),
         "total_ops": len(ops),
         "uph_meta": uph_meta,
         "hc_meta": float(study.get("hc_meta") or 0),
+
+        # NOVO (para UI/entendimento)
+        "takt_time_sec": float(takt_time_sec) if takt_time_sec is not None else None,
+        "upd_meta": int(upd_meta),
     }
 
     return {
