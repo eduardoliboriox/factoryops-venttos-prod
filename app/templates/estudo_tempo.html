@@ -117,6 +117,7 @@
             <div class="col-md-6">
               <label class="form-label fw-bold">Linha</label>
               <select class="form-select" name="linha" id="tsLinhaSelect" required></select>
+              <div class="ts-muted">As opções carregam conforme o setor (linhas reais do banco).</div>
             </div>
 
             <div class="col-md-6">
@@ -358,27 +359,22 @@ function openPrintView() {
   window.open(`/smt/estudo-tempo/print/${id}`, '_blank', 'noopener');
 }
 
-// =============================
-// SETOR → LINHA DINÂMICO
-// =============================
-const TS_LINHAS_POR_SETOR = {
+const TS_LINHAS_FALLBACK = {
   IM: ["IM-01","IM-02","IM-03","IM-04","IM-05","IM-06"],
   PA: ["IP-COM","PA-01","PA-03","PA-04","PA-07","PA-08","PA-09","PA-13","WIFI"],
   PTH: ["ADE-01","AXI-01","AXI-02","AXI-03","JUM-01","JUM-02","RAD-01","RAD-02","RAD-03","ROU-01","ROU-02","ROU-03"],
   SMT: ["SMT-01","SMT-02","SMT-03","SMT-04","SMT-05","SMT-06","SMT-07","SMT-08","SMT-09"]
 };
 
-function renderTSLinhas(setor, keepValue=false) {
+function renderLinhaOptions(linhas, keepValue=false) {
   const select = document.getElementById('tsLinhaSelect');
   if (!select) return;
 
-  const linhas = TS_LINHAS_POR_SETOR[setor] || [];
   const prev = keepValue ? select.value : null;
 
   select.innerHTML = '';
 
-  // fallback seguro
-  if (!linhas.length) {
+  if (!Array.isArray(linhas) || !linhas.length) {
     const opt = document.createElement('option');
     opt.value = '';
     opt.textContent = '—';
@@ -398,6 +394,31 @@ function renderTSLinhas(setor, keepValue=false) {
     select.value = prev;
   } else {
     select.value = linhas[0];
+  }
+}
+
+async function fetchLinhasDoBanco(setor) {
+  const resp = await fetch(`/api/production/lines?setor=${encodeURIComponent(setor)}`, {
+    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+  });
+  const data = await resp.json();
+  if (!resp.ok || !data || !data.sucesso) return null;
+  return Array.isArray(data.lines) ? data.lines : [];
+}
+
+async function refreshLinhasBySetor(setor, keepValue=false) {
+  try {
+    const linhas = await fetchLinhasDoBanco(setor);
+    if (linhas && linhas.length) {
+      renderLinhaOptions(linhas, keepValue);
+      return;
+    }
+
+    // se veio vazio, tenta fallback (pode ser setor novo sem cadastro ainda)
+    renderLinhaOptions(TS_LINHAS_FALLBACK[setor] || [], keepValue);
+  } catch (e) {
+    // fallback em caso de falha
+    renderLinhaOptions(TS_LINHAS_FALLBACK[setor] || [], keepValue);
   }
 }
 
@@ -450,7 +471,7 @@ async function createStudy(e) {
   // reset + repopula Linha (senão fica vazio)
   e.target.reset();
   const setorEl = document.getElementById('tsSetorSelect');
-  if (setorEl) renderTSLinhas(setorEl.value, false);
+  if (setorEl) await refreshLinhasBySetor(setorEl.value, false);
 
   await loadStudies();
 
@@ -614,12 +635,14 @@ async function deleteSelectedStudy() {
   showMsg('tsMsgCreate', `Estudo #${studyId} excluído.`, 'success');
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  // garante linhas ao carregar
+document.addEventListener('DOMContentLoaded', async () => {
+  // garante linhas ao carregar (via API; fallback se falhar)
   const setor = document.getElementById('tsSetorSelect');
   if (setor) {
-    renderTSLinhas(setor.value, true);
-    setor.addEventListener('change', () => renderTSLinhas(setor.value, false));
+    await refreshLinhasBySetor(setor.value, true);
+    setor.addEventListener('change', async () => {
+      await refreshLinhasBySetor(setor.value, false);
+    });
   }
 
   // listener do form
