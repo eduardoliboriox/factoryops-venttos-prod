@@ -1,5 +1,7 @@
 from flask import Blueprint, render_template
 from flask_login import login_required
+from app.services import time_studies_service
+
 
 bp = Blueprint("pages", __name__)
 
@@ -77,6 +79,31 @@ def smt_calcular():
 @login_required
 def smt_estudo_tempo():
     return render_template("estudo_tempo.html", active_menu="smt_estudo_tempo")
+
+
+@bp.route("/smt/estudo-tempo/print/<int:study_id>")
+@login_required
+def smt_estudo_tempo_print(study_id: int):
+    detail = time_studies_service.get_study_detail(study_id)
+    if not detail:
+        # mantém simples (sem nova página de erro)
+        return render_template(
+            "estudo_tempo_print.html",
+            active_menu="smt_estudo_tempo",
+            study=None,
+            operations=[],
+            totals={},
+            not_found=True,
+        )
+
+    return render_template(
+        "estudo_tempo_print.html",
+        active_menu="smt_estudo_tempo",
+        study=detail.get("study"),
+        operations=detail.get("operations") or [],
+        totals=detail.get("totals") or {},
+        not_found=False,
+    )
 
 
 @bp.route("/privacy-policy")
