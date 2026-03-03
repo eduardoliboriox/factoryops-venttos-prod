@@ -16,6 +16,28 @@ def get_user_by_id(user_id):
             return cur.fetchone()
 
 
+def get_owner_user_id():
+    """
+    Retorna o ID do "Owner" do sistema:
+    - o primeiro usuário criado (menor created_at; fallback por menor id)
+    Regras de segurança:
+    - este usuário NÃO pode ser rebaixado (perder admin)
+    - este usuário NÃO pode ser bloqueado
+    """
+    with get_db() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                """
+                SELECT id
+                FROM users
+                ORDER BY created_at ASC NULLS LAST, id ASC
+                LIMIT 1
+                """
+            )
+            row = cur.fetchone()
+            return row["id"] if row else None
+
+
 def get_user_by_provider(provider, provider_id):
     with get_db() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
@@ -204,10 +226,19 @@ def update_user_role(user_id: int, role: str):
 
     Observação:
     - Mantém compatibilidade: se a UI antiga enviar "extra", trata como "blocked".
+
+    Regra crítica:
+    - O primeiro usuário do sistema (OWNER) não pode ser rebaixado nem bloqueado.
     """
     role = (role or "").strip().lower()
     if role == "extra":
         role = "blocked"
+
+    owner_id = get_owner_user_id()
+    if owner_id is not None and int(user_id) == int(owner_id):
+        # owner só pode ficar como admin, sempre ativo e não bloqueado
+        if role != "admin":
+            raise ValueError("A conta OWNER (primeiro administrador) não pode ser rebaixada ou bloqueada.")
 
     with get_db() as conn:
         with conn.cursor() as cur:

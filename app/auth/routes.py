@@ -21,7 +21,8 @@ from app.auth.repository import (
     approve_user,
     deny_user,
     list_all_users,
-    get_user_by_id
+    get_user_by_id,
+    get_owner_user_id,
 )
 
 bp = Blueprint("auth", __name__)
@@ -242,7 +243,14 @@ def admin_users_all():
     """
     search = request.args.get("q")
     users = list_all_users(search)
-    return render_template("auth/users_all.html", users=users)
+
+    owner_id = get_owner_user_id()
+
+    return render_template(
+        "auth/users_all.html",
+        users=users,
+        owner_id=owner_id
+    )
 
 @bp.route("/login/mobile")
 def login_mobile_choice():
@@ -303,8 +311,13 @@ def my_profile():
 def update_user_role_route(user_id):
     role = request.form.get("role")
     from app.auth.repository import update_user_role
-    update_user_role(user_id, role)
-    flash("Perfil do usuário atualizado", "success")
+
+    try:
+        update_user_role(user_id, role)
+        flash("Perfil do usuário atualizado", "success")
+    except ValueError as e:
+        flash(str(e), "danger")
+
     return redirect(url_for("auth.admin_users_all"))
 
 @bp.route("/forgot-password", methods=["GET", "POST"])
