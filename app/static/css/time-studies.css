@@ -92,6 +92,39 @@
   padding: 10px 12px;
 }
 
+/* ============================
+   Pills (HC Status)
+   ============================ */
+.ts-pill {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-weight: 900;
+  font-size: 11px;
+  line-height: 1.1;
+  letter-spacing: 0.3px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.ts-pill-ok {
+  background: rgba(25, 135, 84, 0.10);
+  color: #146c43;
+  border-color: rgba(25, 135, 84, 0.18);
+}
+
+.ts-pill-warn {
+  background: rgba(255, 193, 7, 0.16);
+  color: #a06a00;
+  border-color: rgba(255, 193, 7, 0.28);
+}
+
+.ts-pill-info {
+  background: rgba(13, 110, 253, 0.10);
+  color: #0b5ed7;
+  border-color: rgba(13, 110, 253, 0.20);
+}
+
 @media (max-width: 768px) {
   .ts-docfit-wrapper {
     overflow: hidden;
