@@ -130,12 +130,21 @@
         <div class="p-3">
           <div class="d-flex gap-2 flex-wrap mb-2">
             <select id="studySelect" class="form-select" style="max-width: 520px;"></select>
+
             <button class="btn btn-primary" onclick="openSelectedStudy()">
               <i class="bi bi-eye"></i> Abrir
             </button>
-            <button class="btn btn-outline-danger" onclick="deleteSelectedStudy()">
-              <i class="bi bi-trash"></i> Excluir
-            </button>
+
+            {% if current_user.is_authenticated and current_user.is_admin %}
+              <button class="btn btn-outline-danger" onclick="deleteSelectedStudy()">
+                <i class="bi bi-trash"></i> Excluir
+              </button>
+            {% else %}
+              <button class="btn btn-outline-danger" type="button" disabled
+                      title="Somente administradores podem excluir estudos.">
+                <i class="bi bi-trash"></i> Excluir
+              </button>
+            {% endif %}
           </div>
 
           <div class="ts-kpi-note">
