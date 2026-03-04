@@ -81,6 +81,17 @@ def smt_estudo_tempo():
     return render_template("estudo_tempo.html", active_menu="smt_estudo_tempo")
 
 
+@bp.route("/smt/mais")
+@login_required
+def smt_mais():
+    """
+    Página "Mais" (prioridade mobile):
+    - reduz itens no bottom-nav
+    - exibe módulos extras em cards (Cálculos, Estudo de Tempo)
+    """
+    return render_template("mais.html", active_menu="smt_more")
+
+
 @bp.route("/smt/estudo-tempo/print/<int:study_id>")
 @login_required
 def smt_estudo_tempo_print(study_id: int):
