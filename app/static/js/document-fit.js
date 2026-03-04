@@ -31,8 +31,8 @@
     canvas.style.setProperty("--doc-scale", String(scale));
 
     requestAnimationFrame(() => {
-      const rect = canvas.getBoundingClientRect();
-      wrapper.style.height = Math.ceil(rect.height) + "px";
+      const scaledHeight = canvas.scrollHeight * scale;
+      wrapper.style.height = Math.ceil(scaledHeight) + "px";
     });
   }
 
@@ -47,5 +47,5 @@
   window.addEventListener("resize", onResize);
   window.addEventListener("orientationchange", applyDocumentFit);
 
-  window.addEventListener("documentfit:refresh", applyDocumentFit);
+  window.applyDocumentFit = applyDocumentFit;
 })();

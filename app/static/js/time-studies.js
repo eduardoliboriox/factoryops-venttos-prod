@@ -295,11 +295,18 @@
           return;
         }
 
-        await openSelectedStudy(); // recarrega
+        await openSelectedStudy();
       });
     });
 
     studyArea.classList.remove("d-none");
+
+    // Recalcula o document-fit após tornar a área visível no mobile
+    requestAnimationFrame(() => {
+      if (typeof window.applyDocumentFit === "function") {
+        window.applyDocumentFit();
+      }
+    });
   }
 
   async function openSelectedStudy() {
@@ -393,16 +400,13 @@
       return;
     }
 
-    // fecha modal
     const modalEl = qs("#modalAddOp");
     if (modalEl && window.bootstrap) {
       const inst = window.bootstrap.Modal.getInstance(modalEl) || new window.bootstrap.Modal(modalEl);
       inst.hide();
     }
 
-    // reseta
     form.reset();
-    // defaults úteis
     const ordem = form.querySelector('[name="ordem"]');
     if (ordem) ordem.value = "1";
     const posto = form.querySelector('[name="posto_trabalho"]');
