@@ -1,0 +1,85 @@
+{% extends "layouts/app.html" %}
+{% block title %}SMT · Mais{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/more.css') }}?v={{ APP_VERSION }}">
+{% endblock %}
+
+{% block page_title %}
+<div class="d-flex align-items-center w-100">
+  <span class="me-auto">
+    SMT Manager - Mais
+  </span>
+
+  <div class="ms-auto d-flex gap-2">
+    <a href="{{ url_for('pages.inicio') }}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left"></i> Voltar
+    </a>
+
+    <button class="btn btn-outline-purple"
+            type="button"
+            onclick="toggleFullscreen()">
+      <i class="bi bi-arrows-fullscreen"></i>
+    </button>
+
+    <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-danger">
+      <i class="bi bi-box-arrow-right"></i> Sair
+    </a>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+  <div class="card border-0 shadow-sm mb-3">
+    <div class="card-body">
+      <div class="d-flex align-items-start justify-content-between">
+        <div>
+          <div class="text-muted small mb-1">SMT</div>
+          <h5 class="fw-bold mb-1">Mais opções</h5>
+          <div class="text-muted small">
+            Acesso aos módulos extras (mantendo o menu mobile mais limpo).
+          </div>
+        </div>
+        <div class="fs-3 text-muted">
+          <i class="bi bi-grid-3x3-gap"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-12 col-md-6">
+      <a class="more-card" href="{{ url_for('pages.smt_calcular') }}">
+        <div class="more-icon">
+          <i class="bi bi-calculator"></i>
+        </div>
+        <div class="more-text">
+          <div class="more-title">Cálculos</div>
+          <div class="more-subtitle">Ferramentas rápidas de cálculo (SMT)</div>
+        </div>
+        <div class="more-arrow">
+          <i class="bi bi-chevron-right"></i>
+        </div>
+      </a>
+    </div>
+
+    <div class="col-12 col-md-6">
+      <a class="more-card" href="{{ url_for('pages.smt_estudo_tempo') }}">
+        <div class="more-icon is-time">
+          <i class="bi bi-stopwatch"></i>
+        </div>
+        <div class="more-text">
+          <div class="more-title">Tempo</div>
+          <div class="more-subtitle">Estudo de tempo (Time Study)</div>
+        </div>
+        <div class="more-arrow">
+          <i class="bi bi-chevron-right"></i>
+        </div>
+      </a>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
