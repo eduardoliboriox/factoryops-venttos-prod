@@ -12,6 +12,9 @@
     --ok: #198754;
     --info-bg: rgba(13,110,253,0.06);
     --info-bd: rgba(13,110,253,0.18);
+
+    --warn: #ffc107;
+    --info: #0d6efd;
   }
 
   body{
@@ -19,9 +22,9 @@
   }
 
   .print-wrap{
-    max-width: 960px; 
+    max-width: 960px;
     margin: 0 auto;
-    padding: 16px 16px 36px; 
+    padding: 16px 16px 36px;
   }
 
   .print-topbar{
@@ -70,7 +73,7 @@
 
   .meta-grid{
     display:grid;
-    grid-template-columns: 1.05fr .95fr; 
+    grid-template-columns: 1.05fr .95fr;
     gap: 12px;
     margin: 14px 0 12px;
   }
@@ -84,7 +87,7 @@
 
   .kv{
     display:grid;
-    grid-template-columns: 112px 1fr; /* antes: 120px */
+    grid-template-columns: 112px 1fr;
     gap: 6px 10px;
     font-size: 13px;
   }
@@ -94,16 +97,64 @@
   .kpis{
     display:grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 8px; /* antes: 10px */
+    gap: 8px;
   }
   .kpi{
     border: 1px solid var(--line);
     border-radius: 14px;
-    padding: 9px 10px; /* antes: 10px 12px */
+    padding: 9px 10px;
     background: linear-gradient(180deg, var(--soft), transparent);
   }
-  .kpi .l{ color: var(--muted); font-size: 11px; font-weight: 800; letter-spacing: .4px;}
-  .kpi .n{ font-size: 19px; font-weight: 900; margin-top: 2px; } /* antes: 20px */
+  .kpi .l{
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: .4px;
+  }
+  .kpi .n{
+    font-size: 19px;
+    font-weight: 900;
+    margin-top: 2px;
+    display:flex;
+    align-items:center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .kpi .sub{
+    margin-top: 4px;
+    font-size: 11px;
+    color: rgba(15,23,42,0.76);
+    line-height: 1.25;
+  }
+  .kpi .sub strong{ font-weight: 900; }
+
+  /* Pills (HC status) */
+  .pill-mini{
+    display:inline-block;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-weight: 900;
+    font-size: 11px;
+    line-height: 1.1;
+    letter-spacing: 0.3px;
+    border: 1px solid transparent;
+    white-space: nowrap;
+  }
+  .pill-mini-ok{
+    background: rgba(25, 135, 84, 0.10);
+    color: #146c43;
+    border-color: rgba(25, 135, 84, 0.18);
+  }
+  .pill-mini-warn{
+    background: rgba(255, 193, 7, 0.16);
+    color: #a06a00;
+    border-color: rgba(255, 193, 7, 0.28);
+  }
+  .pill-mini-info{
+    background: rgba(13, 110, 253, 0.10);
+    color: #0b5ed7;
+    border-color: rgba(13, 110, 253, 0.20);
+  }
 
   .note{
     margin-top: 12px;
@@ -199,11 +250,12 @@
   @media print {
     .no-print{ display:none !important; }
     .print-wrap{ padding: 0; }
-    a[href]:after{ content:""; } /* evita URLs */
+    a[href]:after{ content:""; }
     .brand-logo{ -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     .row-balance{ -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     .pill{ -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     .kpi{ -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .pill-mini{ -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   }
 </style>
 
@@ -269,6 +321,7 @@
       </div>
 
       <div class="card">
+        <!-- KPIs base -->
         <div class="kpis">
           <div class="kpi">
             <div class="l">UPH META</div>
@@ -276,7 +329,13 @@
           </div>
           <div class="kpi">
             <div class="l">HC META</div>
-            <div class="n">{{ totals.hc_meta if totals.hc_meta is not none else '—' }}</div>
+            <div class="n">
+              {% if totals.hc_meta is not none %}
+                {{ '%.2f'|format(totals.hc_meta) }}
+              {% else %}
+                —
+              {% endif %}
+            </div>
           </div>
           <div class="kpi">
             <div class="l">TAKT (s)</div>
@@ -291,6 +350,73 @@
           <div class="kpi">
             <div class="l">UPD META</div>
             <div class="n">{{ totals.upd_meta if totals.upd_meta is not none else '—' }}</div>
+          </div>
+        </div>
+
+        <!-- KPIs (credibilidade fábrica) - AGORA TAMBÉM NO PRINT -->
+        <div class="kpis" style="margin-top: 8px;">
+          <div class="kpi">
+            <div class="l">CAPACIDADE (UPH GARGALO)</div>
+            <div class="n">{{ totals.line_uph_bottleneck if totals.line_uph_bottleneck is not none else '—' }}</div>
+            <div class="sub">
+              {% if totals.uph_meta and totals.line_gap_uph is not none %}
+                Gap vs meta: <strong>{{ totals.line_gap_uph }}</strong> UPH
+              {% else %}
+                —
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="kpi">
+            <div class="l">UPH TEÓRICO (SEM PERDA)</div>
+            <div class="n">{{ totals.line_uph_bottleneck_no_loss if totals.line_uph_bottleneck_no_loss is not none else '—' }}</div>
+            <div class="sub">Base: <strong>3600 / TempoCiclo</strong></div>
+          </div>
+
+          <div class="kpi">
+            <div class="l">UPH C/ PERDA</div>
+            <div class="n">{{ totals.line_uph_bottleneck if totals.line_uph_bottleneck is not none else '—' }}</div>
+            <div class="sub">
+              {% if totals.line_loss_gap_uph is not none %}
+                Perda derruba: <strong>{{ totals.line_loss_gap_uph }}</strong> UPH
+              {% else %}
+                —
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="kpi">
+            <div class="l">HC USADO (SOMA)</div>
+            <div class="n">
+              {% if totals.sum_hc_ops is not none %}
+                {{ '%.2f'|format(totals.sum_hc_ops) }}
+              {% else %}
+                —
+              {% endif %}
+
+              {% set hcst = (totals.hc_status or '')|upper %}
+              {% if hcst == 'OVER' %}
+                <span class="pill-mini pill-mini-warn">ACIMA</span>
+              {% elif hcst == 'UNDER' %}
+                <span class="pill-mini pill-mini-info">FOLGA</span>
+              {% elif hcst == 'OK' %}
+                <span class="pill-mini pill-mini-ok">OK</span>
+              {% endif %}
+            </div>
+
+            <div class="sub">
+              {% if totals.hc_gap is not none %}
+                {% if totals.hc_gap > 0.01 %}
+                  Acima do HC meta por: <strong>{{ '%.2f'|format(totals.hc_gap) }}</strong>
+                {% elif totals.hc_gap < -0.01 %}
+                  Folga vs HC meta: <strong>{{ '%.2f'|format((totals.hc_gap * -1)) }}</strong>
+                {% else %}
+                  Igual ao HC meta
+                {% endif %}
+              {% else %}
+                —
+              {% endif %}
+            </div>
           </div>
         </div>
 
