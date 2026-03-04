@@ -85,6 +85,19 @@
     background: #fff;
   }
 
+  .meta-card{
+    padding: 10px 12px;
+  }
+  .meta-card .kv{
+    grid-template-columns: 96px 1fr;
+    gap: 4px 8px;
+    font-size: 12px;
+    line-height: 1.15;
+  }
+  .meta-card .k{
+    font-size: 11px;
+  }
+
   .kv{
     display:grid;
     grid-template-columns: 112px 1fr;
@@ -289,7 +302,7 @@
     </div>
   {% else %}
     <div class="meta-grid">
-      <div class="card">
+      <div class="card meta-card">
         <div class="kv">
           <div class="k">Estudo</div>
           <div class="v">#{{ study.id }}</div>
