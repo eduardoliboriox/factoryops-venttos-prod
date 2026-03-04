@@ -1,446 +1,437 @@
 (function () {
   "use strict";
 
-  window.TS = {
-    studies: [],
-    currentStudyId: null,
-  };
+  let currentStudyId = null;
 
-  function documentFitRefresh() {
+  function qs(sel) {
+    return document.querySelector(sel);
+  }
+
+  function escapeHtml(str) {
+    return String(str ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  function fmtNum(n, digits = 0) {
+    const v = Number(n);
+    if (!Number.isFinite(v)) return "—";
+    return v.toFixed(digits);
+  }
+
+  function fmtDateTime(iso) {
     try {
-      window.dispatchEvent(new Event("documentfit:refresh"));
-    } catch (e) {
-      // noop
+      const d = new Date(iso);
+      if (Number.isNaN(d.getTime())) return "—";
+      return d.toLocaleString();
+    } catch {
+      return "—";
     }
   }
 
-  window.showMsg = function showMsg(containerId, text, type = "success") {
-    const el = document.getElementById(containerId);
-    if (!el) return;
+  function setHtml(id, html) {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = html;
+  }
 
-    if (!text) {
-      el.innerHTML = "";
+  function setText(id, text) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = text;
+  }
+
+  function showMsg(containerId, kind, msg) {
+    const safe = escapeHtml(msg || "");
+    setHtml(
+      containerId,
+      `<div class="alert alert-${kind} py-2 mb-2">${safe}</div>`
+    );
+  }
+
+  function clearMsg(containerId) {
+    setHtml(containerId, "");
+  }
+
+  async function apiJson(url, options = {}) {
+    const resp = await fetch(url, {
+      headers: {
+        "X-Requested-With": "XMLHttpRequest",
+        ...(options.headers || {}),
+      },
+      ...options,
+    });
+
+    const data = await resp.json().catch(() => ({}));
+    return { ok: resp.ok, status: resp.status, data };
+  }
+
+  async function loadLinesForSector(setor) {
+    const linhaSelect = qs("#tsLinhaSelect");
+    if (!linhaSelect) return;
+
+    linhaSelect.innerHTML = "";
+    const { ok, data } = await apiJson(`/api/production/lines?setor=${encodeURIComponent(setor || "")}`);
+    const lines = (ok && data && data.lines) ? data.lines : [];
+
+    if (!lines.length) {
+      linhaSelect.innerHTML = `<option value="" selected>—</option>`;
       return;
     }
 
-    el.innerHTML = `
-      <div class="alert alert-${type} alert-dismissible fade show mb-2" role="alert">
-        ${text}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-      </div>
-    `;
-  };
-
-  window.openPrintView = function openPrintView() {
-    const id = Number(window.TS.currentStudyId || 0);
-    if (!id) {
-      window.showMsg("tsMsgOps", "Abra um estudo antes de imprimir.", "warning");
-      return;
+    for (const ln of lines) {
+      const opt = document.createElement("option");
+      opt.value = ln;
+      opt.textContent = ln;
+      linhaSelect.appendChild(opt);
     }
-    window.open(`/smt/estudo-tempo/print/${id}`, "_blank", "noopener");
-  };
+  }
 
-  const TS_LINHAS_FALLBACK = {
-    IM: ["IM-01", "IM-02", "IM-03", "IM-04", "IM-05", "IM-06"],
-    PA: ["IP-COM", "PA-01", "PA-03", "PA-04", "PA-07", "PA-08", "PA-09", "PA-13", "WIFI"],
-    PTH: ["ADE-01", "AXI-01", "AXI-02", "AXI-03", "JUM-01", "JUM-02", "RAD-01", "RAD-02", "RAD-03", "ROU-01", "ROU-02", "ROU-03"],
-    SMT: ["SMT-01", "SMT-02", "SMT-03", "SMT-04", "SMT-05", "SMT-06", "SMT-07", "SMT-08", "SMT-09"],
-  };
 
-  function renderLinhaOptions(linhas, keepValue = false) {
-    const select = document.getElementById("tsLinhaSelect");
+  async function loadStudies() {
+    const select = qs("#studySelect");
     if (!select) return;
 
-    const prev = keepValue ? select.value : null;
-    select.innerHTML = "";
+    select.innerHTML = `<option value="">Carregando...</option>`;
 
-    if (!Array.isArray(linhas) || !linhas.length) {
-      const opt = document.createElement("option");
-      opt.value = "";
-      opt.textContent = "—";
-      select.appendChild(opt);
-      select.value = "";
+    const { ok, data } = await apiJson("/api/time-studies?limit=50");
+    if (!ok || !Array.isArray(data)) {
+      select.innerHTML = `<option value="">Falha ao carregar</option>`;
       return;
     }
 
-    linhas.forEach((l) => {
-      const opt = document.createElement("option");
-      opt.value = l;
-      opt.textContent = l;
-      select.appendChild(opt);
-    });
-
-    if (prev && linhas.includes(prev)) {
-      select.value = prev;
-    } else {
-      select.value = linhas[0];
+    if (data.length === 0) {
+      select.innerHTML = `<option value="">Nenhum estudo encontrado</option>`;
+      return;
     }
-  }
 
-  async function fetchLinhasDoBanco(setor) {
-    const resp = await fetch(`/api/production/lines?setor=${encodeURIComponent(setor)}`, {
-      headers: { "X-Requested-With": "XMLHttpRequest" },
-    });
-    const data = await resp.json();
-    if (!resp.ok || !data || !data.sucesso) return null;
-    return Array.isArray(data.lines) ? data.lines : [];
-  }
+    select.innerHTML = "";
+    for (const s of data) {
+      const labelParts = [];
+      labelParts.push(`#${s.id}`);
+      if (s.produto) labelParts.push(`${s.produto}`);
+      if (s.cliente) labelParts.push(`- ${s.cliente}`);
+      if (s.uph_meta != null) labelParts.push(`· UPH ${s.uph_meta}`);
+      if (s.linha) labelParts.push(`· ${s.linha}`);
+      if (s.created_at) labelParts.push(`· ${fmtDateTime(s.created_at)}`);
 
-  async function refreshLinhasBySetor(setor, keepValue = false) {
-    try {
-      const linhas = await fetchLinhasDoBanco(setor);
-      if (linhas && linhas.length) {
-        renderLinhaOptions(linhas, keepValue);
-        return;
-      }
-      renderLinhaOptions(TS_LINHAS_FALLBACK[setor] || [], keepValue);
-    } catch (e) {
-      renderLinhaOptions(TS_LINHAS_FALLBACK[setor] || [], keepValue);
-    }
-  }
-
-  window.loadStudies = async function loadStudies() {
-    window.showMsg("tsMsgCreate", "", "success");
-
-    const resp = await fetch("/api/time-studies?limit=50", {
-      headers: { "X-Requested-With": "XMLHttpRequest" },
-    });
-    const data = await resp.json();
-
-    window.TS.studies = Array.isArray(data) ? data : [];
-    const sel = document.getElementById("studySelect");
-    if (!sel) return;
-
-    sel.innerHTML = "";
-    window.TS.studies.forEach((s) => {
       const opt = document.createElement("option");
       opt.value = s.id;
-      opt.textContent = `#${s.id} · ${s.produto} · UPH ${s.uph_meta} · ${s.linha || "—"} · ${new Date(s.created_at).toLocaleString()}`;
-      sel.appendChild(opt);
-    });
-
-    if (!window.TS.studies.length) {
-      const opt = document.createElement("option");
-      opt.value = "";
-      opt.textContent = "Nenhum estudo ainda";
-      sel.appendChild(opt);
+      opt.textContent = labelParts.join(" ");
+      select.appendChild(opt);
     }
-  };
+  }
 
-  async function createStudy(e) {
-    e.preventDefault();
+  function renderHcPill(status) {
+    const pill = qs("#kpiHcStatusPill");
+    if (!pill) return;
 
-    const fd = new FormData(e.target);
+    const st = String(status || "").toUpperCase();
 
-    const resp = await fetch("/api/time-studies", {
-      method: "POST",
-      body: fd,
-      headers: { "X-Requested-With": "XMLHttpRequest" },
-    });
+    pill.classList.remove("d-none", "ts-pill-ok", "ts-pill-warn", "ts-pill-info");
 
-    const data = await resp.json();
-
-    if (!resp.ok || !data.sucesso) {
-      window.showMsg("tsMsgCreate", data.erro || "Erro ao criar estudo", "danger");
+    if (st === "OVER") {
+      pill.textContent = "ACIMA";
+      pill.classList.add("ts-pill", "ts-pill-warn");
       return;
     }
 
-    window.showMsg("tsMsgCreate", `Estudo criado (#${data.study.id}).`, "success");
-
-    e.target.reset();
-    const setorEl = document.getElementById("tsSetorSelect");
-    if (setorEl) await refreshLinhasBySetor(setorEl.value, false);
-
-    await window.loadStudies();
-
-    window.TS.currentStudyId = data.study.id;
-    const sel = document.getElementById("studySelect");
-    if (sel) sel.value = String(data.study.id);
-    await window.openSelectedStudy();
-  }
-
-  window.openSelectedStudy = async function openSelectedStudy() {
-    const sel = document.getElementById("studySelect");
-    const studyId = Number((sel && sel.value) || 0);
-    if (!studyId) return;
-    await openStudy(studyId);
-  };
-
-  function escHtml(s) {
-    return (s || "")
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll('"', "&quot;")
-      .replaceAll("'", "&#039;");
-  }
-
-  function formatSuggest(rec) {
-    if (!rec || rec.status !== "BALANCE") return "";
-
-    const target =
-      rec.cycle_target_sec !== null && rec.cycle_target_sec !== undefined
-        ? Number(rec.cycle_target_sec).toFixed(2)
-        : null;
-
-    const dsec =
-      rec.delta_sec !== null && rec.delta_sec !== undefined
-        ? Number(rec.delta_sec).toFixed(2)
-        : null;
-
-    const dpct =
-      rec.delta_pct !== null && rec.delta_pct !== undefined
-        ? Number(rec.delta_pct).toFixed(1)
-        : null;
-
-    const pf =
-      rec.parallel_factor !== null && rec.parallel_factor !== undefined
-        ? Number(rec.parallel_factor).toFixed(2)
-        : null;
-
-    const ps =
-      rec.parallel_suggested !== null && rec.parallel_suggested !== undefined
-        ? Number(rec.parallel_suggested)
-        : null;
-
-    return `
-      <div class="ts-mini-help">
-        <strong>Alvo c/ perda:</strong> ${target}s ·
-        <strong>Reduzir:</strong> ${dsec}s (${dpct}%)<br>
-        <strong>Ou paralelizar:</strong> ~${pf} postos → sugerir <strong>${ps}</strong>
-      </div>
-    `;
-  }
-
-  async function openStudy(studyId) {
-    const resp = await fetch(`/api/time-studies/${studyId}`, {
-      headers: { "X-Requested-With": "XMLHttpRequest" },
-    });
-    const data = await resp.json();
-
-    if (!resp.ok || !data.sucesso) {
-      window.showMsg("tsMsgOps", data.erro || "Erro ao abrir estudo", "danger");
+    if (st === "UNDER") {
+      pill.textContent = "FOLGA";
+      pill.classList.add("ts-pill", "ts-pill-info");
       return;
     }
 
-    window.TS.currentStudyId = studyId;
+    pill.textContent = "OK";
+    pill.classList.add("ts-pill", "ts-pill-ok");
+  }
 
-    const area = document.getElementById("studyArea");
-    if (!area) return;
+  function renderStudy(detail) {
+    const studyArea = qs("#studyArea");
+    if (!studyArea) return;
 
-    area.classList.remove("d-none");
+    const study = detail.study || {};
+    const totals = detail.totals || {};
+    const ops = detail.operations || [];
 
-    const s = data.study || {};
-    const totals = data.totals || {};
-    const ops = data.operations || [];
+    currentStudyId = Number(study.id || 0) || null;
 
-    const tTitle = document.getElementById("studyTitle");
-    const tSub = document.getElementById("studySubtitle");
-    if (tTitle) tTitle.textContent = `${s.produto || "—"} · Estudo #${s.id}`;
-    if (tSub) {
-      tSub.textContent =
-        `Cliente: ${s.cliente || "—"} · Linha: ${s.linha || "—"} · ` +
-        `Perda: ${Number(s.perda_padrao || 0).toFixed(2)} · ` +
-        `Turno: ${Number(s.horas_turno || 0).toFixed(2)}h`;
+    setText("studyTitle", `${study.produto || "—"} · Estudo #${study.id || "—"}`);
+    setText(
+      "studySubtitle",
+      `Cliente: ${study.cliente || "—"} · Linha: ${study.linha || "—"} · Perda: ${fmtNum(totals.perda_padrao, 2)} · Turno: ${fmtNum(study.horas_turno, 2)}h`
+    );
+
+    setText("kpiUphMeta", totals.uph_meta != null ? String(totals.uph_meta) : "—");
+    setText("kpiHcMeta", totals.hc_meta != null ? fmtNum(totals.hc_meta, 2) : "—");
+    setText("kpiTaktTime", totals.takt_time_sec != null ? fmtNum(totals.takt_time_sec, 2) : "—");
+    setText("kpiUpdMeta", totals.upd_meta != null ? String(totals.upd_meta) : "—");
+
+    if (totals.cycle_target_sec != null) {
+      setHtml(
+        "kpiCycleTargetNote",
+        `Alvo c/ perda (${fmtNum(totals.perda_padrao, 2)}): <strong>${fmtNum(totals.cycle_target_sec, 2)}s</strong>`
+      );
+    } else {
+      setHtml("kpiCycleTargetNote", "");
     }
 
-    const kpiU = document.getElementById("kpiUphMeta");
-    const kpiH = document.getElementById("kpiHcMeta");
-    const kpiT = document.getElementById("kpiTaktTime");
-    const kpiUdm = document.getElementById("kpiUpdMeta");
-    const kpiOps = document.getElementById("kpiTotalOps");
-    const kpiTempo = document.getElementById("kpiTotalTempo");
+    setText("kpiLineUph", totals.line_uph_bottleneck != null ? String(totals.line_uph_bottleneck) : "—");
+    setText("kpiLineUphNoLoss", totals.line_uph_bottleneck_no_loss != null ? String(totals.line_uph_bottleneck_no_loss) : "—");
+    setText("kpiLineUphWithLoss", totals.line_uph_bottleneck != null ? String(totals.line_uph_bottleneck) : "—");
 
-    if (kpiU) kpiU.textContent = totals.uph_meta ?? "—";
-    if (kpiH) kpiH.textContent = totals.hc_meta ?? "—";
+    if (totals.uph_meta && totals.line_gap_uph != null) {
+      setHtml(
+        "kpiLineGapNote",
+        `Gap vs meta: <strong>${String(totals.line_gap_uph)}</strong> UPH`
+      );
+    } else {
+      setHtml("kpiLineGapNote", "");
+    }
 
-    const takt =
-      totals.takt_time_sec !== null && totals.takt_time_sec !== undefined
-        ? Number(totals.takt_time_sec).toFixed(2)
-        : "—";
-    if (kpiT) kpiT.textContent = takt;
+    if (totals.line_loss_gap_uph != null) {
+      setHtml(
+        "kpiLossGapNote",
+        `Perda derruba: <strong>${String(totals.line_loss_gap_uph)}</strong> UPH`
+      );
+    } else {
+      setHtml("kpiLossGapNote", "");
+    }
 
-    const cycleTarget =
-      totals.cycle_target_sec !== null && totals.cycle_target_sec !== undefined
-        ? Number(totals.cycle_target_sec).toFixed(2)
-        : null;
+    setText("kpiHcUsed", totals.sum_hc_ops != null ? fmtNum(totals.sum_hc_ops, 2) : "—");
+    renderHcPill(totals.hc_status);
 
-    const perda =
-      totals.perda_padrao !== null && totals.perda_padrao !== undefined
-        ? Number(totals.perda_padrao).toFixed(2)
-        : null;
-
-    const noteEl = document.getElementById("kpiCycleTargetNote");
-    if (noteEl) {
-      if (cycleTarget) {
-        noteEl.innerHTML = `<strong>Alvo c/ perda (${perda}):</strong> ${cycleTarget}s`;
+    if (totals.hc_gap != null) {
+      const gap = Number(totals.hc_gap);
+      if (Number.isFinite(gap) && gap > 0.01) {
+        setHtml("kpiHcGapNote", `Acima do HC meta por: <strong>${fmtNum(gap, 2)}</strong>`);
+      } else if (Number.isFinite(gap) && gap < -0.01) {
+        setHtml("kpiHcGapNote", `Folga vs HC meta: <strong>${fmtNum(Math.abs(gap), 2)}</strong>`);
       } else {
-        noteEl.innerHTML = "";
+        setHtml("kpiHcGapNote", `Igual ao HC meta`);
+      }
+    } else {
+      setHtml("kpiHcGapNote", "");
+    }
+
+    setText("kpiTotalOps", totals.total_ops != null ? String(totals.total_ops) : "—");
+    setText("kpiTotalTempo", totals.total_tempo_sec != null ? fmtNum(totals.total_tempo_sec, 1) : "—");
+
+    const balEl = qs("#balanceSummary");
+    if (balEl) {
+      const bal = Number(totals.balance_count || 0);
+      const uphGap = Number(totals.line_gap_uph || 0);
+      const uphBot = Number(totals.line_uph_bottleneck || 0);
+
+      if (bal > 0 && Number(totals.uph_meta || 0) > 0) {
+        balEl.classList.remove("d-none");
+        balEl.innerHTML =
+          `Resumo do Balanceamento<br>` +
+          `Operações em <strong>BALANCE:</strong> <strong>${bal}</strong> · ` +
+          `<strong>UPH gargalo da linha:</strong> <strong>${uphBot}</strong> · ` +
+          `<strong>Gap vs meta:</strong> <strong>${uphGap}</strong> UPH`;
+      } else {
+        balEl.classList.add("d-none");
+        balEl.innerHTML = "";
       }
     }
 
-    if (kpiUdm) kpiUdm.textContent = totals.upd_meta ?? "—";
-    if (kpiOps) kpiOps.textContent = totals.total_ops ?? 0;
-    if (kpiTempo) kpiTempo.textContent = (totals.total_tempo_sec ?? 0).toFixed(1);
+    // Table
+    const tbody = qs("#opsTableBody");
+    if (tbody) {
+      tbody.innerHTML = "";
 
-    const summary = document.getElementById("balanceSummary");
-    if (summary) {
-      const bc = Number(totals.balance_count || 0);
-      const bottleneck = Number(totals.line_uph_bottleneck || 0);
-      const gap = Number(totals.line_gap_uph || 0);
+      for (const op of ops) {
+        const bal = String(op.balance || "OK").toUpperCase();
+        const tr = document.createElement("tr");
+        if (bal === "BALANCE") tr.classList.add("ts-row-balance");
 
-      if (bc > 0 && Number(totals.uph_meta || 0) > 0) {
-        summary.classList.remove("d-none");
-        summary.innerHTML = `
-          <div class="ts-muted mb-1"><strong>Resumo do Balanceamento</strong></div>
-          <div style="font-size: 13px;">
-            Operações em <strong>BALANCE:</strong> <strong>${bc}</strong> ·
-            <strong>UPH gargalo da linha:</strong> <strong>${bottleneck}</strong> ·
-            <strong>Gap vs meta:</strong> <strong>${gap}</strong> UPH
-          </div>
+        const rec = op.recommendation || null;
+
+        const pill =
+          bal === "OK"
+            ? `<span class="ts-status-pill ts-status-ok">OK</span>`
+            : `<span class="ts-status-pill ts-status-balance">BALANCE</span>`;
+
+        let recHtml = "";
+        if (bal === "BALANCE" && rec && String(rec.status).toUpperCase() === "BALANCE") {
+          const parts = [];
+          if (rec.cycle_target_sec != null) parts.push(`<strong>Alvo c/ perda:</strong> ${fmtNum(rec.cycle_target_sec, 2)}s`);
+          if (rec.delta_sec != null && rec.delta_pct != null) parts.push(`<strong>Reduzir:</strong> ${fmtNum(rec.delta_sec, 2)}s (${fmtNum(rec.delta_pct, 1)}%)`);
+          if (rec.parallel_factor != null && rec.parallel_suggested != null) parts.push(`<strong>Ou paralelizar:</strong> ~${fmtNum(rec.parallel_factor, 2)} postos → sugerir <strong>${rec.parallel_suggested}</strong>`);
+          recHtml = `<div class="ts-muted mt-1" style="font-size:12px; line-height:1.25;">${parts.join("<br>")}</div>`;
+        }
+
+        tr.innerHTML = `
+          <td><strong>${escapeHtml(op.ordem)}</strong></td>
+          <td class="ts-col-op">${escapeHtml(op.operacao)}</td>
+          <td>${fmtNum(op.tempo_ciclo_sec, 2)}</td>
+          <td>${escapeHtml(op.posto_trabalho)}</td>
+          <td>${fmtNum(op.hc, 2)}</td>
+          <td><strong>${escapeHtml(op.uph_real)}</strong></td>
+          <td>${escapeHtml(op.upd)}</td>
+          <td>${pill}${recHtml}</td>
+          <td>
+            <button class="btn btn-outline-danger btn-sm" type="button" data-opid="${op.id}">
+              <i class="bi bi-trash"></i>
+            </button>
+          </td>
         `;
-      } else {
-        summary.classList.add("d-none");
-        summary.innerHTML = "";
+        tbody.appendChild(tr);
       }
     }
 
-    const tbody = document.getElementById("opsTableBody");
-    if (!tbody) return;
+    tbody?.querySelectorAll("button[data-opid]")?.forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const id = Number(btn.getAttribute("data-opid") || 0);
+        if (!id) return;
+        if (!confirm("Excluir esta operação?")) return;
 
-    tbody.innerHTML = "";
+        clearMsg("tsMsgOps");
+        const { ok, data } = await apiJson(`/api/time-studies/operations/${id}`, { method: "DELETE" });
+        if (!ok || !data || data.sucesso !== true) {
+          showMsg("tsMsgOps", "danger", (data && data.erro) ? data.erro : "Erro ao excluir operação");
+          return;
+        }
 
-    ops.forEach((op) => {
-      const tr = document.createElement("tr");
-
-      const bal = String(op.balance || "OK").trim().toUpperCase();
-      if (bal === "BALANCE") tr.classList.add("ts-row-balance");
-
-      const pillClass = bal === "OK" ? "ts-status-ok" : "ts-status-balance";
-      const suggestHtml = bal === "BALANCE" ? formatSuggest(op.recommendation) : "";
-
-      tr.innerHTML = `
-        <td class="fw-bold">${op.ordem ?? ""}</td>
-        <td class="ts-col-op">${escHtml(op.operacao || "")}</td>
-        <td>${Number(op.tempo_ciclo_sec || 0).toFixed(2)}</td>
-        <td>${op.posto_trabalho ?? ""}</td>
-        <td>${Number(op.hc || 0).toFixed(2)}</td>
-        <td class="fw-bold">${op.uph_real ?? 0}</td>
-        <td>${op.upd ?? 0}</td>
-        <td class="text-center">
-          <span class="ts-status-pill ${pillClass}">${bal}</span>
-          ${suggestHtml}
-        </td>
-        <td class="text-center">
-          <button class="btn btn-sm btn-outline-danger" onclick="deleteOp(${op.id})">
-            <i class="bi bi-trash"></i>
-          </button>
-        </td>
-      `;
-      tbody.appendChild(tr);
+        await openSelectedStudy(); // recarrega
+      });
     });
 
-    const nextN = ops.length ? Math.max(...ops.map((o) => Number(o.ordem || 0))) + 1 : 1;
-    const nInput = document.querySelector('#formAddOp input[name="ordem"]');
-    if (nInput) nInput.value = String(nextN);
-
-    window.showMsg("tsMsgOps", "", "success");
-
-    documentFitRefresh();
+    studyArea.classList.remove("d-none");
   }
 
-  window.submitAddOp = async function submitAddOp() {
-    const studyId = window.TS.currentStudyId;
+  async function openSelectedStudy() {
+    const select = qs("#studySelect");
+    const studyId = Number(select?.value || 0);
+    if (!studyId) {
+      showMsg("tsMsgOps", "warning", "Selecione um estudo.");
+      return;
+    }
+
+    clearMsg("tsMsgOps");
+
+    const { ok, data } = await apiJson(`/api/time-studies/${studyId}`);
+    if (!ok || !data || data.sucesso !== true) {
+      showMsg("tsMsgOps", "danger", (data && data.erro) ? data.erro : "Erro ao abrir estudo");
+      return;
+    }
+
+    renderStudy(data);
+  }
+
+  async function deleteSelectedStudy() {
+    const select = qs("#studySelect");
+    const studyId = Number(select?.value || 0);
     if (!studyId) return;
 
-    const form = document.getElementById("formAddOp");
+    if (!confirm("Excluir este estudo? Isso removerá também as operações.")) return;
+
+    const { ok, data } = await apiJson(`/api/time-studies/${studyId}`, { method: "DELETE" });
+    if (!ok || !data || data.sucesso !== true) {
+      alert((data && data.erro) ? data.erro : "Erro ao excluir estudo");
+      return;
+    }
+
+    currentStudyId = null;
+    qs("#studyArea")?.classList.add("d-none");
+    await loadStudies();
+  }
+
+  function openPrintView() {
+    if (!currentStudyId) return;
+    window.open(`/smt/estudo-tempo/print/${currentStudyId}`, "_blank");
+  }
+
+  async function onCreateStudySubmit(ev) {
+    ev.preventDefault();
+    clearMsg("tsMsgCreate");
+
+    const form = ev.currentTarget;
+    const fd = new FormData(form);
+
+    const { ok, data } = await apiJson("/api/time-studies", { method: "POST", body: fd });
+    if (!ok || !data || data.sucesso !== true) {
+      showMsg("tsMsgCreate", "danger", (data && data.erro) ? data.erro : "Erro ao criar estudo");
+      return;
+    }
+
+    showMsg("tsMsgCreate", "success", "Estudo criado com sucesso.");
+    form.reset();
+
+    const setor = qs("#tsSetorSelect");
+    if (setor) setor.value = "SMT";
+
+    await loadLinesForSector("SMT");
+    await loadStudies();
+
+    const created = data.study || {};
+    const select = qs("#studySelect");
+    if (select && created.id) {
+      select.value = String(created.id);
+      await openSelectedStudy();
+    }
+  }
+
+  async function submitAddOp() {
+    clearMsg("tsMsgOps");
+
+    if (!currentStudyId) {
+      showMsg("tsMsgOps", "warning", "Abra um estudo antes de adicionar operação.");
+      return;
+    }
+
+    const form = qs("#formAddOp");
     if (!form) return;
 
     const fd = new FormData(form);
 
-    const resp = await fetch(`/api/time-studies/${studyId}/operations`, {
-      method: "POST",
-      body: fd,
-      headers: { "X-Requested-With": "XMLHttpRequest" },
-    });
-
-    const data = await resp.json();
-
-    if (!resp.ok || !data.sucesso) {
-      window.showMsg("tsMsgOps", data.erro || "Erro ao salvar operação", "danger");
+    const { ok, data } = await apiJson(`/api/time-studies/${currentStudyId}/operations`, { method: "POST", body: fd });
+    if (!ok || !data || data.sucesso !== true) {
+      showMsg("tsMsgOps", "danger", (data && data.erro) ? data.erro : "Erro ao adicionar operação");
       return;
     }
 
-    const modalEl = document.getElementById("modalAddOp");
-    if (modalEl && window.bootstrap && window.bootstrap.Modal) {
-      const modal = window.bootstrap.Modal.getOrCreateInstance(modalEl);
-      modal.hide();
+    // fecha modal
+    const modalEl = qs("#modalAddOp");
+    if (modalEl && window.bootstrap) {
+      const inst = window.bootstrap.Modal.getInstance(modalEl) || new window.bootstrap.Modal(modalEl);
+      inst.hide();
     }
 
+    // reseta
     form.reset();
-    await openStudy(studyId);
-  };
+    // defaults úteis
+    const ordem = form.querySelector('[name="ordem"]');
+    if (ordem) ordem.value = "1";
+    const posto = form.querySelector('[name="posto_trabalho"]');
+    if (posto) posto.value = "1";
+    const hc = form.querySelector('[name="hc"]');
+    if (hc) hc.value = "1.00";
 
-  window.deleteOp = async function deleteOp(opId) {
-    if (!opId) return;
+    await openSelectedStudy();
+  }
 
-    const resp = await fetch(`/api/time-studies/operations/${opId}`, {
-      method: "DELETE",
-      headers: { "X-Requested-With": "XMLHttpRequest" },
-    });
-
-    const data = await resp.json();
-
-    if (!resp.ok || !data.sucesso) {
-      window.showMsg("tsMsgOps", data.erro || "Erro ao excluir operação", "danger");
-      return;
-    }
-
-    await openStudy(window.TS.currentStudyId);
-  };
-
-  window.deleteSelectedStudy = async function deleteSelectedStudy() {
-    const sel = document.getElementById("studySelect");
-    const studyId = Number((sel && sel.value) || 0);
-    if (!studyId) return;
-
-    const resp = await fetch(`/api/time-studies/${studyId}`, {
-      method: "DELETE",
-      headers: { "X-Requested-With": "XMLHttpRequest" },
-    });
-
-    const data = await resp.json();
-
-    if (!resp.ok || !data.sucesso) {
-      window.showMsg("tsMsgCreate", data.erro || "Erro ao excluir estudo", "danger");
-      return;
-    }
-
-    window.TS.currentStudyId = null;
-
-    const area = document.getElementById("studyArea");
-    if (area) area.classList.add("d-none");
-
-    await window.loadStudies();
-    window.showMsg("tsMsgCreate", `Estudo #${studyId} excluído.`, "success");
-
-    documentFitRefresh();
-  };
 
   document.addEventListener("DOMContentLoaded", async () => {
-    const setor = document.getElementById("tsSetorSelect");
-    if (setor) {
-      await refreshLinhasBySetor(setor.value, true);
-      setor.addEventListener("change", async () => {
-        await refreshLinhasBySetor(setor.value, false);
+    const formCreate = qs("#formCreateStudy");
+    if (formCreate) formCreate.addEventListener("submit", onCreateStudySubmit);
+
+    const setorSel = qs("#tsSetorSelect");
+    if (setorSel) {
+      setorSel.addEventListener("change", async () => {
+        await loadLinesForSector(setorSel.value);
       });
     }
 
-    const formCreate = document.getElementById("formCreateStudy");
-    if (formCreate) formCreate.addEventListener("submit", createStudy);
-
-    await window.loadStudies();
-
-    documentFitRefresh();
+    await loadLinesForSector("SMT");
+    await loadStudies();
   });
+
+  window.loadStudies = loadStudies;
+  window.openSelectedStudy = openSelectedStudy;
+  window.deleteSelectedStudy = deleteSelectedStudy;
+  window.openPrintView = openPrintView;
+  window.submitAddOp = submitAddOp;
 })();
