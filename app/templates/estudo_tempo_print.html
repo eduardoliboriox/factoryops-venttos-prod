@@ -76,8 +76,14 @@
     grid-template-columns: 1.05fr .95fr;
     gap: 12px;
     margin: 14px 0 12px;
-
     align-items: start;
+  }
+
+  .stack-col{
+    display:flex;
+    flex-direction:column;
+    gap: 10px;
+    min-width: 0;
   }
 
   .card{
@@ -190,8 +196,6 @@
   }
   .balance-summary strong{ font-weight: 900; }
 
-  /* ✅ Ajuste visual: quando o note/balance ficam no topo do card da direita,
-     não precisamos do margin-top padrão do .note */
   .right-info .note{
     margin-top: 0;
   }
@@ -360,58 +364,40 @@
     </div>
   {% else %}
     <div class="meta-grid">
-      <div class="card meta-card">
-        <div class="kv">
-          <div class="k">Estudo</div>
-          <div class="v">#{{ study.id }}</div>
 
-          <div class="k">Produto</div>
-          <div class="v">{{ study.produto or '—' }}</div>
+      <div class="stack-col">
+        <div class="card meta-card">
+          <div class="kv">
+            <div class="k">Estudo</div>
+            <div class="v">#{{ study.id }}</div>
 
-          <div class="k">Cliente</div>
-          <div class="v">{{ study.cliente or '—' }}</div>
+            <div class="k">Produto</div>
+            <div class="v">{{ study.produto or '—' }}</div>
 
-          <div class="k">Linha</div>
-          <div class="v">{{ study.linha or '—' }}</div>
+            <div class="k">Cliente</div>
+            <div class="v">{{ study.cliente or '—' }}</div>
 
-          <div class="k">Perda padrão</div>
-          <div class="v">{{ '%.2f'|format(study.perda_padrao or 0) }}</div>
+            <div class="k">Linha</div>
+            <div class="v">{{ study.linha or '—' }}</div>
 
-          <div class="k">Horas/turno</div>
-          <div class="v">{{ '%.2f'|format(study.horas_turno or 0) }}h</div>
+            <div class="k">Perda padrão</div>
+            <div class="v">{{ '%.2f'|format(study.perda_padrao or 0) }}</div>
 
-          <div class="k">Tempo alvo c/ perda</div>
-          <div class="v">
-            {% if totals.cycle_target_sec is not none %}
-              {{ '%.2f'|format(totals.cycle_target_sec) }}s
-            {% else %}
-              —
-            {% endif %}
-          </div>
-        </div>
-      </div>
+            <div class="k">Horas/turno</div>
+            <div class="v">{{ '%.2f'|format(study.horas_turno or 0) }}h</div>
 
-      <div class="card right-info">
-        <div class="note">
-          <strong>Takt Time</strong> = 3600 / UPH Meta.<br>
-          Como existe <strong>Perda padrão</strong>, a referência prática do OK/BALANCE é o
-          <strong>Tempo alvo c/ perda</strong> (mais apertado).<br>
-          Se <strong>UPH Real</strong> ficar menor que <strong>UPH Meta</strong>, a operação aparece como <strong>BALANCE</strong>.
-        </div>
-
-        {% if totals.balance_count and totals.balance_count > 0 and totals.uph_meta and totals.uph_meta > 0 %}
-          <div class="balance-summary">
-            <div style="margin-bottom: 4px;"><strong>Resumo do Balanceamento</strong></div>
-            <div>
-              Operações em <strong>BALANCE:</strong> <strong>{{ totals.balance_count }}</strong> ·
-              <strong>UPH gargalo:</strong> <strong>{{ totals.line_uph_bottleneck or 0 }}</strong> ·
-              <strong>Gap vs meta:</strong> <strong>{{ totals.line_gap_uph or 0 }}</strong> UPH
+            <div class="k">Tempo alvo c/ perda</div>
+            <div class="v">
+              {% if totals.cycle_target_sec is not none %}
+                {{ '%.2f'|format(totals.cycle_target_sec) }}s
+              {% else %}
+                —
+              {% endif %}
             </div>
           </div>
-        {% endif %}
+        </div>
 
-        <!-- KPIs base -->
-        <div class="kpis" style="margin-top: 10px;">
+        <div class="kpis">
           <div class="kpi">
             <div class="l">UPH META</div>
             <div class="n">{{ totals.uph_meta if totals.uph_meta is not none else '—' }}</div>
@@ -441,8 +427,30 @@
             <div class="n">{{ totals.upd_meta if totals.upd_meta is not none else '—' }}</div>
           </div>
         </div>
+      </div>
 
-        <div class="kpis" style="margin-top: 8px;">
+      <div class="stack-col">
+        <div class="card right-info">
+          <div class="note">
+            <strong>Takt Time</strong> = 3600 / UPH Meta.<br>
+            Como existe <strong>Perda padrão</strong>, a referência prática do OK/BALANCE é o
+            <strong>Tempo alvo c/ perda</strong> (mais apertado).<br>
+            Se <strong>UPH Real</strong> ficar menor que <strong>UPH Meta</strong>, a operação aparece como <strong>BALANCE</strong>.
+          </div>
+
+          {% if totals.balance_count and totals.balance_count > 0 and totals.uph_meta and totals.uph_meta > 0 %}
+            <div class="balance-summary">
+              <div style="margin-bottom: 4px;"><strong>Resumo do Balanceamento</strong></div>
+              <div>
+                Operações em <strong>BALANCE:</strong> <strong>{{ totals.balance_count }}</strong> ·
+                <strong>UPH gargalo:</strong> <strong>{{ totals.line_uph_bottleneck or 0 }}</strong> ·
+                <strong>Gap vs meta:</strong> <strong>{{ totals.line_gap_uph or 0 }}</strong> UPH
+              </div>
+            </div>
+          {% endif %}
+        </div>
+
+        <div class="kpis">
           <div class="kpi">
             <div class="l">CAPACIDADE (UPH GARGALO)</div>
             <div class="n">{{ totals.line_uph_bottleneck if totals.line_uph_bottleneck is not none else '—' }}</div>
@@ -508,6 +516,7 @@
           </div>
         </div>
       </div>
+
     </div>
 
     <div class="table-wrap">
