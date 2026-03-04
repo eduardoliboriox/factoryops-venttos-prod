@@ -86,16 +86,7 @@
   }
 
   .meta-card{
-    padding: 10px 12px;
-  }
-  .meta-card .kv{
-    grid-template-columns: 96px 1fr;
-    gap: 4px 8px;
-    font-size: 12px;
-    line-height: 1.15;
-  }
-  .meta-card .k{
-    font-size: 11px;
+    padding: 10px 12px;         /* antes: 12px 14px */
   }
 
   .kv{
@@ -104,6 +95,13 @@
     gap: 6px 10px;
     font-size: 13px;
   }
+
+  .meta-card .kv{
+    grid-template-columns: 104px 1fr; /* antes: 112px */
+    gap: 5px 8px;                    /* antes: 6px 10px */
+    font-size: 12px;                 /* antes: 13px */
+  }
+
   .k{ color: var(--muted); font-weight: 700; }
   .v{ font-weight: 700; }
 
@@ -141,7 +139,6 @@
   }
   .kpi .sub strong{ font-weight: 900; }
 
-  /* Pills (HC status) */
   .pill-mini{
     display:inline-block;
     padding: 3px 10px;
@@ -366,7 +363,6 @@
           </div>
         </div>
 
-        <!-- KPIs (credibilidade fábrica) - AGORA TAMBÉM NO PRINT -->
         <div class="kpis" style="margin-top: 8px;">
           <div class="kpi">
             <div class="l">CAPACIDADE (UPH GARGALO)</div>
@@ -485,7 +481,6 @@
                 {% else %}
                   <span class="pill pill-bal">BALANCE</span>
 
-                  {# recomendações (paridade com estudo_tempo.html) #}
                   {% if rec and rec.status == 'BALANCE' %}
                     <div class="rec">
                       {% if rec.cycle_target_sec is not none %}
