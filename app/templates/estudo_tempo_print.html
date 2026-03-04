@@ -427,6 +427,17 @@
             <div class="n">{{ totals.upd_meta if totals.upd_meta is not none else '—' }}</div>
           </div>
         </div>
+
+        {% if totals.balance_count and totals.balance_count > 0 and totals.uph_meta and totals.uph_meta > 0 %}
+          <div class="balance-summary">
+            <div style="margin-bottom: 4px;"><strong>Resumo do Balanceamento</strong></div>
+            <div>
+              Operações em <strong>BALANCE:</strong> <strong>{{ totals.balance_count }}</strong> ·
+              <strong>UPH gargalo:</strong> <strong>{{ totals.line_uph_bottleneck or 0 }}</strong> ·
+              <strong>Gap vs meta:</strong> <strong>{{ totals.line_gap_uph or 0 }}</strong> UPH
+            </div>
+          </div>
+        {% endif %}
       </div>
 
       <div class="stack-col">
@@ -437,17 +448,6 @@
             <strong>Tempo alvo c/ perda</strong> (mais apertado).<br>
             Se <strong>UPH Real</strong> ficar menor que <strong>UPH Meta</strong>, a operação aparece como <strong>BALANCE</strong>.
           </div>
-
-          {% if totals.balance_count and totals.balance_count > 0 and totals.uph_meta and totals.uph_meta > 0 %}
-            <div class="balance-summary">
-              <div style="margin-bottom: 4px;"><strong>Resumo do Balanceamento</strong></div>
-              <div>
-                Operações em <strong>BALANCE:</strong> <strong>{{ totals.balance_count }}</strong> ·
-                <strong>UPH gargalo:</strong> <strong>{{ totals.line_uph_bottleneck or 0 }}</strong> ·
-                <strong>Gap vs meta:</strong> <strong>{{ totals.line_gap_uph or 0 }}</strong> UPH
-              </div>
-            </div>
-          {% endif %}
         </div>
 
         <div class="kpis">
