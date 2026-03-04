@@ -55,7 +55,8 @@
       "smt_modelos": "Modelos",
       "smt_cadastro": "Cadastro",
       "smt_calcular": "Cálculos",
-      "smt_estudo_tempo": "Estudo de Tempo"
+      "smt_estudo_tempo": "Estudo de Tempo",
+      "smt_more": "Mais"
     } %}
 
     <span class="username fw-bold">
@@ -167,28 +168,20 @@
     <small>Cadastro</small>
   </a>
 
-  <a href="{{ url_for('pages.smt_calcular') }}"
-     class="bottom-item {% if active_menu == 'smt_calcular' %}active{% endif %}">
-    <div class="bottom-icon">
-      <i class="bi bi-calculator"></i>
-    </div>
-    <small>Cálculos</small>
-  </a>
-
-  <a href="{{ url_for('pages.smt_estudo_tempo') }}"
-     class="bottom-item {% if active_menu == 'smt_estudo_tempo' %}active{% endif %}">
-    <div class="bottom-icon">
-      <i class="bi bi-stopwatch"></i>
-    </div>
-    <small>Tempo</small>
-  </a>
-
   <a href="{{ url_for('auth.my_profile') }}"
      class="bottom-item {% if active_menu == 'perfil' %}active{% endif %}">
     <div class="bottom-icon">
       <i class="bi bi-person-circle"></i>
     </div>
     <small>Perfil</small>
+  </a>
+
+  <a href="{{ url_for('pages.smt_mais') }}"
+     class="bottom-item {% if active_menu == 'smt_more' %}active{% endif %}">
+    <div class="bottom-icon">
+      <i class="bi bi-grid-3x3-gap"></i>
+    </div>
+    <small>Mais</small>
   </a>
 
 </nav>
