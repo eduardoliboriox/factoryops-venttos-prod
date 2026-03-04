@@ -379,6 +379,13 @@
             {% endif %}
           </div>
         </div>
+
+        <div class="note">
+          <strong>Takt Time</strong> = 3600 / UPH Meta.<br>
+          Como existe <strong>Perda padrão</strong>, a referência prática do OK/BALANCE é o
+          <strong>Tempo alvo c/ perda</strong> (mais apertado).<br>
+          Se <strong>UPH Real</strong> ficar menor que <strong>UPH Meta</strong>, a operação aparece como <strong>BALANCE</strong>.
+        </div>
       </div>
 
       <div class="card">
@@ -478,13 +485,6 @@
               {% endif %}
             </div>
           </div>
-        </div>
-
-        <div class="note mt-2">
-          <strong>Takt Time</strong> = 3600 / UPH Meta.<br>
-          Como existe <strong>Perda padrão</strong>, a referência prática do OK/BALANCE é o
-          <strong>Tempo alvo c/ perda</strong> (mais apertado).<br>
-          Se <strong>UPH Real</strong> ficar menor que <strong>UPH Meta</strong>, a operação aparece como <strong>BALANCE</strong>.
         </div>
 
         {% if totals.balance_count and totals.balance_count > 0 and totals.uph_meta and totals.uph_meta > 0 %}
