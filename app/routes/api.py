@@ -161,6 +161,9 @@ def time_studies_get(study_id: int):
 @bp.route("/time-studies/<int:study_id>", methods=["DELETE"])
 @login_required
 def time_studies_delete(study_id: int):
+    if not getattr(current_user, "is_admin", False):
+        return jsonify({"sucesso": False, "erro": "Apenas administradores podem excluir estudos."}), 403
+
     try:
         time_studies_service.delete_study(study_id)
         return jsonify({"sucesso": True})
