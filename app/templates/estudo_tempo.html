@@ -75,23 +75,71 @@
             </div>
 
             <div class="col-md-6">
-              <label class="form-label fw-bold">UPH Meta</label>
+              <label class="form-label fw-bold">
+                <span class="ts-label-row">
+                  <span>UPH Meta</span>
+                  <button
+                    type="button"
+                    class="ts-help-icon"
+                    data-bs-toggle="tooltip"
+                    data-bs-placement="top"
+                    title="Meta por hora (peças/h). Fórmula usada: Takt Time (s/peça) = 3600 / UPH Meta."
+                    aria-label="Ajuda: UPH Meta"
+                  >i</button>
+                </span>
+              </label>
               <input class="form-control" name="uph_meta" type="number" value="70" min="0">
             </div>
 
             <div class="col-md-6">
-              <label class="form-label fw-bold">HC Meta</label>
+              <label class="form-label fw-bold">
+                <span class="ts-label-row">
+                  <span>HC Meta</span>
+                  <button
+                    type="button"
+                    class="ts-help-icon"
+                    data-bs-toggle="tooltip"
+                    data-bs-placement="top"
+                    title="Headcount planejado (pessoas). O sistema soma o HC das operações e compara com o HC Meta (status: OK / ACIMA / FOLGA)."
+                    aria-label="Ajuda: HC Meta"
+                  >i</button>
+                </span>
+              </label>
               <input class="form-control" name="hc_meta" type="number" step="0.01" value="16" min="0">
             </div>
 
             <div class="col-md-6">
-              <label class="form-label fw-bold">Perda padrão</label>
+              <label class="form-label fw-bold">
+                <span class="ts-label-row">
+                  <span>Perda padrão</span>
+                  <button
+                    type="button"
+                    class="ts-help-icon"
+                    data-bs-toggle="tooltip"
+                    data-bs-placement="top"
+                    title="Percentual de perdas (ex.: microparadas, setup, variação). Fórmula: UPH Real = (3600 / TempoCiclo) * (1 - perda)."
+                    aria-label="Ajuda: Perda padrão"
+                  >i</button>
+                </span>
+              </label>
               <input class="form-control" name="perda_padrao" type="number" step="0.01" value="0.10" min="0" max="0.80">
               <div class="ts-muted">0.10 = 10%</div>
             </div>
 
             <div class="col-md-6">
-              <label class="form-label fw-bold">Horas do turno</label>
+              <label class="form-label fw-bold">
+                <span class="ts-label-row">
+                  <span>Horas do turno</span>
+                  <button
+                    type="button"
+                    class="ts-help-icon"
+                    data-bs-toggle="tooltip"
+                    data-bs-placement="top"
+                    title="Horas efetivas do turno usadas no UPD. Fórmulas: UPD = UPH Real * Horas do turno. UPD Meta = UPH Meta * Horas do turno."
+                    aria-label="Ajuda: Horas do turno"
+                  >i</button>
+                </span>
+              </label>
               <input class="form-control" name="horas_turno" type="number" step="0.01" value="8.30" min="1" max="24">
               <div class="ts-muted">Usado para calcular UPD</div>
             </div>
@@ -189,7 +237,6 @@
         </div>
 
         <div class="p-3">
-          <!-- KPIs (base) -->
           <div class="row g-2 mb-2">
             <div class="col-3">
               <div class="ts-muted">UPH META</div>
@@ -210,7 +257,6 @@
             </div>
           </div>
 
-          <!-- KPIs (credibilidade fábrica) -->
           <div class="row g-2 mb-2">
             <div class="col-3">
               <div class="ts-muted">CAPACIDADE (UPH GARGALO)</div>
@@ -335,4 +381,15 @@
 {% block scripts %}
 <script src="{{ url_for('static', filename='js/document-fit.js') }}?v={{ APP_VERSION }}"></script>
 <script src="{{ url_for('static', filename='js/time-studies.js') }}?v={{ APP_VERSION }}"></script>
+<script>
+(function () {
+  "use strict";
+  const els = Array.from(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+  els.forEach((el) => {
+    if (window.bootstrap && window.bootstrap.Tooltip) {
+      new window.bootstrap.Tooltip(el);
+    }
+  });
+})();
+</script>
 {% endblock %}
