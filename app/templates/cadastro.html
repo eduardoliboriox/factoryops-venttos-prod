@@ -7,21 +7,14 @@
 
 {% block page_title %}
 <div class="d-flex align-items-center w-100">
-  <span class="me-auto">
-   SMT Manager - Cadastro
-  </span>
-
+  <span class="me-auto">SMT Manager - Cadastro</span>
   <div class="ms-auto d-flex gap-2">
     <a href="{{ url_for('pages.inicio') }}" class="btn btn-outline-secondary">
       <i class="bi bi-arrow-left"></i> Voltar
     </a>
-
-    <button class="btn btn-outline-purple"
-            type="button"
-            onclick="toggleFullscreen()">
+    <button class="btn btn-outline-purple" type="button" onclick="toggleFullscreen()">
       <i class="bi bi-arrows-fullscreen"></i>
     </button>
-
     <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-danger">
       <i class="bi bi-box-arrow-right"></i> Sair
     </a>
@@ -32,11 +25,11 @@
 {% block content %}
 <style>
   .smt-action-card {
-    border: 1px solid rgba(15, 23, 42, 0.10);
+    border: 1px solid rgba(15,23,42,0.10);
     border-radius: 14px;
     background: #fff;
     overflow: hidden;
-    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+    box-shadow: 0 8px 24px rgba(15,23,42,0.06);
   }
   .smt-action-card .sac-header {
     display: flex;
@@ -44,244 +37,109 @@
     justify-content: space-between;
     gap: 12px;
     padding: 14px 16px;
-    border-bottom: 1px solid rgba(15, 23, 42, 0.08);
-    background: linear-gradient(180deg, rgba(13, 110, 253, 0.08), transparent);
+    border-bottom: 1px solid rgba(15,23,42,0.08);
+    background: linear-gradient(180deg, rgba(13,110,253,0.08), transparent);
   }
-  .smt-action-card .sac-title {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
+  .smt-action-card .sac-title { display: flex; align-items: center; gap: 10px; }
   .smt-action-card .sac-icon {
-    width: 40px;
-    height: 40px;
-    border-radius: 12px;
-    display: grid;
-    place-items: center;
-    font-size: 18px;
-    background: rgba(13, 110, 253, 0.12);
-    color: #0d6efd;
+    width: 40px; height: 40px; border-radius: 12px;
+    display: grid; place-items: center; font-size: 18px;
+    background: rgba(13,110,253,0.12); color: #0d6efd;
   }
-  .smt-action-card .sac-icon.is-chrono {
-    background: rgba(25, 135, 84, 0.12);
-    color: #198754;
-  }
-  .smt-action-card .sac-subtitle {
-    font-size: 12px;
-    color: rgba(15, 23, 42, 0.65);
-    margin-top: 2px;
-  }
+  .smt-action-card .sac-icon.is-chrono { background: rgba(25,135,84,0.12); color: #198754; }
+  .smt-action-card .sac-subtitle { font-size: 12px; color: rgba(15,23,42,0.65); margin-top: 2px; }
   .smt-action-card .sac-body { padding: 16px; }
-  .smt-action-card .form-label {
-    font-weight: 700;
-    color: rgba(15, 23, 42, 0.80);
-  }
+  .smt-action-card .form-label { font-weight: 700; color: rgba(15,23,42,0.80); }
   .smt-action-card .form-control,
-  .smt-action-card .form-select {
-    border-radius: 12px;
-    border-color: rgba(15, 23, 42, 0.14);
-  }
-  .smt-action-card .form-control:focus,
-  .smt-action-card .form-select:focus {
-    box-shadow: 0 0 0 .2rem rgba(13, 110, 253, 0.12);
-  }
-  .hint {
-    font-size: 12px;
-    color: rgba(15, 23, 42, 0.65);
-    margin-top: 6px;
-  }
+  .smt-action-card .form-select { border-radius: 12px; border-color: rgba(15,23,42,0.14); }
+  .hint { font-size: 12px; color: rgba(15,23,42,0.65); margin-top: 6px; }
 
   .chrono-study-info {
-    background: rgba(13, 110, 253, 0.05);
-    border: 1px solid rgba(13, 110, 253, 0.12);
-    border-radius: 12px;
-    padding: 10px 14px;
-    font-size: 13px;
+    background: rgba(13,110,253,0.05);
+    border: 1px solid rgba(13,110,253,0.12);
+    border-radius: 12px; padding: 10px 14px; font-size: 13px;
   }
   .study-select-area {
-    background: rgba(248, 250, 252, 0.80);
-    border-radius: 14px;
-    border: 1px solid rgba(15, 23, 42, 0.10);
-    padding: 14px 16px;
+    background: rgba(248,250,252,0.80);
+    border-radius: 14px; border: 1px solid rgba(15,23,42,0.10); padding: 14px 16px;
   }
 
-  .chrono-table {
-    font-size: 12px;
-    border-collapse: separate;
-    border-spacing: 0;
-  }
+  /* TABELA CRONOMETRAGEM */
+  .chrono-table { font-size: 12px; }
   .chrono-table th {
-    background: rgba(15, 23, 42, 0.06);
-    font-weight: 800;
-    font-size: 11px;
-    text-align: center;
-    vertical-align: middle;
-    white-space: nowrap;
-    padding: 6px 4px;
-    border-color: rgba(15, 23, 42, 0.15);
-    position: sticky;
-    top: 0;
-    z-index: 2;
+    background: rgba(15,23,42,0.06); font-weight: 800; font-size: 11px;
+    text-align: center; vertical-align: middle; white-space: nowrap;
+    padding: 6px 4px; position: sticky; top: 0; z-index: 2;
   }
-  .chrono-table td {
-    vertical-align: middle;
-    padding: 4px 3px;
-    border-color: rgba(15, 23, 42, 0.12);
-  }
-  .chrono-table .col-n      { width: 32px; text-align: center; }
-  .chrono-table .col-etapa  { width: 68px; text-align: center; }
-  .chrono-table .col-op     { min-width: 140px; text-align: left !important; }
-  .chrono-table .col-intex  { width: 42px; text-align: center; }
-  .chrono-table .col-qtd    { width: 44px; text-align: center; }
-  .chrono-table .col-freq   { width: 44px; text-align: center; }
-  .chrono-table .col-med    { width: 52px; text-align: center; }
-  .chrono-table .col-avg    { width: 66px; text-align: center; font-weight: 900; color: #0b5ed7; }
-  .chrono-table .col-tol    { width: 62px; text-align: center; }
-  .chrono-table .col-ritmo  { width: 56px; text-align: center; }
-  .chrono-table .col-tempo  { width: 68px; text-align: center; font-weight: 900; color: #146c43; }
-  .chrono-table .col-ctpc   { width: 66px; text-align: center; font-weight: 900; color: #842029; background: rgba(220,53,69,0.06); }
-  .chrono-table .col-hc     { width: 52px; text-align: center; }
-  .chrono-table .col-posto  { width: 52px; text-align: center; }
-  .chrono-table .col-chrono { width: 120px; text-align: center; }
-  .chrono-table .col-act    { width: 38px; text-align: center; }
+  .chrono-table td { vertical-align: middle; padding: 4px 3px; }
 
   .t-inp {
-    width: 100%;
-    min-width: 0;
-    text-align: center;
-    padding: 3px 4px;
-    font-size: 11px;
-    border-radius: 6px;
-    border: 1px solid rgba(15, 23, 42, 0.18);
-    background: #fff;
-    color: #0f172a;
+    width: 100%; min-width: 0; text-align: center;
+    padding: 3px 4px; font-size: 11px; border-radius: 6px;
+    border: 1px solid rgba(15,23,42,0.18); background: #fff; color: #0f172a;
   }
-  .t-inp:focus {
-    outline: none;
-    border-color: #0d6efd;
-    box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.15);
-  }
-  .t-inp.t-op { text-align: left; padding-left: 6px; }
+  .t-inp:focus { outline: none; border-color: #0d6efd; box-shadow: 0 0 0 2px rgba(13,110,253,0.15); }
+  .t-inp.t-op  { text-align: left; padding-left: 6px; }
 
-  .med-wrap {
-    position: relative;
-    display: inline-flex;
-    align-items: center;
-    gap: 1px;
-  }
-  .med-wrap input { width: 44px; }
+  .med-wrap { position: relative; display: inline-flex; align-items: center; gap: 1px; }
+  .med-wrap input { width: 46px; }
   .btn-del-med {
-    width: 13px;
-    height: 13px;
-    padding: 0;
-    font-size: 8px;
-    border-radius: 50%;
-    border: none;
-    background: rgba(220,53,69,0.15);
-    color: #dc3545;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    opacity: 0;
-    transition: opacity 0.15s;
-    line-height: 1;
+    width: 13px; height: 13px; padding: 0; font-size: 9px; border-radius: 50%;
+    border: none; background: rgba(220,53,69,0.15); color: #dc3545;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; opacity: 0; transition: opacity 0.15s; line-height: 1;
   }
   td:hover .btn-del-med { opacity: 1; }
 
+  /* CRONÔMETRO */
   .chrono-display {
-    font-family: 'Courier New', monospace;
-    font-size: 13px;
-    font-weight: 900;
-    letter-spacing: 1px;
-    color: #0f172a;
-    min-width: 58px;
-    display: inline-block;
-    text-align: center;
+    font-family: 'Courier New', monospace; font-size: 14px; font-weight: 900;
+    letter-spacing: 1px; color: #0f172a; min-width: 64px;
+    display: inline-block; text-align: center;
   }
   .chrono-display.running { color: #198754; }
-  .chrono-display.stopped { color: #dc3545; }
+  .chrono-display.flash   { color: #dc3545; }
 
   .btn-chrono-start {
-    padding: 3px 7px;
-    font-size: 11px;
-    font-weight: 700;
-    border-radius: 7px;
-    border: 1px solid #198754;
-    background: rgba(25,135,84,0.10);
-    color: #146c43;
-    cursor: pointer;
-    white-space: nowrap;
+    padding: 4px 8px; font-size: 11px; font-weight: 700; border-radius: 7px;
+    border: 1px solid #198754; background: rgba(25,135,84,0.10); color: #146c43; cursor: pointer;
   }
   .btn-chrono-start:hover { background: #198754; color: #fff; }
   .btn-chrono-stop {
-    padding: 3px 7px;
-    font-size: 11px;
-    font-weight: 700;
-    border-radius: 7px;
-    border: 1px solid #dc3545;
-    background: rgba(220,53,69,0.10);
-    color: #dc3545;
-    cursor: pointer;
-    white-space: nowrap;
+    padding: 4px 8px; font-size: 11px; font-weight: 700; border-radius: 7px;
+    border: 1px solid #dc3545; background: rgba(220,53,69,0.10); color: #dc3545; cursor: pointer;
   }
-  .btn-chrono-stop:hover { background: #dc3545; color: #fff; }
+  .btn-chrono-stop:hover  { background: #dc3545; color: #fff; }
   .btn-chrono-reset {
-    padding: 3px 6px;
-    font-size: 10px;
-    border-radius: 7px;
-    border: 1px solid rgba(15,23,42,0.20);
-    background: transparent;
-    color: rgba(15,23,42,0.55);
-    cursor: pointer;
+    padding: 4px 6px; font-size: 10px; border-radius: 7px;
+    border: 1px solid rgba(15,23,42,0.20); background: transparent;
+    color: rgba(15,23,42,0.55); cursor: pointer;
   }
   .btn-chrono-reset:hover { background: rgba(15,23,42,0.08); }
 
-  .chrono-row-saved { background: rgba(25, 135, 84, 0.06); }
+  .med-count { font-size: 10px; color: rgba(15,23,42,0.45); }
 
-  @media (max-width: 768px) {
-    .chrono-scroll {
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-    }
-    .chrono-table { min-width: 1200px; }
-  }
+  /* CÉLULAS CALCULADAS */
+  .cell-avg   { font-weight: 900; color: #0b5ed7; text-align: center; }
+  .cell-tempo { font-weight: 900; color: #146c43; text-align: center; }
+  .cell-ctpc  { font-weight: 900; color: #842029; background: rgba(220,53,69,0.06); text-align: center; }
 
+  /* TOTALIZADOR */
   .chrono-totals-bar {
-    background: rgba(13, 110, 253, 0.06);
-    border: 1px solid rgba(13, 110, 253, 0.12);
-    border-radius: 10px;
-    padding: 10px 14px;
-    font-size: 13px;
+    background: rgba(13,110,253,0.06); border: 1px solid rgba(13,110,253,0.12);
+    border-radius: 10px; padding: 10px 14px;
   }
-  .chrono-totals-bar .tot-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    min-width: 80px;
-  }
-  .chrono-totals-bar .tot-label { font-size: 10px; color: rgba(15,23,42,0.55); font-weight: 700; }
-  .chrono-totals-bar .tot-val { font-size: 18px; font-weight: 900; color: #0f172a; }
-  .chrono-totals-bar .tot-val.is-uph { color: #0b5ed7; }
-  .chrono-totals-bar .tot-val.is-ct  { color: #842029; }
+  .tot-item   { display: flex; flex-direction: column; align-items: center; min-width: 90px; }
+  .tot-label  { font-size: 10px; color: rgba(15,23,42,0.55); font-weight: 700; }
+  .tot-val    { font-size: 20px; font-weight: 900; color: #0f172a; }
+  .tot-val.is-uph { color: #0b5ed7; }
+  .tot-val.is-ct  { color: #842029; }
 
-  .btn-add-row {
-    border-radius: 10px;
-    font-weight: 700;
-    font-size: 13px;
-  }
-  .chrono-empty {
-    color: rgba(15, 23, 42, 0.55);
-    font-size: 14px;
-    padding: 20px;
-    text-align: center;
-  }
+  .chrono-row-saved { background: rgba(25,135,84,0.07) !important; }
 
-  .med-count-badge {
-    font-size: 10px;
-    color: rgba(15,23,42,0.45);
-    white-space: nowrap;
+  @media (max-width: 900px) {
+    .chrono-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .chrono-table  { min-width: 1260px; }
   }
 </style>
 
@@ -289,13 +147,13 @@
 
   <div id="mensagemCadastro"></div>
 
-  <!-- SEÇÃO 1: CADASTRO DE MODELO -->
+  <!-- ═══════════════════════════════════════════════
+       SEÇÃO 1 — CADASTRO DE MODELO
+  ════════════════════════════════════════════════ -->
   <div class="smt-action-card mb-4">
     <div class="sac-header">
       <div class="sac-title">
-        <div class="sac-icon">
-          <i class="bi bi-file-earmark-plus"></i>
-        </div>
+        <div class="sac-icon"><i class="bi bi-file-earmark-plus"></i></div>
         <div>
           <div class="fw-bold">Novo Modelo</div>
           <div class="sac-subtitle">Preencha os dados e cadastre.</div>
@@ -303,22 +161,18 @@
       </div>
       <span class="badge text-bg-primary">CREATE</span>
     </div>
-
     <div class="sac-body">
       <form id="cadastroForm" class="row g-3">
-
         <div class="col-md-3">
           <label class="form-label">Código</label>
           <input class="form-control form-control-lg" name="codigo" required placeholder="Ex: ABC123">
           <div class="hint">Use o código do modelo conforme padrão interno.</div>
         </div>
-
         <div class="col-md-3">
           <label class="form-label">Cliente</label>
           <input class="form-control form-control-lg" name="cliente" required placeholder="Ex: Cliente X">
           <div class="hint">Cliente associado ao modelo.</div>
         </div>
-
         <div class="col-md-2">
           <label class="form-label">Setor</label>
           <select class="form-select form-select-lg" name="setor" id="setorSelect" required>
@@ -329,31 +183,26 @@
           </select>
           <div class="hint">Selecione o setor para habilitar as linhas corretas.</div>
         </div>
-
         <div class="col-md-2">
           <label class="form-label">Linha</label>
           <select class="form-select form-select-lg" name="linha" id="linhaSelect" required></select>
-          <div class="hint">As opções mudam conforme o setor selecionado.</div>
+          <div class="hint">As opções mudam conforme o setor.</div>
         </div>
-
         <div class="col-md-2">
           <label class="form-label">Meta por hora</label>
           <input class="form-control form-control-lg" name="meta_padrao" type="number" required placeholder="Ex: 570">
-          <div class="hint">Meta operacional padrão do modelo.</div>
+          <div class="hint">Meta operacional padrão.</div>
         </div>
-
         <div class="col-md-3">
           <label class="form-label">Tempo de montagem (seg)</label>
           <input class="form-control form-control-lg" name="tempo_montagem" type="number" step="0.01" min="0" placeholder="Ex: 19.55">
-          <div class="hint">Opcional. Use cronômetro/medições (ex.: 19.55).</div>
+          <div class="hint">Opcional.</div>
         </div>
-
         <div class="col-md-3">
           <label class="form-label">Placas por Blank</label>
           <input class="form-control form-control-lg" name="blank" type="number" min="1" value="1" required>
-          <div class="hint">Ex.: 1 (placa individual) · 2, 4, 6… (por blank).</div>
+          <div class="hint">Ex.: 1 individual · 2, 4, 6… por blank.</div>
         </div>
-
         <div class="col-md-3">
           <label class="form-label">Fase</label>
           <select class="form-select form-select-lg" name="fase">
@@ -362,7 +211,6 @@
           </select>
           <div class="hint">TOP ou BOTTOM conforme setup.</div>
         </div>
-
         <div class="col-12">
           <div class="d-flex gap-2 flex-wrap">
             <button id="btnCadastroSubmit" type="submit" class="btn btn-primary btn-lg px-4">
@@ -373,18 +221,17 @@
             </button>
           </div>
         </div>
-
       </form>
     </div>
   </div>
 
-  <!-- SEÇÃO 2: FOLHA DE CRONOMETRAGEM -->
+  <!-- ═══════════════════════════════════════════════
+       SEÇÃO 2 — FOLHA DE CRONOMETRAGEM
+  ════════════════════════════════════════════════ -->
   <div class="smt-action-card mb-4">
     <div class="sac-header">
       <div class="sac-title">
-        <div class="sac-icon is-chrono">
-          <i class="bi bi-stopwatch"></i>
-        </div>
+        <div class="sac-icon is-chrono"><i class="bi bi-stopwatch"></i></div>
         <div>
           <div class="fw-bold">Folha de Cronometragem</div>
           <div class="sac-subtitle">Selecione o estudo, cronometre cada posto (até 10 ciclos) e envie.</div>
@@ -392,15 +239,15 @@
       </div>
       <span class="badge text-bg-success">CRONOMETRIA</span>
     </div>
-
     <div class="sac-body">
 
+      <!-- Seleção do estudo -->
       <div class="study-select-area mb-3">
         <div class="row g-2 align-items-end">
           <div class="col-12 col-md-7">
             <label class="form-label fw-bold">Estudo de Tempo</label>
             <select id="chronoStudySelect" class="form-select">
-              <option value="">Carregando estudos...</option>
+              <option value="">Carregando...</option>
             </select>
             <div class="hint">Selecione o estudo para o qual os postos serão enviados.</div>
           </div>
@@ -415,21 +262,29 @@
             </button>
           </div>
         </div>
-
-        <div id="chronoStudyInfo" class="chrono-study-info mt-3 d-none"></div>
+        <div id="chronoStudyInfo" class="chrono-study-info mt-3" style="display:none;"></div>
       </div>
 
+      <!-- Mensagens -->
       <div id="chronoMsg"></div>
 
-      <div id="chronoTableArea" class="d-none">
+      <!-- Instrução inicial -->
+      <div id="chronoHint" class="text-center py-3" style="color:rgba(15,23,42,0.50); font-size:14px;">
+        <i class="bi bi-arrow-up-circle me-1"></i>
+        Selecione um estudo e clique em <strong>Carregar estudo</strong> para iniciar a cronometragem.
+      </div>
 
+      <!-- Área da tabela (oculta até carregar) -->
+      <div id="chronoTableArea" style="display:none;">
+
+        <!-- Totalizador -->
         <div class="chrono-totals-bar d-flex flex-wrap gap-3 mb-3">
           <div class="tot-item">
-            <div class="tot-label">POSTOS</div>
+            <div class="tot-label">POSTOS VÁLIDOS</div>
             <div class="tot-val" id="totPostos">0</div>
           </div>
           <div class="tot-item">
-            <div class="tot-label">∑ TEMPO FINAL (s)</div>
+            <div class="tot-label">∑ TEMPO NORMAL (s)</div>
             <div class="tot-val is-ct" id="totTempoFinal">0,00</div>
           </div>
           <div class="tot-item">
@@ -446,58 +301,56 @@
           </div>
         </div>
 
+        <!-- Tabela -->
         <div class="chrono-scroll">
           <table class="table table-sm table-bordered chrono-table align-middle mb-2">
             <thead>
               <tr>
-                <th class="col-n">N°</th>
-                <th class="col-etapa">ETAPA</th>
-                <th class="col-op" style="text-align:left;">OPERAÇÃO</th>
-                <th class="col-intex">INT/<br>EXT</th>
-                <th class="col-qtd">QTD<br>COMP</th>
-                <th class="col-freq">FREQ</th>
-                <th class="col-med">1</th>
-                <th class="col-med">2</th>
-                <th class="col-med">3</th>
-                <th class="col-med">4</th>
-                <th class="col-med">5</th>
-                <th class="col-med">6</th>
-                <th class="col-med">7</th>
-                <th class="col-med">8</th>
-                <th class="col-med">9</th>
-                <th class="col-med">10</th>
-                <th class="col-avg">Média<br>(s)</th>
-                <th class="col-tol">Fator<br>Tol.</th>
-                <th class="col-ritmo">Ritmo<br>[%]</th>
-                <th class="col-tempo">Tempo<br>Normal (s)</th>
-                <th class="col-ctpc">CT/PÇ<br>(s)</th>
-                <th class="col-hc">HC</th>
-                <th class="col-posto">Posto</th>
-                <th class="col-chrono">Cronômetro</th>
-                <th class="col-act"></th>
+                <th style="width:32px;">N°</th>
+                <th style="width:66px;">ETAPA</th>
+                <th style="min-width:130px; text-align:left;">OPERAÇÃO</th>
+                <th style="width:44px;">INT/<br>EXT</th>
+                <th style="width:44px;">QTD</th>
+                <th style="width:44px;">FREQ</th>
+                <th style="width:50px;">1</th>
+                <th style="width:50px;">2</th>
+                <th style="width:50px;">3</th>
+                <th style="width:50px;">4</th>
+                <th style="width:50px;">5</th>
+                <th style="width:50px;">6</th>
+                <th style="width:50px;">7</th>
+                <th style="width:50px;">8</th>
+                <th style="width:50px;">9</th>
+                <th style="width:50px;">10</th>
+                <th style="width:66px;">Média<br>(s)</th>
+                <th style="width:60px;">Fator<br>Tol.</th>
+                <th style="width:54px;">Ritmo<br>%</th>
+                <th style="width:70px;">Tempo<br>Normal (s)</th>
+                <th style="width:66px;">CT/PÇ<br>(s)</th>
+                <th style="width:52px;">HC</th>
+                <th style="width:52px;">Posto</th>
+                <th style="width:130px;">Cronômetro</th>
+                <th style="width:36px;"></th>
               </tr>
             </thead>
             <tbody id="chronoTableBody"></tbody>
           </table>
         </div>
 
-        <div class="d-flex gap-2 flex-wrap mt-2">
-          <button class="btn btn-outline-success btn-add-row" id="btnAddChronoRow" type="button">
+        <div class="d-flex gap-2 flex-wrap mt-2 mb-3">
+          <button class="btn btn-outline-success fw-bold" id="btnAddChronoRow" type="button">
             <i class="bi bi-plus-lg"></i> Adicionar posto
           </button>
         </div>
 
-        <div class="mt-3 d-flex gap-2 flex-wrap align-items-center">
+        <div class="d-flex gap-2 flex-wrap align-items-center">
           <button class="btn btn-success px-4 fw-bold" id="btnSendAllOps" type="button">
             <i class="bi bi-send-check"></i> Enviar todos os postos para o estudo
           </button>
-          <div class="hint mb-0">Apenas postos com Operação preenchida e Tempo Normal &gt; 0 serão enviados.</div>
+          <span class="hint mb-0">Postos sem operação ou com Tempo Normal = 0 são ignorados.</span>
         </div>
-      </div>
 
-      <div id="chronoEmpty" class="chrono-empty d-none">
-        Selecione um estudo e clique em <strong>Carregar estudo</strong> para iniciar a cronometragem.
-      </div>
+      </div><!-- /chronoTableArea -->
 
     </div>
   </div>
@@ -510,9 +363,9 @@
 (function () {
   "use strict";
 
-  /* =============================================
-     CADASTRO DE MODELO
-     ============================================= */
+  /* ─────────────────────────────────────────────
+     SEÇÃO 1 — CADASTRO DE MODELO
+  ───────────────────────────────────────────── */
   const LINHAS_POR_SETOR = {
     IM:  ["IM-01","IM-02","IM-03","IM-04","IM-05","IM-06"],
     PA:  ["IP-COM","PA-01","PA-03","PA-04","PA-07","PA-08","PA-09","PA-13","WIFI"],
@@ -520,626 +373,438 @@
     SMT: ["SMT-01","SMT-02","SMT-03","SMT-04","SMT-05","SMT-06","SMT-07","SMT-08","SMT-09"]
   };
 
-  function renderLinhasForSetor(setor, keepValue) {
-    const linhaSelect = document.getElementById('linhaSelect');
-    if (!linhaSelect) return;
+  function renderLinhas(setor, keep) {
+    const sel = document.getElementById('linhaSelect');
+    if (!sel) return;
     const linhas = LINHAS_POR_SETOR[setor] || [];
-    const previous = keepValue ? (linhaSelect.value || '') : '';
-    linhaSelect.innerHTML = '';
-    if (!linhas.length) {
-      const opt = document.createElement('option');
-      opt.value = ''; opt.textContent = '—';
-      linhaSelect.appendChild(opt);
-      return;
-    }
+    const prev   = keep ? sel.value : '';
+    sel.innerHTML = '';
     for (const l of linhas) {
-      const opt = document.createElement('option');
-      opt.value = l; opt.textContent = l;
-      linhaSelect.appendChild(opt);
+      const o = document.createElement('option');
+      o.value = l; o.textContent = l;
+      sel.appendChild(o);
     }
-    if (previous && linhas.includes(previous)) {
-      linhaSelect.value = previous;
-    } else {
-      linhaSelect.value = linhas[0];
-    }
+    sel.value = (prev && linhas.includes(prev)) ? prev : (linhas[0] || '');
   }
 
-  function mostrarMensagemCadastro(texto, tipo) {
-    const msgDiv = document.getElementById('mensagemCadastro');
-    const div = document.createElement('div');
-    div.className = `alert alert-${tipo || 'success'} alert-dismissible fade show`;
-    div.role = 'alert';
-    div.innerHTML = `${texto}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>`;
-    msgDiv.innerHTML = '';
-    msgDiv.appendChild(div);
-    setTimeout(() => {
-      const bsAlert = bootstrap.Alert.getOrCreateInstance(div);
-      bsAlert.close();
-    }, 2500);
+  function msgCadastro(texto, tipo) {
+    const d = document.createElement('div');
+    d.className = `alert alert-${tipo} alert-dismissible fade show`;
+    d.innerHTML = `${texto}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>`;
+    const wrap = document.getElementById('mensagemCadastro');
+    wrap.innerHTML = '';
+    wrap.appendChild(d);
+    setTimeout(() => bootstrap.Alert.getOrCreateInstance(d).close(), 2500);
   }
 
   document.addEventListener('DOMContentLoaded', () => {
-    const setorSelect = document.getElementById('setorSelect');
-    if (setorSelect) {
-      renderLinhasForSetor(setorSelect.value, true);
-      setorSelect.addEventListener('change', () => renderLinhasForSetor(setorSelect.value, false));
-    }
+    const ss = document.getElementById('setorSelect');
+    if (ss) { renderLinhas(ss.value, true); ss.addEventListener('change', () => renderLinhas(ss.value, false)); }
   });
 
   document.getElementById('cadastroForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = document.getElementById('btnCadastroSubmit');
-    if (btn) {
-      btn.disabled = true;
-      btn.dataset.original = btn.innerHTML;
-      btn.innerHTML = `<span class="spinner-border spinner-border-sm me-2" role="status"></span> Salvando...`;
-    }
+    if (btn) { btn.disabled = true; btn._orig = btn.innerHTML; btn.innerHTML = `<span class="spinner-border spinner-border-sm me-2"></span>Salvando...`; }
     try {
-      const fd = new FormData(e.target);
-      const resp = await fetch('/api/modelos', {
-        method: 'POST', body: fd,
-        headers: { 'X-Requested-With': 'XMLHttpRequest' }
-      });
-      const data = await resp.json();
-      mostrarMensagemCadastro(data.mensagem, data.sucesso ? 'success' : 'danger');
-      if (data.sucesso) {
-        e.target.reset();
-        const ss = document.getElementById('setorSelect');
-        if (ss) { ss.value = 'SMT'; renderLinhasForSetor('SMT', false); }
-      }
+      const r    = await fetch('/api/modelos', { method: 'POST', body: new FormData(e.target), headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+      const data = await r.json();
+      msgCadastro(data.mensagem, data.sucesso ? 'success' : 'danger');
+      if (data.sucesso) { e.target.reset(); const ss = document.getElementById('setorSelect'); if (ss) { ss.value = 'SMT'; renderLinhas('SMT', false); } }
     } finally {
-      if (btn) {
-        btn.disabled = false;
-        btn.innerHTML = btn.dataset.original || `<i class="bi bi-save"></i> Cadastrar Modelo`;
-      }
+      if (btn) { btn.disabled = false; btn.innerHTML = btn._orig || `<i class="bi bi-save"></i> Cadastrar Modelo`; }
     }
   });
 
-  /* =============================================
-     FOLHA DE CRONOMETRAGEM
-     ============================================= */
+  /* ─────────────────────────────────────────────
+     SEÇÃO 2 — FOLHA DE CRONOMETRAGEM
+  ───────────────────────────────────────────── */
 
-  let chronoStudyId   = null;
-  let chronoStudyData = null;
-  let rowCounter      = 0;
+  let activeStudyId = null;
+  let rowCounter    = 0;
 
   /*
-   * Estado de cada cronômetro por rowId:
-   * { intervalId, startTime, accumulated, running }
-   *
-   * - accumulated: ms acumulados de ciclos anteriores (não o ciclo ativo)
-   * - running: bool
-   * Ao pressionar Stop: captura elapsed, salva na próxima célula vazia, zera accumulated.
-   * O display é reiniciado para 00:00.0 pronto para o próximo ciclo.
+   * chronoState[rowId] = { intervalId, startMs, accMs, running }
+   * accMs  = ms acumulados de ciclos anteriores ao atual
+   * Cada pressão de Stop captura 1 ciclo e vai para a próxima célula vazia.
+   * Depois zera accMs e reseta o display para 00:00.0.
    */
-  const chronoTimers = {};
+  const chronoState = {};
 
-  function qs(sel) { return document.querySelector(sel); }
-
-  function escHtml(s) {
-    return String(s ?? '')
-      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+  function esc(s) {
+    return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 
-  function fmtDateTime(iso) {
-    try {
-      const d = new Date(iso);
-      if (Number.isNaN(d.getTime())) return '—';
-      return d.toLocaleString();
-    } catch { return '—'; }
+  function fmtDt(iso) {
+    try { const d = new Date(iso); return isNaN(d) ? '—' : d.toLocaleString(); } catch { return '—'; }
   }
 
-  function fmtMs(totalMs) {
-    /* Formata milissegundos em MM:SS.d (décimos) */
-    const s  = Math.floor(totalMs / 1000);
-    const d  = Math.floor((totalMs % 1000) / 100);
+  function fmtMs(ms) {
+    const s  = Math.floor(ms / 1000);
+    const d  = Math.floor((ms % 1000) / 100);
     const m  = Math.floor(s / 60);
     const ss = s % 60;
     return `${String(m).padStart(2,'0')}:${String(ss).padStart(2,'0')}.${d}`;
   }
 
-  function showChronoMsg(kind, msg) {
-    const el = qs('#chronoMsg');
+  function showMsg(kind, text) {
+    const el = document.getElementById('chronoMsg');
     if (!el) return;
-    el.innerHTML = `<div class="alert alert-${kind} py-2 mb-2">${escHtml(msg)}</div>`;
-    if (kind !== 'danger') setTimeout(() => { if (el) el.innerHTML = ''; }, 6000);
+    el.innerHTML = `<div class="alert alert-${kind} py-2 mb-2">${esc(text)}</div>`;
+    if (kind !== 'danger') setTimeout(() => { el.innerHTML = ''; }, 6000);
   }
 
-  function clearChronoMsg() {
-    const el = qs('#chronoMsg');
-    if (el) el.innerHTML = '';
-  }
-
-  async function apiJson(url, options) {
-    const opts = options || {};
-    const resp = await fetch(url, {
-      headers: Object.assign({ 'X-Requested-With': 'XMLHttpRequest' }, opts.headers || {}),
+  async function api(url, opts) {
+    opts = opts || {};
+    const r = await fetch(url, {
       method: opts.method || 'GET',
-      body: opts.body || undefined,
+      body:   opts.body   || undefined,
+      headers: Object.assign({ 'X-Requested-With': 'XMLHttpRequest' }, opts.headers || {})
     });
-    const data = await resp.json().catch(() => ({}));
-    return { ok: resp.ok, data };
+    const data = await r.json().catch(() => ({}));
+    return { ok: r.ok, data };
   }
 
-  /* ---------- LISTA DE ESTUDOS ---------- */
-  async function loadChronoStudies() {
-    const sel = qs('#chronoStudySelect');
+  /* ── carregar lista de estudos ── */
+  async function loadStudies() {
+    const sel = document.getElementById('chronoStudySelect');
     if (!sel) return;
     sel.innerHTML = '<option value="">Carregando...</option>';
-    const { ok, data } = await apiJson('/api/time-studies?limit=50');
-    if (!ok || !Array.isArray(data) || !data.length) {
-      sel.innerHTML = '<option value="">Nenhum estudo disponível — crie um em Estudo de Tempo</option>';
+    const { ok, data } = await api('/api/time-studies?limit=100');
+    const list = (ok && Array.isArray(data)) ? data : [];
+    if (!list.length) {
+      sel.innerHTML = '<option value="">Nenhum estudo encontrado — crie um na página Estudo de Tempo</option>';
       return;
     }
-    sel.innerHTML = '';
-    const ph = document.createElement('option');
-    ph.value = ''; ph.textContent = 'Selecione um estudo...';
-    sel.appendChild(ph);
-    for (const s of data) {
-      const opt = document.createElement('option');
-      opt.value = s.id;
-      const parts = [`#${s.id}`];
-      if (s.produto) parts.push(s.produto);
-      if (s.cliente) parts.push(`· ${s.cliente}`);
-      if (s.linha)   parts.push(`· ${s.linha}`);
-      if (s.uph_meta != null) parts.push(`· UPH ${s.uph_meta}`);
-      if (s.created_at) parts.push(`· ${fmtDateTime(s.created_at)}`);
-      opt.textContent = parts.join(' ');
-      sel.appendChild(opt);
+    sel.innerHTML = '<option value="">Selecione um estudo...</option>';
+    for (const s of list) {
+      const o  = document.createElement('option');
+      o.value  = s.id;
+      const p  = [`#${s.id}`];
+      if (s.produto) p.push(s.produto);
+      if (s.cliente) p.push(`· ${s.cliente}`);
+      if (s.linha)   p.push(`· ${s.linha}`);
+      if (s.uph_meta != null) p.push(`· UPH ${s.uph_meta}`);
+      if (s.created_at) p.push(`· ${fmtDt(s.created_at)}`);
+      o.textContent = p.join(' ');
+      sel.appendChild(o);
     }
   }
 
-  /* ---------- CARREGAR ESTUDO ---------- */
-  async function loadStudyInfo() {
-    const sel     = qs('#chronoStudySelect');
+  /* ── carregar estudo selecionado e mostrar tabela ── */
+  async function loadStudyAndShowTable() {
+    const sel     = document.getElementById('chronoStudySelect');
     const studyId = Number(sel ? sel.value : 0);
-    if (!studyId) {
-      showChronoMsg('warning', 'Selecione um estudo antes de carregar.');
-      return;
-    }
 
-    const infoEl    = qs('#chronoStudyInfo');
-    const tableArea = qs('#chronoTableArea');
-    const emptyEl   = qs('#chronoEmpty');
+    if (!studyId) { showMsg('warning', 'Selecione um estudo primeiro.'); return; }
 
-    if (infoEl)    infoEl.classList.add('d-none');
-    if (tableArea) tableArea.classList.add('d-none');
-    if (emptyEl)   emptyEl.classList.add('d-none');
+    document.getElementById('chronoMsg').innerHTML = '';
+    document.getElementById('chronoHint').style.display    = 'none';
+    document.getElementById('chronoStudyInfo').style.display = 'none';
+    document.getElementById('chronoTableArea').style.display = 'none';
 
-    const { ok, data } = await apiJson(`/api/time-studies/${studyId}`);
+    /* mostra spinner enquanto carrega */
+    document.getElementById('chronoMsg').innerHTML =
+      `<div class="d-flex align-items-center gap-2 py-2"><div class="spinner-border spinner-border-sm"></div><span>Carregando estudo...</span></div>`;
+
+    const { ok, data } = await api(`/api/time-studies/${studyId}`);
+    document.getElementById('chronoMsg').innerHTML = '';
+
     if (!ok || !data || data.sucesso !== true) {
-      showChronoMsg('danger', (data && data.erro) ? data.erro : 'Erro ao carregar estudo.');
-      if (emptyEl) emptyEl.classList.remove('d-none');
+      showMsg('danger', data && data.erro ? data.erro : 'Erro ao carregar estudo.');
+      document.getElementById('chronoHint').style.display = '';
       return;
     }
 
-    chronoStudyId   = studyId;
-    chronoStudyData = data.study || {};
-
-    const study  = chronoStudyData;
+    activeStudyId = studyId;
+    const study  = data.study  || {};
     const totals = data.totals || {};
 
-    if (infoEl) {
-      infoEl.classList.remove('d-none');
-      infoEl.innerHTML = `
-        <div class="d-flex flex-wrap gap-3">
-          <div><span style="font-size:10px;color:rgba(15,23,42,0.55);">ESTUDO</span><div class="fw-bold">#${escHtml(study.id)}</div></div>
-          <div><span style="font-size:10px;color:rgba(15,23,42,0.55);">PRODUTO</span><div class="fw-bold">${escHtml(study.produto || '—')}</div></div>
-          <div><span style="font-size:10px;color:rgba(15,23,42,0.55);">CLIENTE</span><div class="fw-bold">${escHtml(study.cliente || '—')}</div></div>
-          <div><span style="font-size:10px;color:rgba(15,23,42,0.55);">LINHA</span><div class="fw-bold">${escHtml(study.linha || '—')}</div></div>
-          <div><span style="font-size:10px;color:rgba(15,23,42,0.55);">UPH META</span><div class="fw-bold">${escHtml(totals.uph_meta ?? '—')}</div></div>
-          <div><span style="font-size:10px;color:rgba(15,23,42,0.55);">PERDA</span><div class="fw-bold">${escHtml(totals.perda_padrao != null ? (totals.perda_padrao * 100).toFixed(0) + '%' : '—')}</div></div>
-          <div><span style="font-size:10px;color:rgba(15,23,42,0.55);">OPS CADASTRADAS</span><div class="fw-bold">${escHtml(totals.total_ops ?? 0)}</div></div>
-        </div>
-      `;
-    }
+    /* info resumida */
+    const infoEl = document.getElementById('chronoStudyInfo');
+    infoEl.innerHTML = `
+      <div class="d-flex flex-wrap gap-3">
+        <div><div style="font-size:10px;color:rgba(15,23,42,.55);">ESTUDO</div><div class="fw-bold">#${esc(study.id)}</div></div>
+        <div><div style="font-size:10px;color:rgba(15,23,42,.55);">PRODUTO</div><div class="fw-bold">${esc(study.produto||'—')}</div></div>
+        <div><div style="font-size:10px;color:rgba(15,23,42,.55);">CLIENTE</div><div class="fw-bold">${esc(study.cliente||'—')}</div></div>
+        <div><div style="font-size:10px;color:rgba(15,23,42,.55);">LINHA</div><div class="fw-bold">${esc(study.linha||'—')}</div></div>
+        <div><div style="font-size:10px;color:rgba(15,23,42,.55);">UPH META</div><div class="fw-bold">${esc(totals.uph_meta??'—')}</div></div>
+        <div><div style="font-size:10px;color:rgba(15,23,42,.55);">PERDA</div><div class="fw-bold">${totals.perda_padrao!=null?(totals.perda_padrao*100).toFixed(0)+'%':'—'}</div></div>
+        <div><div style="font-size:10px;color:rgba(15,23,42,.55);">OPS JÁ SALVAS</div><div class="fw-bold">${esc(totals.total_ops??0)}</div></div>
+      </div>`;
+    infoEl.style.display = '';
 
+    /* reseta tabela e mostra */
     stopAllTimers();
-    resetChronoTable();
-
-    if (tableArea) tableArea.classList.remove('d-none');
+    document.getElementById('chronoTableBody').innerHTML = '';
+    rowCounter = 0;
+    addRow();
+    updateTotals();
+    document.getElementById('chronoTableArea').style.display = '';
   }
 
-  /* ---------- GERENCIAMENTO DE TIMERS ---------- */
+  /* ── timers ── */
 
   function stopAllTimers() {
-    for (const rowId in chronoTimers) {
-      const t = chronoTimers[rowId];
-      if (t && t.intervalId) clearInterval(t.intervalId);
-    }
-    Object.keys(chronoTimers).forEach(k => delete chronoTimers[k]);
+    Object.values(chronoState).forEach(t => { if (t.intervalId) clearInterval(t.intervalId); });
+    Object.keys(chronoState).forEach(k => delete chronoState[k]);
   }
 
-  function getOrInitTimer(rowId) {
-    if (!chronoTimers[rowId]) {
-      chronoTimers[rowId] = { intervalId: null, startTime: 0, accumulated: 0, running: false };
-    }
-    return chronoTimers[rowId];
+  function timerOf(id) {
+    if (!chronoState[id]) chronoState[id] = { intervalId: null, startMs: 0, accMs: 0, running: false };
+    return chronoState[id];
   }
 
-  function startTimer(rowId, display, btnStart, btnStop) {
-    const t = getOrInitTimer(rowId);
+  function startTimer(id, disp, btnS, btnP) {
+    const t = timerOf(id);
     if (t.running) return;
-    t.running   = true;
-    t.startTime = performance.now();
-    display.classList.remove('stopped');
-    display.classList.add('running');
-    btnStart.style.display = 'none';
-    btnStop.style.display  = '';
+    t.running = true;
+    t.startMs = performance.now();
+    disp.classList.remove('flash'); disp.classList.add('running');
+    btnS.style.display = 'none'; btnP.style.display = '';
     t.intervalId = setInterval(() => {
-      const elapsed = t.accumulated + (performance.now() - t.startTime);
-      display.textContent = fmtMs(elapsed);
+      disp.textContent = fmtMs(t.accMs + (performance.now() - t.startMs));
     }, 50);
   }
 
-  function stopTimerAndCapture(rowId, display, btnStart, btnStop) {
-    /*
-     * Para o cronômetro, retorna segundos decorridos NESTE ciclo.
-     * Depois zera o acumulado e reseta o display para o próximo ciclo.
-     */
-    const t = chronoTimers[rowId];
+  function stopAndCapture(id, disp, btnS, btnP) {
+    const t = chronoState[id];
     if (!t || !t.running) return 0;
-
-    clearInterval(t.intervalId);
-    t.intervalId = null;
-
-    const elapsed = t.accumulated + (performance.now() - t.startTime);
-    t.running     = false;
-    t.accumulated = 0;   /* zera para próximo ciclo */
-    t.startTime   = 0;
-
-    /* mostra o tempo capturado brevemente */
-    display.classList.remove('running');
-    display.classList.add('stopped');
-    display.textContent = fmtMs(elapsed);
-    btnStart.style.display = '';
-    btnStop.style.display  = 'none';
-
-    /* após 800ms reseta display para próximo ciclo */
-    setTimeout(() => {
-      display.textContent = '00:00.0';
-      display.classList.remove('stopped');
-    }, 800);
-
-    return elapsed / 1000;  /* retorna em segundos */
+    clearInterval(t.intervalId); t.intervalId = null;
+    const elapsed = t.accMs + (performance.now() - t.startMs);
+    t.running = false; t.accMs = 0; t.startMs = 0;
+    const sec = elapsed / 1000;
+    /* flash do valor capturado por 700ms, depois reseta */
+    disp.textContent = fmtMs(elapsed);
+    disp.classList.remove('running'); disp.classList.add('flash');
+    btnP.style.display = 'none'; btnS.style.display = '';
+    setTimeout(() => { disp.textContent = '00:00.0'; disp.classList.remove('flash'); }, 700);
+    return sec;
   }
 
-  function hardResetTimer(rowId, display, btnStart, btnStop) {
-    const t = chronoTimers[rowId];
-    if (t) {
-      if (t.intervalId) clearInterval(t.intervalId);
-      t.intervalId = null;
-      t.startTime  = 0;
-      t.accumulated = 0;
-      t.running    = false;
-    }
-    display.textContent = '00:00.0';
-    display.classList.remove('running', 'stopped');
-    btnStart.style.display = '';
-    btnStop.style.display  = 'none';
+  function resetTimer(id, disp, btnS, btnP) {
+    const t = chronoState[id];
+    if (t) { if (t.intervalId) clearInterval(t.intervalId); t.intervalId = null; t.startMs = 0; t.accMs = 0; t.running = false; }
+    disp.textContent = '00:00.0'; disp.classList.remove('running','flash');
+    btnS.style.display = ''; btnP.style.display = 'none';
   }
 
-  /* ---------- TABELA ---------- */
-
-  function resetChronoTable() {
-    const tbody = qs('#chronoTableBody');
-    if (!tbody) return;
-    tbody.innerHTML = '';
-    rowCounter = 0;
-    addChronoRow();
-    updateTotals();
-  }
-
-  /* Fórmulas da planilha de cronometragem:
+  /* ── fórmulas da planilha ──
    *
-   * Média        = média aritmética das medições válidas (> 0)
-   * Tempo Normal = Média × (Ritmo / 100) × FatorTolerância
+   * Média        = mean(medições válidas)
+   * Tempo Normal = Média × (Ritmo% / 100) × FatorTol
    * CT/PÇ        = Tempo Normal / Frequência
-   *
-   * "Tempo Final" que aparece no totalizador = Tempo Normal (o que vai para o estudo)
    */
-  function computeRowValues(row) {
-    const medInputs = Array.from(row.querySelectorAll('.med-input'));
-    const vals = medInputs
-      .map(i => parseFloat(i.value))
-      .filter(v => !Number.isNaN(v) && v > 0);
-
-    const avg   = vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
-
-    const tol   = parseFloat((row.querySelector('.tol-input')   || {}).value   || '1.00') || 1.00;
-    const ritmo = parseFloat((row.querySelector('.ritmo-input') || {}).value   || '100')  || 100;
-    const freq  = parseFloat((row.querySelector('.freq-input')  || {}).value   || '1')    || 1;
-
-    const tempoNormal = avg * (ritmo / 100) * tol;
-    const ctpc        = freq > 0 ? tempoNormal / freq : 0;
-
-    return { avg, tol, ritmo, freq, tempoNormal, ctpc, medCount: vals.length };
+  function calcRow(tr) {
+    const vals = Array.from(tr.querySelectorAll('.med-input'))
+      .map(i => parseFloat(i.value)).filter(v => !isNaN(v) && v > 0);
+    const avg   = vals.length ? vals.reduce((a,b) => a+b, 0) / vals.length : 0;
+    const tol   = parseFloat(tr.querySelector('.tol-input')   ?.value || '1') || 1;
+    const ritmo = parseFloat(tr.querySelector('.ritmo-input') ?.value || '100') || 100;
+    const freq  = parseFloat(tr.querySelector('.freq-input')  ?.value || '1') || 1;
+    const tn    = avg * (ritmo / 100) * tol;
+    const ctpc  = freq > 0 ? tn / freq : 0;
+    return { avg, tn, ctpc, count: vals.length };
   }
 
-  function refreshRowDisplay(row) {
-    const { avg, tempoNormal, ctpc, medCount } = computeRowValues(row);
-
-    const avgCell   = row.querySelector('.cell-avg');
-    const tempoCell = row.querySelector('.cell-tempo');
-    const ctpcCell  = row.querySelector('.cell-ctpc');
-    const countBadge = row.querySelector('.med-count-badge');
-
-    if (avgCell)   avgCell.textContent   = avg        > 0 ? avg.toFixed(2)        : '—';
-    if (tempoCell) tempoCell.textContent = tempoNormal > 0 ? tempoNormal.toFixed(2) : '—';
-    if (ctpcCell)  ctpcCell.textContent  = ctpc        > 0 ? ctpc.toFixed(2)        : '—';
-    if (countBadge) countBadge.textContent = `(${medCount}/10)`;
-
+  function refreshRow(tr) {
+    const { avg, tn, ctpc, count } = calcRow(tr);
+    const set = (cls, v) => { const el = tr.querySelector(cls); if (el) el.textContent = v > 0 ? v.toFixed(2) : '—'; };
+    set('.cell-avg',   avg);
+    set('.cell-tempo', tn);
+    set('.cell-ctpc',  ctpc);
+    const badge = tr.querySelector('.med-count');
+    if (badge) badge.textContent = `${count}/10`;
     updateTotals();
   }
 
   function updateTotals() {
-    const tbody = qs('#chronoTableBody');
-    if (!tbody) return;
-
-    let postos = 0, sumTempo = 0, sumCt = 0, sumHc = 0;
-
-    Array.from(tbody.querySelectorAll('tr')).forEach(row => {
-      const op = (row.querySelector('.op-input') || {}).value || '';
-      if (!op.trim()) return;
-      const { tempoNormal, ctpc } = computeRowValues(row);
-      if (tempoNormal <= 0) return;
-      postos++;
-      sumTempo += tempoNormal;
-      sumCt    += ctpc;
-      const hcInp = row.querySelector('.hc-input');
-      sumHc += parseFloat((hcInp || {}).value || '1') || 0;
+    let postos = 0, sumTn = 0, sumCt = 0, sumHc = 0;
+    document.querySelectorAll('#chronoTableBody tr').forEach(tr => {
+      const op = tr.querySelector('.op-input')?.value?.trim() || '';
+      if (!op) return;
+      const { tn, ctpc } = calcRow(tr);
+      if (tn <= 0) return;
+      postos++; sumTn += tn; sumCt += ctpc;
+      sumHc += parseFloat(tr.querySelector('.hc-input')?.value || '1') || 0;
     });
-
-    const uphEst = sumTempo > 0 ? Math.floor(3600 / sumTempo) : 0;
+    const uph = sumTn > 0 ? Math.floor(3600 / sumTn) : 0;
     const fmt = n => n.toFixed(2).replace('.', ',');
-    const el  = id => document.getElementById(id);
-
-    if (el('totPostos'))     el('totPostos').textContent     = postos;
-    if (el('totTempoFinal')) el('totTempoFinal').textContent = fmt(sumTempo);
-    if (el('totCtPc'))       el('totCtPc').textContent       = fmt(sumCt);
-    if (el('totUph'))        el('totUph').textContent        = uphEst > 0 ? String(uphEst) : '—';
-    if (el('totHc'))         el('totHc').textContent         = fmt(sumHc);
+    const $   = id => document.getElementById(id);
+    if ($('totPostos'))     $('totPostos').textContent     = postos;
+    if ($('totTempoFinal')) $('totTempoFinal').textContent = fmt(sumTn);
+    if ($('totCtPc'))       $('totCtPc').textContent       = fmt(sumCt);
+    if ($('totUph'))        $('totUph').textContent        = uph > 0 ? String(uph) : '—';
+    if ($('totHc'))         $('totHc').textContent         = fmt(sumHc);
   }
 
-  function getNextEmptyMedIndex(row) {
-    const inputs = Array.from(row.querySelectorAll('.med-input'));
-    for (let i = 0; i < inputs.length; i++) {
-      const v = parseFloat(inputs[i].value);
-      if (!inputs[i].value || Number.isNaN(v) || v <= 0) return i;
-    }
-    return -1; /* todas preenchidas */
-  }
-
-  /* ---------- CRIAÇÃO DE LINHA ---------- */
-
-  function addChronoRow() {
-    const tbody = qs('#chronoTableBody');
+  /* ── adicionar linha ── */
+  function addRow() {
+    const tbody = document.getElementById('chronoTableBody');
     if (!tbody) return;
+    rowCounter++;
+    const n  = rowCounter;
+    const id = `rc${n}`;
 
-    rowCounter += 1;
-    const n     = rowCounter;
-    const rowId = `cr-${n}`;
-
-    const tr = document.createElement('tr');
-    tr.dataset.rowId = rowId;
-
-    /* 10 células de medição */
-    const medCells = Array.from({ length: 10 }, (_, i) => `
-      <td class="col-med">
+    const medTds = Array.from({length: 10}, (_, i) => `
+      <td>
         <div class="med-wrap">
           <input type="number" class="t-inp med-input" step="0.01" min="0"
-                 placeholder="—" data-medidx="${i}" style="width:44px;">
-          <button type="button" class="btn-del-med" title="Excluir medição">×</button>
+                 placeholder="—" data-i="${i}">
+          <button type="button" class="btn-del-med" title="Excluir">×</button>
         </div>
-      </td>
-    `).join('');
+      </td>`).join('');
 
+    const tr = document.createElement('tr');
+    tr.dataset.id = id;
     tr.innerHTML = `
-      <td class="col-n fw-bold text-center">${n}</td>
-      <td class="col-etapa">
-        <input type="text" class="t-inp etapa-input" placeholder="IM07" style="width:60px;">
-      </td>
-      <td class="col-op">
-        <input type="text" class="t-inp t-op op-input" placeholder="Ex: POSTO 01">
-      </td>
-      <td class="col-intex">
+      <td class="text-center fw-bold">${n}</td>
+      <td><input type="text" class="t-inp etapa-input" placeholder="IM07" style="width:60px;"></td>
+      <td><input type="text" class="t-inp t-op op-input" placeholder="Ex: POSTO 01" style="min-width:120px;"></td>
+      <td>
         <select class="t-inp" style="width:42px;font-size:10px;padding:2px 1px;">
-          <option value="INT">INT</option>
-          <option value="EXT">EXT</option>
+          <option value="INT">INT</option><option value="EXT">EXT</option>
         </select>
       </td>
-      <td class="col-qtd">
-        <input type="number" class="t-inp" style="width:40px;" value="" min="0" placeholder="—">
-      </td>
-      <td class="col-freq">
-        <input type="number" class="t-inp freq-input" value="1" min="1" style="width:40px;">
-      </td>
-      ${medCells}
-      <td class="col-avg cell-avg">—</td>
-      <td class="col-tol">
-        <input type="number" class="t-inp tol-input" step="0.01" value="1.00" min="0.01" style="width:56px;">
-      </td>
-      <td class="col-ritmo">
-        <input type="number" class="t-inp ritmo-input" value="100" min="1" max="200" style="width:50px;">
-      </td>
-      <td class="col-tempo cell-tempo">—</td>
-      <td class="col-ctpc cell-ctpc">—</td>
-      <td class="col-hc">
-        <input type="number" class="t-inp hc-input" step="0.01" value="1.00" min="0.01" style="width:48px;">
-      </td>
-      <td class="col-posto">
-        <input type="number" class="t-inp posto-input" value="${n}" min="1" style="width:48px;">
-      </td>
-      <td class="col-chrono">
+      <td><input type="number" class="t-inp" style="width:40px;" min="0" placeholder="—"></td>
+      <td><input type="number" class="t-inp freq-input" value="1" min="1" style="width:40px;"></td>
+      ${medTds}
+      <td class="cell-avg">—</td>
+      <td><input type="number" class="t-inp tol-input" step="0.01" value="1.00" min="0.01" style="width:54px;"></td>
+      <td><input type="number" class="t-inp ritmo-input" value="100" min="1" max="200" style="width:48px;"></td>
+      <td class="cell-tempo">—</td>
+      <td class="cell-ctpc">—</td>
+      <td><input type="number" class="t-inp hc-input" step="0.01" value="1.00" min="0.01" style="width:48px;"></td>
+      <td><input type="number" class="t-inp posto-input" value="${n}" min="1" style="width:48px;"></td>
+      <td>
         <div class="d-flex flex-column align-items-center gap-1">
           <div class="d-flex align-items-center gap-1">
-            <span class="chrono-display" id="disp-${rowId}">00:00.0</span>
-            <span class="med-count-badge">(0/10)</span>
+            <span class="chrono-display" id="d-${id}">00:00.0</span>
+            <span class="med-count" style="font-size:10px;color:rgba(15,23,42,.45);">0/10</span>
           </div>
           <div class="d-flex gap-1">
-            <button type="button" class="btn-chrono-start" id="btn-start-${rowId}">
+            <button type="button" class="btn-chrono-start" id="bs-${id}">
               <i class="bi bi-play-fill"></i> Start
             </button>
-            <button type="button" class="btn-chrono-stop d-none" id="btn-stop-${rowId}">
+            <button type="button" class="btn-chrono-stop" id="bp-${id}" style="display:none;">
               <i class="bi bi-stop-fill"></i> Stop
             </button>
-            <button type="button" class="btn-chrono-reset" id="btn-reset-${rowId}" title="Zerar cronômetro">
+            <button type="button" class="btn-chrono-reset" id="br-${id}" title="Zerar">
               <i class="bi bi-arrow-counterclockwise"></i>
             </button>
           </div>
         </div>
       </td>
-      <td class="col-act text-center">
-        <button type="button" class="btn btn-outline-danger btn-sm btn-remove-row"
-                title="Remover posto" style="padding:2px 6px;font-size:12px;">
+      <td class="text-center">
+        <button type="button" class="btn btn-outline-danger btn-sm" title="Remover posto"
+                style="padding:2px 6px;font-size:12px;" data-remove="1">
           <i class="bi bi-trash"></i>
         </button>
-      </td>
-    `;
+      </td>`;
 
-    /* Recalcula ao editar inputs numéricos/texto relevantes */
-    tr.querySelectorAll('.med-input, .tol-input, .ritmo-input, .freq-input, .op-input, .hc-input').forEach(inp => {
-      inp.addEventListener('input', () => refreshRowDisplay(tr));
-    });
+    /* inputs que recalculam */
+    tr.querySelectorAll('.med-input,.tol-input,.ritmo-input,.freq-input,.op-input,.hc-input')
+      .forEach(i => i.addEventListener('input', () => refreshRow(tr)));
 
-    /* Botão × de cada medição */
-    tr.querySelectorAll('.btn-del-med').forEach(btn => {
+    /* botão × de cada célula de medição */
+    tr.querySelectorAll('.btn-del-med').forEach(btn =>
       btn.addEventListener('click', () => {
-        const inp = btn.closest('.med-wrap').querySelector('input');
-        if (inp) { inp.value = ''; refreshRowDisplay(tr); }
-      });
-    });
+        btn.closest('.med-wrap').querySelector('input').value = '';
+        refreshRow(tr);
+      })
+    );
 
-    /* Remover linha inteira */
-    tr.querySelector('.btn-remove-row').addEventListener('click', () => {
-      const t = chronoTimers[rowId];
+    /* remover linha */
+    tr.querySelector('[data-remove]').addEventListener('click', () => {
+      const t = chronoState[id];
+      if (t && t.running) { if (!confirm(`Remover posto ${n}? O cronômetro está rodando.`)) return; }
       if (t && t.intervalId) clearInterval(t.intervalId);
-      delete chronoTimers[rowId];
+      delete chronoState[id];
       tr.remove();
       updateTotals();
     });
 
-    /* Referências do cronômetro */
-    const display  = document.getElementById(`disp-${rowId}`);
-    const btnStart = document.getElementById(`btn-start-${rowId}`);
-    const btnStop  = document.getElementById(`btn-stop-${rowId}`);
-    const btnReset = document.getElementById(`btn-reset-${rowId}`);
+    /* cronômetro */
+    const disp = document.getElementById(`d-${id}`);
+    const btnS = document.getElementById(`bs-${id}`);
+    const btnP = document.getElementById(`bp-${id}`);
+    const btnR = document.getElementById(`br-${id}`);
 
-    btnStart.addEventListener('click', () => {
-      startTimer(rowId, display, btnStart, btnStop);
-    });
+    btnS.addEventListener('click', () => startTimer(id, disp, btnS, btnP));
 
-    btnStop.addEventListener('click', () => {
-      const sec = stopTimerAndCapture(rowId, display, btnStart, btnStop);
+    btnP.addEventListener('click', () => {
+      const sec = stopAndCapture(id, disp, btnS, btnP);
       if (sec <= 0) return;
-
-      const idx = getNextEmptyMedIndex(tr);
-      if (idx === -1) {
-        showChronoMsg('warning', `Posto ${n}: todas as 10 medições já estão preenchidas. Exclua uma com × para adicionar mais.`);
+      /* próxima célula vazia */
+      const inputs = Array.from(tr.querySelectorAll('.med-input'));
+      const empty  = inputs.find(i => !i.value || parseFloat(i.value) <= 0);
+      if (!empty) {
+        showMsg('warning', `Posto ${n}: 10 medições já preenchidas. Exclua uma (×) para registrar mais.`);
         return;
       }
-
-      const inputs = tr.querySelectorAll('.med-input');
-      inputs[idx].value = sec.toFixed(2);
-      refreshRowDisplay(tr);
+      empty.value = sec.toFixed(2);
+      refreshRow(tr);
     });
 
-    btnReset.addEventListener('click', () => {
-      if (chronoTimers[rowId] && chronoTimers[rowId].running) {
-        if (!confirm(`Zerar o cronômetro do posto ${n}? O ciclo em andamento será perdido.`)) return;
-      }
-      hardResetTimer(rowId, display, btnStart, btnStop);
+    btnR.addEventListener('click', () => {
+      const t = chronoState[id];
+      if (t && t.running) { if (!confirm(`Zerar cronômetro do posto ${n}?`)) return; }
+      resetTimer(id, disp, btnS, btnP);
     });
 
     tbody.appendChild(tr);
     return tr;
   }
 
-  /* ---------- ENVIAR TUDO ---------- */
+  /* ── enviar todos os postos ── */
+  async function sendAll() {
+    if (!activeStudyId) { showMsg('warning', 'Nenhum estudo carregado.'); return; }
+    const rows = Array.from(document.querySelectorAll('#chronoTableBody tr'));
+    if (!rows.length) { showMsg('warning', 'Adicione ao menos um posto.'); return; }
 
-  async function sendAllOps() {
-    if (!chronoStudyId) {
-      showChronoMsg('warning', 'Nenhum estudo carregado.');
-      return;
-    }
-    const tbody = qs('#chronoTableBody');
-    if (!tbody) return;
+    document.getElementById('chronoMsg').innerHTML = '';
+    const btn = document.getElementById('btnSendAllOps');
+    if (btn) { btn.disabled = true; btn._orig = btn.innerHTML; btn.innerHTML = `<span class="spinner-border spinner-border-sm me-2"></span>Enviando...`; }
 
-    const rows = Array.from(tbody.querySelectorAll('tr'));
-    if (!rows.length) { showChronoMsg('warning', 'Nenhum posto para enviar.'); return; }
-
-    clearChronoMsg();
-
-    const btn = qs('#btnSendAllOps');
-    if (btn) {
-      btn.disabled = true;
-      btn.dataset.orig = btn.innerHTML;
-      btn.innerHTML = `<span class="spinner-border spinner-border-sm me-2" role="status"></span> Enviando...`;
-    }
-
-    let sent = 0, errors = 0, skipped = 0;
+    let sent = 0, errs = 0;
 
     for (let i = 0; i < rows.length; i++) {
-      const row      = rows[i];
-      const operacao = (row.querySelector('.op-input') || {}).value || '';
-      if (!operacao.trim()) { skipped++; continue; }
+      const tr  = rows[i];
+      const op  = tr.querySelector('.op-input')?.value?.trim() || '';
+      if (!op) continue;
+      const { tn } = calcRow(tr);
+      if (tn <= 0) continue;
 
-      const { tempoNormal } = computeRowValues(row);
-      if (tempoNormal <= 0) { skipped++; continue; }
-
-      const ordemInp = row.querySelector('.posto-input');
-      const ordem    = parseInt((ordemInp ? ordemInp.value : String(i + 1))) || (i + 1);
-      const hcInp    = row.querySelector('.hc-input');
-      const hc       = parseFloat((hcInp ? hcInp.value : '1.00')) || 1.0;
+      const ordem  = parseInt(tr.querySelector('.posto-input')?.value  || String(i+1)) || (i+1);
+      const hc     = parseFloat(tr.querySelector('.hc-input')?.value   || '1') || 1;
 
       const fd = new FormData();
       fd.append('ordem',           String(ordem));
-      fd.append('operacao',        operacao.trim());
-      fd.append('tempo_ciclo_sec', tempoNormal.toFixed(4));
+      fd.append('operacao',        op);
+      fd.append('tempo_ciclo_sec', tn.toFixed(4));
       fd.append('posto_trabalho',  String(ordem));
       fd.append('hc',              hc.toFixed(2));
 
-      const { ok, data } = await apiJson(`/api/time-studies/${chronoStudyId}/operations`, {
-        method: 'POST', body: fd,
-      });
-
-      if (ok && data && data.sucesso === true) {
-        row.classList.add('chrono-row-saved');
-        sent++;
-      } else {
-        errors++;
-      }
+      const { ok, data } = await api(`/api/time-studies/${activeStudyId}/operations`, { method: 'POST', body: fd });
+      if (ok && data && data.sucesso === true) { tr.classList.add('chrono-row-saved'); sent++; }
+      else errs++;
     }
 
-    if (btn) {
-      btn.disabled = false;
-      btn.innerHTML = btn.dataset.orig || `<i class="bi bi-send-check"></i> Enviar todos os postos para o estudo`;
-    }
+    if (btn) { btn.disabled = false; btn.innerHTML = btn._orig; }
 
-    if (sent > 0 && errors === 0) {
-      showChronoMsg('success', `${sent} posto(s) enviado(s) com sucesso para o estudo #${chronoStudyId}.`);
-    } else if (sent > 0 && errors > 0) {
-      showChronoMsg('warning', `${sent} enviado(s) · ${errors} com erro.`);
-    } else if (errors > 0) {
-      showChronoMsg('danger', 'Falha ao enviar. Verifique os dados e tente novamente.');
-    } else {
-      showChronoMsg('warning', 'Nenhum posto válido (operação em branco ou Tempo Normal = 0).');
-    }
+    if      (sent && !errs)  showMsg('success', `${sent} posto(s) enviado(s) com sucesso para o estudo #${activeStudyId}.`);
+    else if (sent &&  errs)  showMsg('warning', `${sent} enviado(s) · ${errs} com erro.`);
+    else if (errs)           showMsg('danger',  'Falha ao enviar. Verifique os dados.');
+    else                     showMsg('warning', 'Nenhum posto válido encontrado (sem operação ou Tempo Normal = 0).');
   }
 
-  /* ---------- INICIALIZAÇÃO ---------- */
-
+  /* ── init ── */
   document.addEventListener('DOMContentLoaded', async () => {
-    await loadChronoStudies();
-
-    const chronoEmpty = qs('#chronoEmpty');
-    if (chronoEmpty) chronoEmpty.classList.remove('d-none');
-
-    qs('#btnLoadStudyInfo')?.addEventListener('click', loadStudyInfo);
-    qs('#btnRefreshStudies')?.addEventListener('click', loadChronoStudies);
-    qs('#btnAddChronoRow')?.addEventListener('click', addChronoRow);
-    qs('#btnSendAllOps')?.addEventListener('click', sendAllOps);
+    await loadStudies();
+    document.getElementById('btnLoadStudyInfo') ?.addEventListener('click', loadStudyAndShowTable);
+    document.getElementById('btnRefreshStudies')?.addEventListener('click', loadStudies);
+    document.getElementById('btnAddChronoRow')  ?.addEventListener('click', addRow);
+    document.getElementById('btnSendAllOps')    ?.addEventListener('click', sendAll);
   });
 
 })();
