@@ -9,7 +9,6 @@ from app.auth.service import confirm_employee_extra
 bp = Blueprint("api", __name__)
 
 
-
 @bp.route("/modelos", methods=["GET"])
 @login_required
 def listar():
@@ -37,12 +36,6 @@ def excluir():
 @bp.route("/modelos/history", methods=["GET"])
 @login_required
 def modelos_history():
-    """
-    Retorna histórico filtrado corretamente por:
-    - codigo
-    - fase (TOP/BOTTOM)
-    - linha (SMD-xx)
-    """
     codigo = request.args.get("codigo", "").strip()
     fase = request.args.get("fase", "").strip()
     linha = request.args.get("linha", "").strip()
@@ -70,7 +63,6 @@ def api_calculo_rapido():
         return jsonify({"sucesso": True, "dados": resultado})
     except Exception:
         return jsonify({"sucesso": False, "erro": "Erro no cálculo"}), 400
-
 
 
 @bp.route("/smt/calcular_meta", methods=["POST"])
@@ -104,7 +96,6 @@ def api_calcular_perda():
         return jsonify({"erro": "Dados incompletos"}), 400
 
     return jsonify(modelos_service.calcular_perda_producao(meta_hora, producao_real))
-
 
 
 @bp.route("/employees/<matricula>", methods=["GET"])
@@ -224,3 +215,59 @@ def production_lines():
         "setor": setor,
         "lines": production_lines_service.list_lines_by_sector(setor)
     })
+
+
+@bp.route("/push/vapid-public-key", methods=["GET"])
+@login_required
+def push_vapid_public_key():
+    from flask import current_app
+    key = current_app.config.get("VAPID_PUBLIC_KEY")
+    if not key:
+        return jsonify({"sucesso": False, "erro": "Push não configurado"}), 503
+    return jsonify({"sucesso": True, "key": key})
+
+
+@bp.route("/push/subscribe", methods=["POST"])
+@login_required
+def push_subscribe():
+    from app.repositories import push_repository
+
+    data = request.get_json(silent=True) or {}
+    endpoint = (data.get("endpoint") or "").strip()
+    keys = data.get("keys") or {}
+    p256dh = (keys.get("p256dh") or "").strip()
+    auth = (keys.get("auth") or "").strip()
+
+    if not endpoint or not p256dh or not auth:
+        return jsonify({"sucesso": False, "erro": "Dados de subscription inválidos"}), 400
+
+    user_id = getattr(current_user, "id", None)
+
+    try:
+        push_repository.upsert_subscription(
+            endpoint=endpoint,
+            p256dh=p256dh,
+            auth=auth,
+            user_id=user_id,
+        )
+        return jsonify({"sucesso": True})
+    except Exception as exc:
+        return jsonify({"sucesso": False, "erro": str(exc)}), 500
+
+
+@bp.route("/push/unsubscribe", methods=["POST"])
+@login_required
+def push_unsubscribe():
+    from app.repositories import push_repository
+
+    data = request.get_json(silent=True) or {}
+    endpoint = (data.get("endpoint") or "").strip()
+
+    if not endpoint:
+        return jsonify({"sucesso": False, "erro": "Endpoint ausente"}), 400
+
+    try:
+        push_repository.delete_subscription(endpoint)
+        return jsonify({"sucesso": True})
+    except Exception as exc:
+        return jsonify({"sucesso": False, "erro": str(exc)}), 500
