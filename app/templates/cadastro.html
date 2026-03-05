@@ -423,12 +423,6 @@
   let activeStudyId = null;
   let rowCounter    = 0;
 
-  /*
-   * chronoState[rowId] = { intervalId, startMs, accMs, running }
-   * accMs  = ms acumulados de ciclos anteriores ao atual
-   * Cada pressão de Stop captura 1 ciclo e vai para a próxima célula vazia.
-   * Depois zera accMs e reseta o display para 00:00.0.
-   */
   const chronoState = {};
 
   function esc(s) {
@@ -465,7 +459,6 @@
     return { ok: r.ok, data };
   }
 
-  /* ── carregar lista de estudos ── */
   async function loadStudies() {
     const sel = document.getElementById('chronoStudySelect');
     if (!sel) return;
@@ -491,7 +484,6 @@
     }
   }
 
-  /* ── carregar estudo selecionado e mostrar tabela ── */
   async function loadStudyAndShowTable() {
     const sel     = document.getElementById('chronoStudySelect');
     const studyId = Number(sel ? sel.value : 0);
@@ -503,7 +495,6 @@
     document.getElementById('chronoStudyInfo').style.display = 'none';
     document.getElementById('chronoTableArea').style.display = 'none';
 
-    /* mostra spinner enquanto carrega */
     document.getElementById('chronoMsg').innerHTML =
       `<div class="d-flex align-items-center gap-2 py-2"><div class="spinner-border spinner-border-sm"></div><span>Carregando estudo...</span></div>`;
 
@@ -520,7 +511,6 @@
     const study  = data.study  || {};
     const totals = data.totals || {};
 
-    /* info resumida */
     const infoEl = document.getElementById('chronoStudyInfo');
     infoEl.innerHTML = `
       <div class="d-flex flex-wrap gap-3">
@@ -534,7 +524,6 @@
       </div>`;
     infoEl.style.display = '';
 
-    /* reseta tabela e mostra */
     stopAllTimers();
     document.getElementById('chronoTableBody').innerHTML = '';
     rowCounter = 0;
@@ -542,8 +531,6 @@
     updateTotals();
     document.getElementById('chronoTableArea').style.display = '';
   }
-
-  /* ── timers ── */
 
   function stopAllTimers() {
     Object.values(chronoState).forEach(t => { if (t.intervalId) clearInterval(t.intervalId); });
@@ -574,7 +561,6 @@
     const elapsed = t.accMs + (performance.now() - t.startMs);
     t.running = false; t.accMs = 0; t.startMs = 0;
     const sec = elapsed / 1000;
-    /* flash do valor capturado por 700ms, depois reseta */
     disp.textContent = fmtMs(elapsed);
     disp.classList.remove('running'); disp.classList.add('flash');
     btnP.style.display = 'none'; btnS.style.display = '';
@@ -589,12 +575,6 @@
     btnS.style.display = ''; btnP.style.display = 'none';
   }
 
-  /* ── fórmulas da planilha ──
-   *
-   * Média        = mean(medições válidas)
-   * Tempo Normal = Média × (Ritmo% / 100) × FatorTol
-   * CT/PÇ        = Tempo Normal / Frequência
-   */
   function calcRow(tr) {
     const vals = Array.from(tr.querySelectorAll('.med-input'))
       .map(i => parseFloat(i.value)).filter(v => !isNaN(v) && v > 0);
@@ -638,7 +618,6 @@
     if ($('totHc'))         $('totHc').textContent         = fmt(sumHc);
   }
 
-  /* ── adicionar linha ── */
   function addRow() {
     const tbody = document.getElementById('chronoTableBody');
     if (!tbody) return;
@@ -679,17 +658,17 @@
       <td>
         <div class="d-flex flex-column align-items-center gap-1">
           <div class="d-flex align-items-center gap-1">
-            <span class="chrono-display" id="d-${id}">00:00.0</span>
+            <span class="chrono-display">00:00.0</span>
             <span class="med-count" style="font-size:10px;color:rgba(15,23,42,.45);">0/10</span>
           </div>
           <div class="d-flex gap-1">
-            <button type="button" class="btn-chrono-start" id="bs-${id}">
+            <button type="button" class="btn-chrono-start">
               <i class="bi bi-play-fill"></i> Start
             </button>
-            <button type="button" class="btn-chrono-stop" id="bp-${id}" style="display:none;">
+            <button type="button" class="btn-chrono-stop" style="display:none;">
               <i class="bi bi-stop-fill"></i> Stop
             </button>
-            <button type="button" class="btn-chrono-reset" id="br-${id}" title="Zerar">
+            <button type="button" class="btn-chrono-reset" title="Zerar">
               <i class="bi bi-arrow-counterclockwise"></i>
             </button>
           </div>
@@ -702,11 +681,9 @@
         </button>
       </td>`;
 
-    /* inputs que recalculam */
     tr.querySelectorAll('.med-input,.tol-input,.ritmo-input,.freq-input,.op-input,.hc-input')
       .forEach(i => i.addEventListener('input', () => refreshRow(tr)));
 
-    /* botão × de cada célula de medição */
     tr.querySelectorAll('.btn-del-med').forEach(btn =>
       btn.addEventListener('click', () => {
         btn.closest('.med-wrap').querySelector('input').value = '';
@@ -714,7 +691,11 @@
       })
     );
 
-    /* remover linha */
+    const disp = tr.querySelector('.chrono-display');
+    const btnS = tr.querySelector('.btn-chrono-start');
+    const btnP = tr.querySelector('.btn-chrono-stop');
+    const btnR = tr.querySelector('.btn-chrono-reset');
+
     tr.querySelector('[data-remove]').addEventListener('click', () => {
       const t = chronoState[id];
       if (t && t.running) { if (!confirm(`Remover posto ${n}? O cronômetro está rodando.`)) return; }
@@ -724,18 +705,11 @@
       updateTotals();
     });
 
-    /* cronômetro */
-    const disp = document.getElementById(`d-${id}`);
-    const btnS = document.getElementById(`bs-${id}`);
-    const btnP = document.getElementById(`bp-${id}`);
-    const btnR = document.getElementById(`br-${id}`);
-
     btnS.addEventListener('click', () => startTimer(id, disp, btnS, btnP));
 
     btnP.addEventListener('click', () => {
       const sec = stopAndCapture(id, disp, btnS, btnP);
       if (sec <= 0) return;
-      /* próxima célula vazia */
       const inputs = Array.from(tr.querySelectorAll('.med-input'));
       const empty  = inputs.find(i => !i.value || parseFloat(i.value) <= 0);
       if (!empty) {
@@ -756,7 +730,6 @@
     return tr;
   }
 
-  /* ── enviar todos os postos ── */
   async function sendAll() {
     if (!activeStudyId) { showMsg('warning', 'Nenhum estudo carregado.'); return; }
     const rows = Array.from(document.querySelectorAll('#chronoTableBody tr'));
@@ -798,7 +771,6 @@
     else                     showMsg('warning', 'Nenhum posto válido encontrado (sem operação ou Tempo Normal = 0).');
   }
 
-  /* ── init ── */
   document.addEventListener('DOMContentLoaded', async () => {
     await loadStudies();
     document.getElementById('btnLoadStudyInfo') ?.addEventListener('click', loadStudyAndShowTable);
