@@ -75,23 +75,55 @@
             </div>
 
             <div class="col-md-6">
-              <label class="form-label fw-bold">UPH Meta</label>
+              <label class="form-label fw-bold d-flex align-items-center">
+                UPH Meta
+                <button type="button"
+                        class="ts-info-btn"
+                        data-help-key="uph_meta"
+                        aria-label="Ajuda sobre UPH Meta">
+                  <i class="bi bi-info-circle"></i>
+                </button>
+              </label>
               <input class="form-control" name="uph_meta" type="number" value="70" min="0">
             </div>
 
             <div class="col-md-6">
-              <label class="form-label fw-bold">HC Meta</label>
+              <label class="form-label fw-bold d-flex align-items-center">
+                HC Meta
+                <button type="button"
+                        class="ts-info-btn"
+                        data-help-key="hc_meta"
+                        aria-label="Ajuda sobre HC Meta">
+                  <i class="bi bi-info-circle"></i>
+                </button>
+              </label>
               <input class="form-control" name="hc_meta" type="number" step="0.01" value="16" min="0">
             </div>
 
             <div class="col-md-6">
-              <label class="form-label fw-bold">Perda padrão</label>
+              <label class="form-label fw-bold d-flex align-items-center">
+                Perda padrão
+                <button type="button"
+                        class="ts-info-btn"
+                        data-help-key="perda_padrao"
+                        aria-label="Ajuda sobre Perda padrão">
+                  <i class="bi bi-info-circle"></i>
+                </button>
+              </label>
               <input class="form-control" name="perda_padrao" type="number" step="0.01" value="0.10" min="0" max="0.80">
               <div class="ts-muted">0.10 = 10%</div>
             </div>
 
             <div class="col-md-6">
-              <label class="form-label fw-bold">Horas do turno</label>
+              <label class="form-label fw-bold d-flex align-items-center">
+                Horas do turno
+                <button type="button"
+                        class="ts-info-btn"
+                        data-help-key="horas_turno"
+                        aria-label="Ajuda sobre Horas do turno">
+                  <i class="bi bi-info-circle"></i>
+                </button>
+              </label>
               <input class="form-control" name="horas_turno" type="number" step="0.01" value="8.30" min="1" max="24">
               <div class="ts-muted">Usado para calcular UPD</div>
             </div>
@@ -189,7 +221,6 @@
         </div>
 
         <div class="p-3">
-          <!-- KPIs (base) -->
           <div class="row g-2 mb-2">
             <div class="col-3">
               <div class="ts-muted">UPH META</div>
@@ -210,7 +241,6 @@
             </div>
           </div>
 
-          <!-- KPIs (credibilidade fábrica) -->
           <div class="row g-2 mb-2">
             <div class="col-3">
               <div class="ts-muted">CAPACIDADE (UPH GARGALO)</div>
@@ -335,4 +365,5 @@
 {% block scripts %}
 <script src="{{ url_for('static', filename='js/document-fit.js') }}?v={{ APP_VERSION }}"></script>
 <script src="{{ url_for('static', filename='js/time-studies.js') }}?v={{ APP_VERSION }}"></script>
+<script src="{{ url_for('static', filename='js/time-studies-help.js') }}?v={{ APP_VERSION }}"></script>
 {% endblock %}
