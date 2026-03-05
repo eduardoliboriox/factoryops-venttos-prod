@@ -134,3 +134,29 @@
     overflow: visible !important;
   }
 }
+
+.ts-help-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  border: 1px solid rgba(15, 23, 42, 0.28);
+  background: transparent;
+  color: rgba(15, 23, 42, 0.45);
+  font-size: 9px;
+  font-weight: 700;
+  font-style: italic;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0;
+  flex-shrink: 0;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.ts-help-btn:hover {
+  border-color: rgba(13, 110, 253, 0.50);
+  color: #0b5ed7;
+  background: rgba(13, 110, 253, 0.06);
+}
