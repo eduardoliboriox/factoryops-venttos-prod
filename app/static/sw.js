@@ -2,10 +2,8 @@
    - Cacheia somente assets estáticos
    - Não cacheia páginas autenticadas
 */
-
-const CACHE_VERSION = "smt-manager-v2"; 
+const CACHE_VERSION = "smt-manager-v2";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
-
 const STATIC_ASSETS = [
   "/offline",
   "/static/css/style.css",
@@ -32,7 +30,6 @@ self.addEventListener("activate", (event) => {
   event.waitUntil(
     (async () => {
       const keys = await caches.keys();
-
       await Promise.all(
         keys
           .filter((k) => {
@@ -44,7 +41,6 @@ self.addEventListener("activate", (event) => {
           })
           .map((k) => caches.delete(k))
       );
-
       await self.clients.claim();
     })()
   );
@@ -53,7 +49,6 @@ self.addEventListener("activate", (event) => {
 async function cacheFirst(req) {
   const cached = await caches.match(req);
   if (cached) return cached;
-
   const res = await fetch(req);
   const cache = await caches.open(STATIC_CACHE);
   cache.put(req, res.clone());
@@ -98,4 +93,43 @@ self.addEventListener("fetch", (event) => {
       })()
     );
   }
+});
+
+self.addEventListener("push", (event) => {
+  let payload = { title: "SMT Manager", body: "Nova notificação.", url: "/" };
+
+  if (event.data) {
+    try {
+      payload = Object.assign(payload, JSON.parse(event.data.text()));
+    } catch {
+    }
+  }
+
+  event.waitUntil(
+    self.registration.showNotification(payload.title, {
+      body: payload.body,
+      icon: "/static/images/logos/pwa-192.png",
+      badge: "/static/images/logos/pwa-192.png",
+      data: { url: payload.url || "/" },
+    })
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+
+  const targetUrl = (event.notification.data && event.notification.data.url) || "/";
+
+  event.waitUntil(
+    clients.matchAll({ type: "window", includeUncontrolled: true }).then((list) => {
+      for (const client of list) {
+        if (client.url.includes(targetUrl) && "focus" in client) {
+          return client.focus();
+        }
+      }
+      if (clients.openWindow) {
+        return clients.openWindow(targetUrl);
+      }
+    })
+  );
 });
