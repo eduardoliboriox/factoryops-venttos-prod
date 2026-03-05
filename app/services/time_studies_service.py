@@ -34,14 +34,15 @@ def _cache_invalidate(study_id: Optional[int] = None):
     _detail_cache.pop(int(study_id), None)
 
 
-# ==========================================================
-# CÁLCULOS
-# ==========================================================
+def _dispatch_push(title: str, body: str, url: str = "/smt/estudo-tempo") -> None:
+    try:
+        from app.services.notification_service import notify_all
+        notify_all(title=title, body=body, url=url)
+    except Exception:
+        pass
+
 
 def _compute_uph_theoretical_no_loss(tempo_ciclo_sec: float) -> int:
-    """
-    UPH Teórico (sem perda) ≈ 3600 / TempoCiclo
-    """
     if not tempo_ciclo_sec or tempo_ciclo_sec <= 0:
         return 0
     uph = (3600.0 / float(tempo_ciclo_sec))
@@ -49,9 +50,6 @@ def _compute_uph_theoretical_no_loss(tempo_ciclo_sec: float) -> int:
 
 
 def _compute_uph_real(tempo_ciclo_sec: float, perda_padrao: float) -> int:
-    """
-    UPH Real ≈ (3600 / TempoCiclo) * (1 - perda_padrao)
-    """
     if not tempo_ciclo_sec or tempo_ciclo_sec <= 0:
         return 0
 
@@ -70,19 +68,12 @@ def _compute_upd(uph_real: int, horas_turno: float) -> int:
 
 
 def _compute_takt_time_sec(uph_meta: int) -> Optional[float]:
-    """
-    Takt Time (s/peça) = 3600 / UPH_META
-    """
     if not uph_meta or uph_meta <= 0:
         return None
     return 3600.0 / float(uph_meta)
 
 
 def _compute_cycle_target_with_loss_sec(uph_meta: int, perda_padrao: float) -> Optional[float]:
-    """
-    Tempo alvo (s/peça) considerando perda, coerente com UPH Real:
-    alvo = (3600 * (1 - perda)) / UPH_META
-    """
     if not uph_meta or uph_meta <= 0:
         return None
     perda = float(perda_padrao or 0.10)
@@ -105,12 +96,6 @@ def _balance_status(uph_real: int, uph_meta: int) -> str:
 
 
 def _recommendation_for_op(*, tempo_ciclo_sec: float, uph_meta: int, perda_padrao: float) -> Optional[dict]:
-    """
-    Recomendações objetivas quando BALANCE:
-    - alvo com perda
-    - quanto reduzir (s e %)
-    - fator de paralelização equivalente
-    """
     if not tempo_ciclo_sec or tempo_ciclo_sec <= 0:
         return None
 
@@ -145,13 +130,9 @@ def _recommendation_for_op(*, tempo_ciclo_sec: float, uph_meta: int, perda_padra
 
 
 def _hc_status(sum_hc: float, hc_meta: float) -> str:
-    """
-    Retorna: OVER / UNDER / OK
-    """
     sum_hc = float(sum_hc or 0.0)
     hc_meta = float(hc_meta or 0.0)
 
-    # tolerância pequena p/ evitar ruído de float
     eps = 0.01
     if sum_hc > (hc_meta + eps):
         return "OVER"
@@ -159,10 +140,6 @@ def _hc_status(sum_hc: float, hc_meta: float) -> str:
         return "UNDER"
     return "OK"
 
-
-# ==========================================================
-# API / SERVICES
-# ==========================================================
 
 def list_studies(limit: int = 50):
     return repo.list_studies(limit=limit)
@@ -179,6 +156,14 @@ def create_study(data: dict, user=None):
 
     created = repo.create_study(data, user_id=user_id, username=username)
     _cache_invalidate(created.get("id"))
+
+    actor = username or "Usuário"
+    linha = (data.get("linha") or "").strip()
+    _dispatch_push(
+        title="Novo estudo de tempo criado",
+        body=f"{actor} criou um estudo para {produto}" + (f" na linha {linha}." if linha else "."),
+    )
+
     return created
 
 
@@ -219,13 +204,11 @@ def get_study_detail(study_id: int) -> Optional[dict]:
         upd = _compute_upd(uph_real, horas_turno)
         status = _balance_status(uph_real, uph_meta)
 
-        # gargalo com perda (capacidade real)
         if line_uph_bottleneck is None:
             line_uph_bottleneck = uph_real
         else:
             line_uph_bottleneck = min(line_uph_bottleneck, uph_real)
 
-        # gargalo sem perda (capacidade teórica)
         if line_uph_bottleneck_no_loss is None:
             line_uph_bottleneck_no_loss = uph_no_loss
         else:
@@ -274,15 +257,12 @@ def get_study_detail(study_id: int) -> Optional[dict]:
 
         "balance_count": int(balance_count),
 
-        # KPI OFICIAL
         "line_uph_bottleneck": int(line_uph_bottleneck),
         "line_gap_uph": int(line_gap_uph),
 
-        # Comparativo diretoria
         "line_uph_bottleneck_no_loss": int(line_uph_bottleneck_no_loss),
         "line_loss_gap_uph": int(line_loss_gap_uph),
 
-        # HC
         "sum_hc_ops": float(sum_hc_ops),
         "hc_gap": float(hc_gap),
         "hc_status": str(hc_status),

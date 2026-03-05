@@ -9,6 +9,7 @@
   "theme_color": "#0f172a",
   "lang": "pt-BR",
   "orientation": "portrait",
+  "gcm_sender_id": "103953800507",
   "icons": [
     {
       "src": "/static/images/logos/pwa-192.png",
