@@ -75,63 +75,23 @@
             </div>
 
             <div class="col-md-6">
-              <label class="form-label fw-bold d-flex align-items-center gap-2">
-                <span>UPH Meta</span>
-                <button type="button"
-                        class="ts-help-btn"
-                        data-ts-help
-                        data-bs-toggle="tooltip"
-                        data-bs-placement="top"
-                        title="Meta de peças por hora. Takt Time (s/peça) = 3600 / UPH Meta.">
-                  <i class="bi bi-info-circle"></i>
-                </button>
-              </label>
+              <label class="form-label fw-bold">UPH Meta</label>
               <input class="form-control" name="uph_meta" type="number" value="70" min="0">
             </div>
 
             <div class="col-md-6">
-              <label class="form-label fw-bold d-flex align-items-center gap-2">
-                <span>HC Meta</span>
-                <button type="button"
-                        class="ts-help-btn"
-                        data-ts-help
-                        data-bs-toggle="tooltip"
-                        data-bs-placement="top"
-                        title="Headcount alvo do estudo. Serve para comparar com a soma de HC das operações (HC usado).">
-                  <i class="bi bi-info-circle"></i>
-                </button>
-              </label>
+              <label class="form-label fw-bold">HC Meta</label>
               <input class="form-control" name="hc_meta" type="number" step="0.01" value="16" min="0">
             </div>
 
             <div class="col-md-6">
-              <label class="form-label fw-bold d-flex align-items-center gap-2">
-                <span>Perda padrão</span>
-                <button type="button"
-                        class="ts-help-btn"
-                        data-ts-help
-                        data-bs-toggle="tooltip"
-                        data-bs-placement="top"
-                        title="Percentual de perda (ex.: 0.10 = 10%). UPH Real = (3600 / TempoCiclo) × (1 - perda).">
-                  <i class="bi bi-info-circle"></i>
-                </button>
-              </label>
+              <label class="form-label fw-bold">Perda padrão</label>
               <input class="form-control" name="perda_padrao" type="number" step="0.01" value="0.10" min="0" max="0.80">
               <div class="ts-muted">0.10 = 10%</div>
             </div>
 
             <div class="col-md-6">
-              <label class="form-label fw-bold d-flex align-items-center gap-2">
-                <span>Horas do turno</span>
-                <button type="button"
-                        class="ts-help-btn"
-                        data-ts-help
-                        data-bs-toggle="tooltip"
-                        data-bs-placement="top"
-                        title="Horas consideradas no dia/turno. UPD ≈ UPH Real × Horas do turno.">
-                  <i class="bi bi-info-circle"></i>
-                </button>
-              </label>
+              <label class="form-label fw-bold">Horas do turno</label>
               <input class="form-control" name="horas_turno" type="number" step="0.01" value="8.30" min="1" max="24">
               <div class="ts-muted">Usado para calcular UPD</div>
             </div>
@@ -229,6 +189,7 @@
         </div>
 
         <div class="p-3">
+          <!-- KPIs (base) -->
           <div class="row g-2 mb-2">
             <div class="col-3">
               <div class="ts-muted">UPH META</div>
@@ -249,6 +210,7 @@
             </div>
           </div>
 
+          <!-- KPIs (credibilidade fábrica) -->
           <div class="row g-2 mb-2">
             <div class="col-3">
               <div class="ts-muted">CAPACIDADE (UPH GARGALO)</div>
@@ -373,5 +335,4 @@
 {% block scripts %}
 <script src="{{ url_for('static', filename='js/document-fit.js') }}?v={{ APP_VERSION }}"></script>
 <script src="{{ url_for('static', filename='js/time-studies.js') }}?v={{ APP_VERSION }}"></script>
-<script src="{{ url_for('static', filename='js/time-studies-help.js') }}?v={{ APP_VERSION }}"></script>
 {% endblock %}
