@@ -53,9 +53,9 @@ def _seed_defaults_if_empty():
     _ensure_schema()
 
     defaults = {
-        "IM": ["IM-01", "IM-02", "IM-03", "IM-04", "IM-05", "IM-06"],
+        "IM": ["IM-01", "IM-02", "IM-03", "IM-04", "IM-05", "IM-06", "IM-07"],
         "PA": ["IP-COM", "PA-01", "PA-03", "PA-04", "PA-07", "PA-08", "PA-09", "PA-13", "WIFI"],
-        "PTH": ["ADE-01", "AXI-01", "AXI-02", "AXI-03", "JUM-01", "JUM-02", "RAD-01", "RAD-02", "RAD-03", "ROU-01", "ROU-02", "ROU-03"],
+        "PTH": ["ADE-01", "AXI-01", "AXI-02", "AXI-03", "JUM-01", "JUM-02", "RAD-01", "RAD-02", "RAD-03", "ROU-01", "ROU-02", "ROU-03", "ROU-04"],
         "SMT": ["SMT-01", "SMT-02", "SMT-03", "SMT-04", "SMT-05", "SMT-06", "SMT-07", "SMT-08", "SMT-09"],
     }
 
