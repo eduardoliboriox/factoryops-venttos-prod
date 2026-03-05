@@ -37,6 +37,14 @@ def _cache_invalidate():
     _modelos_cache_expires_at = 0.0
 
 
+def _dispatch_push(title: str, body: str, url: str = "/smt/modelos") -> None:
+    try:
+        from app.services.notification_service import notify_all
+        notify_all(title=title, body=body, url=url)
+    except Exception:
+        pass
+
+
 def resumo_dashboard():
     modelos = modelos_repository.listar_modelos()
 
@@ -70,11 +78,6 @@ def listar_codigos():
 
 
 def _to_decimal_str_2(v):
-    """
-    Retorna string com 2 casas decimais (ex: '55.86').
-    - Evita artefatos de float (ex: 55.859999999)
-    - Mantém consistência na UI
-    """
     if v is None or v == "":
         return None
     try:
@@ -114,10 +117,6 @@ def listar_modelos():
 
 
 def _audit_user(user) -> tuple[Optional[int], Optional[str]]:
-    """
-    Extrai identificadores do usuário autenticado para auditoria.
-    Mantém compatibilidade caso user venha None.
-    """
     if not user:
         return None, None
 
@@ -137,6 +136,14 @@ def cadastrar_modelo(dados, user=None):
         uid, uname = _audit_user(user)
         modelos_repository.inserir(dados, audit_user_id=uid, audit_username=uname)
         _cache_invalidate()
+
+        codigo = (dados.get("codigo") or "").strip()
+        actor = uname or "Usuário"
+        _dispatch_push(
+            title="Nova meta hora cadastrada",
+            body=f"{actor} cadastrou o modelo {codigo} na linha {linha}.",
+        )
+
         return {"sucesso": True, "mensagem": "Modelo cadastrado"}
     except Exception as e:
         print("ERRO AO CADASTRAR:", e)
@@ -190,6 +197,13 @@ def atualizar_modelo(dados, user=None):
         uid, uname = _audit_user(user)
         modelos_repository.atualizar(codigo, fase, linha, campos, audit_user_id=uid, audit_username=uname)
         _cache_invalidate()
+
+        actor = uname or "Usuário"
+        _dispatch_push(
+            title="Meta hora atualizada",
+            body=f"{actor} alterou a meta do modelo {codigo} na linha {linha}.",
+        )
+
         return {"sucesso": True, "mensagem": "Modelo atualizado"}
     except Exception as e:
         print("ERRO AO ATUALIZAR:", e)
