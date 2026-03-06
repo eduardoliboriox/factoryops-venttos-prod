@@ -7,11 +7,6 @@ from app.repositories import modelos_repository
 from app.repositories.modelos_repository import buscar_ultimo_modelo
 
 
-LINHAS_VALIDAS = {
-    "SMD-01", "SMD-02", "SMD-03", "SMD-04", "SMD-05",
-    "SMD-06", "SMD-07", "SMD-08", "SMD-09"
-}
-
 _MODELOS_CACHE_TTL_SECONDS = 10
 _modelos_cache_value = None
 _modelos_cache_expires_at = 0.0
@@ -129,8 +124,6 @@ def cadastrar_modelo(dados, user=None):
     linha = (dados.get("linha") or "").strip()
     if not linha:
         return {"sucesso": False, "mensagem": "Linha não informada"}
-    if linha not in LINHAS_VALIDAS:
-        return {"sucesso": False, "mensagem": "Linha inválida"}
 
     try:
         uid, uname = _audit_user(user)
