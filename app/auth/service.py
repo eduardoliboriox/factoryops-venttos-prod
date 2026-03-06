@@ -247,6 +247,24 @@ def save_profile_image(user_id: int, file):
 
     return db_path
 
+
+def remove_profile_image(user_id: int):
+    from app.auth.repository import get_user_by_id
+
+    user = get_user_by_id(user_id)
+    if not user or not user.get("profile_image"):
+        return
+
+    filepath = os.path.join(
+        current_app.root_path,
+        "static",
+        user["profile_image"],
+    )
+    if os.path.isfile(filepath):
+        os.remove(filepath)
+
+    update_profile_image(user_id, None)
+
 # =====================================================
 # RESET SENHA
 # =====================================================

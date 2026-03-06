@@ -288,3 +288,14 @@ def upload_avatar():
         return jsonify({"sucesso": False, "erro": str(e)}), 400
     except Exception:
         return jsonify({"sucesso": False, "erro": "Erro ao salvar imagem"}), 500
+
+
+@bp.route("/profile/avatar/remove", methods=["POST"])
+@login_required
+def remove_avatar():
+    try:
+        from app.auth.service import remove_profile_image
+        remove_profile_image(current_user.id)
+        return jsonify({"sucesso": True})
+    except Exception:
+        return jsonify({"sucesso": False, "erro": "Erro ao remover foto"}), 500

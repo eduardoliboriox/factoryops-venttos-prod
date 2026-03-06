@@ -3,26 +3,27 @@
 
   let cropper = null;
 
-  const fileInput = document.getElementById("avatar-file-input");
-  const editBtn = document.getElementById("avatar-edit-btn");
-  const avatarImg = document.getElementById("profile-avatar-img");
-  const cropImage = document.getElementById("crop-image");
-  const confirmBtn = document.getElementById("crop-confirm-btn");
-  const confirmLabel = document.getElementById("crop-confirm-label");
+  const fileInput     = document.getElementById("avatar-file-input");
+  const editBtn       = document.getElementById("avatar-edit-btn");
+  const removeBtn     = document.getElementById("avatar-remove-btn");
+  const avatarImg     = document.getElementById("profile-avatar-img");
+  const cropImage     = document.getElementById("crop-image");
+  const confirmBtn    = document.getElementById("crop-confirm-btn");
+  const confirmLabel  = document.getElementById("crop-confirm-label");
   const confirmSpinner = document.getElementById("crop-confirm-spinner");
-  const feedback = document.getElementById("avatar-feedback");
-  const cropModalEl = document.getElementById("cropModal");
+  const feedback      = document.getElementById("avatar-feedback");
+  const cropModalEl   = document.getElementById("cropModal");
 
   if (!cropModalEl) return;
 
-  const cropModal = new bootstrap.Modal(cropModalEl);
+  const cropModal  = new bootstrap.Modal(cropModalEl);
+  const defaultSrc = avatarImg.dataset.default;
 
   editBtn.addEventListener("click", () => fileInput.click());
 
   fileInput.addEventListener("change", () => {
     const file = fileInput.files[0];
     if (!file) return;
-
     const reader = new FileReader();
     reader.onload = (e) => {
       cropImage.src = e.target.result;
@@ -33,10 +34,7 @@
   });
 
   cropModalEl.addEventListener("shown.bs.modal", () => {
-    if (cropper) {
-      cropper.destroy();
-      cropper = null;
-    }
+    if (cropper) { cropper.destroy(); cropper = null; }
     cropper = new Cropper(cropImage, {
       aspectRatio: 1,
       viewMode: 1,
@@ -53,20 +51,15 @@
   });
 
   cropModalEl.addEventListener("hidden.bs.modal", () => {
-    if (cropper) {
-      cropper.destroy();
-      cropper = null;
-    }
+    if (cropper) { cropper.destroy(); cropper = null; }
   });
 
   confirmBtn.addEventListener("click", () => {
     if (!cropper) return;
-
     const canvas = cropper.getCroppedCanvas({ width: 400, height: 400 });
     if (!canvas) return;
 
     setLoading(true);
-
     canvas.toBlob(async (blob) => {
       const formData = new FormData();
       formData.append("avatar", blob, "avatar.jpg");
@@ -81,6 +74,7 @@
 
         if (data.sucesso) {
           avatarImg.src = data.url + "?t=" + Date.now();
+          if (removeBtn) removeBtn.style.display = "block";
           cropModal.hide();
           showFeedback("Foto atualizada com sucesso!", "success");
         } else {
@@ -93,6 +87,30 @@
       }
     }, "image/jpeg", 0.92);
   });
+
+  if (removeBtn) {
+    removeBtn.addEventListener("click", async () => {
+      if (!confirm("Remover a foto de perfil?")) return;
+
+      try {
+        const resp = await fetch("/api/profile/avatar/remove", {
+          method: "POST",
+          headers: { "X-Requested-With": "XMLHttpRequest" },
+        });
+        const data = await resp.json();
+
+        if (data.sucesso) {
+          avatarImg.src = defaultSrc + "?t=" + Date.now();
+          removeBtn.style.display = "none";
+          showFeedback("Foto removida.", "success");
+        } else {
+          showFeedback(data.erro || "Erro ao remover foto.", "danger");
+        }
+      } catch {
+        showFeedback("Erro de conexão. Tente novamente.", "danger");
+      }
+    });
+  }
 
   function setLoading(loading) {
     confirmBtn.disabled = loading;
