@@ -6,12 +6,46 @@ from psycopg.rows import dict_row
 from app.extensions import get_db
 
 
+_SCHEMA_READY: bool = False
+
+
+def _ensure_schema():
+    global _SCHEMA_READY
+    if _SCHEMA_READY:
+        return
+
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                CREATE TABLE IF NOT EXISTS push_subscriptions (
+                    id         BIGSERIAL PRIMARY KEY,
+                    user_id    BIGINT,
+                    endpoint   TEXT NOT NULL UNIQUE,
+                    p256dh     TEXT NOT NULL,
+                    auth       TEXT NOT NULL,
+                    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+                )
+                """
+            )
+            cur.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_push_subscriptions_user_id
+                ON push_subscriptions (user_id)
+                """
+            )
+        conn.commit()
+
+    _SCHEMA_READY = True
+
+
 def upsert_subscription(
     endpoint: str,
     p256dh: str,
     auth: str,
     user_id: Optional[int] = None,
 ) -> None:
+    _ensure_schema()
     with get_db() as conn:
         with conn.cursor() as cur:
             cur.execute(
@@ -29,6 +63,7 @@ def upsert_subscription(
 
 
 def delete_subscription(endpoint: str) -> None:
+    _ensure_schema()
     with get_db() as conn:
         with conn.cursor() as cur:
             cur.execute(
@@ -39,6 +74,7 @@ def delete_subscription(endpoint: str) -> None:
 
 
 def list_all_subscriptions() -> list[dict]:
+    _ensure_schema()
     with get_db() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
             cur.execute(
