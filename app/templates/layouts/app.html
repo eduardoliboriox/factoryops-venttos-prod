@@ -171,7 +171,13 @@
   <a href="{{ url_for('auth.my_profile') }}"
      class="bottom-item {% if active_menu == 'perfil' %}active{% endif %}">
     <div class="bottom-icon">
+      {% if current_user.is_authenticated and current_user.profile_image %}
+      <img src="{{ url_for('static', filename=current_user.profile_image) }}"
+           class="bottom-nav-avatar"
+           alt="">
+      {% else %}
       <i class="bi bi-person-circle"></i>
+      {% endif %}
     </div>
     <small>Perfil</small>
   </a>
