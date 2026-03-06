@@ -45,6 +45,7 @@
     <div class="avatar-wrapper">
       <img id="profile-avatar-img"
            src="{{ url_for('static', filename=user.profile_image) if user.profile_image else url_for('static', filename='images/users/default.png') }}"
+           data-default="{{ url_for('static', filename='images/users/default.png') }}"
            alt="Foto de perfil"
            class="avatar-img">
       <button type="button" class="avatar-edit-btn" id="avatar-edit-btn" title="Alterar foto">
@@ -57,6 +58,10 @@
       {% if user.setor %}
       <div class="avatar-setor">{{ user.setor }}</div>
       {% endif %}
+      <button type="button" class="avatar-remove-btn" id="avatar-remove-btn"
+              {% if not user.profile_image %}style="display:none"{% endif %}>
+        Remover foto
+      </button>
       <div id="avatar-feedback" class="avatar-feedback"></div>
     </div>
 

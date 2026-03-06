@@ -55,6 +55,23 @@
   margin-top: 3px;
 }
 
+.avatar-remove-btn {
+  font-size: 0.78rem;
+  color: #dc3545;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  margin-top: 6px;
+  display: block;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.avatar-remove-btn:hover {
+  color: #a71d2a;
+}
+
 .avatar-feedback {
   margin-top: 8px;
   font-size: 0.85rem;
