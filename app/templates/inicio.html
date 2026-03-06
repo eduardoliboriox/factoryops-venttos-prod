@@ -212,7 +212,7 @@ async function fetchStats() {
       const soma = metas.reduce((a, b) => a + b, 0);
 
       if (elMedia) elMedia.textContent = (soma / modelos.length).toFixed(0);
-      if (elUltimo) elUltimo.textContent = modelos[modelos.length - 1].codigo || '—';
+      if (elUltimo) elUltimo.textContent = modelos[0].codigo || '—';
     } else {
       if (elMedia) elMedia.textContent = '—';
       if (elUltimo) elUltimo.textContent = '—';
