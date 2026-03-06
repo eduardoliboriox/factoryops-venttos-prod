@@ -271,3 +271,20 @@ def push_unsubscribe():
         return jsonify({"sucesso": True})
     except Exception as exc:
         return jsonify({"sucesso": False, "erro": str(exc)}), 500
+
+
+@bp.route("/profile/avatar", methods=["POST"])
+@login_required
+def upload_avatar():
+    file = request.files.get("avatar")
+    if not file:
+        return jsonify({"sucesso": False, "erro": "Nenhuma imagem enviada"}), 400
+
+    try:
+        from app.auth.service import save_profile_image
+        path = save_profile_image(current_user.id, file)
+        return jsonify({"sucesso": True, "url": f"/static/{path}"})
+    except ValueError as e:
+        return jsonify({"sucesso": False, "erro": str(e)}), 400
+    except Exception:
+        return jsonify({"sucesso": False, "erro": "Erro ao salvar imagem"}), 500

@@ -1,10 +1,15 @@
 {% extends "layouts/app.html" %}
 {% block title %}Meu Perfil{% endblock %}
 
+{% block styles %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.css">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/profile-avatar.css') }}">
+{% endblock %}
+
 {% block page_title %}
 <div class="d-flex align-items-center w-100">
   <span class="me-auto">
-    WorkCost · Meu Perfil
+    SMT Manager · Meu Perfil
   </span>
 
   <div class="ms-auto d-flex gap-2">
@@ -31,6 +36,51 @@
       <div class="alert alert-{{ category }}">{{ message }}</div>
     {% endfor %}
   {% endwith %}
+
+  <div class="avatar-section mb-4">
+    <div class="avatar-wrapper">
+      <img id="profile-avatar-img"
+           src="{{ url_for('static', filename=user.profile_image) if user.profile_image else url_for('static', filename='images/users/default.png') }}"
+           alt="Foto de perfil"
+           class="avatar-img">
+      <button type="button" class="avatar-edit-btn" id="avatar-edit-btn" title="Alterar foto">
+        <i class="bi bi-camera-fill"></i>
+      </button>
+    </div>
+
+    <div>
+      <div class="avatar-name">{{ user.full_name or user.username }}</div>
+      {% if user.setor %}
+      <div class="avatar-setor">{{ user.setor }}</div>
+      {% endif %}
+      <div id="avatar-feedback" class="avatar-feedback"></div>
+    </div>
+
+    <input type="file" id="avatar-file-input" accept="image/png,image/jpeg,image/webp" style="display:none">
+  </div>
+
+  <div class="modal fade" id="cropModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Ajustar foto de perfil</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body p-0">
+          <div class="crop-container">
+            <img id="crop-image" src="" alt="">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-success" id="crop-confirm-btn">
+            <span id="crop-confirm-label">Confirmar</span>
+            <span id="crop-confirm-spinner" class="spinner-border spinner-border-sm d-none ms-1" role="status"></span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <form method="post">
 
@@ -110,6 +160,10 @@
 
   </form>
 </div>
+{% endblock %}
 
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.js"></script>
 <script src="{{ url_for('static', filename='js/input-masks.js') }}"></script>
+<script src="{{ url_for('static', filename='js/profile-avatar.js') }}"></script>
 {% endblock %}
