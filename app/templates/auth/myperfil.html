@@ -29,6 +29,10 @@
 {% endblock %}
 
 {% block content %}
+
+{% set default_avatar = url_for('static', filename='images/users/default.png') %}
+{% set current_avatar = url_for('static', filename=user.profile_image) if user.profile_image else default_avatar %}
+
 <div class="card shadow-sm p-4" style="max-width: 640px">
 
   {% with messages = get_flashed_messages(with_categories=true) %}
