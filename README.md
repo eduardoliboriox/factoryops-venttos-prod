@@ -1,16 +1,16 @@
 
-# WorkCost (Venttos) — Solicitações, Provisões e KPIs
+# SMT Manager (Venttos) — Modelos, Estudos de Tempo e Cálculos SMT
 
-Aplicação **Fullstack Flask** (MVC) para gestão de **solicitações operacionais** (hora extra / banco de horas / compensação), com:
-- **Fluxo de aprovação multinível** (gestor → gerente → controladoria → diretoria → RH)
-- **Assinatura/confirmação por funcionário** (senha)
-- **Cálculo de provisão** (refeição, transporte, adicional noturno)
-- **Dashboards/KPIs** (absenteísmo, clientes ativos, custos, rankings)
-- **PWA** (offline + manifest + service worker)
+Aplicação **Fullstack Flask** (MVC) para gestão de **produção SMT** (Surface Mount Technology), com:
+- **Cadastro e gestão de modelos** (código, cliente, setor, linha, fase, meta/hora, tempo de montagem, blank)
+- **Estudos de tempo** (ciclo por operação, UPH teórico/real, UPD, balanceamento de linha, Takt Time)
+- **Cálculos SMT** (meta/hora, tempo inverso, perda de produção, cálculo rápido)
+- **Linhas de produção** (setores e linhas cadastradas)
+- **Dashboard e KPIs** (absenteísmo, linhas ativas)
+- **Push notifications** (VAPID) e **PWA** (offline + manifest + service worker)
 - **Autenticação local + OAuth** (Google / GitHub)
 
-> 🇧🇷 Este README é a referência principal.  
-> 🇺🇸 Para versão em inglês, veja `README.EN.md`.
+> 🇧🇷 Este README é a referência principal.
 
 ---
 
@@ -19,20 +19,20 @@ Aplicação **Fullstack Flask** (MVC) para gestão de **solicitações operacion
 Este projeto roda em **Railway + PostgreSQL** e possui **dois ambientes** separados por branch:
 
 ### ✅ Produção
-- **Service:** `workcost-venttos-prod`
+- **Service:** `smt-manager-venttos-prod`
 - **Branch:** `main`
 - **DB:** `banco_prod`
-- **Domínio:** `workcost.com.br`
+- **Domínio:** *(configurado no Railway)*
 
 ### ✅ Desenvolvimento
-- **Service:** `workcost-venttos-develop`
+- **Service:** `smt-manager-venttos-develop`
 - **Branch:** `develop`
 - **DB:** `banco_test` *(clone do prod)*
 - **Domínio:** *(sem domínio)*
 
 ### Deploy seguro (fluxo recomendado)
 1. Trabalhar e validar na branch `develop`
-2. Se estiver estável, promover para `main`
+2. Se estiver estável, abrir Pull Request para `main`
 3. Produção nunca quebra durante uso
 
 ---
@@ -42,14 +42,14 @@ Este projeto roda em **Railway + PostgreSQL** e possui **dois ambientes** separa
 Estrutura pensada para separar responsabilidades:
 
 - **Routes**
-  - `app/routes/pages.py` → páginas HTML (Jinja)
+  - `app/routes/pages.py` → páginas HTML (Jinja2)
   - `app/routes/api.py` → API REST (JSON)
 - **Services** (`app/services/`)
-  - Regras de negócio, agregações, cálculos, validações
+  - Regras de negócio, cálculos SMT, validações, notificações
 - **Repositories** (`app/repositories/`)
-  - Acesso ao PostgreSQL via SQL (psycopg)
+  - Acesso ao PostgreSQL via SQL puro (psycopg3)
 - **Templates/Static**
-  - Jinja2 + Bootstrap + JS Vanilla (UI responsiva)
+  - Jinja2 + Bootstrap + JS Vanilla (UI responsiva e mobile-first)
 
 ---
 
@@ -57,17 +57,17 @@ Estrutura pensada para separar responsabilidades:
 
 ```
 ├─ .github/
-│   └─ workflow/
+│   └─ workflows/
 │         └─ ci.yml
 │
 ├─ app/
-│   ├─ __init__.py            # create_app()              
+│   ├─ __init__.py            # create_app()
 │   ├─ config.py              # Configurações / env
-│   ├─ extensions.py          # DB (psycopg)
-│   ├─ health.py        
+│   ├─ extensions.py          # DB (psycopg3)
+│   ├─ health.py
 │   │
 │   ├─ auth/
-│   │   ├─ __init__.py   (vazio)
+│   │   ├─ __init__.py
 │   │   ├─ decorators.py
 │   │   ├─ models.py
 │   │   ├─ profile_repository.py
@@ -83,11 +83,12 @@ Estrutura pensada para separar responsabilidades:
 │   ├─ repositories/          # Acesso ao banco (SQL)
 │   │   ├─ __init__.py
 │   │   ├─ employees_repository.py
-│   │   ├─ lancamentos_repository.py
-│   │   ├─ modelos_repository.py     
-│   │   ├─ powerbi_service.py
-│   │   └─ solicitacoes_repository.py
-│   │  
+│   │   ├─ modelos_repository.py
+│   │   ├─ powerbi_repository.py
+│   │   ├─ production_lines_repository.py
+│   │   ├─ push_repository.py
+│   │   └─ time_studies_repository.py
+│   │
 │   ├─ routes/
 │   │   ├─ __init__.py
 │   │   ├─ api.py             # Rotas REST (JSON)
@@ -97,81 +98,73 @@ Estrutura pensada para separar responsabilidades:
 │   │   ├─ __init__.py
 │   │   ├─ email_service.py
 │   │   ├─ employees_service.py
-│   │   ├─ lancamentos_service.py
 │   │   ├─ modelos_service.py
-│   │   ├─ pcp_service.py    
+│   │   ├─ notification_service.py
 │   │   ├─ powerbi_service.py
-│   │   ├─ provisao_service.py
-│   │   ├─ provisao_view_service.py
-│   │   ├─ relatorios_service.py   
-│   │   └─ solicitacoes_service.py
+│   │   ├─ production_lines_service.py
+│   │   └─ time_studies_service.py
 │   │
 │   ├─ templates/             # Jinja2
 │   │   ├─ auth/
 │   │   │   ├─ mobile/
 │   │   │   │    └─ login_choice.html
-│   │   │   │    └─ login_form.htm
-│   │   │   │    └─ register_form.htm
-│   │   │   │ 
+│   │   │   │    └─ login_form.html
+│   │   │   │    └─ register_form.html
+│   │   │   │
 │   │   │   ├─ forgot_password.html
-│   │   │   ├─ login.html   
-│   │   │   ├─ myperfil.html   
+│   │   │   ├─ login.html
+│   │   │   ├─ myperfil.html
 │   │   │   ├─ register.html
 │   │   │   ├─ reset_password.html
 │   │   │   ├─ users_admin.html
-│   │   │   └─ users_all.html 
+│   │   │   └─ users_all.html
 │   │   │
 │   │   ├─ layouts/
-│   │   │   ├─ app.html  
+│   │   │   ├─ app.html
 │   │   │   ├─ app_print.html
 │   │   │   └─ auth.html
 │   │   │
 │   │   ├─ legal/
 │   │   │   ├─ cookies.html
 │   │   │   └─ privacy.html
-│   │   │ 
-│   │   ├─ dashboard.html  
+│   │   │
+│   │   ├─ cadastro.html
+│   │   ├─ calcular.html
+│   │   ├─ dashboard.html
+│   │   ├─ estudo_tempo.html
+│   │   ├─ estudo_tempo_print.html
 │   │   ├─ inicio.html
-│   │   ├─ lancamento.html 
-│   │   ├─ minhasextras.html 
+│   │   ├─ mais.html
+│   │   ├─ modelos.html
 │   │   ├─ offline.html
-│   │   ├─ powerbi.html   
-│   │   ├─ pedidos.html
-│   │   ├─ relatorios.html  
-│   │   ├─ solicitacoes-abertas.html
-│   │   ├─ solicitacoes-fechadas.html
-│   │   ├─ solicitacoes-frequencia.html
-│   │   ├─ solicitacoes-provisao.html
-│   │   └─ solicitacoes.html
+│   │   └─ powerbi.html
 │   │
 │   ├─ static/
 │   │   ├─ css/
-│   │   │   ├─ auth.css  
+│   │   │   ├─ auth.css
+│   │   │   ├─ document-fit.css
 │   │   │   ├─ legal.css
-│   │   │   ├─ powerbi.css   
-│   │   │   ├─ provisao.css
-│   │   │   ├─ solicitacoes.css
-│   │   │   └─ style.css  
+│   │   │   ├─ modelos.css
+│   │   │   ├─ more.css
+│   │   │   ├─ powerbi.css
+│   │   │   ├─ style.css
+│   │   │   └─ time-studies.css
 │   │   │
 │   │   ├─ js/
 │   │   │   ├─ cookie-consent.js
-│   │   │   ├─ dashboard-live.js   
+│   │   │   ├─ dashboard-live.js
 │   │   │   ├─ document-fit.js
 │   │   │   ├─ input-masks.js
-│   │   │   ├─ main.js  
-│   │   │   ├─ minhasextras.js
+│   │   │   ├─ main.js
+│   │   │   ├─ pcp.js
 │   │   │   ├─ powerbi-live.js
-│   │   │   ├─ powerbi.js     
+│   │   │   ├─ powerbi.js
+│   │   │   ├─ push-notifications.js
+│   │   │   ├─ pwa-install.js
 │   │   │   ├─ pwa.js
 │   │   │   ├─ register.js
-│   │   │   ├─ relatorios.js
-│   │   │   ├─ solicitacoes-abertas.js
-│   │   │   ├─ solicitacoes-create.js  
-│   │   │   ├─ solicitacoes-fechadas.js  
-│   │   │   ├─ solicitacoes-frequencia.js
-│   │   │   ├─ solicitacoes-mobile.js
-│   │   │   ├─ solicitacoes-view.js   
-│   │   │   └─ solicitacoes.js
+│   │   │   ├─ time-studies-help.js
+│   │   │   └─ time-studies.js
 │   │   │
 │   │   ├─ images/
 │   │   ├─ fonts/inter.woff2
@@ -189,12 +182,11 @@ Estrutura pensada para separar responsabilidades:
 ├─ .gitignore
 ├─ LICENSE
 ├─ Procfile                   # Railway
-├─ README.EN.md
 ├─ README.md
 ├─ pyproject.toml
 ├─ requirements.txt
 ├─ run.py                     # Entrypoint
-└─ runtime.txt                # Entrypoint
+└─ runtime.txt
 ```
 
 ---
@@ -205,7 +197,7 @@ Estrutura pensada para separar responsabilidades:
 * **Flask**
 * **Jinja2**
 * **PostgreSQL**
-* **psycopg**
+* **psycopg3**
 * **Bootstrap 5**
 * **JavaScript (Vanilla)**
 * **PWA** (Service Worker + Manifest)
@@ -225,7 +217,7 @@ SECRET_KEY=change-me
 BASE_URL=http://127.0.0.1:5000
 
 # Database
-DATABASE_URL=postgresql://user:password@localhost:5432/workcost
+DATABASE_URL=postgresql://user:password@localhost:5432/smt_manager
 
 # OAuth
 GOOGLE_CLIENT_ID=
@@ -244,6 +236,10 @@ SMTP_FROM=
 # SendGrid (opcional)
 SENDGRID_API_KEY=
 SENDGRID_FROM=
+
+# Push Notifications (opcional)
+VAPID_PUBLIC_KEY=
+VAPID_PRIVATE_KEY=
 ```
 
 ✅ Em Railway, configure essas variáveis no painel do service (não use `.env` em produção).
@@ -255,8 +251,8 @@ SENDGRID_FROM=
 ### 1) Clonar
 
 ```bash
-git clone https://github.com/eduardoliboriox/workcost.git
-cd workcost
+git clone https://github.com/eduardoliboriox/smt-manager-venttos-prod.git
+cd smt-manager-venttos-prod
 ```
 
 ### 2) Ambiente virtual
@@ -310,8 +306,6 @@ Arquivo:
 
 ## 🗃 Banco de Dados (Railway) — Operação via psql (Windows)
 
-Você já usa `psql.exe` direto no Windows ?!
-
 📌 **Importante (segurança):** não coloque senhas/URLs completas no README público.
 Use o `DATABASE_URL` do Railway e rode assim:
 
@@ -341,27 +335,45 @@ set ENVIRONMENT=develop
 
 ## 🔁 Fluxos principais do sistema
 
-### Solicitações
+### Modelos SMT
 
-* Criar solicitação (modo create)
-* Visualizar solicitação (modo view)
-* Assinar funcionário (senha)
-* Aprovar por role (senha)
-* Fechar solicitação e registrar objetivo/observação
-* Provisão por solicitação (visão financeira)
-
-### Provisão (custos)
-
-Hoje o cálculo considera:
-
-* Refeição por turno
-* Transporte (rota/veículo próprio)
-* Adicional noturno (baseado em horário)
+* Listar modelos por setor, linha e fase
+* Cadastrar modelo (código, cliente, setor, linha, fase, meta/hora, tempo de montagem, blank)
+* Atualizar meta/hora, tempo de montagem ou blank de um modelo
+* Excluir modelo
+* Histórico de alterações por modelo (audit trail automático)
 
 Arquivos chave:
+* `app/services/modelos_service.py`
+* `app/repositories/modelos_repository.py`
 
-* `app/services/provisao_service.py`
-* `app/services/provisao_view_service.py`
+### Estudo de Tempo
+
+* Criar estudo por produto/linha com metas de UPH e HC
+* Adicionar operações com tempo de ciclo e headcount
+* Calcular automaticamente: UPH teórico, UPH real (com perda), UPD, Takt Time, target de ciclo
+* Balanceamento de linha: identificar gargalos e operações fora do target
+* Recomendações de paralelismo por operação
+* Impressão formatada do estudo
+
+Arquivos chave:
+* `app/services/time_studies_service.py`
+* `app/repositories/time_studies_repository.py`
+
+### Cálculos SMT
+
+* **Meta/hora a partir do tempo de montagem**: dado o tempo de ciclo e o blank, calcula UPH teórico e real (com 10% de perda padrão)
+* **Tempo inverso**: dado o UPH meta e o blank, calcula o tempo de montagem necessário
+* **Perda de produção**: dado meta/hora e produção real, calcula tempo perdido e peças faltantes
+* **Cálculo rápido**: dado meta/hora, minutos e blank, calcula placas ou blanks produzidos
+
+Arquivo chave:
+* `app/services/modelos_service.py`
+
+### Linhas de Produção
+
+* Listar setores disponíveis
+* Listar linhas por setor
 
 ---
 
@@ -369,25 +381,39 @@ Arquivos chave:
 
 ### Pages (HTML)
 
-* `/dashboard`
-* `/powerbi`
-* `/solicitacoes` (create)
-* `/solicitacoes/<id>` (view)
-* `/solicitacoes/<id>/provisao`
-* `/solicitacoes/<id>/frequencia`
-* `/pedidos`
-* `/minhas-extras`
+* `/` — Início
+* `/dashboard` — Dashboard com KPIs
+* `/powerbi` — Relatórios Power BI
+* `/smt/modelos` — Gestão de modelos
+* `/smt/cadastro` — Cadastro de modelo
+* `/smt/calcular` — Calculadora SMT
+* `/smt/estudo-tempo` — Estudos de tempo
+* `/smt/estudo-tempo/print/<id>` — Impressão de estudo
+* `/smt/mais` — Módulos extras (mobile)
 
 ### API (JSON)
 
-* `GET /api/dashboard/resumo`
-* `GET /api/dashboard/solicitacoes-resumo`
-* `GET /api/dashboard/gastos-provisao`
-* `POST /api/solicitacoes`
-* `POST /api/solicitacoes/<id>/confirmar-presenca`
-* `POST /api/solicitacoes/<id>/salvar-view`
-* `POST /api/solicitacoes/<id>/fechamento`
-* `POST /api/auth/confirm-extra`
+* `GET /api/modelos` — Listar modelos
+* `POST /api/modelos` — Cadastrar modelo
+* `PUT /api/modelos` — Atualizar modelo
+* `DELETE /api/modelos` — Excluir modelo
+* `GET /api/modelos/history` — Histórico de alterações
+* `POST /api/modelos/calculo_rapido` — Cálculo rápido de produção
+* `POST /api/smt/calcular_meta` — Meta/hora a partir do tempo de montagem
+* `POST /api/smt/calcular_tempo` — Tempo inverso a partir da meta/hora
+* `POST /api/calcular_perda` — Perda de produção
+* `GET /api/time-studies` — Listar estudos de tempo
+* `POST /api/time-studies` — Criar estudo
+* `GET /api/time-studies/<id>` — Detalhe do estudo com cálculos
+* `DELETE /api/time-studies/<id>` — Excluir estudo (admin)
+* `POST /api/time-studies/<id>/operations` — Adicionar operação
+* `PUT /api/time-studies/operations/<id>` — Atualizar operação
+* `DELETE /api/time-studies/operations/<id>` — Excluir operação
+* `GET /api/production/sectors` — Listar setores
+* `GET /api/production/lines` — Listar linhas por setor
+* `GET /api/push/vapid-public-key` — Chave pública VAPID
+* `POST /api/push/subscribe` — Registrar subscription de push
+* `POST /api/push/unsubscribe` — Remover subscription de push
 
 ---
 
@@ -398,7 +424,6 @@ Arquivos:
 * `app/static/manifest.webmanifest`
 * `app/static/sw.js`
 * Rotas:
-
   * `/manifest.webmanifest`
   * `/offline`
 
@@ -406,13 +431,13 @@ Arquivos:
 
 ## 🧭 Convenções do projeto
 
-* **Services**: regras e agregações (nada de SQL aqui)
+* **Services**: regras e cálculos (nada de SQL aqui)
 * **Repositories**: SQL puro + acesso ao DB
 * **Routes**:
-
   * `pages.py` para HTML
   * `api.py` para JSON
 * **CSS/JS**: isolados por página sempre que possível
+* **Respostas da API**: padrão `{"sucesso": True/False, ...}`
 
 ---
 
