@@ -109,7 +109,7 @@ self.addEventListener("push", (event) => {
     self.registration.showNotification(payload.title, {
       body: payload.body,
       icon: "/static/images/logos/pwa-192.png",
-      badge: "/static/images/logos/pwa-192.png",
+      badge: "/static/images/logos/monochrome-badge-96x96.png",
       data: { url: payload.url || "/" },
     })
   );
