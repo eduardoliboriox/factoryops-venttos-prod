@@ -100,12 +100,13 @@ git commit -m "type: short description"
 ```
 Semantic format: `feat:`, `fix:`, `chore:`, `refactor:`, `docs:`
 
-### Step 6 — Rebase on develop to prevent conflicts
+### Step 6 — Rebase on main to prevent conflicts
 ```
 git fetch origin
-git rebase origin/develop
+git rebase origin/main
 ```
 Resolve any conflicts before pushing. This step prevents conflicts in the Pull Request.
+PRs target `main` directly — rebasing on `origin/develop` leaves the branch behind and causes conflicts.
 
 ### Step 7 — Push to remote
 ```
@@ -119,6 +120,6 @@ Do not suggest next steps, improvements, or additional tasks. The task ends afte
 ---
 
 ## Conflict Rule
-- Always rebase on `origin/develop` before pushing (Step 6)
-- Never merge `develop` into the feature branch — always rebase
+- Always rebase on `origin/main` before pushing (Step 6) — PRs target main directly
+- Never merge `main` or `develop` into the feature branch — always rebase
 - Never use `git push --force` without explicit authorization from the user
