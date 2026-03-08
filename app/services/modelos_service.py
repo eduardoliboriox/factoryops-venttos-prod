@@ -188,14 +188,22 @@ def atualizar_modelo(dados, user=None):
 
     try:
         uid, uname = _audit_user(user)
+
+        meta_antes = modelos_repository.buscar_meta_padrao(codigo, fase, linha) if campos.get("meta_padrao") else None
+
         modelos_repository.atualizar(codigo, fase, linha, campos, audit_user_id=uid, audit_username=uname)
         _cache_invalidate()
 
         actor = uname or "Usuário"
-        _dispatch_push(
-            title="Meta hora atualizada",
-            body=f"{actor} alterou a meta do modelo {codigo} na linha {linha}.",
-        )
+
+        if meta_antes is not None and campos.get("meta_padrao"):
+            meta_depois = int(campos["meta_padrao"]) if campos["meta_padrao"] == int(campos["meta_padrao"]) else campos["meta_padrao"]
+            meta_antes_fmt = int(meta_antes) if meta_antes == int(meta_antes) else meta_antes
+            body = f"{actor} alterou a meta do modelo {codigo} de {meta_antes_fmt} para {meta_depois} na linha {linha}."
+        else:
+            body = f"{actor} alterou o modelo {codigo} na linha {linha}."
+
+        _dispatch_push(title="Meta hora atualizada", body=body)
 
         return {"sucesso": True, "mensagem": "Modelo atualizado"}
     except Exception as e:
