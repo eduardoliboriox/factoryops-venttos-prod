@@ -197,6 +197,27 @@ def _audit_insert(cur, *, codigo: str, fase: str, linha: Optional[str],
     )
 
 
+def buscar_meta_padrao(codigo: str, fase: str, linha: Optional[str]) -> Optional[float]:
+    linha_col = _resolve_linha_column()
+
+    with get_db() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            if linha_col:
+                q = sql.SQL("""
+                    SELECT meta_padrao FROM modelos
+                    WHERE codigo = %s AND fase = %s AND {} = %s
+                    LIMIT 1
+                """).format(sql.Identifier(linha_col))
+                cur.execute(q, (codigo, fase, linha))
+            else:
+                cur.execute(
+                    "SELECT meta_padrao FROM modelos WHERE codigo = %s AND fase = %s LIMIT 1",
+                    (codigo, fase)
+                )
+            row = cur.fetchone()
+            return float(row["meta_padrao"]) if row and row["meta_padrao"] is not None else None
+
+
 def inserir(dados, *, audit_user_id: Optional[int] = None, audit_username: Optional[str] = None):
     """
     Compatível com banco com/sem coluna de linha.
