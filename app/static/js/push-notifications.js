@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  const STORAGE_KEY = "smt_push_state";
+  const STORAGE_KEY = "smt_push_state_v2";
 
   function getState() {
     try {
@@ -84,6 +84,20 @@
     }
   }
 
+  function keysMatch(existing, incoming) {
+    try {
+      const a = new Uint8Array(existing);
+      const b = new Uint8Array(incoming);
+      if (a.length !== b.length) return false;
+      for (let i = 0; i < a.length; i++) {
+        if (a[i] !== b[i]) return false;
+      }
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   async function subscribe() {
     if (!isPushSupported()) return false;
 
@@ -93,11 +107,28 @@
     const vapidKey = await fetchVapidKey();
     if (!vapidKey) return false;
 
+    const newKeyBytes = urlBase64ToUint8Array(vapidKey);
+
     try {
       const registration = await navigator.serviceWorker.ready;
+
+      // Se há subscription antiga com key diferente, descarta antes de recriar
+      const existing = await registration.pushManager.getSubscription();
+      if (existing) {
+        const existingKey = existing.options && existing.options.applicationServerKey;
+        if (existingKey && !keysMatch(existingKey, newKeyBytes)) {
+          await existing.unsubscribe();
+        } else if (existingKey && keysMatch(existingKey, newKeyBytes)) {
+          // Mesma key — apenas garante que está salvo no servidor
+          const ok = await sendSubscriptionToServer(existing);
+          if (ok) setState({ subscribed: true });
+          return ok;
+        }
+      }
+
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(vapidKey),
+        applicationServerKey: newKeyBytes,
       });
 
       const ok = await sendSubscriptionToServer(subscription);
@@ -128,13 +159,32 @@
     if (Notification.permission === "denied") return;
 
     const state = getState();
-    if (state.subscribed) return;
     if (state.dismissed) return;
 
     const vapidKey = await fetchVapidKey();
     if (!vapidKey) return;
 
     if (Notification.permission === "granted") {
+      // Se marcado como subscribed, valida se a subscription ainda existe e a key bate
+      if (state.subscribed) {
+        try {
+          const registration = await navigator.serviceWorker.ready;
+          const existing = await registration.pushManager.getSubscription();
+          if (existing) {
+            const existingKey = existing.options && existing.options.applicationServerKey;
+            const newKeyBytes = urlBase64ToUint8Array(vapidKey);
+            if (!existingKey || !keysMatch(existingKey, newKeyBytes)) {
+              // Key mudou — força resubscribe
+              setState({ subscribed: false });
+              await subscribe();
+            }
+            return;
+          }
+        } catch {
+          // Falha na verificação — tenta resubscribe
+        }
+        setState({ subscribed: false });
+      }
       await subscribe();
       return;
     }
