@@ -273,6 +273,50 @@ def push_unsubscribe():
         return jsonify({"sucesso": False, "erro": str(exc)}), 500
 
 
+@bp.route("/push/diagnostico", methods=["GET"])
+@login_required
+def push_diagnostico():
+    from flask import current_app
+    from app.repositories import push_repository
+
+    vapid_public = current_app.config.get("VAPID_PUBLIC_KEY")
+    vapid_private = current_app.config.get("VAPID_PRIVATE_KEY")
+    vapid_email = current_app.config.get("VAPID_CLAIMS_EMAIL")
+
+    try:
+        subs = push_repository.list_all_subscriptions()
+        total_subs = len(subs)
+        table_ok = True
+        table_error = None
+    except Exception as exc:
+        total_subs = 0
+        table_ok = False
+        table_error = str(exc)
+
+    return jsonify({
+        "vapid_public_key_configurada": bool(vapid_public),
+        "vapid_public_key_preview": (vapid_public[:20] + "...") if vapid_public else None,
+        "vapid_private_key_configurada": bool(vapid_private),
+        "vapid_email": vapid_email,
+        "tabela_push_subscriptions_ok": table_ok,
+        "tabela_erro": table_error,
+        "total_subscriptions": total_subs,
+    })
+
+
+@bp.route("/push/test", methods=["POST"])
+@login_required
+def push_test():
+    from app.services.notification_service import notify_all
+
+    resultado = notify_all(
+        title="Teste de notificação",
+        body="Se você está vendo isso, as notificações push estão funcionando.",
+        url="/smt/modelos",
+    )
+    return jsonify({"sucesso": True, "resultado": resultado})
+
+
 @bp.route("/profile/avatar", methods=["POST"])
 @login_required
 def upload_avatar():
