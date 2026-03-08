@@ -143,3 +143,17 @@ def manifest():
     resp.headers["Cache-Control"] = "no-cache, must-revalidate"
     resp.headers["Pragma"] = "no-cache"
     return resp
+
+
+@bp.route("/sw.js", endpoint="pwa_sw")
+def service_worker():
+    from flask import current_app, send_from_directory, make_response
+    import os
+
+    static_dir = os.path.join(current_app.root_path, "static")
+    resp = make_response(send_from_directory(static_dir, "sw.js"))
+    resp.headers["Content-Type"] = "application/javascript; charset=utf-8"
+    resp.headers["Cache-Control"] = "no-cache, must-revalidate"
+    resp.headers["Pragma"] = "no-cache"
+    resp.headers["Service-Worker-Allowed"] = "/"
+    return resp
