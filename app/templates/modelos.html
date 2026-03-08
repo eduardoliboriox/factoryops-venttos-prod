@@ -201,6 +201,27 @@
     </div>
   </div>
 </div>
+
+<div class="card mb-4 p-3 shadow-sm">
+  <h5 class="mb-3"><i class="bi bi-bell"></i> Notificações Push</h5>
+  <div class="d-flex flex-wrap gap-2 mb-3">
+    <button id="btnPushDiagnostico" class="btn btn-outline-secondary btn-sm" type="button">
+      <i class="bi bi-stethoscope"></i> Diagnóstico
+    </button>
+    <button id="btnPushTeste" class="btn btn-outline-primary btn-sm" type="button">
+      <i class="bi bi-send"></i> Enviar notificação de teste
+    </button>
+    <button id="btnPushAtivar" class="btn btn-outline-success btn-sm" type="button">
+      <i class="bi bi-bell-fill"></i> Ativar notificações neste dispositivo
+    </button>
+  </div>
+  <div id="pushDiagnosticoResult" class="d-none">
+    <table class="table table-sm table-bordered mb-0">
+      <tbody id="pushDiagnosticoBody"></tbody>
+    </table>
+  </div>
+  <div id="pushTesteResult" class="d-none mt-2"></div>
+</div>
 {% endblock %}
 
 {% block scripts %}
@@ -618,6 +639,78 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   loadModelos();
+
+  document.getElementById('btnPushDiagnostico').addEventListener('click', async () => {
+    const resultDiv = document.getElementById('pushDiagnosticoResult');
+    const body = document.getElementById('pushDiagnosticoBody');
+    body.innerHTML = '<tr><td colspan="2">Carregando...</td></tr>';
+    resultDiv.classList.remove('d-none');
+
+    try {
+      const r = await fetch('/api/push/diagnostico', { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+      const d = await r.json();
+
+      const swReg = await navigator.serviceWorker.getRegistration('/');
+      const swOk = !!swReg;
+      const sub = swReg ? await swReg.pushManager.getSubscription() : null;
+      const notifPerm = Notification.permission;
+
+      const rows = [
+        ['VAPID public key configurada', d.vapid_public_key_configurada ? `✅ ${d.vapid_public_key_preview}` : '❌ Não configurada'],
+        ['VAPID private key configurada', d.vapid_private_key_configurada ? '✅ Sim' : '❌ Não configurada'],
+        ['VAPID claims email', d.vapid_email || '❌ Não configurado'],
+        ['Tabela push_subscriptions', d.tabela_push_subscriptions_ok ? '✅ OK' : `❌ ${d.tabela_erro}`],
+        ['Total subscriptions no banco', d.total_subscriptions],
+        ['Service Worker registrado', swOk ? '✅ Sim' : '❌ Não'],
+        ['Permissão de notificação (browser)', notifPerm === 'granted' ? '✅ granted' : notifPerm === 'denied' ? '❌ denied' : '⚠️ default (não pedido)'],
+        ['Subscription ativa neste browser', sub ? '✅ Sim' : '❌ Não'],
+      ];
+
+      body.innerHTML = rows.map(([k, v]) => `<tr><td class="fw-semibold" style="width:55%">${k}</td><td>${v}</td></tr>`).join('');
+    } catch (e) {
+      body.innerHTML = `<tr><td colspan="2" class="text-danger">Erro: ${e.message}</td></tr>`;
+    }
+  });
+
+  document.getElementById('btnPushTeste').addEventListener('click', async () => {
+    const resultDiv = document.getElementById('pushTesteResult');
+    resultDiv.className = 'mt-2 alert alert-secondary';
+    resultDiv.textContent = 'Enviando...';
+    resultDiv.classList.remove('d-none');
+
+    try {
+      const r = await fetch('/api/push/test', {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+      });
+      const d = await r.json();
+      const res = d.resultado || {};
+
+      if (res.skipped) {
+        resultDiv.className = 'mt-2 alert alert-warning';
+        resultDiv.textContent = 'VAPID keys não configuradas no servidor.';
+      } else if (res.sent === 0 && res.failed === 0) {
+        resultDiv.className = 'mt-2 alert alert-warning';
+        resultDiv.textContent = 'Nenhuma subscription encontrada no banco. Ative as notificações primeiro.';
+      } else {
+        resultDiv.className = `mt-2 alert ${res.failed === 0 ? 'alert-success' : 'alert-warning'}`;
+        resultDiv.textContent = `Enviadas: ${res.sent} | Falhas: ${res.failed}`;
+      }
+    } catch (e) {
+      resultDiv.className = 'mt-2 alert alert-danger';
+      resultDiv.textContent = `Erro: ${e.message}`;
+    }
+  });
+
+  document.getElementById('btnPushAtivar').addEventListener('click', async () => {
+    if (window.smtPush) {
+      const ok = await window.smtPush.subscribe();
+      const resultDiv = document.getElementById('pushTesteResult');
+      resultDiv.className = `mt-2 alert ${ok ? 'alert-success' : 'alert-warning'}`;
+      resultDiv.textContent = ok ? 'Notificações ativadas neste dispositivo.' : 'Não foi possível ativar. Verifique a permissão do browser.';
+      resultDiv.classList.remove('d-none');
+    }
+  });
 });
 </script>
 {% endblock %}
