@@ -33,7 +33,7 @@ The project strictly follows **MVC**. Every architectural decision must respect 
 | Environment | Service | Branch | Database |
 |---|---|---|---|
 | Production | smt-manager-venttos-prod | `main` | banco_prod |
-| Development | smt-manager-venttos-develop | `develop` | banco_test |
+| Development | smt-manager-ventto-develop | `develop` | banco_test |
 
 ---
 
@@ -64,6 +64,51 @@ Changes to Services, Controllers, Models, Repositories, or APIs are allowed **on
 - All changes are developed on the `develop` branch
 - Never modify `main` directly
 - Migration to `main` is done by the user via Pull Request on GitHub after validation
+
+---
+
+## Where to Look When Something Breaks
+
+Use this as the first reference before touching any code.
+
+| Symptom | Where to look |
+|---|---|
+| Route returning 404 or 500 | `controllers/routes.py`, blueprint registration in `app/__init__.py` |
+| Business rule producing wrong result | `services/` — never look at controllers first |
+| Query returning wrong data or crashing | `repositories/` — check SQL and parameter binding |
+| Template not rendering or variable missing | `controllers/routes.py` (what is being passed), then the template |
+| Auth failing or session breaking | `auth/routes.py`, session config in `app/__init__.py` |
+| Database error on startup | Migration state, `models/`, PostgreSQL connection string |
+| Static file (JS/CSS) not loading | File path in template, static folder structure |
+| Background job or scheduled task failing | `services/` layer that owns the job logic |
+
+**Rule: always read before writing. Understand the failure before proposing a fix.**
+
+---
+
+## Practical Trust Boundaries
+
+Treat these as hostile input — always validate, sanitize, and never trust directly:
+
+- All form fields and query parameters from the user
+- File uploads — name, type, and content
+- URL parameters used to query or filter database records
+- Any value that flows into a SQL query, file path, or shell command
+- Session data that influences authorization decisions
+
+**Path components must be sanitized before use in filesystem operations.**
+**Never construct SQL with string formatting — use parameterized queries exclusively.**
+
+---
+
+## Security Rules
+
+- Never expose stack traces, raw exceptions, or internal paths to the client
+- Never log sensitive data (passwords, tokens, personal data)
+- Auth token must never appear in query strings — use headers only
+- User input must never reach the database without going through the repository layer
+- File paths built from user input must be validated against an allowlist or sanitized strictly
+- Any change touching auth, session, or permission logic requires explicit user confirmation before implementation
 
 ---
 
