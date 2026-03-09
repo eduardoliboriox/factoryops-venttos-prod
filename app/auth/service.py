@@ -258,13 +258,13 @@ def remove_profile_image(user_id: int):
     if not user or not user.get("profile_image"):
         return
 
-    filepath = os.path.join(
-        current_app.root_path,
-        "static",
-        user["profile_image"],
-    )
-    if os.path.isfile(filepath):
-        os.remove(filepath)
+    cloud_name = current_app.config.get("CLOUDINARY_CLOUD_NAME")
+    api_key = current_app.config.get("CLOUDINARY_API_KEY")
+    api_secret = current_app.config.get("CLOUDINARY_API_SECRET")
+
+    if all([cloud_name, api_key, api_secret]):
+        cloudinary.config(cloud_name=cloud_name, api_key=api_key, api_secret=api_secret)
+        cloudinary.uploader.destroy(f"smt_manager/avatars/user_{user_id}", resource_type="image")
 
     update_profile_image(user_id, None)
 
