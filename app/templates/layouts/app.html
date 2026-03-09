@@ -44,10 +44,7 @@
 <header class="mobile-header d-md-none">
   <div class="mobile-left">
     <div class="avatar">
-      <a href="{{ url_for('auth.my_profile') }}" style="display:block;">
-        <img src="{% if current_user.is_authenticated and current_user.profile_image and current_user.profile_image.startswith('http') %}{{ current_user.profile_image }}{% else %}{{ url_for('static', filename='images/logos/logo.jpeg') }}{% endif %}"
-             style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
-      </a>
+      <img src="{{ url_for('static', filename='images/logos/logo.jpeg') }}">
     </div>
 
     {% set page_titles = {
@@ -175,7 +172,7 @@
      class="bottom-item {% if active_menu == 'perfil' %}active{% endif %}">
     <div class="bottom-icon">
       {% if current_user.is_authenticated and current_user.profile_image %}
-      <img src="{{ current_user.profile_image }}"
+      <img src="{{ url_for('static', filename=current_user.profile_image) }}"
            class="bottom-nav-avatar"
            alt="">
       {% else %}
