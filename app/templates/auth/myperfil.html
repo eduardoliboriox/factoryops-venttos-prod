@@ -31,7 +31,7 @@
 {% block content %}
 
 {% set default_avatar = url_for('static', filename='images/users/default.png') %}
-{% set current_avatar = url_for('static', filename=user.profile_image) if user.profile_image else default_avatar %}
+{% set current_avatar = user.profile_image if user.profile_image else default_avatar %}
 
 <div class="card shadow-sm p-4" style="max-width: 640px">
 
@@ -44,8 +44,8 @@
   <div class="avatar-section mb-4">
     <div class="avatar-wrapper">
       <img id="profile-avatar-img"
-           src="{{ url_for('static', filename=user.profile_image) if user.profile_image else url_for('static', filename='images/users/default.png') }}"
-           data-default="{{ url_for('static', filename='images/users/default.png') }}"
+           src="{{ current_avatar }}"
+           data-default="{{ default_avatar }}"
            alt="Foto de perfil"
            class="avatar-img">
       <button type="button" class="avatar-edit-btn" id="avatar-edit-btn" title="Alterar foto">
