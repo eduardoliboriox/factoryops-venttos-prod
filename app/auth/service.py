@@ -1,7 +1,8 @@
 import os
+import cloudinary
+import cloudinary.uploader
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask import current_app
-from werkzeug.utils import secure_filename
 from app.utils.text import normalize_username
 
 from app.auth.repository import (
@@ -228,24 +229,26 @@ def save_profile_image(user_id: int, file):
     if not allowed_file(file.filename):
         raise ValueError("Formato de imagem não suportado")
 
-    ext = file.filename.rsplit(".", 1)[1].lower()
-    filename = f"user_{user_id}.{ext}"
+    cloud_name = current_app.config.get("CLOUDINARY_CLOUD_NAME")
+    api_key = current_app.config.get("CLOUDINARY_API_KEY")
+    api_secret = current_app.config.get("CLOUDINARY_API_SECRET")
 
-    upload_dir = os.path.join(
-        current_app.root_path,
-        "static",
-        "uploads",
-        "avatars"
+    if not all([cloud_name, api_key, api_secret]):
+        raise ValueError("Serviço de upload de imagem não configurado")
+
+    cloudinary.config(cloud_name=cloud_name, api_key=api_key, api_secret=api_secret)
+
+    result = cloudinary.uploader.upload(
+        file,
+        public_id=f"smt_manager/avatars/user_{user_id}",
+        overwrite=True,
+        resource_type="image",
+        transformation={"width": 200, "height": 200, "crop": "fill", "gravity": "face"},
     )
-    os.makedirs(upload_dir, exist_ok=True)
 
-    filepath = os.path.join(upload_dir, filename)
-    file.save(filepath)
-
-    db_path = f"uploads/avatars/{filename}"
-    update_profile_image(user_id, db_path)
-
-    return db_path
+    url = result["secure_url"]
+    update_profile_image(user_id, url)
+    return url
 
 
 def remove_profile_image(user_id: int):

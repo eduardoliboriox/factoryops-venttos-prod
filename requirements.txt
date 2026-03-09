@@ -31,3 +31,7 @@ sendgrid>=6.11.0
 # Push Notifications
 # ========================
 pywebpush==2.0.0
+# ========================
+# Cloud Storage (avatars)
+# ========================
+cloudinary>=1.36.0
