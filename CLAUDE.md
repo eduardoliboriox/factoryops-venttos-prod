@@ -55,6 +55,72 @@ The project strictly follows **MVC**. Every architectural decision must respect 
 
 ---
 
+## UI/UX Quality Standard
+
+**Every task that touches templates or CSS must apply or preserve international-level UI quality.** When editing any template, evaluate whether the surrounding layout can be improved — if yes, improve it within the scope of the task.
+
+### Design system tokens (always use these, never hardcode colors or radii)
+```css
+--bg: #f1f5f9          /* page background */
+--card: #ffffff        /* card surface */
+--text: #1e293b        /* primary text */
+--text-muted: #64748b  /* secondary/label text */
+--border: rgba(15,23,42,0.09)  /* all borders */
+--primary: #0d6efd     /* primary actions */
+--success-color: #198754
+--sidebar-bg: #0f172a
+```
+
+### Established components — always reuse, never recreate
+| Component | Class | Usage |
+|---|---|---|
+| Page header | `.page-header` + `.page-header-title` + `.page-header-actions` | Every `{% block page_title %}` |
+| Header icon button | `.btn-header-icon` | Back, fullscreen, actions in page header |
+| Stat card | `.stat-card` + `.stat-icon-*` + `.stat-value` + `.stat-label` | KPI/metric cards |
+| Section banner | `.section-card` | Info/summary banners within pages |
+| Shortcut card | `.shortcut-card` | Quick-access link groups |
+
+### Page header pattern (mandatory for all pages)
+```html
+{% block page_title %}
+<div class="page-header">
+  <div class="page-header-title">
+    <span class="page-header-section">Section</span>
+    <h1 class="page-header-name">Page Name</h1>
+  </div>
+  <div class="page-header-actions">
+    <a href="..." class="btn-header-icon" title="Voltar">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
+      <i class="bi bi-arrows-fullscreen"></i>
+    </button>
+  </div>
+</div>
+{% endblock %}
+```
+- No logout button in individual page headers — it lives in the layout's desktop header (`app.html`)
+- No verbose text labels like "SMT Manager - Page" — section label + page name only
+
+### Layout rules
+- Sidebar: dark `#0f172a`, nav links with left-accent indicator for active state
+- Desktop header: white, fixed, shows `username | logout` on the right via `app.html` layout
+- Mobile header: dark `#0f172a`, page title white, logout `btn-outline-light`
+- Background: `#f1f5f9` (never `#f8f9fa`)
+- Cards: `border-color: var(--border)`, `border-radius: 12px` — always consistent
+- Forms: `border-radius: 8px`, labels `0.8rem 600 weight`, focus with soft blue glow
+- Buttons: `border-radius: 8px` (default), `6px` (sm), `10px` (lg)
+- Tables (non-compact): headers uppercase, `letter-spacing: 0.5px`, muted background
+
+### What to check on every template task
+1. Does the `{% block page_title %}` use `.page-header`? If not, update it.
+2. Are form fields organized in a responsive grid with proper `<label>` tags?
+3. Are cards using `var(--border)` and consistent `border-radius`?
+4. Are there hardcoded shadows (`shadow-sm`) where `border + border-radius` would be cleaner?
+5. Are buttons sized and styled consistently (`btn-sm` for secondary actions)?
+
+---
+
 ## Architectural Change Policy
 Changes to Services, Controllers, Models, Repositories, or APIs are allowed **only when necessary for the task objective**, in a controlled manner with explicit technical justification. System integrity is non-negotiable.
 
