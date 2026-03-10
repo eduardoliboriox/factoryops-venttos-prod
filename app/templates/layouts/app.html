@@ -135,11 +135,14 @@
         {% block page_title %}{% endblock %}
       </div>
       {% if current_user.is_authenticated %}
-      <a href="{{ url_for('auth.logout') }}"
-         class="btn-header-icon flex-shrink-0 ms-2"
-         title="Sair">
-        <i class="bi bi-box-arrow-right"></i>
-      </a>
+      <div class="desktop-user-area">
+        <span class="desktop-username">{{ current_user.username }}</span>
+        <a href="{{ url_for('auth.logout') }}"
+           class="btn-header-icon"
+           title="Sair">
+          <i class="bi bi-box-arrow-right"></i>
+        </a>
+      </div>
       {% endif %}
     </header>
 
