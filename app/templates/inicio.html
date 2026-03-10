@@ -3,25 +3,15 @@
 {% block title %}Início · {{ APP_NAME }}{% endblock %}
 
 {% block page_title %}
-<div class="d-flex align-items-center w-100">
-  <span class="me-auto">
-   SMT Manager - Início
-  </span>
-
-  <div class="ms-auto d-flex gap-2">
-    <a href="{{ url_for('pages.inicio') }}" class="btn btn-outline-secondary">
-      <i class="bi bi-arrow-left"></i> Voltar
-    </a>
-
-    <button class="btn btn-outline-purple"
-            type="button"
-            onclick="toggleFullscreen()">
+<div class="page-header">
+  <div class="page-header-title">
+    <span class="page-header-section">SMT Manager</span>
+    <h1 class="page-header-name">Início</h1>
+  </div>
+  <div class="page-header-actions">
+    <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
       <i class="bi bi-arrows-fullscreen"></i>
     </button>
-
-    <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-danger">
-      <i class="bi bi-box-arrow-right"></i> Sair
-    </a>
   </div>
 </div>
 {% endblock %}
@@ -30,161 +20,103 @@
 
 <div class="container-fluid p-0">
 
-  <div class="card border-0 shadow-sm mb-3">
-    <div class="card-body">
-      <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
-        <div>
-          <h5 class="mb-1 fw-bold">{{ APP_NAME }}</h5>
-          <div class="text-muted small">
-            Bem-vindo{% if current_user.is_authenticated %}, {{ current_user.username }}{% endif %}.
-          </div>
+  <div class="section-card mb-3">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+      <div>
+        <div class="fw-bold">{{ APP_NAME }}</div>
+        <div class="text-muted small mt-1">
+          Bem-vindo{% if current_user.is_authenticated %}, {{ current_user.username }}{% endif %}.
         </div>
-
-        <div class="d-flex gap-2 flex-wrap">
-          <a class="btn btn-outline-secondary"
-             href="{{ url_for('auth.my_profile') }}">
-            <i class="bi bi-person-circle me-1"></i>
-            Meu Perfil
-          </a>
-
-          {# =========================================================
-             DASHBOARD (GERAL) — TEMPORARIAMENTE DESABILITADO
-             Motivo: página dashboard.html não será usada agora.
-             Para reativar, remova este comentário.
-             ========================================================= #}
-          {#
-          <a class="btn btn-primary"
-             href="{{ url_for('pages.dashboard') }}">
-            <i class="bi bi-graph-up me-1"></i>
-            Dashboard
-          </a>
-          #}
-
-          {% if current_user.is_authenticated and current_user.is_admin %}
-          <a class="btn btn-outline-dark"
-             href="{{ url_for('auth.admin_users') }}">
-            <i class="bi bi-person-check me-1"></i>
-            Aprovar usuários
-          </a>
-
-          <a class="btn btn-outline-dark"
-             href="{{ url_for('auth.admin_users_all') }}">
-            <i class="bi bi-people me-1"></i>
-            Todos os usuários
-          </a>
-          {% endif %}
-        </div>
+      </div>
+      <div class="d-flex gap-2 flex-wrap">
+        <a class="btn btn-sm btn-outline-secondary"
+           href="{{ url_for('auth.my_profile') }}">
+          <i class="bi bi-person-circle me-1"></i>Meu Perfil
+        </a>
+        {% if current_user.is_authenticated and current_user.is_admin %}
+        <a class="btn btn-sm btn-outline-dark"
+           href="{{ url_for('auth.admin_users') }}">
+          <i class="bi bi-person-check me-1"></i>Aprovar usuários
+        </a>
+        <a class="btn btn-sm btn-outline-dark"
+           href="{{ url_for('auth.admin_users_all') }}">
+          <i class="bi bi-people me-1"></i>Todos os usuários
+        </a>
+        {% endif %}
       </div>
     </div>
   </div>
 
-  <div class="card border-0 shadow-sm mb-3">
-    <div class="card-body">
-      <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
-        <div>
-          <div class="text-muted small mb-1">SMT</div>
-          <h5 class="fw-bold mb-0">Resumo do SMT</h5>
-          <div class="text-muted small mt-1">
-          </div>
-        </div>
-
-        <div class="text-muted small">
-          <i class="bi bi-clock-history me-1"></i>
-          Última atualização: <span id="homeLastUpdate">—</span>
-        </div>
+  <div class="section-card mb-3">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+      <div>
+        <div class="fw-semibold">Resumo do SMT</div>
+      </div>
+      <div class="text-muted small">
+        <i class="bi bi-clock-history me-1"></i>
+        Última atualização: <span id="homeLastUpdate">—</span>
       </div>
     </div>
   </div>
 
-  <div class="row g-3 mb-3 mt-0">
+  <div class="row g-3 mb-3">
     <div class="col-md-4">
-      <div class="card p-3 shadow-sm h-100">
-        <div class="d-flex align-items-center justify-content-between">
-          <div>
-            <h6 class="text-muted mb-1">Modelos cadastrados</h6>
-            <div id="cardModelos" class="display-6 fw-bold">—</div>
-          </div>
-          <div class="fs-2 text-muted">
-            <i class="bi bi-collection"></i>
-          </div>
+      <div class="stat-card">
+        <div class="stat-icon stat-icon-blue">
+          <i class="bi bi-collection"></i>
         </div>
+        <div id="cardModelos" class="stat-value">—</div>
+        <div class="stat-label">Modelos cadastrados</div>
       </div>
     </div>
-
     <div class="col-md-4">
-      <div class="card p-3 shadow-sm h-100">
-        <div class="d-flex align-items-center justify-content-between">
-          <div>
-            <h6 class="text-muted mb-1">Média de meta/hora</h6>
-            <div id="cardMediaMeta" class="display-6 fw-bold">—</div>
-          </div>
-          <div class="fs-2 text-muted">
-            <i class="bi bi-speedometer2"></i>
-          </div>
+      <div class="stat-card">
+        <div class="stat-icon stat-icon-green">
+          <i class="bi bi-speedometer2"></i>
         </div>
+        <div id="cardMediaMeta" class="stat-value">—</div>
+        <div class="stat-label">Média de meta/hora</div>
       </div>
     </div>
-
     <div class="col-md-4">
-      <div class="card p-3 shadow-sm h-100">
-        <div class="d-flex align-items-center justify-content-between">
-          <div>
-            <h6 class="text-muted mb-1">Último modelo</h6>
-            <div id="cardUltimo" class="display-6 fw-bold">—</div>
-          </div>
-          <div class="fs-2 text-muted">
-            <i class="bi bi-box-seam"></i>
-          </div>
+      <div class="stat-card">
+        <div class="stat-icon stat-icon-slate">
+          <i class="bi bi-box-seam"></i>
         </div>
+        <div id="cardUltimo" class="stat-value" style="font-size:1.4rem;">—</div>
+        <div class="stat-label">Último modelo</div>
       </div>
     </div>
   </div>
 
   <div class="row g-3">
-
     <div class="col-12 col-lg-8">
-      <div class="card h-100 shadow-sm">
-        <div class="card-body">
-          <div class="d-flex align-items-start justify-content-between">
-            <div>
-              <div class="text-muted small mb-1">SMT Manager</div>
-              <h5 class="fw-bold mb-2">Atalhos SMT</h5>
-              <p class="text-muted mb-3">
-                Acesso rápido às telas principais do SMT.
-              </p>
-            </div>
-            <div class="fs-3 text-muted">
-              <i class="bi bi-lightning-charge"></i>
-            </div>
+      <div class="shortcut-card">
+        <div class="shortcut-card-header">
+          <div>
+            <div class="fw-bold mb-1">Atalhos SMT</div>
+            <div class="text-muted small">Acesso rápido às telas principais.</div>
           </div>
-
-          <div class="d-flex gap-2 flex-wrap">
-            <a class="btn btn-primary"
-               href="{{ url_for('pages.smt_modelos') }}">
-              <i class="bi bi-table me-1"></i>
-              Modelos
-            </a>
-
-            <a class="btn btn-warning text-white"
-               href="{{ url_for('pages.smt_cadastro') }}">
-              <i class="bi bi-plus-lg me-1"></i>
-              Cadastro
-            </a>
-
-            <a class="btn btn-success"
-               href="{{ url_for('pages.smt_calcular') }}">
-              <i class="bi bi-calculator me-1"></i>
-              Cálculos
-            </a>
+          <div class="shortcut-icon">
+            <i class="bi bi-lightning-charge"></i>
           </div>
-
-          <hr class="my-3">
-
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+          <a class="btn btn-primary btn-sm"
+             href="{{ url_for('pages.smt_modelos') }}">
+            <i class="bi bi-table me-1"></i>Modelos
+          </a>
+          <a class="btn btn-warning btn-sm text-white"
+             href="{{ url_for('pages.smt_cadastro') }}">
+            <i class="bi bi-plus-lg me-1"></i>Cadastro
+          </a>
+          <a class="btn btn-success btn-sm"
+             href="{{ url_for('pages.smt_calcular') }}">
+            <i class="bi bi-calculator me-1"></i>Cálculos
+          </a>
         </div>
       </div>
     </div>
-
-
   </div>
 
 
