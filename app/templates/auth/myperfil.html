@@ -89,7 +89,7 @@
   <form method="post">
 
     <div class="fw-bold mb-1 mt-2">Dados do usuário</div>
-    <div class="text-muted small mb-3"> </div>
+    <div class="text-muted small mb-3">Informações da conta — somente leitura</div>
 
     <div class="row g-3 mb-4">
       <div class="col-md-6">
@@ -121,45 +121,81 @@
     <hr class="my-4">
     <div class="fw-bold mb-3">Contato & Endereço</div>
 
-    <input name="phone"
-           data-mask="phone"
-           class="form-control mb-2"
-           placeholder="(99) 99999-9999"
-           value="{{ profile.phone if profile }}">
+    <div class="row g-3 mb-4">
+      <div class="col-md-6">
+        <label class="form-label">Telefone</label>
+        <input name="phone" data-mask="phone" class="form-control"
+               placeholder="(99) 99999-9999"
+               value="{{ profile.phone if profile }}">
+      </div>
 
-    <input name="street" class="form-control mb-2" placeholder="Rua"
-           value="{{ profile.street if profile }}">
-    <input name="number" class="form-control mb-2" placeholder="Número"
-           value="{{ profile.number if profile }}">
-    <input name="neighborhood" class="form-control mb-2" placeholder="Bairro"
-           value="{{ profile.neighborhood if profile }}">
-    <input name="city" class="form-control mb-2" placeholder="Cidade"
-           value="{{ profile.city if profile }}">
-    <input name="state" class="form-control mb-2" placeholder="UF"
-           value="{{ profile.state if profile }}">
-    <input name="zip_code" data-mask="zip" class="form-control mb-2"
-           placeholder="00000-000"
-           value="{{ profile.zip_code if profile }}">
-    <input name="complement" class="form-control mb-2" placeholder="Complemento"
-           value="{{ profile.complement if profile }}">
-    <input name="reference" class="form-control mb-4" placeholder="Referência"
-           value="{{ profile.reference if profile }}">
+      <div class="col-md-8">
+        <label class="form-label">Rua</label>
+        <input name="street" class="form-control" placeholder="Rua"
+               value="{{ profile.street if profile }}">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Número</label>
+        <input name="number" class="form-control" placeholder="Número"
+               value="{{ profile.number if profile }}">
+      </div>
+
+      <div class="col-md-5">
+        <label class="form-label">Bairro</label>
+        <input name="neighborhood" class="form-control" placeholder="Bairro"
+               value="{{ profile.neighborhood if profile }}">
+      </div>
+      <div class="col-md-5">
+        <label class="form-label">Cidade</label>
+        <input name="city" class="form-control" placeholder="Cidade"
+               value="{{ profile.city if profile }}">
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">UF</label>
+        <input name="state" class="form-control" placeholder="UF"
+               value="{{ profile.state if profile }}">
+      </div>
+
+      <div class="col-md-4">
+        <label class="form-label">CEP</label>
+        <input name="zip_code" data-mask="zip" class="form-control"
+               placeholder="00000-000"
+               value="{{ profile.zip_code if profile }}">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Complemento</label>
+        <input name="complement" class="form-control" placeholder="Complemento"
+               value="{{ profile.complement if profile }}">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Referência</label>
+        <input name="reference" class="form-control" placeholder="Referência"
+               value="{{ profile.reference if profile }}">
+      </div>
+    </div>
 
     <hr class="my-4">
     <div class="fw-bold mb-3">Alterar senha</div>
 
-    <input type="password" name="current_password"
-           class="form-control mb-2" placeholder="Senha atual">
+    <div class="row g-3 mb-2">
+      <div class="col-12">
+        <label class="form-label">Senha atual</label>
+        <input type="password" name="current_password"
+               class="form-control" placeholder="Digite a senha atual">
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Nova senha</label>
+        <input type="password" name="new_password"
+               class="form-control" placeholder="Nova senha">
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Confirmar nova senha</label>
+        <input type="password" name="confirm_password"
+               class="form-control" placeholder="Confirme a senha">
+      </div>
+    </div>
 
-    <input type="password" name="new_password"
-           class="form-control mb-2" placeholder="Nova senha">
-
-    <input type="password" name="confirm_password"
-           class="form-control mb-3" placeholder="Confirmar nova senha">
-
-    <small class="text-muted d-block mb-3">
-      Deixe em branco para não alterar
-    </small>
+    <div class="text-muted small mb-3">Deixe em branco para não alterar</div>
 
     <hr class="my-4">
     <button class="btn btn-primary px-4">
