@@ -8,6 +8,12 @@
         action="{{ url_for('auth.login_local') }}"
         class="mobile-form">
     
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }} text-center py-2 mb-3">{{ message }}</div>
+      {% endfor %}
+    {% endwith %}
+
     <button
       id="install-app-btn"
       type="button"
