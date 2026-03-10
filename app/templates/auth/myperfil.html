@@ -7,23 +7,18 @@
 {% endblock %}
 
 {% block page_title %}
-<div class="d-flex align-items-center w-100">
-  <span class="me-auto">
-    SMT Manager · Meu Perfil
-  </span>
-
-  <div class="ms-auto d-flex gap-2">
-    <a href="{{ url_for('pages.inicio') }}" class="btn btn-outline-secondary">
-      <i class="bi bi-arrow-left"></i> Voltar
+<div class="page-header">
+  <div class="page-header-title">
+    <span class="page-header-section">Conta</span>
+    <h1 class="page-header-name">Meu Perfil</h1>
+  </div>
+  <div class="page-header-actions">
+    <a href="{{ url_for('pages.inicio') }}" class="btn-header-icon" title="Voltar">
+      <i class="bi bi-arrow-left"></i>
     </a>
-
-    <button class="btn btn-outline-purple" onclick="toggleFullscreen()">
+    <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
       <i class="bi bi-arrows-fullscreen"></i>
     </button>
-
-    <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-danger">
-      <i class="bi bi-box-arrow-right"></i> Sair
-    </a>
   </div>
 </div>
 {% endblock %}
@@ -33,7 +28,7 @@
 {% set default_avatar = url_for('static', filename='images/users/default.png') %}
 {% set current_avatar = user.profile_image if user.profile_image else default_avatar %}
 
-<div class="card shadow-sm p-4" style="max-width: 640px">
+<div class="card p-4" style="max-width: 680px">
 
   {% with messages = get_flashed_messages(with_categories=true) %}
     {% for category, message in messages %}
@@ -93,7 +88,8 @@
 
   <form method="post">
 
-    <h5 class="mb-3">Dados do usuário</h5>
+    <div class="fw-bold mb-1 mt-2">Dados do usuário</div>
+    <div class="text-muted small mb-3">Informações da conta (somente leitura)</div>
 
     <div class="row g-3 mb-4">
       <div class="col-md-6">
@@ -122,7 +118,8 @@
       </div>
     </div>
 
-    <h5 class="mb-3">Contato & Endereço</h5>
+    <hr class="my-4">
+    <div class="fw-bold mb-3">Contato & Endereço</div>
 
     <input name="phone"
            data-mask="phone"
@@ -148,7 +145,8 @@
     <input name="reference" class="form-control mb-4" placeholder="Referência"
            value="{{ profile.reference if profile }}">
 
-    <h5 class="mb-3">Alterar senha</h5>
+    <hr class="my-4">
+    <div class="fw-bold mb-3">Alterar senha</div>
 
     <input type="password" name="current_password"
            class="form-control mb-2" placeholder="Senha atual">
@@ -163,8 +161,9 @@
       Deixe em branco para não alterar
     </small>
 
-    <button class="btn btn-outline-success">
-      Salvar alterações
+    <hr class="my-4">
+    <button class="btn btn-primary px-4">
+      <i class="bi bi-check2 me-1"></i> Salvar alterações
     </button>
 
   </form>

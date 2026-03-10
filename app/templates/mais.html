@@ -6,25 +6,18 @@
 {% endblock %}
 
 {% block page_title %}
-<div class="d-flex align-items-center w-100">
-  <span class="me-auto">
-    SMT Manager - Mais
-  </span>
-
-  <div class="ms-auto d-flex gap-2">
-    <a href="{{ url_for('pages.inicio') }}" class="btn btn-outline-secondary">
-      <i class="bi bi-arrow-left"></i> Voltar
+<div class="page-header">
+  <div class="page-header-title">
+    <span class="page-header-section">SMT</span>
+    <h1 class="page-header-name">Mais</h1>
+  </div>
+  <div class="page-header-actions">
+    <a href="{{ url_for('pages.inicio') }}" class="btn-header-icon" title="Voltar">
+      <i class="bi bi-arrow-left"></i>
     </a>
-
-    <button class="btn btn-outline-purple"
-            type="button"
-            onclick="toggleFullscreen()">
+    <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
       <i class="bi bi-arrows-fullscreen"></i>
     </button>
-
-    <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-danger">
-      <i class="bi bi-box-arrow-right"></i> Sair
-    </a>
   </div>
 </div>
 {% endblock %}
