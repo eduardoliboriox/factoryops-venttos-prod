@@ -731,3 +731,26 @@ body.fullscreen-mode .content {
   border-radius: 12px;
   padding: 16px 20px;
 }
+
+/* =========================
+   DESKTOP HEADER — USER AREA
+========================= */
+.desktop-user-area {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  margin-left: 12px;
+  padding-left: 12px;
+  border-left: 1px solid var(--border);
+}
+
+.desktop-username {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  white-space: nowrap;
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
