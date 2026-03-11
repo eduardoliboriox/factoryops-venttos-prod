@@ -31,7 +31,7 @@ The project strictly follows **MVC**. Every architectural decision must respect 
 - Deploy controlled by branch
 
 | Environment | Branch | Database |
-|---|---|---|---|
+|---|---|---|
 | Production | `main` | banco_prod |
 | Development | `develop` | banco_test |
 
