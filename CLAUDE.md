@@ -30,10 +30,10 @@ The project strictly follows **MVC**. Every architectural decision must respect 
 - 2 independent services in the same repository
 - Deploy controlled by branch
 
-| Environment | Service | Branch | Database |
+| Environment | Branch | Database |
 |---|---|---|---|
-| Production | smt-manager-venttos-prod | `main` | banco_prod |
-| Development | smt-manager-ventto-develop | `develop` | banco_test |
+| Production | `main` | banco_prod |
+| Development | `develop` | banco_test |
 
 ---
 
