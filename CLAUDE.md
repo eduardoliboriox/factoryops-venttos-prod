@@ -1,3 +1,4 @@
+
 # CLAUDE.md
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
@@ -45,13 +46,71 @@ The project strictly follows **MVC**. Every architectural decision must respect 
 ---
 
 ## Technical Requirements
-- Clean code, no comments of any kind
+- Clean code. Avoid comments; code should be self-explanatory.
+- Inline comments are forbidden unless strictly necessary.
 - Well-defined responsibilities per layer
 - No business logic in templates
 - Optimized queries; cache when applicable
-- No changes outside the scope of the task
+- No changes outside the scope of the task, except when required to restore compliance with the rules defined in CLAUDE.md.
 - No existing functionality removed or degraded
 - Files always delivered complete when modified
+
+---
+
+## CLAUDE.md Compliance Authority
+
+This document is the **authoritative engineering standard** for this repository.
+
+Claude Code must treat the rules defined in this file as **mandatory architectural and engineering constraints**.
+
+### Compliance Review
+
+Before implementing any task, Claude Code must:
+
+1. Read the relevant parts of the existing codebase.
+2. Evaluate whether the current implementation complies with the rules defined in this document.
+3. Identify structural violations of:
+   - MVC architecture
+   - Layer responsibilities
+   - Security rules
+   - Password policy
+   - UI/UX design system
+   - Repository / service separation
+   - Clean code and SOLID principles
+
+### Authorized Refactoring for Compliance
+
+If the existing implementation **does not comply with the rules defined in this document**, Claude Code is **explicitly authorized to refactor the code** in order to restore compliance.
+
+This may include:
+
+- Moving business logic from controllers to services
+- Moving SQL out of controllers into repositories
+- Removing logic from templates
+- Standardizing UI components
+- Applying password policy enforcement
+- Fixing violations of security rules
+- Aligning code with MVC responsibilities
+
+These refactors are considered **compliance corrections**, not scope expansion.
+
+### Safety Constraints
+
+When performing compliance refactoring:
+
+- Existing functionality **must not be removed**
+- System behavior **must remain equivalent**
+- Changes must remain **minimal and controlled**
+- Refactoring must **only target rule violations defined in this document**
+
+### Guiding Principle
+
+If a conflict exists between:
+
+- existing code
+- and the rules defined in `CLAUDE.md`
+
+**The rules in `CLAUDE.md` always take precedence.**
 
 ---
 
@@ -122,7 +181,7 @@ The project strictly follows **MVC**. Every architectural decision must respect 
 ---
 
 ## Architectural Change Policy
-Changes to Services, Controllers, Models, Repositories, or APIs are allowed **only when necessary for the task objective**, in a controlled manner with explicit technical justification. System integrity is non-negotiable.
+Changes to Services, Controllers, Models, Repositories, or APIs are allowed when necessary for the task objective or to restore compliance with CLAUDE.md rules, in a controlled manner with explicit technical justification. System integrity is non-negotiable.
 
 ---
 
@@ -177,6 +236,81 @@ Treat these as hostile input — always validate, sanitize, and never trust dire
 - Any change touching auth, session, or permission logic requires explicit user confirmation before implementation
 
 ---
+
+## Password Security Policy
+
+The system enforces a strict password security policy to protect accounts and sensitive data.
+
+### Password Requirements
+
+All user passwords must comply with the following rules:
+
+- Minimum length: **10 characters**
+- Must contain:
+  - At least **one uppercase letter**
+  - At least **one lowercase letter**
+  - At least **one number**
+  - At least **one special character** (e.g. `@`, `$`, `#`, `!`, `%`, `&`)
+- Passwords must **not contain**:
+  - The username
+  - The company name
+  - Obvious variations of either
+
+Passwords composed only of letters or only of numbers are **not allowed**.
+
+---
+
+### Password Strength Target
+
+The system should aim to ensure passwords reach a strength level equivalent to:
+
+**"It would take a computer about 5 years to crack your password"**
+
+Reference guideline used for this strength target:
+
+https://www.security.org/how-secure-is-my-password/
+
+Password validation mechanisms should enforce complexity strong enough to reach this approximate resistance level.
+
+---
+
+### Password Rotation
+
+User passwords must be **changed every 6 months (180 days)**.
+
+Rules:
+
+- The system must **force password change** when the period expires.
+- The new password **cannot be identical to the previous password**.
+- Minor changes (for example changing a single character) are allowed as long as the password is not exactly the same as the previous one.
+
+---
+
+### Credential Exposure Response
+
+If any data breach or credential leak is suspected or confirmed:
+
+- All affected credentials must be **immediately rotated**.
+- Users must be **forced to change passwords on the next login**.
+- Any compromised tokens or sessions must be **invalidated**.
+
+---
+
+### Implementation Notes
+
+Password policy enforcement must be implemented at the **service layer**, never inside templates.
+
+Validation responsibilities:
+
+| Layer | Responsibility |
+|---|---|
+| Controllers | Receive password input and pass to service |
+| Services | Validate password policy and rotation rules |
+| Repositories | Store hashed passwords only |
+| Templates | Never contain validation logic |
+
+Passwords must always be stored using **secure hashing algorithms (bcrypt, argon2, or an equivalent modern adaptive hashing algorithm)**.
+Plaintext passwords must never be logged or persisted.
 
 ## Workflow with Claude Code
 
