@@ -1,4 +1,3 @@
-
 # CLAUDE.md
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
@@ -237,6 +236,470 @@ Treat these as hostile input — always validate, sanitize, and never trust dire
 
 ---
 
+Abaixo está um **arquivo completo pronto para adicionar ao seu `CLAUDE.md`**, focado exatamente no que você quer:
+
+* backup **seguro**
+* **não alterar nada no banco**
+* evitar **todos os erros comuns**
+* garantir **restauração confiável**
+* manter **simplicidade operacional**
+
+O texto é **normativo**, no mesmo estilo do seu CLAUDE.md.
+
+---
+
+# Database Backup & Disaster Recovery Policy
+
+The system must implement a **safe, read-only, and reliable database backup mechanism** to guarantee that all data can be recovered in case of operational failure.
+
+Backups must **never modify the database** and must operate strictly in **read-only mode**.
+
+The database currently runs on **PostgreSQL hosted on Railway**.
+
+Primary backup tool:
+
+* `pg_dump`
+
+Backup generation must always use PostgreSQL native tools to guarantee compatibility with restoration procedures.
+
+---
+
+# Fundamental Principle
+
+Database backups must **never change the state of the database**.
+
+Backup operations must always be **read-only operations**.
+
+Tools such as `pg_dump` operate by performing internal `SELECT` queries to export database structure and data.
+
+Therefore:
+
+```id="backup_readonly_principle"
+Backup operations must not execute INSERT, UPDATE, DELETE, ALTER, or DROP statements.
+```
+
+The backup process must only **extract database information** and write it to a file.
+
+---
+
+# PostgreSQL Connection
+
+Backups must support PostgreSQL connection URLs.
+
+Example connection string:
+
+```id="postgres_connection_example"
+postgresql://user:password@host:port/database
+```
+
+Example Railway connection:
+
+```id="railway_connection_example"
+postgresql://postgres:*****@caboose.proxy.rlwy.net:11094/railway
+```
+
+Backup commands must internally use this connection string.
+
+Example concept:
+
+```id="pg_dump_command_example"
+pg_dump DATABASE_URL
+```
+
+---
+
+# Backup Architecture (MVC Responsibility)
+
+Backup infrastructure must follow the MVC architecture defined in this repository.
+
+| Layer        | Responsibility                                        |
+| ------------ | ----------------------------------------------------- |
+| Controllers  | Admin interface and configuration endpoints           |
+| Services     | Backup execution, scheduling, retention, verification |
+| Repositories | Persist backup configuration and logs                 |
+| Templates    | Admin interface for monitoring and configuration      |
+
+Backup execution logic must **never exist in controllers or templates**.
+
+All backup orchestration must exist in the **service layer**.
+
+---
+
+# Backup Configuration Interface
+
+The system must include an administrative interface allowing configuration of backup execution.
+
+Suggested template location:
+
+```id="backup_template_path"
+app/templates/admin/backups.html
+```
+
+The interface must allow administrators to configure:
+
+| Field                   | Description                               |
+| ----------------------- | ----------------------------------------- |
+| Database connection URL | PostgreSQL connection string              |
+| Backup frequency        | daily, weekly, monthly, bimonthly, yearly |
+| Execution time          | hour and minute                           |
+| Retention policy        | number of days backups are preserved      |
+
+Only authorized administrators may configure backup behavior.
+
+---
+
+# Backup Scheduling
+
+The system must support scheduled backup execution.
+
+Supported frequencies:
+
+| Frequency | Description      |
+| --------- | ---------------- |
+| Daily     | once per day     |
+| Weekly    | once per week    |
+| Monthly   | once per month   |
+| Bimonthly | every two months |
+| Yearly    | once per year    |
+
+Scheduling mechanisms may include:
+
+* cron jobs
+* background workers
+* internal schedulers
+
+Scheduling logic must exist **within the service layer**.
+
+---
+
+# Backup Generation
+
+Backups must be generated using `pg_dump`.
+
+Example conceptual command:
+
+```id="pg_dump_pipeline"
+pg_dump DATABASE_URL | gzip > backup.sql.gz
+```
+
+Backup files must be **compressed** to reduce storage usage.
+
+File format:
+
+```id="backup_format"
+.sql.gz
+```
+
+Example filename:
+
+```id="backup_filename_example"
+backup_2026-03-13_02-00.sql.gz
+```
+
+Timestamped filenames prevent overwriting previous backups.
+
+---
+
+# Backup Storage Structure
+
+Backups must be stored using a structured directory layout.
+
+Suggested structure:
+
+```id="backup_directory_structure"
+/backups
+    /daily
+    /weekly
+    /monthly
+    /yearly
+```
+
+File paths must be **controlled by the application**.
+
+User input must never directly define filesystem paths.
+
+---
+
+# Backup Logging
+
+Every backup execution attempt must be recorded.
+
+Backup logs must contain:
+
+| Field         | Description           |
+| ------------- | --------------------- |
+| id            | unique identifier     |
+| timestamp     | execution time        |
+| status        | success or failure    |
+| file_path     | backup file location  |
+| size          | backup size           |
+| duration      | execution duration    |
+| checksum      | file integrity hash   |
+| error_message | failure reason if any |
+
+Logs must be persisted through the repository layer.
+
+---
+
+# Backup Integrity Verification
+
+Every generated backup must be verified.
+
+Immediately after backup generation, the system must compute a cryptographic checksum.
+
+Recommended algorithm:
+
+```id="checksum_algorithm"
+SHA-256
+```
+
+Example command:
+
+```id="checksum_command"
+sha256sum backup.sql.gz
+```
+
+Checksum values must be stored in backup logs.
+
+Integrity verification allows detection of corrupted backup files.
+
+---
+
+# Backup Encryption
+
+Backups must be encrypted before being stored or transferred externally.
+
+Recommended encryption standard:
+
+```id="backup_encryption_standard"
+AES-256
+```
+
+Example conceptual pipeline:
+
+```id="backup_encryption_pipeline"
+pg_dump → gzip → encryption → storage
+```
+
+Encryption example concept:
+
+```id="backup_encryption_command"
+pg_dump DATABASE_URL | gzip | openssl enc -aes-256-cbc > backup.sql.gz.enc
+```
+
+Encryption keys must:
+
+* never be stored in source code
+* be stored in environment variables or secret storage
+* never appear in logs
+
+---
+
+# Offsite Backup Storage
+
+Backups must never rely exclusively on the same infrastructure that hosts the database.
+
+A secondary **offsite backup location** must exist.
+
+Examples:
+
+* cloud object storage (S3 compatible)
+* encrypted remote storage
+* internal backup server
+* secure file storage system
+
+Backup pipeline:
+
+```id="offsite_backup_pipeline"
+backup generation
+↓
+checksum verification
+↓
+encryption
+↓
+offsite transfer
+```
+
+Offsite transfer success or failure must be logged.
+
+---
+
+# Backup Verification
+
+Backups must periodically be verified to ensure they are restorable.
+
+Verification methods include:
+
+| Method              | Description                          |
+| ------------------- | ------------------------------------ |
+| checksum validation | detect corruption                    |
+| metadata validation | confirm file size and structure      |
+| test restore        | restore backup to temporary database |
+
+At minimum, checksum validation must run automatically.
+
+Backups failing verification must be marked **invalid**.
+
+---
+
+# Backup Retention Policy
+
+Retention policies ensure storage does not grow indefinitely while preserving historical recovery capability.
+
+Default retention rules:
+
+| Backup Type | Retention  |
+| ----------- | ---------- |
+| Daily       | 30 days    |
+| Weekly      | 3 months   |
+| Monthly     | 1 year     |
+| Yearly      | indefinite |
+
+Retention cleanup must run automatically.
+
+The system must **never delete the most recent valid backup**.
+
+---
+
+# Disaster Recovery Requirement
+
+The system must always maintain the ability to restore the database after catastrophic failure.
+
+Possible failure scenarios:
+
+* accidental deletion
+* data corruption
+* infrastructure loss
+* hosting provider outage
+* deployment failures
+* security incidents
+
+Disaster recovery requires:
+
+| Requirement               | Description                                   |
+| ------------------------- | --------------------------------------------- |
+| recent backups            | backups exist within schedule                 |
+| offsite storage           | backups stored outside primary infrastructure |
+| integrity verification    | checksum validated                            |
+| restoration compatibility | restorable using PostgreSQL tools             |
+
+Example restore command:
+
+```id="restore_command_example"
+psql DATABASE_URL < backup.sql
+```
+
+Compressed restore:
+
+```id="restore_compressed_example"
+gunzip -c backup.sql.gz | psql DATABASE_URL
+```
+
+---
+
+# Failure Handling
+
+If any step in the backup pipeline fails, the system must:
+
+1. record the failure in backup logs
+2. preserve diagnostic information
+3. mark the backup as failed
+4. allow administrators to review errors
+
+Possible failure scenarios include:
+
+* `pg_dump` execution failure
+* disk storage errors
+* checksum mismatch
+* encryption failure
+* offsite transfer failure
+
+Failures must **never interrupt the normal operation of the database**.
+
+---
+
+# Security Requirements
+
+Backup infrastructure must follow strict security practices.
+
+The system must ensure:
+
+* database credentials never appear in logs
+* encryption keys are never stored in code
+* file paths are sanitized
+* shell commands are protected against injection
+
+User-provided values must never be executed directly in shell commands.
+
+---
+
+# Operational Safety Rule
+
+Backup operations must be designed with the assumption that infrastructure failures will occur.
+
+The objective of this system is to guarantee that:
+
+```id="data_recovery_objective"
+data can always be restored safely.
+```
+
+Backup capability is considered a **core operational responsibility** of the system.
+
+---
+
+# Mandatory Compliance Rule
+
+If automated backup infrastructure does not exist in the system, Claude Code is authorized to:
+
+* design backup services
+* implement backup scheduling
+* create backup configuration tables
+* implement backup logging
+* create administrative monitoring interfaces
+
+Backup functionality is considered **mandatory operational infrastructure**, not an optional feature.
+
+---
+
+# Backup Infrastructure Compliance Rule
+
+The backup policy defined in this document is **mandatory operational infrastructure**.
+
+If the current system **does not yet contain a backup mechanism**, Claude Code must treat this as a **compliance gap**.
+
+In this case, Claude Code is explicitly authorized to **design and implement the required backup infrastructure** in order to satisfy the rules defined in this document.
+
+This may include creating or refactoring the following components:
+
+| Component                  | Purpose                                               |
+| -------------------------- | ----------------------------------------------------- |
+| Backup service             | Execute database backup using `pg_dump`               |
+| Backup scheduler           | Run backups according to configured frequency         |
+| Backup repository          | Persist configuration and backup logs                 |
+| Backup configuration table | Store backup schedule and retention settings          |
+| Backup logs table          | Record backup execution results                       |
+| Admin backup interface     | Allow administrators to configure and monitor backups |
+
+Suggested interface location:
+
+```
+app/templates/admin/backups.html
+```
+
+The interface must provide:
+
+* backup configuration
+* backup history
+* execution status
+* file download access
+* verification status
+
+If existing code conflicts with the backup policy defined in this document, **the rules in `CLAUDE.md` take precedence** and the code must be refactored to restore compliance.
+
+Backup infrastructure is considered **essential operational safety functionality** and must always exist in production systems.
+
+---
+
 ## Password Security Policy
 
 The system enforces a strict password security policy to protect accounts and sensitive data.
@@ -368,3 +831,6 @@ Do not suggest next steps, improvements, or additional tasks. The task ends afte
 - Always rebase on `origin/main` before pushing (Step 6) — PRs target main directly
 - Never merge `main` or `develop` into the feature branch — always rebase
 - Never use `git push --force` without explicit authorization from the user
+
+   
+   
