@@ -120,6 +120,16 @@
 
                     </select>
                   </form>
+
+                  <button type="button"
+                          class="btn btn-sm btn-outline-danger ms-1"
+                          title="Excluir usuário"
+                          data-bs-toggle="modal"
+                          data-bs-target="#modalDeleteUser"
+                          data-user-id="{{ u.id }}"
+                          data-user-name="{{ u.username }}">
+                    <i class="bi bi-trash"></i>
+                  </button>
                 {% endif %}
 
               {% endif %}
@@ -135,6 +145,29 @@
   </div>
 </div>
 
+<div class="modal fade" id="modalDeleteUser" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title text-danger"><i class="bi bi-exclamation-triangle me-2"></i>Excluir usuário</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p>Tem certeza que deseja excluir o usuário <strong id="deleteUserName"></strong>?</p>
+        <p class="text-muted small">Esta ação é irreversível. O registro será removido permanentemente do banco de dados.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <form id="formDeleteUser" method="post" class="d-inline">
+          <button type="submit" class="btn btn-danger">
+            <i class="bi bi-trash me-1"></i>Excluir
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
 {% endblock %}
 
 {% block scripts %}
@@ -143,15 +176,26 @@
 <script>
 (function () {
   const input = document.getElementById("search");
-  if (!input) return;
-
-  input.addEventListener("input", function () {
-    const value = (this.value || "").toLowerCase();
-    document.querySelectorAll("#usersTable tr").forEach(row => {
-      row.style.display = row.innerText.toLowerCase().includes(value)
-        ? "" : "none";
+  if (input) {
+    input.addEventListener("input", function () {
+      const value = (this.value || "").toLowerCase();
+      document.querySelectorAll("#usersTable tr").forEach(row => {
+        row.style.display = row.innerText.toLowerCase().includes(value) ? "" : "none";
+      });
     });
-  });
+  }
+
+  const modal = document.getElementById("modalDeleteUser");
+  if (modal) {
+    modal.addEventListener("show.bs.modal", function (e) {
+      const btn = e.relatedTarget;
+      const userId = btn.getAttribute("data-user-id");
+      const userName = btn.getAttribute("data-user-name");
+      document.getElementById("deleteUserName").textContent = userName;
+      document.getElementById("formDeleteUser").action =
+        "/auth/admin/users/" + userId + "/delete";
+    });
+  }
 })();
 </script>
 {% endblock %}

@@ -20,6 +20,7 @@ from app.auth.repository import (
     list_pending_users,
     approve_user,
     deny_user,
+    delete_user,
     list_all_users,
     get_user_by_id,
     get_owner_user_id,
@@ -304,6 +305,28 @@ def my_profile():
         profile=profile,
         active_menu="perfil"
     )
+
+@bp.route("/admin/users/<int:user_id>/delete", methods=["POST"])
+@login_required
+@admin_required
+def delete_user_route(user_id):
+    owner_id = get_owner_user_id()
+    if owner_id is not None and user_id == owner_id:
+        flash("A conta OWNER não pode ser excluída.", "danger")
+        return redirect(url_for("auth.admin_users_all"))
+
+    if current_user.id == user_id:
+        flash("Você não pode excluir sua própria conta.", "danger")
+        return redirect(url_for("auth.admin_users_all"))
+
+    try:
+        delete_user(user_id)
+        flash("Usuário excluído com sucesso.", "success")
+    except Exception:
+        flash("Não foi possível excluir o usuário. Verifique dependências no banco.", "danger")
+
+    return redirect(url_for("auth.admin_users_all"))
+
 
 @bp.route("/admin/users/<int:user_id>/role", methods=["POST"])
 @login_required

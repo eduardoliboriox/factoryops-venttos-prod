@@ -1,0 +1,152 @@
+{% extends "layouts/app.html" %}
+{% block title %}Suporte Especializado{% endblock %}
+
+{% block page_title %}
+<div class="page-header">
+  <div class="page-header-title">
+    <span class="page-header-section">Suporte</span>
+    <h1 class="page-header-name">Suporte Especializado</h1>
+  </div>
+  <div class="page-header-actions">
+    <a href="{{ url_for('pages.inicio') }}" class="btn-header-icon" title="Voltar">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
+      <i class="bi bi-arrows-fullscreen"></i>
+    </button>
+  </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+.chat-wrapper {
+  max-width: 720px;
+  margin: 0 auto;
+}
+.chat-messages {
+  min-height: 320px;
+  max-height: 480px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 12px 12px 0 0;
+}
+.chat-bubble {
+  max-width: 78%;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  word-break: break-word;
+}
+.chat-bubble.user {
+  align-self: flex-end;
+  background: var(--primary);
+  color: #fff;
+  border-bottom-right-radius: 4px;
+}
+.chat-bubble.support {
+  align-self: flex-start;
+  background: var(--card);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-bottom-left-radius: 4px;
+}
+.chat-bubble .bubble-meta {
+  font-size: 0.7rem;
+  opacity: 0.65;
+  margin-top: 4px;
+}
+.chat-input-area {
+  display: flex;
+  gap: 8px;
+  padding: 12px 16px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 12px 12px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+  <div class="section-card mb-4">
+    <div class="d-flex align-items-center justify-content-between">
+      <div>
+        <div class="fw-semibold">Suporte Especializado</div>
+        <div class="text-muted small mt-1">Converse diretamente com o responsável pelo sistema</div>
+      </div>
+      <div class="shortcut-icon">
+        <i class="bi bi-headset"></i>
+      </div>
+    </div>
+  </div>
+
+  <div class="chat-wrapper">
+
+    {% if not ticket %}
+    <div class="chat-messages" id="chatMessages">
+      <div class="text-center text-muted my-auto py-4">
+        <i class="bi bi-exclamation-circle fs-2 d-block mb-2 opacity-25"></i>
+        <p class="small mb-0">Funcionalidade indisponível.</p>
+        <p class="small">Execute a migração 002 no banco de dados para ativar o suporte especializado.</p>
+      </div>
+    </div>
+    {% else %}
+    <div class="chat-messages" id="chatMessages">
+      {% if not messages %}
+        <div class="text-center text-muted my-auto py-4">
+          <i class="bi bi-chat-dots fs-2 d-block mb-2 opacity-25"></i>
+          <p class="small mb-0">Nenhuma mensagem ainda. Envie sua dúvida abaixo.</p>
+        </div>
+      {% endif %}
+
+      {% for msg in messages %}
+        <div class="chat-bubble {{ 'support' if msg.is_support else 'user' }}">
+          {{ msg.mensagem }}
+          <div class="bubble-meta">
+            {% if msg.is_support %}Suporte{% else %}{{ msg.username or 'Você' }}{% endif %}
+            &middot; {{ msg.created_at.strftime('%d/%m %H:%M') if msg.created_at else '' }}
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+
+    <form method="post" action="{{ url_for('pages.suporte_especializado') }}" class="chat-input-area">
+      <input type="text"
+             name="mensagem"
+             class="form-control"
+             placeholder="Digite sua mensagem..."
+             autocomplete="off"
+             required>
+      <button type="submit" class="btn btn-primary px-3">
+        <i class="bi bi-send"></i>
+      </button>
+    </form>
+    {% endif %}
+
+  </div>
+
+  <p class="text-muted small text-center mt-3">
+    <i class="bi bi-shield-check me-1"></i>
+    Suas mensagens são privadas e acessíveis apenas ao responsável pelo sistema.
+  </p>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  const msgs = document.getElementById("chatMessages");
+  if (msgs) msgs.scrollTop = msgs.scrollHeight;
+})();
+</script>
+{% endblock %}

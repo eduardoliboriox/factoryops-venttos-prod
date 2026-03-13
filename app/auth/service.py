@@ -32,7 +32,7 @@ ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "webp"}
 # OAUTH
 # =====================================================
 def get_or_create_user(profile, provider):
-    provider_id = profile["id"]
+    provider_id = str(profile["id"])
     email = profile["email"]
     username = email.split("@")[0]
 

@@ -1,0 +1,31 @@
+{% extends "layouts/app.html" %}
+{% block title %}Controle de OPs{% endblock %}
+
+{% block page_title %}
+<div class="page-header">
+  <div class="page-header-title">
+    <span class="page-header-section">PCP</span>
+    <h1 class="page-header-name">Controle de OPs</h1>
+  </div>
+  <div class="page-header-actions">
+    <a href="{{ url_for('pages.inicio') }}" class="btn-header-icon" title="Voltar">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
+      <i class="bi bi-arrows-fullscreen"></i>
+    </button>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="under-construction-wrapper">
+  <div class="under-construction-card">
+    <div class="uc-icon">
+      <i class="bi bi-tools"></i>
+    </div>
+    <h2 class="uc-title">Controle de OPs</h2>
+    <p class="uc-subtitle">Esta funcionalidade está em desenvolvimento e estará disponível em breve.</p>
+  </div>
+</div>
+{% endblock %}

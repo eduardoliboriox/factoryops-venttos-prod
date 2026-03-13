@@ -171,6 +171,16 @@ def deny_user(user_id):
             conn.commit()
 
 
+def delete_user(user_id: int):
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "DELETE FROM users WHERE id=%s",
+                (user_id,),
+            )
+            conn.commit()
+
+
 def count_users():
     with get_db() as conn:
         with conn.cursor(row_factory=dict_row) as cur:

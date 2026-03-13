@@ -1,0 +1,88 @@
+{% extends "layouts/app.html" %}
+{% block title %}Centro de Conhecimento{% endblock %}
+
+{% block page_title %}
+<div class="page-header">
+  <div class="page-header-title">
+    <span class="page-header-section">Suporte</span>
+    <h1 class="page-header-name">Centro de Conhecimento</h1>
+  </div>
+  <div class="page-header-actions">
+    <a href="{{ url_for('pages.inicio') }}" class="btn-header-icon" title="Voltar">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
+      <i class="bi bi-arrows-fullscreen"></i>
+    </button>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+  <div class="section-card mb-4">
+    <div class="d-flex align-items-center justify-content-between">
+      <div>
+        <div class="fw-semibold">Perguntas Frequentes</div>
+        <div class="text-muted small mt-1">Respostas para as dúvidas mais comuns do sistema</div>
+      </div>
+      <div class="shortcut-icon">
+        <i class="bi bi-question-circle"></i>
+      </div>
+    </div>
+  </div>
+
+  {% if faqs %}
+    <div class="accordion" id="faqAccordion">
+      {% for faq in faqs %}
+      <div class="accordion-item border mb-2" style="border-radius:10px;overflow:hidden;">
+        <h2 class="accordion-header">
+          <button class="accordion-button collapsed fw-semibold"
+                  type="button"
+                  data-bs-toggle="collapse"
+                  data-bs-target="#faq{{ faq.id }}"
+                  aria-expanded="false">
+            {{ faq.pergunta }}
+          </button>
+        </h2>
+        <div id="faq{{ faq.id }}" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+          <div class="accordion-body text-muted">
+            {{ faq.resposta }}
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="card p-4 text-center">
+      <div class="text-muted">
+        <i class="bi bi-journal-text fs-1 d-block mb-3 opacity-25"></i>
+        <p class="mb-0">Nenhuma pergunta cadastrada ainda.</p>
+        <p class="small mt-1">Um administrador pode adicionar perguntas frequentes diretamente no banco de dados.</p>
+      </div>
+    </div>
+  {% endif %}
+
+  <div class="section-card mt-4">
+    <div class="d-flex align-items-start gap-3">
+      <div class="shortcut-icon flex-shrink-0">
+        <i class="bi bi-headset"></i>
+      </div>
+      <div>
+        <div class="fw-semibold mb-1">Não encontrou o que precisava?</div>
+        <p class="text-muted small mb-2">Entre em contato com o suporte especializado ou envie uma mensagem pela ouvidoria.</p>
+        <div class="d-flex gap-2 flex-wrap">
+          <a href="{{ url_for('pages.suporte_especializado') }}" class="btn btn-sm btn-primary">
+            <i class="bi bi-chat-dots me-1"></i>Suporte Especializado
+          </a>
+          <a href="{{ url_for('pages.suporte_ouvidoria') }}" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-envelope me-1"></i>Ouvidoria
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
