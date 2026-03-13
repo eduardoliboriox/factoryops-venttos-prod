@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template
-from flask_login import login_required
+from flask_login import login_required, current_user
+from app.auth.decorators import admin_required
 from app.services import time_studies_service
 
 
@@ -84,11 +85,6 @@ def smt_estudo_tempo():
 @bp.route("/smt/mais")
 @login_required
 def smt_mais():
-    """
-    Página "Mais" (prioridade mobile):
-    - reduz itens no bottom-nav
-    - exibe módulos extras em cards (Cálculos, Estudo de Tempo)
-    """
     return render_template("mais.html", active_menu="smt_more")
 
 
@@ -97,7 +93,6 @@ def smt_mais():
 def smt_estudo_tempo_print(study_id: int):
     detail = time_studies_service.get_study_detail(study_id)
     if not detail:
-        # mantém simples (sem nova página de erro)
         return render_template(
             "estudo_tempo_print.html",
             active_menu="smt_estudo_tempo",
@@ -116,6 +111,224 @@ def smt_estudo_tempo_print(study_id: int):
         not_found=False,
     )
 
+
+# ─── Funcionalidades ────────────────────────────────────────────────────────
+
+@bp.route("/funcionalidades/im-pa")
+@login_required
+def funcionalidades_im_pa():
+    return render_template("funcionalidades/im_pa.html", active_menu="funcionalidades_im_pa")
+
+
+@bp.route("/funcionalidades/pth")
+@login_required
+def funcionalidades_pth():
+    return render_template("funcionalidades/pth.html", active_menu="funcionalidades_pth")
+
+
+@bp.route("/funcionalidades/vtt")
+@login_required
+def funcionalidades_vtt():
+    return render_template("funcionalidades/vtt.html", active_menu="funcionalidades_vtt")
+
+
+# ─── Produção ────────────────────────────────────────────────────────────────
+
+@bp.route("/producao/medicao-pasta-solda")
+@login_required
+def producao_medicao_pasta():
+    return render_template("producao/medicao_pasta_solda.html", active_menu="producao_medicao_pasta")
+
+
+@bp.route("/producao/checklist-verificacao-linha")
+@login_required
+def producao_checklist_linha():
+    return render_template("producao/checklist_linha.html", active_menu="producao_checklist_linha")
+
+
+@bp.route("/producao/limpeza-stencil")
+@login_required
+def producao_limpeza_stencil():
+    return render_template("producao/limpeza_stencil.html", active_menu="producao_limpeza_stencil")
+
+
+# ─── Engenharia ──────────────────────────────────────────────────────────────
+
+@bp.route("/engenharia/folha-cronometragem")
+@login_required
+def engenharia_folha_crono():
+    return render_template("cadastro.html", active_menu="engenharia_folha_crono")
+
+
+# ─── PCP ─────────────────────────────────────────────────────────────────────
+
+@bp.route("/pcp/controle-ops")
+@login_required
+def pcp_controle_ops():
+    return render_template("pcp/controle_ops.html", active_menu="pcp_controle_ops")
+
+
+@bp.route("/pcp/planejamento")
+@login_required
+def pcp_planejamento():
+    return render_template("pcp/planejamento.html", active_menu="pcp_planejamento")
+
+
+@bp.route("/pcp/entregas")
+@login_required
+def pcp_entregas():
+    return render_template("pcp/entregas.html", active_menu="pcp_entregas")
+
+
+# ─── Suporte ─────────────────────────────────────────────────────────────────
+
+@bp.route("/suporte/centro-conhecimento")
+@login_required
+def suporte_centro_conhecimento():
+    try:
+        from app.repositories.suporte_repository import list_faq_items
+        faqs = list_faq_items()
+    except Exception:
+        faqs = []
+    return render_template(
+        "suporte/centro_conhecimento.html",
+        active_menu="suporte_centro_conhecimento",
+        faqs=faqs,
+    )
+
+
+@bp.route("/suporte/ouvidoria", methods=["GET", "POST"])
+@login_required
+def suporte_ouvidoria():
+    from flask import request, flash, redirect, url_for
+    from app.repositories.suporte_repository import create_ouvidoria_message
+
+    if request.method == "POST":
+        tipo = request.form.get("tipo", "").strip()
+        mensagem = request.form.get("mensagem", "").strip()
+        nome_contato = request.form.get("nome_contato", "").strip()
+
+        if not tipo or not mensagem:
+            flash("Preencha o tipo e a mensagem.", "danger")
+        else:
+            try:
+                create_ouvidoria_message({
+                    "tipo": tipo,
+                    "mensagem": mensagem,
+                    "nome_contato": nome_contato,
+                    "user_id": current_user.id,
+                })
+                flash("Mensagem enviada com sucesso. Obrigado pelo seu contato.", "success")
+            except Exception:
+                flash("Erro ao enviar mensagem. Execute a migração 002 no banco.", "danger")
+            return redirect(url_for("pages.suporte_ouvidoria"))
+
+    return render_template("suporte/ouvidoria.html", active_menu="suporte_ouvidoria")
+
+
+@bp.route("/suporte/suporte-especializado", methods=["GET", "POST"])
+@login_required
+def suporte_especializado():
+    from flask import request, flash, redirect, url_for
+
+    try:
+        from app.repositories.suporte_repository import (
+            get_or_create_ticket,
+            list_ticket_messages,
+            create_ticket_message,
+        )
+        ticket = get_or_create_ticket(current_user.id)
+    except Exception:
+        return render_template(
+            "suporte/suporte_especializado.html",
+            active_menu="suporte_especializado",
+            ticket=None,
+            messages=[],
+        )
+
+    if request.method == "POST":
+        mensagem = request.form.get("mensagem", "").strip()
+        if mensagem:
+            try:
+                create_ticket_message({
+                    "ticket_id": ticket["id"],
+                    "user_id": current_user.id,
+                    "is_support": False,
+                    "mensagem": mensagem,
+                })
+            except Exception:
+                flash("Erro ao enviar mensagem.", "danger")
+        return redirect(url_for("pages.suporte_especializado"))
+
+    try:
+        messages = list_ticket_messages(ticket["id"])
+    except Exception:
+        messages = []
+
+    return render_template(
+        "suporte/suporte_especializado.html",
+        active_menu="suporte_especializado",
+        ticket=ticket,
+        messages=messages,
+    )
+
+
+# ─── Admin ────────────────────────────────────────────────────────────────────
+
+@bp.route("/admin/backup", methods=["GET", "POST"])
+@login_required
+@admin_required
+def admin_backup():
+    from flask import request, flash, redirect, url_for
+
+    try:
+        from app.repositories.backup_repository import (
+            get_backup_config,
+            upsert_backup_config,
+            list_backup_logs,
+        )
+        from app.services.backup_service import trigger_manual_backup
+        config = get_backup_config()
+        logs = list_backup_logs(limit=50)
+    except Exception:
+        config = None
+        logs = []
+        upsert_backup_config = None
+        trigger_manual_backup = None
+
+    if request.method == "POST":
+        action = request.form.get("action")
+
+        if upsert_backup_config is None or trigger_manual_backup is None:
+            flash("Execute a migração 002 no banco antes de usar esta funcionalidade.", "danger")
+            return redirect(url_for("pages.admin_backup"))
+
+        if action == "save_config":
+            upsert_backup_config({
+                "database_url": request.form.get("database_url", "").strip(),
+                "frequency": request.form.get("frequency", "daily"),
+                "execution_hour": int(request.form.get("execution_hour", 2)),
+                "execution_minute": int(request.form.get("execution_minute", 0)),
+                "retention_days": int(request.form.get("retention_days", 30)),
+                "is_active": request.form.get("is_active") == "1",
+            })
+            flash("Configuração salva com sucesso.", "success")
+            return redirect(url_for("pages.admin_backup"))
+
+        if action == "run_now":
+            trigger_manual_backup()
+            flash("Backup iniciado em segundo plano.", "info")
+            return redirect(url_for("pages.admin_backup"))
+
+    return render_template(
+        "admin/backups.html",
+        active_menu="admin_backup",
+        config=config,
+        logs=logs,
+    )
+
+
+# ─── PWA / Legal ─────────────────────────────────────────────────────────────
 
 @bp.route("/privacy-policy")
 def privacy_policy():
