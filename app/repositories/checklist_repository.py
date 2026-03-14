@@ -1,4 +1,4 @@
-from app.database import get_db
+from app.extensions import get_db
 
 
 def list_itens():
