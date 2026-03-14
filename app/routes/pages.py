@@ -61,25 +61,25 @@ def smt_dashboard():
 @bp.route("/smt/modelos")
 @login_required
 def smt_modelos():
-    return render_template("modelos.html", active_menu="smt_modelos")
+    return render_template("funcionalidades/modelos.html", active_menu="smt_modelos")
 
 
 @bp.route("/smt/cadastro")
 @login_required
 def smt_cadastro():
-    return render_template("cadastro.html", active_menu="smt_cadastro")
+    return render_template("funcionalidades/cadastro.html", active_menu="smt_cadastro")
 
 
 @bp.route("/smt/calcular")
 @login_required
 def smt_calcular():
-    return render_template("calcular.html", active_menu="smt_calcular")
+    return render_template("funcionalidades/calcular.html", active_menu="smt_calcular")
 
 
 @bp.route("/smt/estudo-tempo")
 @login_required
 def smt_estudo_tempo():
-    return render_template("estudo_tempo.html", active_menu="smt_estudo_tempo")
+    return render_template("engenharia/estudo_tempo.html", active_menu="smt_estudo_tempo")
 
 
 @bp.route("/smt/mais")
@@ -94,7 +94,7 @@ def smt_estudo_tempo_print(study_id: int):
     detail = time_studies_service.get_study_detail(study_id)
     if not detail:
         return render_template(
-            "estudo_tempo_print.html",
+            "engenharia/estudo_tempo_print.html",
             active_menu="smt_estudo_tempo",
             study=None,
             operations=[],
@@ -103,7 +103,7 @@ def smt_estudo_tempo_print(study_id: int):
         )
 
     return render_template(
-        "estudo_tempo_print.html",
+        "engenharia/estudo_tempo_print.html",
         active_menu="smt_estudo_tempo",
         study=detail.get("study"),
         operations=detail.get("operations") or [],
@@ -144,6 +144,18 @@ def producao_medicao_pasta():
 @login_required
 def producao_checklist_linha():
     return render_template("producao/checklist_linha.html", active_menu="producao_checklist_linha")
+
+
+@bp.route("/producao/checklist-verificacao-linha/<int:sessao_id>")
+@login_required
+def producao_checklist_detalhe(sessao_id: int):
+    from app.services import checklist_service
+    sessao = checklist_service.get_sessao_detail(sessao_id)
+    return render_template(
+        "producao/checklist_detalhe.html",
+        active_menu="producao_checklist_linha",
+        sessao=sessao,
+    )
 
 
 @bp.route("/producao/limpeza-stencil")

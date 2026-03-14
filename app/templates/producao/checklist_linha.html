@@ -19,13 +19,649 @@
 {% endblock %}
 
 {% block content %}
-<div class="under-construction-wrapper">
-  <div class="under-construction-card">
-    <div class="uc-icon">
-      <i class="bi bi-tools"></i>
+<style>
+  .cl-card {
+    border: 1px solid rgba(15,23,42,0.10);
+    border-radius: 14px;
+    background: #fff;
+    overflow: hidden;
+    box-shadow: 0 8px 24px rgba(15,23,42,0.06);
+    margin-bottom: 20px;
+  }
+  .cl-card .cl-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 16px;
+    border-bottom: 1px solid rgba(15,23,42,0.08);
+  }
+  .cl-card .cl-header-blue { background: linear-gradient(180deg, rgba(13,110,253,0.08), transparent); }
+  .cl-card .cl-header-green { background: linear-gradient(180deg, rgba(25,135,84,0.08), transparent); }
+  .cl-card .cl-header-gray { background: linear-gradient(180deg, rgba(15,23,42,0.05), transparent); }
+  .cl-card .cl-title { display: flex; align-items: center; gap: 10px; }
+  .cl-card .cl-icon {
+    width: 40px; height: 40px; border-radius: 12px;
+    display: grid; place-items: center; font-size: 18px;
+  }
+  .cl-card .cl-icon-blue { background: rgba(13,110,253,0.12); color: #0d6efd; }
+  .cl-card .cl-icon-green { background: rgba(25,135,84,0.12); color: #198754; }
+  .cl-card .cl-icon-gray { background: rgba(15,23,42,0.08); color: rgba(15,23,42,0.60); }
+  .cl-card .cl-subtitle { font-size: 12px; color: rgba(15,23,42,0.65); margin-top: 2px; }
+  .cl-card .cl-body { padding: 16px; }
+  .cl-card .form-label { font-weight: 700; color: rgba(15,23,42,0.80); }
+  .cl-card .form-control,
+  .cl-card .form-select { border-radius: 12px; border-color: rgba(15,23,42,0.14); }
+  .hint { font-size: 12px; color: rgba(15,23,42,0.65); margin-top: 6px; }
+
+  .checklist-table { font-size: 13px; }
+  .checklist-table th {
+    background: rgba(15,23,42,0.05); font-weight: 700; font-size: 11px;
+    text-transform: uppercase; vertical-align: middle; white-space: nowrap;
+    padding: 8px 10px;
+  }
+  .checklist-table td { vertical-align: middle; padding: 8px 10px; }
+  .checklist-table tr.status-ok { background: rgba(25,135,84,0.04); }
+  .checklist-table tr.status-nok { background: rgba(220,53,69,0.05); }
+  .checklist-table tr.status-na { background: rgba(15,23,42,0.03); }
+
+  .status-btn-group { display: flex; gap: 4px; }
+  .status-btn-group input[type="radio"] { display: none; }
+  .status-btn-group label {
+    padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700;
+    cursor: pointer; border: 1px solid rgba(15,23,42,0.20); color: rgba(15,23,42,0.55);
+    transition: all 0.15s;
+  }
+  .status-btn-group input[value="ok"]:checked + label { background: #198754; border-color: #198754; color: #fff; }
+  .status-btn-group input[value="nok"]:checked + label { background: #dc3545; border-color: #dc3545; color: #fff; }
+  .status-btn-group input[value="na"]:checked + label { background: #6c757d; border-color: #6c757d; color: #fff; }
+
+  .num-badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 24px; height: 24px; border-radius: 50%;
+    background: rgba(13,110,253,0.10); color: #0d6efd;
+    font-size: 11px; font-weight: 800;
+  }
+
+  .sessao-row { cursor: pointer; }
+  .sessao-row:hover { background: rgba(13,110,253,0.04); }
+
+  .nok-badge { background: rgba(220,53,69,0.10); color: #dc3545; border-radius: 6px; padding: 2px 7px; font-size: 11px; font-weight: 700; }
+  .ok-badge  { background: rgba(25,135,84,0.10);  color: #198754; border-radius: 6px; padding: 2px 7px; font-size: 11px; font-weight: 700; }
+
+  .plano-row { border-bottom: 1px solid rgba(15,23,42,0.08); padding: 12px 0; }
+  .plano-row:last-child { border-bottom: none; }
+  .plano-item-label { font-size: 11px; font-weight: 700; color: rgba(15,23,42,0.50); margin-bottom: 4px; }
+</style>
+
+<div class="container-fluid">
+
+  <ul class="nav nav-tabs mb-3" id="checklistTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link active" id="tab-novo-btn" data-bs-toggle="tab" data-bs-target="#tab-novo" type="button" role="tab">
+        <i class="bi bi-clipboard-plus me-1"></i> Novo Checklist
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="tab-consultar-btn" data-bs-toggle="tab" data-bs-target="#tab-consultar" type="button" role="tab">
+        <i class="bi bi-search me-1"></i> Consultar
+      </button>
+    </li>
+  </ul>
+
+  <div class="tab-content">
+
+    <!-- ═══════════════ TAB NOVO CHECKLIST ═══════════════ -->
+    <div class="tab-pane fade show active" id="tab-novo" role="tabpanel">
+
+      <div id="msgChecklist"></div>
+
+      <!-- FASE 1: cabeçalho -->
+      <div class="cl-card" id="cardCabecalho">
+        <div class="cl-header cl-header-blue">
+          <div class="cl-title">
+            <div class="cl-icon cl-icon-blue"><i class="bi bi-clipboard-check"></i></div>
+            <div>
+              <div class="fw-bold">Identificação</div>
+              <div class="cl-subtitle">Selecione o setor e a linha para iniciar.</div>
+            </div>
+          </div>
+          <span class="badge text-bg-primary">PASSO 1</span>
+        </div>
+        <div class="cl-body">
+          <div class="row g-3">
+            <div class="col-md-2">
+              <label class="form-label">Setor</label>
+              <select class="form-select" id="ckSetor">
+                <option value="SMT">SMT</option>
+                <option value="PTH">PTH</option>
+                <option value="IM">IM</option>
+                <option value="PA">PA</option>
+                <option value="VTT">VTT</option>
+              </select>
+            </div>
+            <div class="col-md-2">
+              <label class="form-label">Linha</label>
+              <select class="form-select" id="ckLinha"></select>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Responsável</label>
+              <input class="form-control" id="ckResponsavel" placeholder="Nome do líder">
+            </div>
+            <div class="col-md-2">
+              <label class="form-label">Modelo (opcional)</label>
+              <input class="form-control" id="ckModelo" placeholder="Ex: ABC123">
+            </div>
+            <div class="col-md-2">
+              <label class="form-label">Mês (opcional)</label>
+              <input class="form-control" id="ckMes" placeholder="Ex: Mar/2026">
+            </div>
+            <div class="col-md-2">
+              <label class="form-label">Data</label>
+              <input class="form-control" type="date" id="ckData">
+            </div>
+            <div class="col-12">
+              <button class="btn btn-primary px-4" id="btnIniciarChecklist" type="button">
+                <i class="bi bi-play-fill"></i> Iniciar Checklist
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- FASE 2: itens (oculto até iniciar) -->
+      <div class="cl-card" id="cardItens" style="display:none;">
+        <div class="cl-header cl-header-green">
+          <div class="cl-title">
+            <div class="cl-icon cl-icon-green"><i class="bi bi-list-check"></i></div>
+            <div>
+              <div class="fw-bold">Itens de Verificação</div>
+              <div class="cl-subtitle" id="cardItensSubtitle">Marque cada item como OK, NOK ou N/A.</div>
+            </div>
+          </div>
+          <span class="badge text-bg-success">PASSO 2</span>
+        </div>
+        <div class="cl-body">
+          <div class="table-responsive">
+            <table class="table table-sm table-bordered checklist-table">
+              <thead>
+                <tr>
+                  <th style="width:40px;">N°</th>
+                  <th>Descrição</th>
+                  <th style="width:160px; text-align:center;">Status</th>
+                  <th style="min-width:200px;">Observação</th>
+                </tr>
+              </thead>
+              <tbody id="checklistTableBody"></tbody>
+            </table>
+          </div>
+          <div class="d-flex gap-2 flex-wrap mt-2">
+            <button class="btn btn-success px-4 fw-bold" id="btnEnviarChecklist" type="button">
+              <i class="bi bi-send-check"></i> Enviar Checklist
+            </button>
+            <button class="btn btn-outline-secondary px-3" id="btnCancelarChecklist" type="button">
+              <i class="bi bi-x-lg"></i> Cancelar
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- FASE 3: plano de ação (oculto até enviar com NOK) -->
+      <div class="cl-card" id="cardPlano" style="display:none;">
+        <div class="cl-header cl-header-gray">
+          <div class="cl-title">
+            <div class="cl-icon cl-icon-gray"><i class="bi bi-exclamation-triangle"></i></div>
+            <div>
+              <div class="fw-bold">Plano de Ação</div>
+              <div class="cl-subtitle">Registre as ações para os itens NOK.</div>
+            </div>
+          </div>
+          <span class="badge text-bg-warning text-dark">NOK ITEMS</span>
+        </div>
+        <div class="cl-body" id="cardPlanoBody">
+        </div>
+      </div>
+
     </div>
-    <h2 class="uc-title">Checklist de Verificação de Linha</h2>
-    <p class="uc-subtitle">Esta funcionalidade está em desenvolvimento e estará disponível em breve.</p>
+
+    <!-- ═══════════════ TAB CONSULTAR ═══════════════ -->
+    <div class="tab-pane fade" id="tab-consultar" role="tabpanel">
+
+      <div class="cl-card">
+        <div class="cl-header cl-header-gray">
+          <div class="cl-title">
+            <div class="cl-icon cl-icon-gray"><i class="bi bi-funnel"></i></div>
+            <div>
+              <div class="fw-bold">Filtros</div>
+              <div class="cl-subtitle">Busque sessões por data, setor ou linha.</div>
+            </div>
+          </div>
+        </div>
+        <div class="cl-body">
+          <div class="row g-3 align-items-end">
+            <div class="col-md-3">
+              <label class="form-label">Data</label>
+              <input class="form-control" type="date" id="filtroData">
+            </div>
+            <div class="col-md-2">
+              <label class="form-label">Setor</label>
+              <select class="form-select" id="filtroSetor">
+                <option value="">Todos</option>
+                <option value="SMT">SMT</option>
+                <option value="PTH">PTH</option>
+                <option value="IM">IM</option>
+                <option value="PA">PA</option>
+                <option value="VTT">VTT</option>
+              </select>
+            </div>
+            <div class="col-md-2">
+              <label class="form-label">Linha</label>
+              <input class="form-control" id="filtroLinha" placeholder="Ex: SMT-01">
+            </div>
+            <div class="col-md-2">
+              <button class="btn btn-primary w-100" id="btnConsultar" type="button">
+                <i class="bi bi-search"></i> Buscar
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="msgConsultar"></div>
+
+      <div class="cl-card" id="cardResultados" style="display:none;">
+        <div class="cl-header cl-header-gray">
+          <div class="cl-title">
+            <div class="cl-icon cl-icon-gray"><i class="bi bi-table"></i></div>
+            <div>
+              <div class="fw-bold">Resultados</div>
+              <div class="cl-subtitle" id="resultadosSubtitle"></div>
+            </div>
+          </div>
+        </div>
+        <div class="cl-body p-0">
+          <div class="table-responsive">
+            <table class="table table-sm table-hover mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>ID</th>
+                  <th>Data</th>
+                  <th>Setor</th>
+                  <th>Linha</th>
+                  <th>Modelo</th>
+                  <th>Responsável</th>
+                  <th>Criado por</th>
+                  <th>Itens</th>
+                  <th>NOK</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="resultadosBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
   </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  "use strict";
+
+  const LINHAS = {
+    SMT: ["SMT-01","SMT-02","SMT-03","SMT-04","SMT-05","SMT-06","SMT-07","SMT-08","SMT-09"],
+    PTH: ["ADE-01","AXI-01","AXI-02","AXI-03","JUM-01","JUM-02","RAD-01","RAD-02","RAD-03","ROU-01","ROU-02","ROU-03","ROU-04"],
+    IM:  ["IM-01","IM-02","IM-03","IM-04","IM-05","IM-06","IM-07"],
+    PA:  ["IP-COM","PA-01","PA-03","PA-04","PA-07","PA-08","PA-09","PA-13","WIFI"],
+    VTT: ["VTT-01","VTT-02","VTT-03"],
+  };
+
+  let itensCache = [];
+  let sessaoAtiva = null;
+
+  function esc(s) {
+    return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function fmtData(iso) {
+    if (!iso) return '—';
+    try {
+      const d = new Date(iso + (iso.includes('T') ? '' : 'T00:00:00'));
+      return d.toLocaleDateString('pt-BR');
+    } catch { return iso; }
+  }
+
+  function showMsg(el, tipo, texto) {
+    el.innerHTML = `<div class="alert alert-${tipo} alert-dismissible fade show mb-3">
+      ${esc(texto)}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>`;
+    if (tipo !== 'danger') setTimeout(() => { try { el.querySelector('.alert') && bootstrap.Alert.getOrCreateInstance(el.querySelector('.alert')).close(); } catch {} }, 4000);
+  }
+
+  function renderLinhas(setor, sel) {
+    const linhas = LINHAS[setor] || [];
+    sel.innerHTML = '';
+    for (const l of linhas) {
+      const o = document.createElement('option');
+      o.value = l; o.textContent = l;
+      sel.appendChild(o);
+    }
+  }
+
+  async function api(url, opts) {
+    opts = opts || {};
+    const r = await fetch(url, {
+      method: opts.method || 'GET',
+      body: opts.body || undefined,
+      headers: Object.assign({ 'X-Requested-With': 'XMLHttpRequest', 'Content-Type': 'application/json' }, opts.headers || {}),
+    });
+    const data = await r.json().catch(() => ({}));
+    return { ok: r.ok, data };
+  }
+
+  async function loadItens() {
+    if (itensCache.length) return itensCache;
+    const { ok, data } = await api('/api/checklist/itens');
+    itensCache = (ok && Array.isArray(data)) ? data : [];
+    return itensCache;
+  }
+
+  function renderTableRow(item, idx) {
+    const n = item.numero;
+    return `<tr id="row-item-${item.id}" data-item-id="${item.id}">
+      <td class="text-center"><span class="num-badge">${n}</span></td>
+      <td>${esc(item.descricao)}</td>
+      <td>
+        <div class="status-btn-group justify-content-center">
+          <input type="radio" name="status_${item.id}" id="ok_${item.id}" value="ok">
+          <label for="ok_${item.id}">OK</label>
+          <input type="radio" name="status_${item.id}" id="nok_${item.id}" value="nok">
+          <label for="nok_${item.id}">NOK</label>
+          <input type="radio" name="status_${item.id}" id="na_${item.id}" value="na">
+          <label for="na_${item.id}">N/A</label>
+        </div>
+      </td>
+      <td>
+        <input class="form-control form-control-sm" type="text" id="obs_${item.id}" placeholder="Observação (opcional)" style="border-radius:8px;">
+      </td>
+    </tr>`;
+  }
+
+  function getRowStatus(tr) {
+    const checked = tr.querySelector('input[type="radio"]:checked');
+    return checked ? checked.value : null;
+  }
+
+  function bindRowHighlight(tbody) {
+    tbody.querySelectorAll('input[type="radio"]').forEach(radio => {
+      radio.addEventListener('change', () => {
+        const tr = radio.closest('tr');
+        tr.classList.remove('status-ok', 'status-nok', 'status-na');
+        if (radio.checked) tr.classList.add(`status-${radio.value}`);
+      });
+    });
+  }
+
+  async function iniciarChecklist() {
+    const btn = document.getElementById('btnIniciarChecklist');
+    btn.disabled = true;
+    const orig = btn.innerHTML;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Carregando...';
+
+    try {
+      const itens = await loadItens();
+      if (!itens.length) {
+        showMsg(document.getElementById('msgChecklist'), 'danger', 'Não foi possível carregar os itens. Execute a migração 003 no banco.');
+        return;
+      }
+
+      const setor = document.getElementById('ckSetor').value;
+      const linha = document.getElementById('ckLinha').value;
+      document.getElementById('cardItensSubtitle').textContent = `${setor} · ${linha}`;
+
+      const tbody = document.getElementById('checklistTableBody');
+      tbody.innerHTML = itens.map((item, i) => renderTableRow(item, i)).join('');
+      bindRowHighlight(tbody);
+
+      document.getElementById('cardItens').style.display = '';
+      document.getElementById('cardItens').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = orig;
+    }
+  }
+
+  function cancelarChecklist() {
+    document.getElementById('cardItens').style.display = 'none';
+    document.getElementById('cardPlano').style.display = 'none';
+    document.getElementById('checklistTableBody').innerHTML = '';
+    document.getElementById('cardPlanoBody').innerHTML = '';
+    document.getElementById('msgChecklist').innerHTML = '';
+    sessaoAtiva = null;
+  }
+
+  async function enviarChecklist() {
+    const msgEl = document.getElementById('msgChecklist');
+    const itens = itensCache;
+    const tbody = document.getElementById('checklistTableBody');
+
+    const respostas = [];
+    let semResposta = 0;
+
+    for (const item of itens) {
+      const tr = tbody.querySelector(`#row-item-${item.id}`);
+      if (!tr) continue;
+      const status = getRowStatus(tr);
+      if (!status) { semResposta++; continue; }
+      const obs = tr.querySelector(`#obs_${item.id}`)?.value?.trim() || null;
+      respostas.push({ item_id: item.id, status, observacao: obs });
+    }
+
+    if (semResposta > 0) {
+      showMsg(msgEl, 'warning', `${semResposta} item(ns) sem resposta. Preencha todos os itens antes de enviar.`);
+      return;
+    }
+
+    const btn = document.getElementById('btnEnviarChecklist');
+    btn.disabled = true;
+    const orig = btn.innerHTML;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Enviando...';
+
+    try {
+      const payload = {
+        setor: document.getElementById('ckSetor').value,
+        linha: document.getElementById('ckLinha').value,
+        responsavel: document.getElementById('ckResponsavel').value.trim() || null,
+        modelo: document.getElementById('ckModelo').value.trim() || null,
+        mes: document.getElementById('ckMes').value.trim() || null,
+        data_sessao: document.getElementById('ckData').value || null,
+        respostas,
+      };
+
+      const { ok, data } = await api('/api/checklist/sessoes', { method: 'POST', body: JSON.stringify(payload) });
+
+      if (!ok || !data.sucesso) {
+        showMsg(msgEl, 'danger', data.erro || 'Erro ao enviar checklist.');
+        return;
+      }
+
+      sessaoAtiva = data.sessao_id;
+      showMsg(msgEl, 'success', `Checklist enviado com sucesso! Sessão #${sessaoAtiva}.`);
+      document.getElementById('cardItens').style.display = 'none';
+
+      const nokItens = respostas.filter(r => r.status === 'nok');
+      if (nokItens.length) {
+        renderPlanoDeAcao(nokItens);
+      }
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = orig;
+    }
+  }
+
+  function renderPlanoDeAcao(nokRespostas) {
+    const body = document.getElementById('cardPlanoBody');
+    const itensPorId = Object.fromEntries(itensCache.map(i => [i.id, i]));
+
+    body.innerHTML = nokRespostas.map(r => {
+      const item = itensPorId[r.item_id] || {};
+      return `<div class="plano-row" data-item-id="${r.item_id}">
+        <div class="d-flex align-items-start gap-2 mb-2">
+          <span class="num-badge flex-shrink-0">${item.numero || '?'}</span>
+          <strong>${esc(item.descricao || '')}</strong>
+          <span class="nok-badge ms-auto">NOK</span>
+        </div>
+        <div class="row g-2">
+          <div class="col-md-6">
+            <div class="plano-item-label">PROBLEMA</div>
+            <input class="form-control form-control-sm" type="text" data-field="problema" placeholder="Descreva o problema" style="border-radius:8px;">
+          </div>
+          <div class="col-md-6">
+            <div class="plano-item-label">CAUSA</div>
+            <input class="form-control form-control-sm" type="text" data-field="causa" placeholder="Causa identificada" style="border-radius:8px;">
+          </div>
+          <div class="col-md-6">
+            <div class="plano-item-label">AÇÃO</div>
+            <input class="form-control form-control-sm" type="text" data-field="acao" placeholder="Ação corretiva" style="border-radius:8px;">
+          </div>
+          <div class="col-md-3">
+            <div class="plano-item-label">QUANDO</div>
+            <input class="form-control form-control-sm" type="date" data-field="quando" style="border-radius:8px;">
+          </div>
+          <div class="col-md-3">
+            <div class="plano-item-label">RESPONSÁVEL</div>
+            <input class="form-control form-control-sm" type="text" data-field="responsavel" placeholder="Nome" style="border-radius:8px;">
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+
+    body.innerHTML += `<div class="d-flex gap-2 flex-wrap mt-3">
+      <button class="btn btn-warning fw-bold px-4" id="btnSalvarPlano" type="button">
+        <i class="bi bi-save"></i> Salvar Plano de Ação
+      </button>
+      <span class="hint mb-0 align-self-center">Itens sem Problema preenchido serão ignorados.</span>
+    </div>`;
+
+    document.getElementById('cardPlano').style.display = '';
+    document.getElementById('cardPlano').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    document.getElementById('btnSalvarPlano').addEventListener('click', salvarPlanoDeAcao);
+  }
+
+  async function salvarPlanoDeAcao() {
+    const msgEl = document.getElementById('msgChecklist');
+    const btn = document.getElementById('btnSalvarPlano');
+    btn.disabled = true;
+    const orig = btn.innerHTML;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Salvando...';
+
+    const rows = document.querySelectorAll('#cardPlanoBody .plano-row');
+    let salvos = 0;
+    let erros = 0;
+
+    for (const row of rows) {
+      const itemId = Number(row.dataset.itemId);
+      const problema = row.querySelector('[data-field="problema"]')?.value?.trim();
+      if (!problema) continue;
+
+      const payload = {
+        sessao_id: sessaoAtiva,
+        item_id: itemId,
+        problema,
+        causa: row.querySelector('[data-field="causa"]')?.value?.trim() || null,
+        acao: row.querySelector('[data-field="acao"]')?.value?.trim() || null,
+        quando: row.querySelector('[data-field="quando"]')?.value || null,
+        responsavel: row.querySelector('[data-field="responsavel"]')?.value?.trim() || null,
+      };
+
+      const { ok, data } = await api('/api/checklist/plano-acao', { method: 'POST', body: JSON.stringify(payload) });
+      if (ok && data.sucesso) salvos++;
+      else erros++;
+    }
+
+    btn.disabled = false;
+    btn.innerHTML = orig;
+
+    if (salvos && !erros) showMsg(msgEl, 'success', `Plano de ação salvo (${salvos} item(ns)).`);
+    else if (salvos && erros) showMsg(msgEl, 'warning', `${salvos} salvo(s) · ${erros} com erro.`);
+    else if (erros) showMsg(msgEl, 'danger', 'Erro ao salvar plano de ação.');
+    else showMsg(msgEl, 'info', 'Nenhum item com Problema preenchido foi encontrado.');
+  }
+
+  async function consultar() {
+    const msgEl = document.getElementById('msgConsultar');
+    const btn = document.getElementById('btnConsultar');
+    btn.disabled = true;
+    const orig = btn.innerHTML;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>';
+
+    const params = new URLSearchParams();
+    const data = document.getElementById('filtroData').value;
+    const setor = document.getElementById('filtroSetor').value;
+    const linha = document.getElementById('filtroLinha').value.trim();
+    if (data) params.set('data_sessao', data);
+    if (setor) params.set('setor', setor);
+    if (linha) params.set('linha', linha);
+    params.set('limit', '50');
+
+    try {
+      const { ok, data: list } = await api(`/api/checklist/sessoes?${params}`);
+      if (!ok || !Array.isArray(list)) {
+        showMsg(msgEl, 'danger', 'Erro ao buscar sessões.');
+        return;
+      }
+
+      const subtitle = document.getElementById('resultadosSubtitle');
+      subtitle.textContent = `${list.length} sessão(ões) encontrada(s)`;
+
+      const tbody = document.getElementById('resultadosBody');
+      if (!list.length) {
+        tbody.innerHTML = '<tr><td colspan="10" class="text-center py-3" style="color:rgba(15,23,42,.40);">Nenhuma sessão encontrada.</td></tr>';
+      } else {
+        tbody.innerHTML = list.map(s => `
+          <tr class="sessao-row" onclick="window.open('/producao/checklist-verificacao-linha/${esc(s.id)}', '_blank')" title="Ver detalhe">
+            <td><strong>#${esc(s.id)}</strong></td>
+            <td>${fmtData(s.data_sessao)}</td>
+            <td>${esc(s.setor)}</td>
+            <td>${esc(s.linha)}</td>
+            <td>${esc(s.modelo || '—')}</td>
+            <td>${esc(s.responsavel || '—')}</td>
+            <td>${esc(s.username || '—')}</td>
+            <td>${esc(s.total_respostas ?? 0)}</td>
+            <td>${s.total_nok > 0 ? `<span class="nok-badge">${s.total_nok}</span>` : '<span class="ok-badge">0</span>'}</td>
+            <td><a href="/producao/checklist-verificacao-linha/${esc(s.id)}" target="_blank" class="btn btn-sm btn-outline-primary" onclick="event.stopPropagation()"><i class="bi bi-eye"></i></a></td>
+          </tr>`).join('');
+      }
+
+      document.getElementById('cardResultados').style.display = '';
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = orig;
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const ckSetor = document.getElementById('ckSetor');
+    const ckLinha = document.getElementById('ckLinha');
+    renderLinhas(ckSetor.value, ckLinha);
+    ckSetor.addEventListener('change', () => renderLinhas(ckSetor.value, ckLinha));
+
+    const today = new Date().toISOString().slice(0, 10);
+    document.getElementById('ckData').value = today;
+    document.getElementById('filtroData').value = today;
+
+    document.getElementById('btnIniciarChecklist').addEventListener('click', iniciarChecklist);
+    document.getElementById('btnEnviarChecklist').addEventListener('click', enviarChecklist);
+    document.getElementById('btnCancelarChecklist').addEventListener('click', cancelarChecklist);
+    document.getElementById('btnConsultar').addEventListener('click', consultar);
+  });
+
+})();
+</script>
 {% endblock %}

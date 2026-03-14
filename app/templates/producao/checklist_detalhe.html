@@ -1,0 +1,276 @@
+{% extends "layouts/app.html" %}
+{% block title %}Checklist #{{ sessao.id if sessao else '?' }} · Verificação de Linha{% endblock %}
+
+{% block page_title %}
+<div class="page-header">
+  <div class="page-header-title">
+    <span class="page-header-section">Produção</span>
+    <h1 class="page-header-name">Checklist de Verificação — Detalhe</h1>
+  </div>
+  <div class="page-header-actions">
+    <a href="{{ url_for('pages.producao_checklist_linha') }}" class="btn-header-icon" title="Voltar">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
+      <i class="bi bi-arrows-fullscreen"></i>
+    </button>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<style>
+  .cl-card {
+    border: 1px solid rgba(15,23,42,0.10);
+    border-radius: 14px;
+    background: #fff;
+    overflow: hidden;
+    box-shadow: 0 8px 24px rgba(15,23,42,0.06);
+    margin-bottom: 20px;
+  }
+  .cl-card .cl-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 16px;
+    border-bottom: 1px solid rgba(15,23,42,0.08);
+  }
+  .cl-header-blue  { background: linear-gradient(180deg, rgba(13,110,253,0.08), transparent); }
+  .cl-header-green { background: linear-gradient(180deg, rgba(25,135,84,0.08), transparent); }
+  .cl-header-gray  { background: linear-gradient(180deg, rgba(15,23,42,0.05), transparent); }
+  .cl-header-red   { background: linear-gradient(180deg, rgba(220,53,69,0.07), transparent); }
+  .cl-card .cl-title { display: flex; align-items: center; gap: 10px; }
+  .cl-card .cl-icon {
+    width: 40px; height: 40px; border-radius: 12px;
+    display: grid; place-items: center; font-size: 18px;
+  }
+  .cl-icon-blue  { background: rgba(13,110,253,0.12); color: #0d6efd; }
+  .cl-icon-green { background: rgba(25,135,84,0.12);  color: #198754; }
+  .cl-icon-gray  { background: rgba(15,23,42,0.08);   color: rgba(15,23,42,0.60); }
+  .cl-icon-red   { background: rgba(220,53,69,0.12);  color: #dc3545; }
+  .cl-subtitle { font-size: 12px; color: rgba(15,23,42,0.65); margin-top: 2px; }
+  .cl-body { padding: 16px; }
+
+  .meta-grid { display: flex; flex-wrap: wrap; gap: 20px; }
+  .meta-item { display: flex; flex-direction: column; min-width: 100px; }
+  .meta-label { font-size: 10px; font-weight: 700; color: rgba(15,23,42,0.45); text-transform: uppercase; }
+  .meta-val   { font-size: 15px; font-weight: 800; color: #0f172a; margin-top: 2px; }
+
+  .num-badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 24px; height: 24px; border-radius: 50%;
+    font-size: 11px; font-weight: 800;
+  }
+  .num-badge-ok  { background: rgba(25,135,84,0.12);  color: #198754; }
+  .num-badge-nok { background: rgba(220,53,69,0.12);  color: #dc3545; }
+  .num-badge-na  { background: rgba(15,23,42,0.08);   color: rgba(15,23,42,0.55); }
+  .num-badge-def { background: rgba(13,110,253,0.10); color: #0d6efd; }
+
+  .status-pill {
+    display: inline-block; padding: 3px 10px; border-radius: 20px;
+    font-size: 11px; font-weight: 700;
+  }
+  .status-ok  { background: rgba(25,135,84,0.12);  color: #198754; }
+  .status-nok { background: rgba(220,53,69,0.12);  color: #dc3545; }
+  .status-na  { background: rgba(15,23,42,0.08);   color: rgba(15,23,42,0.55); }
+
+  .checklist-table { font-size: 13px; }
+  .checklist-table th {
+    background: rgba(15,23,42,0.05); font-weight: 700; font-size: 11px;
+    text-transform: uppercase; white-space: nowrap; padding: 8px 10px;
+    vertical-align: middle;
+  }
+  .checklist-table td { vertical-align: middle; padding: 8px 10px; }
+  .row-ok  { background: rgba(25,135,84,0.04);  }
+  .row-nok { background: rgba(220,53,69,0.04);  }
+  .row-na  { background: rgba(15,23,42,0.02);   }
+
+  .plano-table { font-size: 13px; }
+  .plano-table th {
+    background: rgba(15,23,42,0.05); font-weight: 700; font-size: 11px;
+    text-transform: uppercase; white-space: nowrap; padding: 8px 10px;
+  }
+  .plano-table td { vertical-align: middle; padding: 8px 10px; }
+
+  .status-plano-aberto    { background: rgba(255,193,7,0.15); color: #856404; border-radius:6px; padding:2px 8px; font-size:11px; font-weight:700; }
+  .status-plano-concluido { background: rgba(25,135,84,0.12); color: #198754; border-radius:6px; padding:2px 8px; font-size:11px; font-weight:700; }
+  .status-plano-cancelado { background: rgba(15,23,42,0.08);  color: rgba(15,23,42,0.50); border-radius:6px; padding:2px 8px; font-size:11px; font-weight:700; }
+
+  @media print {
+    .page-header, .nav-tabs, .btn { display: none !important; }
+    .cl-card { box-shadow: none; border: 1px solid #ccc; }
+  }
+</style>
+
+<div class="container-fluid">
+
+{% if not sessao %}
+  <div class="alert alert-danger">Sessão não encontrada.</div>
+{% else %}
+
+  <!-- Resumo -->
+  <div class="cl-card">
+    <div class="cl-header cl-header-blue">
+      <div class="cl-title">
+        <div class="cl-icon cl-icon-blue"><i class="bi bi-clipboard-check"></i></div>
+        <div>
+          <div class="fw-bold">Sessão #{{ sessao.id }}</div>
+          <div class="cl-subtitle">{{ sessao.setor }} · {{ sessao.linha }}</div>
+        </div>
+      </div>
+      <div class="d-flex gap-2 align-items-center">
+        {% set nok_count = sessao.respostas | selectattr('status', 'eq', 'nok') | list | length %}
+        {% if nok_count > 0 %}
+          <span class="badge text-bg-danger">{{ nok_count }} NOK</span>
+        {% else %}
+          <span class="badge text-bg-success">Sem NOK</span>
+        {% endif %}
+        <button onclick="window.print()" class="btn btn-sm btn-outline-secondary">
+          <i class="bi bi-printer"></i>
+        </button>
+      </div>
+    </div>
+    <div class="cl-body">
+      <div class="meta-grid">
+        <div class="meta-item">
+          <div class="meta-label">Setor</div>
+          <div class="meta-val">{{ sessao.setor }}</div>
+        </div>
+        <div class="meta-item">
+          <div class="meta-label">Linha</div>
+          <div class="meta-val">{{ sessao.linha }}</div>
+        </div>
+        <div class="meta-item">
+          <div class="meta-label">Data</div>
+          <div class="meta-val">{{ sessao.data_sessao.strftime('%d/%m/%Y') if sessao.data_sessao else '—' }}</div>
+        </div>
+        <div class="meta-item">
+          <div class="meta-label">Responsável</div>
+          <div class="meta-val">{{ sessao.responsavel or '—' }}</div>
+        </div>
+        <div class="meta-item">
+          <div class="meta-label">Modelo</div>
+          <div class="meta-val">{{ sessao.modelo or '—' }}</div>
+        </div>
+        <div class="meta-item">
+          <div class="meta-label">Mês</div>
+          <div class="meta-val">{{ sessao.mes or '—' }}</div>
+        </div>
+        <div class="meta-item">
+          <div class="meta-label">Criado por</div>
+          <div class="meta-val">{{ sessao.username or '—' }}</div>
+        </div>
+        <div class="meta-item">
+          <div class="meta-label">Criado em</div>
+          <div class="meta-val">{{ sessao.created_at.strftime('%d/%m/%Y %H:%M') if sessao.created_at else '—' }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Itens -->
+  <div class="cl-card">
+    <div class="cl-header cl-header-green">
+      <div class="cl-title">
+        <div class="cl-icon cl-icon-green"><i class="bi bi-list-check"></i></div>
+        <div>
+          <div class="fw-bold">Itens Verificados</div>
+          <div class="cl-subtitle">{{ sessao.respostas | length }} item(ns)</div>
+        </div>
+      </div>
+    </div>
+    <div class="cl-body p-0">
+      {% if sessao.respostas %}
+      <div class="table-responsive">
+        <table class="table table-sm table-bordered checklist-table mb-0">
+          <thead>
+            <tr>
+              <th style="width:40px;">N°</th>
+              <th>Descrição</th>
+              <th style="width:80px; text-align:center;">Status</th>
+              <th>Observação</th>
+              <th style="width:120px;">Respondido por</th>
+              <th style="width:120px;">Registrado em</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in sessao.respostas %}
+            <tr class="row-{{ r.status }}">
+              <td class="text-center">
+                <span class="num-badge num-badge-{{ r.status }}">{{ r.numero }}</span>
+              </td>
+              <td>{{ r.descricao }}</td>
+              <td class="text-center">
+                <span class="status-pill status-{{ r.status }}">{{ r.status | upper }}</span>
+              </td>
+              <td>{{ r.observacao or '—' }}</td>
+              <td>{{ r.respondido_por or '—' }}</td>
+              <td>{{ r.created_at.strftime('%d/%m %H:%M') if r.created_at else '—' }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="cl-body text-center py-4" style="color:rgba(15,23,42,.40);">Nenhum item registrado.</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Plano de Ação -->
+  {% if sessao.plano_acao %}
+  <div class="cl-card">
+    <div class="cl-header cl-header-red">
+      <div class="cl-title">
+        <div class="cl-icon cl-icon-red"><i class="bi bi-exclamation-triangle"></i></div>
+        <div>
+          <div class="fw-bold">Plano de Ação</div>
+          <div class="cl-subtitle">{{ sessao.plano_acao | length }} ação(ões) registrada(s)</div>
+        </div>
+      </div>
+    </div>
+    <div class="cl-body p-0">
+      <div class="table-responsive">
+        <table class="table table-sm table-bordered plano-table mb-0">
+          <thead>
+            <tr>
+              <th style="width:40px;">Item</th>
+              <th>Problema</th>
+              <th>Causa</th>
+              <th>Ação</th>
+              <th style="width:90px;">Quando</th>
+              <th>Responsável</th>
+              <th style="width:90px;">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for p in sessao.plano_acao %}
+            <tr>
+              <td class="text-center fw-bold">{{ p.numero }}</td>
+              <td>{{ p.problema }}</td>
+              <td>{{ p.causa or '—' }}</td>
+              <td>{{ p.acao or '—' }}</td>
+              <td>{{ p.quando.strftime('%d/%m/%Y') if p.quando else '—' }}</td>
+              <td>{{ p.responsavel or '—' }}</td>
+              <td>
+                {% if p.status == 'Concluído' %}
+                  <span class="status-plano-concluido">{{ p.status }}</span>
+                {% elif p.status == 'Cancelado' %}
+                  <span class="status-plano-cancelado">{{ p.status }}</span>
+                {% else %}
+                  <span class="status-plano-aberto">{{ p.status }}</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+{% endif %}
+</div>
+{% endblock %}

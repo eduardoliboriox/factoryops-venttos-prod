@@ -343,3 +343,86 @@ def remove_avatar():
         return jsonify({"sucesso": True})
     except Exception:
         return jsonify({"sucesso": False, "erro": "Erro ao remover foto"}), 500
+
+
+# ─── Checklist ────────────────────────────────────────────────────────────────
+
+@bp.route("/checklist/itens", methods=["GET"])
+@login_required
+def checklist_itens():
+    from app.services import checklist_service
+    return jsonify(checklist_service.list_itens())
+
+
+@bp.route("/checklist/sessoes", methods=["GET"])
+@login_required
+def checklist_sessoes_list():
+    from app.services import checklist_service
+    data_sessao = request.args.get("data_sessao") or None
+    setor = request.args.get("setor") or None
+    linha = request.args.get("linha") or None
+    limit = int(request.args.get("limit", "50") or "50")
+    return jsonify(checklist_service.list_sessoes(data_sessao=data_sessao, setor=setor, linha=linha, limit=limit))
+
+
+@bp.route("/checklist/sessoes", methods=["POST"])
+@login_required
+def checklist_sessoes_create():
+    from app.services import checklist_service
+    data = request.get_json(silent=True) or {}
+    setor = (data.get("setor") or "").strip()
+    linha = (data.get("linha") or "").strip()
+    if not setor or not linha:
+        return jsonify({"sucesso": False, "erro": "Setor e linha são obrigatórios"}), 400
+    respostas = data.get("respostas") or []
+    if not respostas:
+        return jsonify({"sucesso": False, "erro": "Nenhuma resposta informada"}), 400
+    try:
+        sessao_data = {
+            "setor": setor,
+            "linha": linha,
+            "modelo": data.get("modelo") or None,
+            "mes": data.get("mes") or None,
+            "responsavel": data.get("responsavel") or None,
+            "data_sessao": data.get("data_sessao") or None,
+        }
+        sessao_id = checklist_service.create_session_with_respostas(sessao_data, respostas, current_user.id)
+        return jsonify({"sucesso": True, "sessao_id": sessao_id})
+    except Exception:
+        return jsonify({"sucesso": False, "erro": "Erro ao salvar checklist"}), 500
+
+
+@bp.route("/checklist/sessoes/<int:sessao_id>", methods=["GET"])
+@login_required
+def checklist_sessao_detail(sessao_id: int):
+    from app.services import checklist_service
+    detail = checklist_service.get_sessao_detail(sessao_id)
+    if not detail:
+        return jsonify({"sucesso": False, "erro": "Sessão não encontrada"}), 404
+    return jsonify({"sucesso": True, "sessao": detail})
+
+
+@bp.route("/checklist/plano-acao", methods=["POST"])
+@login_required
+def checklist_plano_acao_create():
+    from app.services import checklist_service
+    data = request.get_json(silent=True) or {}
+    sessao_id = data.get("sessao_id")
+    item_id = data.get("item_id")
+    problema = (data.get("problema") or "").strip()
+    if not sessao_id or not item_id or not problema:
+        return jsonify({"sucesso": False, "erro": "Dados incompletos"}), 400
+    try:
+        checklist_service.create_plano_acao({
+            "sessao_id": sessao_id,
+            "item_id": item_id,
+            "problema": problema,
+            "causa": data.get("causa") or None,
+            "acao": data.get("acao") or None,
+            "quando": data.get("quando") or None,
+            "responsavel": data.get("responsavel") or None,
+            "status": data.get("status", "Aberto"),
+        })
+        return jsonify({"sucesso": True})
+    except Exception:
+        return jsonify({"sucesso": False, "erro": "Erro ao salvar plano de ação"}), 500
