@@ -11,9 +11,9 @@ class Config:
     _BASE_URL_RAW = os.getenv("BASE_URL")
     BASE_URL = _BASE_URL_RAW.rstrip("/") if _BASE_URL_RAW else None
 
-    APP_NAME = os.getenv("APP_NAME", "SMT Manager")
-    APP_SHORT_NAME = os.getenv("APP_SHORT_NAME", "SMT Manager")
-    APP_DESCRIPTION = os.getenv("APP_DESCRIPTION", "SMT Manager - Acesso corporativo")
+    APP_NAME = os.getenv("APP_NAME", "FactoryOps")
+    APP_SHORT_NAME = os.getenv("APP_SHORT_NAME", "FactoryOps")
+    APP_DESCRIPTION = os.getenv("APP_DESCRIPTION", "FactoryOps - Acesso corporativo")
     APP_THEME_COLOR = os.getenv("APP_THEME_COLOR", "#0f172a")
     APP_LANG = os.getenv("APP_LANG", "pt-BR")
 

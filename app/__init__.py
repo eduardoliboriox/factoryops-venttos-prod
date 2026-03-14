@@ -41,8 +41,8 @@ def create_app():
             "now": datetime.utcnow,
             "ENVIRONMENT": app.config.get("ENVIRONMENT", "production"),
 
-            "APP_NAME": app.config.get("APP_NAME", "SMT Manager"),
-            "APP_SHORT_NAME": app.config.get("APP_SHORT_NAME", "SMT Manager"),
+            "APP_NAME": app.config.get("APP_NAME", "FactoryOps"),
+            "APP_SHORT_NAME": app.config.get("APP_SHORT_NAME", "FactoryOps"),
             "APP_DESCRIPTION": app.config.get("APP_DESCRIPTION", ""),
             "APP_THEME_COLOR": app.config.get("APP_THEME_COLOR", "#0f172a"),
             "APP_LANG": app.config.get("APP_LANG", "pt-BR"),

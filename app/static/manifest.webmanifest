@@ -1,7 +1,7 @@
 {
-  "name": "SMT Manager",
-  "short_name": "SMT Manager",
-  "description": "SMT Manager - Acesso corporativo",
+  "name": "FactoryOps",
+  "short_name": "FactoryOps",
+  "description": "FactoryOps - Acesso corporativo",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

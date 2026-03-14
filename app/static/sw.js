@@ -1,8 +1,8 @@
-/* SMT Manager Service Worker (safe by default)
+/* FactoryOps Service Worker (safe by default)
    - Cacheia somente assets estáticos
    - Não cacheia páginas autenticadas
 */
-const CACHE_VERSION = "smt-manager-v2";
+const CACHE_VERSION = "factoryops-v1";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const STATIC_ASSETS = [
   "/offline",
@@ -35,6 +35,7 @@ self.addEventListener("activate", (event) => {
           .filter((k) => {
             if (k === STATIC_CACHE) return false;
             return (
+              k.startsWith("factoryops-") ||
               k.startsWith("smt-manager-") ||
               k.startsWith("workcost-")
             );
@@ -96,7 +97,7 @@ self.addEventListener("fetch", (event) => {
 });
 
 self.addEventListener("push", (event) => {
-  let payload = { title: "SMT Manager", body: "Nova notificação.", url: "/" };
+  let payload = { title: "FactoryOps", body: "Nova notificação.", url: "/" };
 
   if (event.data) {
     try {
