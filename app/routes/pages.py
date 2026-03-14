@@ -157,7 +157,7 @@ def producao_limpeza_stencil():
 @bp.route("/engenharia/folha-cronometragem")
 @login_required
 def engenharia_folha_crono():
-    return render_template("cadastro.html", active_menu="engenharia_folha_crono")
+    return render_template("engenharia/folha_cronometragem.html", active_menu="engenharia_folha_crono")
 
 
 # ─── PCP ─────────────────────────────────────────────────────────────────────

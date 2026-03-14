@@ -307,11 +307,11 @@ def request_password_reset(email: str):
     else:
         reset_url = url_for("auth.reset_password_route", token=token, _external=True)
 
-    subject = "Redefinição de senha - SMT Manager"
+    subject = "Redefinição de senha - FactoryOps"
     body = f"""
 Olá {user.get('full_name') or user.get('username')},
 
-Você solicitou a redefinição de senha no SMT Manager.
+Você solicitou a redefinição de senha no FactoryOps.
 
 Clique no link abaixo para criar uma nova senha:
 
