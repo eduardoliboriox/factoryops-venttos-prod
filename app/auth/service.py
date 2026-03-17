@@ -1,4 +1,5 @@
 import os
+import re
 import cloudinary
 import cloudinary.uploader
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -27,6 +28,28 @@ from app.auth.profile_repository import (
 )
 
 ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "webp"}
+_SPECIAL_CHARS = r'[@$#!%&*^()_+\-=\[\]{};\':"\\|,.<>/?]'
+_PASSWORD_MAX_AGE_DAYS = 180
+
+# =====================================================
+# PASSWORD POLICY
+# =====================================================
+def _validate_password_complexity(password: str, username: str = ""):
+    if len(password) < 10:
+        raise ValueError("A senha deve ter pelo menos 10 caracteres")
+    if not re.search(r'[A-Z]', password):
+        raise ValueError("A senha deve conter pelo menos uma letra maiúscula")
+    if not re.search(r'[a-z]', password):
+        raise ValueError("A senha deve conter pelo menos uma letra minúscula")
+    if not re.search(r'\d', password):
+        raise ValueError("A senha deve conter pelo menos um número")
+    if not re.search(_SPECIAL_CHARS, password):
+        raise ValueError("A senha deve conter pelo menos um caractere especial (@$#!%&*^ etc.)")
+    password_lower = password.lower()
+    if username and username.lower() in password_lower:
+        raise ValueError("A senha não pode conter o nome de usuário")
+    if "venttos" in password_lower:
+        raise ValueError("A senha não pode conter o nome da empresa")
 
 # =====================================================
 # OAUTH
@@ -115,6 +138,7 @@ def register_user(form):
 
     full_name = form["full_name"]
     username = generate_username(full_name)
+    _validate_password_complexity(form["password"], username)
     password_hash = generate_password_hash(form["password"])
     is_first_user = count_users() == 0
 
@@ -143,6 +167,8 @@ def register_user(form):
 # LOGIN LOCAL
 # =====================================================
 def authenticate_local(username, password):
+    from datetime import datetime, timedelta
+
     user = get_user_by_username(username)
 
     if not user:
@@ -153,6 +179,12 @@ def authenticate_local(username, password):
 
     if not check_password_hash(user["password_hash"], password):
         return None
+
+    password_changed_at = user.get("password_changed_at")
+    if password_changed_at:
+        age = datetime.utcnow() - password_changed_at.replace(tzinfo=None)
+        if age > timedelta(days=_PASSWORD_MAX_AGE_DAYS):
+            return {"status": "EXPIRED", "user": user}
 
     return user
 
@@ -171,6 +203,10 @@ def change_user_password(user_id, current_password, new_password, confirm_passwo
     if not check_password_hash(user["password_hash"], current_password):
         raise ValueError("Senha atual incorreta")
 
+    if check_password_hash(user["password_hash"], new_password):
+        raise ValueError("A nova senha não pode ser igual à senha atual")
+
+    _validate_password_complexity(new_password, user.get("username", ""))
     update_user_password(user_id, new_password)
 
     return "OK"
@@ -337,5 +373,7 @@ def reset_password(token: str, new_password: str):
     if not token_data:
         raise ValueError("Token inválido ou expirado")
 
+    user = get_user_by_id(token_data["user_id"])
+    _validate_password_complexity(new_password, user.get("username", "") if user else "")
     update_user_password(token_data["user_id"], new_password)
     mark_token_as_used(token)

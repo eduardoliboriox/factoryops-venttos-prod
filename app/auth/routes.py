@@ -214,6 +214,11 @@ def login_local():
         flash("Usuário ou senha inválidos", "danger")
         return redirect(url_for("auth.login"))
 
+    if isinstance(result, dict) and result.get("status") == "EXPIRED":
+        login_user(User(result["user"]))
+        flash("Sua senha expirou (180 dias). Altere-a para continuar.", "warning")
+        return redirect(url_for("auth.my_profile"))
+
     login_user(User(result))
     return redirect(url_for("pages.inicio"))
 

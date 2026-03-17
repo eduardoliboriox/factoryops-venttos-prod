@@ -219,7 +219,8 @@ def update_user_password(user_id: int, new_password: str):
             cur.execute(
                 """
                 UPDATE users
-                SET password_hash = %s
+                SET password_hash = %s,
+                    password_changed_at = NOW()
                 WHERE id = %s
                 """,
                 (password_hash, user_id),
