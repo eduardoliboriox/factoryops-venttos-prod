@@ -20,7 +20,9 @@ mas no sistema está:
 FRONT
 FRONT
 FRONT
+FRONT
 ai depois
+REAR
 REAR
 REAR
 REAR
