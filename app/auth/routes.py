@@ -93,17 +93,30 @@ def google_callback():
         flash("Erro ao autenticar com Google", "danger")
         return redirect(url_for("auth.login"))
 
-    try:
-        userinfo = oauth.google.parse_id_token(token)
-    except Exception:
-        flash("Erro ao obter dados do Google", "danger")
-        return redirect(url_for("auth.login"))
+    userinfo = token.get("userinfo")
+    if not userinfo:
+        try:
+            userinfo = oauth.google.userinfo()
+        except Exception:
+            flash("Erro ao obter dados do Google", "danger")
+            return redirect(url_for("auth.login"))
 
     if not userinfo:
         flash("Falha na autenticação Google", "danger")
         return redirect(url_for("auth.login"))
 
-    user_data = get_or_create_user(userinfo, "google")
+    try:
+        user_data = get_or_create_user(userinfo, "google")
+    except ValueError as e:
+        err = str(e)
+        if err == "PENDING":
+            flash("Cadastro aguardando aprovação do administrador.", "warning")
+        elif err == "NOT_FOUND":
+            flash("Email não encontrado. Cadastre-se e aguarde aprovação.", "warning")
+        else:
+            flash("Não foi possível autenticar com Google.", "danger")
+        return redirect(url_for("auth.login"))
+
     login_user(User(user_data))
 
     return redirect(url_for("pages.inicio"))
@@ -165,7 +178,18 @@ def github_callback():
 
     profile["email"] = email
 
-    user_data = get_or_create_user(profile, "github")
+    try:
+        user_data = get_or_create_user(profile, "github")
+    except ValueError as e:
+        err = str(e)
+        if err == "PENDING":
+            flash("Cadastro aguardando aprovação do administrador.", "warning")
+        elif err == "NOT_FOUND":
+            flash("Email não encontrado. Cadastre-se e aguarde aprovação.", "warning")
+        else:
+            flash("Não foi possível autenticar com GitHub.", "danger")
+        return redirect(url_for("auth.login"))
+
     login_user(User(user_data))
 
     return redirect(url_for("pages.inicio"))

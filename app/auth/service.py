@@ -32,39 +32,41 @@ ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "webp"}
 # OAUTH
 # =====================================================
 def get_or_create_user(profile, provider):
-    provider_id = str(profile["id"])
-    email = profile["email"]
-    username = email.split("@")[0]
+    provider_id = str(profile.get("sub") or profile.get("id"))
+    email = profile.get("email")
+
+    if not email:
+        raise ValueError("NO_EMAIL")
 
     user = get_user_by_provider(provider, provider_id)
     if user:
+        if not user["is_active"]:
+            raise ValueError("PENDING")
         return user
 
     from app.auth.repository import get_user_by_email
 
     existing_user = get_user_by_email(email)
 
-    if existing_user:
-        from app.extensions import get_db
+    if not existing_user:
+        raise ValueError("NOT_FOUND")
 
-        with get_db() as conn:
-            with conn.cursor() as cur:
-                cur.execute("""
-                    UPDATE users
-                    SET provider = %s,
-                        provider_id = %s
-                    WHERE id = %s
-                """, (provider, provider_id, existing_user["id"]))
-            conn.commit()
+    if not existing_user["is_active"]:
+        raise ValueError("PENDING")
 
-        return get_user_by_id(existing_user["id"])
+    from app.extensions import get_db
 
-    return create_user({
-        "username": username,
-        "email": email,
-        "provider": provider,
-        "provider_id": provider_id
-    })
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                UPDATE users
+                SET provider = %s,
+                    provider_id = %s
+                WHERE id = %s
+            """, (provider, provider_id, existing_user["id"]))
+        conn.commit()
+
+    return get_user_by_id(existing_user["id"])
 
 # ====================================================
 # REGISTER
