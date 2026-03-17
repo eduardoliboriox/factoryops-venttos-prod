@@ -19,13 +19,465 @@
 {% endblock %}
 
 {% block content %}
-<div class="under-construction-wrapper">
-  <div class="under-construction-card">
-    <div class="uc-icon">
-      <i class="bi bi-tools"></i>
+<style>
+  .st-card {
+    border: 1px solid rgba(15,23,42,0.10);
+    border-radius: 14px;
+    background: #fff;
+    overflow: hidden;
+    margin-bottom: 20px;
+  }
+  .st-card .st-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 16px;
+    border-bottom: 1px solid rgba(15,23,42,0.08);
+  }
+  .st-header-blue  { background: linear-gradient(180deg, rgba(13,110,253,0.08), transparent); }
+  .st-header-green { background: linear-gradient(180deg, rgba(25,135,84,0.08), transparent); }
+  .st-header-gray  { background: linear-gradient(180deg, rgba(15,23,42,0.05), transparent); }
+  .st-card .st-title { display: flex; align-items: center; gap: 10px; }
+  .st-card .st-icon {
+    width: 40px; height: 40px; border-radius: 12px;
+    display: grid; place-items: center; font-size: 18px;
+  }
+  .st-icon-blue  { background: rgba(13,110,253,0.12); color: #0d6efd; }
+  .st-icon-green { background: rgba(25,135,84,0.12);  color: #198754; }
+  .st-icon-gray  { background: rgba(15,23,42,0.08);   color: rgba(15,23,42,0.60); }
+  .st-subtitle { font-size: 12px; color: rgba(15,23,42,0.65); margin-top: 2px; }
+  .st-body { padding: 16px; }
+
+  .stencil-table {
+    font-size: 12px;
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .stencil-table th, .stencil-table td {
+    border: 1px solid rgba(15,23,42,0.14);
+    padding: 5px 8px;
+    vertical-align: middle;
+  }
+  .stencil-table thead th {
+    background: rgba(15,23,42,0.05);
+    font-weight: 700;
+    font-size: 11px;
+    text-transform: uppercase;
+    text-align: center;
+    white-space: nowrap;
+  }
+  .stencil-table .row-label {
+    font-weight: 600;
+    font-size: 11px;
+    white-space: nowrap;
+    width: 110px;
+    background: rgba(15,23,42,0.03);
+  }
+  .stencil-table td input {
+    width: 100%;
+    border: none;
+    background: transparent;
+    font-size: 12px;
+    padding: 2px 4px;
+    outline: none;
+    min-width: 70px;
+  }
+  .stencil-table td input:focus {
+    background: rgba(13,110,253,0.06);
+    border-radius: 4px;
+  }
+  .doc-meta {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .doc-meta .meta-field label {
+    display: block;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: rgba(15,23,42,0.50);
+    margin-bottom: 4px;
+  }
+  .doc-meta .meta-field input {
+    width: 100%;
+    border: 1px solid rgba(15,23,42,0.14);
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 13px;
+  }
+  .doc-meta .meta-field input:focus {
+    outline: none;
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 3px rgba(13,110,253,0.12);
+  }
+  .sign-row {
+    display: flex;
+    justify-content: space-around;
+    gap: 32px;
+    padding: 16px;
+    border-top: 1px solid rgba(15,23,42,0.08);
+    margin-top: 8px;
+  }
+  .sign-item {
+    flex: 1;
+    text-align: center;
+    max-width: 240px;
+  }
+  .sign-line {
+    border-top: 1.5px solid rgba(15,23,42,0.30);
+    margin-bottom: 6px;
+    margin-top: 32px;
+  }
+  .sign-label {
+    font-size: 11px;
+    color: rgba(15,23,42,0.55);
+    font-weight: 600;
+  }
+  .sign-sublabel {
+    font-size: 10px;
+    color: rgba(15,23,42,0.40);
+  }
+</style>
+
+<div class="container-fluid">
+
+  <ul class="nav nav-tabs mb-3" id="stencilTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-novo" type="button" role="tab">
+        <i class="bi bi-plus-circle me-1"></i> Novo Registro
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-consultar" type="button" role="tab">
+        <i class="bi bi-search me-1"></i> Consultar
+      </button>
+    </li>
+  </ul>
+
+  <div class="tab-content">
+
+    <!-- TAB NOVO REGISTRO -->
+    <div class="tab-pane fade show active" id="tab-novo" role="tabpanel">
+
+      <div id="msgStencil"></div>
+
+      <div class="st-card">
+        <div class="st-header st-header-blue">
+          <div class="st-title">
+            <div class="st-icon st-icon-blue"><i class="bi bi-layout-text-window"></i></div>
+            <div>
+              <div class="fw-bold">Identificação</div>
+              <div class="st-subtitle">ENG016 · Stencil Cleaning Control</div>
+            </div>
+          </div>
+          <span class="badge text-bg-primary">PASSO 1</span>
+        </div>
+        <div class="st-body">
+          <div class="doc-meta">
+            <div class="meta-field">
+              <label>Data</label>
+              <input type="date" id="stData">
+            </div>
+            <div class="meta-field">
+              <label>Cliente (Customer)</label>
+              <input type="text" id="stCliente" placeholder="Nome do cliente">
+            </div>
+            <div class="meta-field">
+              <label>Linha (Line)</label>
+              <input type="text" id="stLinha" placeholder="Ex: SMT-01">
+            </div>
+            <div class="meta-field">
+              <label>Identificação do Stencil</label>
+              <input type="text" id="stIdentificacao" placeholder="Código / referência">
+            </div>
+            <div class="meta-field">
+              <label>Espessura (Thickness)</label>
+              <input type="text" id="stEspessura" placeholder="Ex: 0.15mm">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="st-card">
+        <div class="st-header st-header-green">
+          <div class="st-title">
+            <div class="st-icon st-icon-green"><i class="bi bi-clock-history"></i></div>
+            <div>
+              <div class="fw-bold">Registros por Horário</div>
+              <div class="st-subtitle">Preencha os dados de cada horário de limpeza.</div>
+            </div>
+          </div>
+          <span class="badge text-bg-success">PASSO 2</span>
+        </div>
+        <div class="st-body p-2">
+          <div class="table-responsive">
+            <table class="stencil-table">
+              <thead>
+                <tr>
+                  <th style="text-align:left;">Campo</th>
+                  <th>1° HOR.</th>
+                  <th>2° HOR.</th>
+                  <th>3° HOR.</th>
+                  <th>4° HOR.</th>
+                  <th>5° HOR.</th>
+                  <th>6° HOR.</th>
+                  <th>7° HOR.</th>
+                  <th>8° HOR.</th>
+                  <th>9° HOR.</th>
+                  <th>10° HOR.</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="row-label">Horário Início<br><span style="font-weight:400;color:rgba(15,23,42,.45);">(Start time)</span></td>
+                  <td><input type="time" data-row="inicio" data-col="1"></td>
+                  <td><input type="time" data-row="inicio" data-col="2"></td>
+                  <td><input type="time" data-row="inicio" data-col="3"></td>
+                  <td><input type="time" data-row="inicio" data-col="4"></td>
+                  <td><input type="time" data-row="inicio" data-col="5"></td>
+                  <td><input type="time" data-row="inicio" data-col="6"></td>
+                  <td><input type="time" data-row="inicio" data-col="7"></td>
+                  <td><input type="time" data-row="inicio" data-col="8"></td>
+                  <td><input type="time" data-row="inicio" data-col="9"></td>
+                  <td><input type="time" data-row="inicio" data-col="10"></td>
+                </tr>
+                <tr>
+                  <td class="row-label">Horário Fim<br><span style="font-weight:400;color:rgba(15,23,42,.45);">(End time)</span></td>
+                  <td><input type="time" data-row="fim" data-col="1"></td>
+                  <td><input type="time" data-row="fim" data-col="2"></td>
+                  <td><input type="time" data-row="fim" data-col="3"></td>
+                  <td><input type="time" data-row="fim" data-col="4"></td>
+                  <td><input type="time" data-row="fim" data-col="5"></td>
+                  <td><input type="time" data-row="fim" data-col="6"></td>
+                  <td><input type="time" data-row="fim" data-col="7"></td>
+                  <td><input type="time" data-row="fim" data-col="8"></td>
+                  <td><input type="time" data-row="fim" data-col="9"></td>
+                  <td><input type="time" data-row="fim" data-col="10"></td>
+                </tr>
+                <tr>
+                  <td class="row-label">Modelo<br><span style="font-weight:400;color:rgba(15,23,42,.45);">(Model)</span></td>
+                  <td><input type="text" data-row="modelo" data-col="1"></td>
+                  <td><input type="text" data-row="modelo" data-col="2"></td>
+                  <td><input type="text" data-row="modelo" data-col="3"></td>
+                  <td><input type="text" data-row="modelo" data-col="4"></td>
+                  <td><input type="text" data-row="modelo" data-col="5"></td>
+                  <td><input type="text" data-row="modelo" data-col="6"></td>
+                  <td><input type="text" data-row="modelo" data-col="7"></td>
+                  <td><input type="text" data-row="modelo" data-col="8"></td>
+                  <td><input type="text" data-row="modelo" data-col="9"></td>
+                  <td><input type="text" data-row="modelo" data-col="10"></td>
+                </tr>
+                <tr>
+                  <td class="row-label">Fase<br><span style="font-weight:400;color:rgba(15,23,42,.45);">(Phase)</span></td>
+                  <td><input type="text" data-row="fase" data-col="1"></td>
+                  <td><input type="text" data-row="fase" data-col="2"></td>
+                  <td><input type="text" data-row="fase" data-col="3"></td>
+                  <td><input type="text" data-row="fase" data-col="4"></td>
+                  <td><input type="text" data-row="fase" data-col="5"></td>
+                  <td><input type="text" data-row="fase" data-col="6"></td>
+                  <td><input type="text" data-row="fase" data-col="7"></td>
+                  <td><input type="text" data-row="fase" data-col="8"></td>
+                  <td><input type="text" data-row="fase" data-col="9"></td>
+                  <td><input type="text" data-row="fase" data-col="10"></td>
+                </tr>
+                <tr>
+                  <td class="row-label">Status</td>
+                  <td><input type="text" data-row="status" data-col="1" placeholder="OK/NOK"></td>
+                  <td><input type="text" data-row="status" data-col="2" placeholder="OK/NOK"></td>
+                  <td><input type="text" data-row="status" data-col="3" placeholder="OK/NOK"></td>
+                  <td><input type="text" data-row="status" data-col="4" placeholder="OK/NOK"></td>
+                  <td><input type="text" data-row="status" data-col="5" placeholder="OK/NOK"></td>
+                  <td><input type="text" data-row="status" data-col="6" placeholder="OK/NOK"></td>
+                  <td><input type="text" data-row="status" data-col="7" placeholder="OK/NOK"></td>
+                  <td><input type="text" data-row="status" data-col="8" placeholder="OK/NOK"></td>
+                  <td><input type="text" data-row="status" data-col="9" placeholder="OK/NOK"></td>
+                  <td><input type="text" data-row="status" data-col="10" placeholder="OK/NOK"></td>
+                </tr>
+                <tr>
+                  <td class="row-label">Visto (PIC)</td>
+                  <td><input type="text" data-row="visto" data-col="1"></td>
+                  <td><input type="text" data-row="visto" data-col="2"></td>
+                  <td><input type="text" data-row="visto" data-col="3"></td>
+                  <td><input type="text" data-row="visto" data-col="4"></td>
+                  <td><input type="text" data-row="visto" data-col="5"></td>
+                  <td><input type="text" data-row="visto" data-col="6"></td>
+                  <td><input type="text" data-row="visto" data-col="7"></td>
+                  <td><input type="text" data-row="visto" data-col="8"></td>
+                  <td><input type="text" data-row="visto" data-col="9"></td>
+                  <td><input type="text" data-row="visto" data-col="10"></td>
+                </tr>
+                <tr>
+                  <td class="row-label">Observação<br><span style="font-weight:400;color:rgba(15,23,42,.45);">(Remark)</span></td>
+                  <td><input type="text" data-row="obs" data-col="1"></td>
+                  <td><input type="text" data-row="obs" data-col="2"></td>
+                  <td><input type="text" data-row="obs" data-col="3"></td>
+                  <td><input type="text" data-row="obs" data-col="4"></td>
+                  <td><input type="text" data-row="obs" data-col="5"></td>
+                  <td><input type="text" data-row="obs" data-col="6"></td>
+                  <td><input type="text" data-row="obs" data-col="7"></td>
+                  <td><input type="text" data-row="obs" data-col="8"></td>
+                  <td><input type="text" data-row="obs" data-col="9"></td>
+                  <td><input type="text" data-row="obs" data-col="10"></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="sign-row">
+            <div class="sign-item">
+              <div class="sign-line"></div>
+              <div class="sign-label">Líder de Produção</div>
+              <div class="sign-sublabel">Production Leader</div>
+            </div>
+            <div class="sign-item">
+              <div class="sign-line"></div>
+              <div class="sign-label">Supervisor de Produção</div>
+              <div class="sign-sublabel">Production Supervisor</div>
+            </div>
+          </div>
+
+          <div class="d-flex gap-2 flex-wrap mt-2 px-2 pb-2">
+            <button class="btn btn-success px-4 fw-bold" id="btnSalvarStencil" type="button">
+              <i class="bi bi-send-check"></i> Salvar Registro
+            </button>
+            <button class="btn btn-outline-secondary px-3" id="btnLimparStencil" type="button">
+              <i class="bi bi-x-lg"></i> Limpar
+            </button>
+          </div>
+        </div>
+      </div>
+
     </div>
-    <h2 class="uc-title">Controle de Limpeza do Stencil</h2>
-    <p class="uc-subtitle">Esta funcionalidade está em desenvolvimento e estará disponível em breve.</p>
+
+    <!-- TAB CONSULTAR -->
+    <div class="tab-pane fade" id="tab-consultar" role="tabpanel">
+
+      <div class="st-card">
+        <div class="st-header st-header-gray">
+          <div class="st-title">
+            <div class="st-icon st-icon-gray"><i class="bi bi-funnel"></i></div>
+            <div>
+              <div class="fw-bold">Filtros</div>
+              <div class="st-subtitle">Busque registros por data ou linha.</div>
+            </div>
+          </div>
+        </div>
+        <div class="st-body">
+          <div class="row g-3 align-items-end">
+            <div class="col-md-3">
+              <label class="form-label" style="font-size:0.8rem;font-weight:600;">Data</label>
+              <input class="form-control" type="date" id="filtroDataSt">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label" style="font-size:0.8rem;font-weight:600;">Linha</label>
+              <input class="form-control" id="filtroLinhaSt" placeholder="Ex: SMT-01">
+            </div>
+            <div class="col-md-2">
+              <button class="btn btn-primary w-100" id="btnConsultarSt" type="button">
+                <i class="bi bi-search"></i> Buscar
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="msgConsultarSt"></div>
+
+    </div>
+
   </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  "use strict";
+
+  function showMsg(el, tipo, texto) {
+    el.innerHTML = `<div class="alert alert-${tipo} alert-dismissible fade show mb-3">
+      ${texto}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>`;
+    if (tipo !== 'danger') setTimeout(() => { try { bootstrap.Alert.getOrCreateInstance(el.querySelector('.alert')).close(); } catch {} }, 4000);
+  }
+
+  function coletarHorarios() {
+    const horarios = [];
+    for (let col = 1; col <= 10; col++) {
+      horarios.push({
+        posicao: col,
+        horario_inicio: document.querySelector(`[data-row="inicio"][data-col="${col}"]`)?.value || null,
+        horario_fim:    document.querySelector(`[data-row="fim"][data-col="${col}"]`)?.value || null,
+        modelo:         document.querySelector(`[data-row="modelo"][data-col="${col}"]`)?.value || null,
+        fase:           document.querySelector(`[data-row="fase"][data-col="${col}"]`)?.value || null,
+        status:         document.querySelector(`[data-row="status"][data-col="${col}"]`)?.value || null,
+        visto:          document.querySelector(`[data-row="visto"][data-col="${col}"]`)?.value || null,
+        observacao:     document.querySelector(`[data-row="obs"][data-col="${col}"]`)?.value || null,
+      });
+    }
+    return horarios.filter(h => h.horario_inicio || h.horario_fim || h.modelo || h.status);
+  }
+
+  function limparFormulario() {
+    document.getElementById('stData').value = new Date().toISOString().slice(0, 10);
+    document.getElementById('stCliente').value = '';
+    document.getElementById('stLinha').value = '';
+    document.getElementById('stIdentificacao').value = '';
+    document.getElementById('stEspessura').value = '';
+    document.querySelectorAll('.stencil-table input').forEach(i => i.value = '');
+  }
+
+  async function salvar() {
+    const msgEl = document.getElementById('msgStencil');
+    const payload = {
+      data: document.getElementById('stData').value,
+      cliente: document.getElementById('stCliente').value.trim() || null,
+      linha: document.getElementById('stLinha').value.trim() || null,
+      identificacao_stencil: document.getElementById('stIdentificacao').value.trim() || null,
+      espessura: document.getElementById('stEspessura').value.trim() || null,
+      horarios: coletarHorarios(),
+    };
+
+    if (!payload.data || !payload.linha) {
+      showMsg(msgEl, 'warning', 'Data e Linha são obrigatórios.');
+      return;
+    }
+
+    const btn = document.getElementById('btnSalvarStencil');
+    btn.disabled = true;
+    const orig = btn.innerHTML;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Salvando...';
+
+    try {
+      const r = await fetch('/api/limpeza-stencil/registros', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+        body: JSON.stringify(payload),
+      });
+      const data = await r.json().catch(() => ({}));
+      if (r.ok && data.sucesso) {
+        showMsg(msgEl, 'success', `Registro salvo com sucesso! ID #${data.id || '—'}`);
+        limparFormulario();
+      } else {
+        showMsg(msgEl, 'danger', data.erro || 'Erro ao salvar registro.');
+      }
+    } catch {
+      showMsg(msgEl, 'danger', 'Erro de comunicação com o servidor.');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = orig;
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('stData').value = new Date().toISOString().slice(0, 10);
+    document.getElementById('filtroDataSt').value = new Date().toISOString().slice(0, 10);
+    document.getElementById('btnSalvarStencil').addEventListener('click', salvar);
+    document.getElementById('btnLimparStencil').addEventListener('click', limparFormulario);
+  });
+})();
+</script>
 {% endblock %}
