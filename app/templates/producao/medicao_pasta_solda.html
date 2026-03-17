@@ -1,11 +1,11 @@
 {% extends "layouts/app.html" %}
-{% block title %}Medição de Pasta de Solda{% endblock %}
+{% block title %}Medição da Pasta de Solda/Adesivo{% endblock %}
 
 {% block page_title %}
 <div class="page-header">
   <div class="page-header-title">
     <span class="page-header-section">Produção</span>
-    <h1 class="page-header-name">Medição da Altura da Pasta de Solda/Adesivo</h1>
+    <h1 class="page-header-name">Controle de Medição da Altura da Pasta de Solda/Adesivo</h1>
   </div>
   <div class="page-header-actions">
     <a href="{{ url_for('pages.inicio') }}" class="btn-header-icon" title="Voltar">
@@ -19,13 +19,609 @@
 {% endblock %}
 
 {% block content %}
-<div class="under-construction-wrapper">
-  <div class="under-construction-card">
-    <div class="uc-icon">
-      <i class="bi bi-tools"></i>
+<style>
+  .mp-card {
+    border: 1px solid rgba(15,23,42,0.10);
+    border-radius: 14px;
+    background: #fff;
+    overflow: hidden;
+    margin-bottom: 20px;
+  }
+  .mp-card .mp-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 16px;
+    border-bottom: 1px solid rgba(15,23,42,0.08);
+  }
+  .mp-header-blue  { background: linear-gradient(180deg, rgba(13,110,253,0.08), transparent); }
+  .mp-header-green { background: linear-gradient(180deg, rgba(25,135,84,0.08), transparent); }
+  .mp-header-gray  { background: linear-gradient(180deg, rgba(15,23,42,0.05), transparent); }
+  .mp-header-red   { background: linear-gradient(180deg, rgba(220,53,69,0.07), transparent); }
+  .mp-card .mp-title { display: flex; align-items: center; gap: 10px; }
+  .mp-card .mp-icon {
+    width: 40px; height: 40px; border-radius: 12px;
+    display: grid; place-items: center; font-size: 18px;
+  }
+  .mp-icon-blue  { background: rgba(13,110,253,0.12); color: #0d6efd; }
+  .mp-icon-green { background: rgba(25,135,84,0.12);  color: #198754; }
+  .mp-icon-gray  { background: rgba(15,23,42,0.08);   color: rgba(15,23,42,0.60); }
+  .mp-icon-red   { background: rgba(220,53,69,0.12);  color: #dc3545; }
+  .mp-subtitle { font-size: 12px; color: rgba(15,23,42,0.65); margin-top: 2px; }
+  .mp-body { padding: 16px; }
+
+  .doc-meta {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .doc-meta .meta-field label {
+    display: block;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: rgba(15,23,42,0.50);
+    margin-bottom: 4px;
+  }
+  .doc-meta .meta-field input,
+  .doc-meta .meta-field select {
+    width: 100%;
+    border: 1px solid rgba(15,23,42,0.14);
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 13px;
+  }
+  .doc-meta .meta-field input:focus,
+  .doc-meta .meta-field select:focus {
+    outline: none;
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 3px rgba(13,110,253,0.12);
+  }
+
+  .meas-table {
+    font-size: 11px;
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .meas-table th, .meas-table td {
+    border: 1px solid rgba(15,23,42,0.14);
+    padding: 4px 6px;
+    vertical-align: middle;
+    text-align: center;
+  }
+  .meas-table thead th {
+    background: rgba(15,23,42,0.05);
+    font-weight: 700;
+    font-size: 10px;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .meas-table .group-label {
+    font-weight: 700;
+    font-size: 11px;
+    background: rgba(13,110,253,0.06);
+    text-align: left;
+    padding-left: 8px;
+    color: #0d6efd;
+  }
+  .meas-table .side-label {
+    font-size: 10px;
+    font-weight: 700;
+    background: rgba(15,23,42,0.03);
+    text-align: left;
+    padding-left: 12px;
+    white-space: nowrap;
+    width: 60px;
+  }
+  .meas-table .row-label {
+    font-size: 10px;
+    background: rgba(15,23,42,0.02);
+    text-align: left;
+    padding-left: 16px;
+    white-space: nowrap;
+    width: 110px;
+  }
+  .meas-table td input {
+    width: 100%;
+    border: none;
+    background: transparent;
+    font-size: 11px;
+    padding: 2px 3px;
+    outline: none;
+    min-width: 55px;
+    text-align: center;
+  }
+  .meas-table td input:focus {
+    background: rgba(13,110,253,0.06);
+    border-radius: 3px;
+  }
+  .obs-section {
+    border: 1px solid rgba(15,23,42,0.12);
+    border-radius: 8px;
+    padding: 12px;
+    margin-top: 12px;
+    font-size: 12px;
+  }
+  .obs-section ul {
+    padding-left: 16px;
+    margin: 0;
+    color: rgba(15,23,42,0.65);
+  }
+  .obs-section li { margin-bottom: 4px; }
+
+  .plano-row-mp { border-bottom: 1px solid rgba(15,23,42,0.08); padding: 12px 0; }
+  .plano-row-mp:last-child { border-bottom: none; }
+  .plano-item-label-mp { font-size: 11px; font-weight: 700; color: rgba(15,23,42,0.50); margin-bottom: 4px; }
+</style>
+
+<div class="container-fluid">
+
+  <ul class="nav nav-tabs mb-3" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-medicao" type="button" role="tab">
+        <i class="bi bi-rulers me-1"></i> Nova Medição
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-plano" type="button" role="tab">
+        <i class="bi bi-exclamation-triangle me-1"></i> Plano de Ação
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-consultar-mp" type="button" role="tab">
+        <i class="bi bi-search me-1"></i> Consultar
+      </button>
+    </li>
+  </ul>
+
+  <div class="tab-content">
+
+    <!-- TAB NOVA MEDIÇÃO -->
+    <div class="tab-pane fade show active" id="tab-medicao" role="tabpanel">
+
+      <div id="msgMedicao"></div>
+
+      <!-- Identificação -->
+      <div class="mp-card">
+        <div class="mp-header mp-header-blue">
+          <div class="mp-title">
+            <div class="mp-icon mp-icon-blue"><i class="bi bi-card-list"></i></div>
+            <div>
+              <div class="fw-bold">Identificação</div>
+              <div class="mp-subtitle">PRO006 · Solder/Adhesive Paste Height Measurement Control</div>
+            </div>
+          </div>
+          <span class="badge text-bg-primary">PASSO 1</span>
+        </div>
+        <div class="mp-body">
+          <div class="doc-meta">
+            <div class="meta-field">
+              <label>Data (Date)</label>
+              <input type="date" id="mpData">
+            </div>
+            <div class="meta-field">
+              <label>Cliente (Customer)</label>
+              <input type="text" id="mpCliente" placeholder="Nome do cliente">
+            </div>
+            <div class="meta-field">
+              <label>Esp. Stencil (Thickness)</label>
+              <input type="text" id="mpEspStencil" placeholder="Ex: 0.15mm">
+            </div>
+            <div class="meta-field">
+              <label>Turno (Shift)</label>
+              <select id="mpTurno">
+                <option value="">Selecione</option>
+                <option value="1">1° Turno</option>
+                <option value="2">2° Turno</option>
+                <option value="3">3° Turno</option>
+              </select>
+            </div>
+            <div class="meta-field">
+              <label>Modelo (Model)</label>
+              <input type="text" id="mpModelo" placeholder="Ex: ABC-123">
+            </div>
+            <div class="meta-field">
+              <label>Tolerância (Tolerance)</label>
+              <input type="text" id="mpTolerancia" placeholder="Ex: ±30%">
+            </div>
+            <div class="meta-field">
+              <label>Lado (Side)</label>
+              <select id="mpLado">
+                <option value="">Selecione</option>
+                <option value="TOP">TOP</option>
+                <option value="BOTTOM">BOTTOM</option>
+                <option value="AMBOS">AMBOS</option>
+              </select>
+            </div>
+            <div class="meta-field">
+              <label>Linha (Line)</label>
+              <input type="text" id="mpLinha" placeholder="Ex: SMT-01">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabela de medições -->
+      <div class="mp-card">
+        <div class="mp-header mp-header-green">
+          <div class="mp-title">
+            <div class="mp-icon mp-icon-green"><i class="bi bi-grid-3x3"></i></div>
+            <div>
+              <div class="fw-bold">Medições por Horário</div>
+              <div class="mp-subtitle">5 pontos de squeege × FRONT/REAR × Menor/Maior valor</div>
+            </div>
+          </div>
+          <span class="badge text-bg-success">PASSO 2</span>
+        </div>
+        <div class="mp-body p-2">
+          <div class="table-responsive">
+            <table class="meas-table" id="measTable">
+              <thead>
+                <tr>
+                  <th colspan="3" style="text-align:left;">Squeege / Lado / Medida</th>
+                  <th>1° HOR.</th>
+                  <th>2° HOR.</th>
+                  <th>3° HOR.</th>
+                  <th>4° HOR.</th>
+                  <th>5° HOR.</th>
+                  <th>6° HOR.</th>
+                  <th>7° HOR.</th>
+                  <th>8° HOR.</th>
+                  <th>9° HOR.</th>
+                  <th>10° HOR.</th>
+                </tr>
+              </thead>
+              <tbody id="measBody">
+              </tbody>
+            </table>
+          </div>
+
+          <div class="obs-section">
+            <strong style="font-size:11px;color:rgba(15,23,42,.65);">Observações:</strong>
+            <ul>
+              <li>A medição deve ser realizada através do equipamento MALCOM TD-4M (The measurement is done on MALCOM TD-4M equipment)</li>
+              <li>As linhas que não têm SPI devem registrar seus parâmetros neste documento. (The lines that do not have SPI must register their parameters in this document)</li>
+              <li>Os pontos de medição estão indicados como pico de medida (The measurement points are indicated as measurement peaks)</li>
+              <li>As linhas com SPI usam esse equipamento MALCOM TD-4M se elas estiverem fora das especificações. (The lines that do not use the equipment MALCOM TD-4M are those that do not have SPI)</li>
+              <li>Caso alguma anomalia fora de especificações seja encontrada, avisar ao SMT Líder de Produção, Técnico de Produção ou Supervisor. (If any abnormality out of specifications is found, notify the SMT Production Leader or Supervisor)</li>
+              <li>As referências de medição para pasta de solda variam de acordo com a tolerância de cada produto. (The measurement references for solder paste change according to the tolerance for each product)</li>
+            </ul>
+          </div>
+
+          <div class="d-flex gap-2 flex-wrap mt-3 px-1">
+            <button class="btn btn-success px-4 fw-bold" id="btnSalvarMedicao" type="button">
+              <i class="bi bi-send-check"></i> Salvar Medição
+            </button>
+            <button class="btn btn-outline-secondary px-3" id="btnLimparMedicao" type="button">
+              <i class="bi bi-x-lg"></i> Limpar
+            </button>
+          </div>
+        </div>
+      </div>
+
     </div>
-    <h2 class="uc-title">Medição da Pasta de Solda/Adesivo</h2>
-    <p class="uc-subtitle">Esta funcionalidade está em desenvolvimento e estará disponível em breve.</p>
+
+    <!-- TAB PLANO DE AÇÃO -->
+    <div class="tab-pane fade" id="tab-plano" role="tabpanel">
+
+      <div id="msgPlanoMp"></div>
+
+      <div class="mp-card">
+        <div class="mp-header mp-header-red">
+          <div class="mp-title">
+            <div class="mp-icon mp-icon-red"><i class="bi bi-exclamation-triangle"></i></div>
+            <div>
+              <div class="fw-bold">Plano de Ação</div>
+              <div class="mp-subtitle">Registre ações corretivas para medições fora de especificação.</div>
+            </div>
+          </div>
+        </div>
+        <div class="mp-body">
+          <div class="doc-meta" style="grid-template-columns: repeat(auto-fit, minmax(120px,1fr));">
+            <div class="meta-field">
+              <label>Dia</label>
+              <input type="date" id="planoDia">
+            </div>
+            <div class="meta-field">
+              <label>Item</label>
+              <input type="text" id="planoItem" placeholder="Ex: Squeege 3 FRONT">
+            </div>
+          </div>
+          <div id="planoRowsContainer">
+            <div class="plano-row-mp">
+              <div class="row g-2">
+                <div class="col-md-6">
+                  <div class="plano-item-label-mp">OCORRÊNCIA (Problem)</div>
+                  <input class="form-control form-control-sm" type="text" data-plano="ocorrencia" placeholder="Descreva a ocorrência" style="border-radius:8px;">
+                </div>
+                <div class="col-md-6">
+                  <div class="plano-item-label-mp">CAUSA (Root Cause)</div>
+                  <input class="form-control form-control-sm" type="text" data-plano="causa" placeholder="Causa identificada" style="border-radius:8px;">
+                </div>
+                <div class="col-md-6">
+                  <div class="plano-item-label-mp">AÇÃO (Action Plan)</div>
+                  <input class="form-control form-control-sm" type="text" data-plano="acao" placeholder="Ação corretiva" style="border-radius:8px;">
+                </div>
+                <div class="col-md-3">
+                  <div class="plano-item-label-mp">QUANDO? (When?)</div>
+                  <input class="form-control form-control-sm" type="date" data-plano="quando" style="border-radius:8px;">
+                </div>
+                <div class="col-md-3">
+                  <div class="plano-item-label-mp">RESPONSÁVEL (PIC)</div>
+                  <input class="form-control form-control-sm" type="text" data-plano="responsavel" placeholder="Nome" style="border-radius:8px;">
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="d-flex gap-2 mt-3">
+            <button class="btn btn-outline-secondary btn-sm" id="btnAddPlanoRow" type="button">
+              <i class="bi bi-plus"></i> Adicionar linha
+            </button>
+            <button class="btn btn-warning fw-bold px-4" id="btnSalvarPlanoMp" type="button">
+              <i class="bi bi-save"></i> Salvar Plano
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- TAB CONSULTAR -->
+    <div class="tab-pane fade" id="tab-consultar-mp" role="tabpanel">
+
+      <div class="mp-card">
+        <div class="mp-header mp-header-gray">
+          <div class="mp-title">
+            <div class="mp-icon mp-icon-gray"><i class="bi bi-funnel"></i></div>
+            <div>
+              <div class="fw-bold">Filtros</div>
+              <div class="mp-subtitle">Busque medições por data ou linha.</div>
+            </div>
+          </div>
+        </div>
+        <div class="mp-body">
+          <div class="row g-3 align-items-end">
+            <div class="col-md-3">
+              <label class="form-label" style="font-size:0.8rem;font-weight:600;">Data</label>
+              <input class="form-control" type="date" id="filtroDataMp">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label" style="font-size:0.8rem;font-weight:600;">Linha</label>
+              <input class="form-control" id="filtroLinhaMp" placeholder="Ex: SMT-01">
+            </div>
+            <div class="col-md-2">
+              <button class="btn btn-primary w-100" type="button" id="btnConsultarMp">
+                <i class="bi bi-search"></i> Buscar
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="msgConsultarMp"></div>
+
+    </div>
+
   </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  "use strict";
+
+  const SQUEEGES = 5;
+  const SIDES = ['FRONT', 'REAR'];
+  const MEASURES = [
+    { key: 'menor_pico',  label: 'Menor valor (Pico)',  sublabel: '(smaller peak)' },
+    { key: 'menor_raio',  label: 'Menor valor (Raio)',  sublabel: '(smaller radius)' },
+    { key: 'maior_pico',  label: 'Maior valor (Pico)',  sublabel: '(major peak)' },
+    { key: 'maior_raio',  label: 'Maior valor (Raio)',  sublabel: '(major radius)' },
+  ];
+
+  function buildMeasTable() {
+    const tbody = document.getElementById('measBody');
+    const rows = [];
+
+    for (let sq = 1; sq <= SQUEEGES; sq++) {
+      rows.push(`<tr>
+        <td class="group-label" colspan="13">Squeege ${sq}</td>
+      </tr>`);
+
+      for (const side of SIDES) {
+        for (const meas of MEASURES) {
+          const key = `sq${sq}_${side}_${meas.key}`;
+          const inputs = Array.from({length: 10}, (_, i) =>
+            `<td><input type="text" id="${key}_h${i+1}" placeholder="—"></td>`
+          ).join('');
+
+          rows.push(`<tr>
+            <td class="side-label" colspan="1">${side}</td>
+            <td class="row-label" colspan="2">${meas.label}<br><span style="font-weight:400;color:rgba(15,23,42,.40);font-size:9px;">${meas.sublabel}</span></td>
+            ${inputs}
+          </tr>`);
+        }
+      }
+    }
+
+    tbody.innerHTML = rows.join('');
+  }
+
+  function coletarMedicoes() {
+    const medicoes = [];
+    for (let sq = 1; sq <= SQUEEGES; sq++) {
+      for (const side of SIDES) {
+        for (const meas of MEASURES) {
+          const entry = { squeege: sq, lado: side, tipo_medida: meas.key, horarios: [] };
+          for (let h = 1; h <= 10; h++) {
+            const val = document.getElementById(`sq${sq}_${side}_${meas.key}_h${h}`)?.value?.trim() || null;
+            entry.horarios.push(val);
+          }
+          if (entry.horarios.some(v => v)) medicoes.push(entry);
+        }
+      }
+    }
+    return medicoes;
+  }
+
+  function limparMedicao() {
+    document.getElementById('mpData').value = new Date().toISOString().slice(0, 10);
+    ['mpCliente','mpEspStencil','mpModelo','mpTolerancia','mpLinha'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    });
+    ['mpTurno','mpLado'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.selectedIndex = 0;
+    });
+    document.querySelectorAll('#measBody input').forEach(i => i.value = '');
+  }
+
+  function showMsg(el, tipo, texto) {
+    el.innerHTML = `<div class="alert alert-${tipo} alert-dismissible fade show mb-3">
+      ${texto}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>`;
+    if (tipo !== 'danger') setTimeout(() => { try { bootstrap.Alert.getOrCreateInstance(el.querySelector('.alert')).close(); } catch {} }, 4000);
+  }
+
+  async function salvarMedicao() {
+    const msgEl = document.getElementById('msgMedicao');
+    const payload = {
+      data: document.getElementById('mpData').value,
+      cliente: document.getElementById('mpCliente').value.trim() || null,
+      espessura_stencil: document.getElementById('mpEspStencil').value.trim() || null,
+      turno: document.getElementById('mpTurno').value || null,
+      modelo: document.getElementById('mpModelo').value.trim() || null,
+      tolerancia: document.getElementById('mpTolerancia').value.trim() || null,
+      lado: document.getElementById('mpLado').value || null,
+      linha: document.getElementById('mpLinha').value.trim() || null,
+      medicoes: coletarMedicoes(),
+    };
+
+    if (!payload.data || !payload.linha) {
+      showMsg(msgEl, 'warning', 'Data e Linha são obrigatórios.');
+      return;
+    }
+
+    const btn = document.getElementById('btnSalvarMedicao');
+    btn.disabled = true;
+    const orig = btn.innerHTML;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Salvando...';
+
+    try {
+      const r = await fetch('/api/medicao-pasta/registros', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+        body: JSON.stringify(payload),
+      });
+      const data = await r.json().catch(() => ({}));
+      if (r.ok && data.sucesso) {
+        showMsg(msgEl, 'success', `Medição salva com sucesso! ID #${data.id || '—'}`);
+        limparMedicao();
+      } else {
+        showMsg(msgEl, 'danger', data.erro || 'Erro ao salvar medição.');
+      }
+    } catch {
+      showMsg(msgEl, 'danger', 'Erro de comunicação com o servidor.');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = orig;
+    }
+  }
+
+  function addPlanoRow() {
+    const container = document.getElementById('planoRowsContainer');
+    const div = document.createElement('div');
+    div.className = 'plano-row-mp';
+    div.innerHTML = `<div class="row g-2">
+      <div class="col-md-6">
+        <div class="plano-item-label-mp">OCORRÊNCIA (Problem)</div>
+        <input class="form-control form-control-sm" type="text" data-plano="ocorrencia" placeholder="Descreva a ocorrência" style="border-radius:8px;">
+      </div>
+      <div class="col-md-6">
+        <div class="plano-item-label-mp">CAUSA (Root Cause)</div>
+        <input class="form-control form-control-sm" type="text" data-plano="causa" placeholder="Causa identificada" style="border-radius:8px;">
+      </div>
+      <div class="col-md-6">
+        <div class="plano-item-label-mp">AÇÃO (Action Plan)</div>
+        <input class="form-control form-control-sm" type="text" data-plano="acao" placeholder="Ação corretiva" style="border-radius:8px;">
+      </div>
+      <div class="col-md-3">
+        <div class="plano-item-label-mp">QUANDO? (When?)</div>
+        <input class="form-control form-control-sm" type="date" data-plano="quando" style="border-radius:8px;">
+      </div>
+      <div class="col-md-3">
+        <div class="plano-item-label-mp">RESPONSÁVEL (PIC)</div>
+        <input class="form-control form-control-sm" type="text" data-plano="responsavel" placeholder="Nome" style="border-radius:8px;">
+      </div>
+    </div>`;
+    container.appendChild(div);
+  }
+
+  async function salvarPlanoMp() {
+    const msgEl = document.getElementById('msgPlanoMp');
+    const rows = document.querySelectorAll('#planoRowsContainer .plano-row-mp');
+    const itens = [];
+
+    for (const row of rows) {
+      const ocorrencia = row.querySelector('[data-plano="ocorrencia"]')?.value?.trim();
+      if (!ocorrencia) continue;
+      itens.push({
+        dia: document.getElementById('planoDia').value || null,
+        item: document.getElementById('planoItem').value.trim() || null,
+        ocorrencia,
+        causa: row.querySelector('[data-plano="causa"]')?.value?.trim() || null,
+        acao: row.querySelector('[data-plano="acao"]')?.value?.trim() || null,
+        quando: row.querySelector('[data-plano="quando"]')?.value || null,
+        responsavel: row.querySelector('[data-plano="responsavel"]')?.value?.trim() || null,
+      });
+    }
+
+    if (!itens.length) {
+      showMsg(msgEl, 'warning', 'Preencha ao menos uma ocorrência antes de salvar.');
+      return;
+    }
+
+    const btn = document.getElementById('btnSalvarPlanoMp');
+    btn.disabled = true;
+    const orig = btn.innerHTML;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Salvando...';
+
+    try {
+      const r = await fetch('/api/medicao-pasta/plano-acao', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+        body: JSON.stringify({ itens }),
+      });
+      const data = await r.json().catch(() => ({}));
+      if (r.ok && data.sucesso) {
+        showMsg(msgEl, 'success', `Plano de ação salvo (${itens.length} item(ns)).`);
+      } else {
+        showMsg(msgEl, 'danger', data.erro || 'Erro ao salvar plano.');
+      }
+    } catch {
+      showMsg(msgEl, 'danger', 'Erro de comunicação com o servidor.');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = orig;
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    buildMeasTable();
+    const today = new Date().toISOString().slice(0, 10);
+    document.getElementById('mpData').value = today;
+    document.getElementById('planoDia').value = today;
+    document.getElementById('filtroDataMp').value = today;
+
+    document.getElementById('btnSalvarMedicao').addEventListener('click', salvarMedicao);
+    document.getElementById('btnLimparMedicao').addEventListener('click', limparMedicao);
+    document.getElementById('btnAddPlanoRow').addEventListener('click', addPlanoRow);
+    document.getElementById('btnSalvarPlanoMp').addEventListener('click', salvarPlanoMp);
+  });
+})();
+</script>
 {% endblock %}
