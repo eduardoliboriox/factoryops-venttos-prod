@@ -364,7 +364,7 @@ def medicao_pasta_create():
     data = request.get_json(silent=True) or {}
     try:
         registro = medicao_pasta_service.criar_registro(data, current_user.id)
-        return jsonify({"sucesso": True, "id": registro["id"]}), 201
+        return jsonify({"sucesso": True, "id": registro["id"], "doc_id": registro.get("doc_id")}), 201
     except ValueError as e:
         return jsonify({"sucesso": False, "erro": str(e)}), 400
     except Exception:

@@ -237,11 +237,79 @@
   .plano-row-mp:last-child { border-bottom: none; }
   .plano-item-label-mp { font-size: 11px; font-weight: 700; color: rgba(15,23,42,0.50); margin-bottom: 4px; }
 
+  .print-header {
+    display: none;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 16px;
+    border: 1px solid #ccc;
+    border-bottom: none;
+    background: #fff;
+  }
+  .print-header-logo img { height: 48px; width: auto; }
+  .print-header-title {
+    flex: 1;
+    text-align: center;
+  }
+  .print-title-main {
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: #000;
+  }
+  .print-title-sub {
+    font-size: 11px;
+    color: #444;
+    margin-top: 2px;
+  }
+  .print-header-doc {
+    text-align: right;
+    font-size: 11px;
+    color: #333;
+    white-space: nowrap;
+  }
+  .print-header-doc .print-doc-num {
+    font-weight: 700;
+    font-size: 12px;
+  }
+
   @media print {
-    .page-header, .nav-tabs, .btn, button, .obs-section, #docBanner { display: none !important; }
-    .mp-card { box-shadow: none; border: 1px solid #ccc; border-radius: 0; }
+    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+    body > * { display: none !important; }
+    #main-content, .content-wrapper, main, [id*="content"], [class*="content"] { display: block !important; }
+
+    .sidebar, nav, header, .navbar,
+    .page-header, .nav-tabs,
+    #docBanner,
+    .mp-header .btn,
+    .mp-header .badge,
+    #btnSalvarMedicao, #btnLimparMedicao, #btnNovoDocumento,
+    #btnAddPlanoRow, #btnSalvarPlanoMp,
+    .sign-btn,
+    .obs-section,
+    #tab-plano, #tab-consultar-mp,
+    [data-bs-dismiss],
+    .modal { display: none !important; }
+
+    .print-header { display: flex !important; }
+
     .tab-pane { display: block !important; opacity: 1 !important; }
     #tab-plano, #tab-consultar-mp { display: none !important; }
+
+    .mp-card {
+      box-shadow: none !important;
+      border: 1px solid #ccc !important;
+      border-radius: 0 !important;
+    }
+    .mp-card .mp-header { display: none !important; }
+    .mp-body { padding: 8px !important; }
+
+    .meas-table th, .meas-table td { border-color: #999 !important; }
+    .meas-table { page-break-inside: avoid; }
+
+    @page { margin: 10mm; }
   }
 </style>
 
@@ -317,6 +385,20 @@
 
     <!-- TAB NOVA MEDIÇÃO -->
     <div class="tab-pane fade show active" id="tab-medicao" role="tabpanel">
+
+      <div class="print-header">
+        <div class="print-header-logo">
+          <img src="{{ url_for('static', filename='images/logos/logo.png') }}" alt="Venttos">
+        </div>
+        <div class="print-header-title">
+          <div class="print-title-main">Controle de Medição da Altura da Pasta de Solda/Adesivo</div>
+          <div class="print-title-sub">(Solder/Adhesive Paste Height Measurement Control)</div>
+        </div>
+        <div class="print-header-doc">
+          <div class="print-doc-num">Nº <span id="printDocId">—</span></div>
+          <div id="printDocDate"></div>
+        </div>
+      </div>
 
       <div id="msgMedicao"></div>
 
@@ -775,10 +857,14 @@
     }
   }
 
-  function setDocumentoId(id) {
+  function setDocumentoId(id, docId) {
     documentoId = id;
-    document.getElementById('docBannerText').textContent = `Documento #${id} aberto — continue preenchendo os horários restantes e clique em Atualizar`;
+    const label = docId || String(id);
+    document.getElementById('docBannerText').textContent = `Documento ${label} aberto — continue preenchendo os horários restantes e clique em Atualizar`;
     document.getElementById('docBanner').classList.add('show');
+    document.getElementById('printDocId').textContent = label;
+    const dateEl = document.getElementById('printDocDate');
+    if (dateEl) dateEl.textContent = new Date().toLocaleDateString('pt-BR');
     const btn = document.getElementById('btnSalvarMedicao');
     btn.innerHTML = '<i class="bi bi-arrow-repeat me-1"></i>Atualizar Medição';
     btn.classList.replace('btn-success', 'btn-primary');
@@ -787,6 +873,9 @@
   function clearDocumentoId() {
     documentoId = null;
     document.getElementById('docBanner').classList.remove('show');
+    document.getElementById('printDocId').textContent = '—';
+    const dateEl = document.getElementById('printDocDate');
+    if (dateEl) dateEl.textContent = '';
     const btn = document.getElementById('btnSalvarMedicao');
     btn.innerHTML = '<i class="bi bi-send-check me-1"></i>Salvar Medição';
     btn.classList.replace('btn-primary', 'btn-success');
@@ -937,10 +1026,10 @@
 
       if (r.ok && data.sucesso) {
         if (!documentoId) {
-          setDocumentoId(data.id);
-          showMsg(msgEl, 'success', `Documento #${data.id} criado. Continue preenchendo os horários restantes e clique em Atualizar.`);
+          setDocumentoId(data.id, data.doc_id);
+          showMsg(msgEl, 'success', `Documento ${data.doc_id} criado. Continue preenchendo os horários restantes e clique em Atualizar.`);
         } else {
-          showMsg(msgEl, 'success', `Documento #${documentoId} atualizado com sucesso.`);
+          showMsg(msgEl, 'success', `Documento atualizado com sucesso.`);
         }
       } else {
         showMsg(msgEl, 'danger', data.erro || 'Erro ao salvar medição.');
@@ -1019,7 +1108,9 @@
         }
       }
 
-      setDocumentoId(id);
+      setDocumentoId(id, data.doc_id);
+      const dateEl = document.getElementById('printDocDate');
+      if (dateEl && data.data) dateEl.textContent = new Date(data.data + 'T00:00:00').toLocaleDateString('pt-BR');
       return true;
     } catch {
       if (errEl) { errEl.textContent = 'Erro de comunicação.'; errEl.classList.remove('d-none'); }
@@ -1142,7 +1233,7 @@
           catch { return iso; }
         }
         tbody.innerHTML = list.map(item => `<tr>
-          <td><strong>#${esc(item.id)}</strong></td>
+          <td><strong>${esc(item.doc_id || item.id)}</strong></td>
           <td>${fmtData(item.data)}</td>
           <td>${esc(item.setor)}</td>
           <td>${esc(item.linha)}</td>

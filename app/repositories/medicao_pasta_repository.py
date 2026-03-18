@@ -6,14 +6,22 @@ from app.extensions import get_db
 
 def create_registro(data: dict, user_id: int) -> dict:
     turno = int(data["turno"]) if data.get("turno") else None
+    ano   = datetime.date.today().year
     with get_db() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                "SELECT COALESCE(MAX(sequencia), 0) + 1 FROM medicao_pasta_registros WHERE ano=%s",
+                (ano,),
+            )
+            sequencia = cur.fetchone()["coalesce"]
+            doc_id    = f"{sequencia}-{ano}"
+
             cur.execute(
                 """
                 INSERT INTO medicao_pasta_registros
                 (data, cliente, espessura_stencil, turno, modelo, tolerancia,
-                 lado, setor, linha, posi_mec, horas, created_by)
-                VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                 lado, setor, linha, posi_mec, horas, created_by, ano, sequencia, doc_id)
+                VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
                 RETURNING *
                 """,
                 (
@@ -29,6 +37,9 @@ def create_registro(data: dict, user_id: int) -> dict:
                     Jsonb(data["posi_mec"]) if data.get("posi_mec") is not None else None,
                     Jsonb(data["horas"]) if data.get("horas") is not None else None,
                     user_id,
+                    ano,
+                    sequencia,
+                    doc_id,
                 ),
             )
             registro = cur.fetchone()
@@ -175,7 +186,7 @@ def list_registros(data=None, setor=None, linha=None, limit=100) -> list:
         with conn.cursor(row_factory=dict_row) as cur:
             cur.execute(
                 f"""
-                SELECT r.id, r.data, r.setor, r.linha, r.modelo, r.turno,
+                SELECT r.id, r.doc_id, r.data, r.setor, r.linha, r.modelo, r.turno,
                        r.created_at, u.username
                 FROM medicao_pasta_registros r
                 LEFT JOIN users u ON u.id = r.created_by
