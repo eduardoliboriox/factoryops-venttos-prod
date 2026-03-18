@@ -612,8 +612,8 @@
 
   const COMPONENTS = 2;
   const MEASURES = [
-    { key: 'menor_valor', label: 'Menor Valor', sublabel: '(Smaller Value)' },
-    { key: 'pico',        label: 'Pico',        sublabel: '(Peak)'          },
+    { key: 'menor_valor', label: 'Menor Valor (Smaller Value)' },
+    { key: 'pico',        label: 'Pico (Peak)'                 },
   ];
   const SIDES = ['FRONT', 'REAR'];
 
@@ -646,10 +646,7 @@
 
           rows.push(`<tr>
             <td class="side-label">${side}</td>
-            <td class="row-label" colspan="2">
-              ${meas.label}<br>
-              <span style="font-weight:400;color:rgba(15,23,42,.40);font-size:9px;">${meas.sublabel}</span>
-            </td>
+            <td class="row-label" colspan="2">${meas.label}</td>
             ${inputs}
           </tr>`);
         }
