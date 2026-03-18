@@ -56,7 +56,12 @@ def listar_registros(data=None, setor=None, linha=None) -> list:
     return [_serialize_row(r) for r in rows]
 
 
-def salvar_plano_acao(itens: list, user_id: int):
+def salvar_plano_acao(itens: list, user_id: int, registro_id: int | None = None):
     if not itens:
         raise ValueError("Nenhum item informado")
-    medicao_pasta_repository.create_plano_acao_itens(itens, user_id)
+    medicao_pasta_repository.create_plano_acao_itens(itens, user_id, registro_id)
+
+
+def buscar_plano_por_registro(registro_id: int) -> list:
+    rows = medicao_pasta_repository.get_plano_by_registro_id(registro_id)
+    return [_serialize_row(r) for r in rows]

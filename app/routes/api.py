@@ -399,15 +399,32 @@ def medicao_pasta_update(registro_id: int):
 @login_required
 def medicao_pasta_plano_acao():
     from app.services import medicao_pasta_service
-    data  = request.get_json(silent=True) or {}
-    itens = data.get("itens") or []
+    data        = request.get_json(silent=True) or {}
+    itens       = data.get("itens") or []
+    registro_id = data.get("registro_id") or None
+    if registro_id is not None:
+        try:
+            registro_id = int(registro_id)
+        except (ValueError, TypeError):
+            registro_id = None
     try:
-        medicao_pasta_service.salvar_plano_acao(itens, current_user.id)
+        medicao_pasta_service.salvar_plano_acao(itens, current_user.id, registro_id)
         return jsonify({"sucesso": True})
     except ValueError as e:
         return jsonify({"sucesso": False, "erro": str(e)}), 400
     except Exception:
         return jsonify({"sucesso": False, "erro": "Erro ao salvar plano de ação"}), 500
+
+
+@bp.route("/medicao-pasta/plano-acao/<int:registro_id>", methods=["GET"])
+@login_required
+def medicao_pasta_plano_acao_get(registro_id):
+    from app.services import medicao_pasta_service
+    try:
+        itens = medicao_pasta_service.buscar_plano_por_registro(registro_id)
+        return jsonify(itens)
+    except Exception:
+        return jsonify({"erro": "Erro ao buscar plano de ação"}), 500
 
 
 # ─── Checklist ────────────────────────────────────────────────────────────────
