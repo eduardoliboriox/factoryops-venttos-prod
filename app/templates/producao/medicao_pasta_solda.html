@@ -637,8 +637,8 @@
         </td>
       </tr>`);
 
-      for (const meas of MEASURES) {
-        for (const side of SIDES) {
+      for (const side of SIDES) {
+        for (const meas of MEASURES) {
           const key = `comp${c}_${side}_${meas.key}`;
           const inputs = Array.from({length: 10}, (_, i) =>
             `<td><input class="meas-input" type="text" id="${key}_h${i+1}" placeholder="—"></td>`
@@ -830,8 +830,8 @@
   function coletarMedicoes() {
     const medicoes = [];
     for (let c = 1; c <= COMPONENTS; c++) {
-      for (const meas of MEASURES) {
-        for (const side of SIDES) {
+      for (const side of SIDES) {
+        for (const meas of MEASURES) {
           const key   = `comp${c}_${side}_${meas.key}`;
           const entry = { componente: c, lado: side, tipo_medida: meas.key, horarios: [] };
           for (let h = 1; h <= 10; h++) {
