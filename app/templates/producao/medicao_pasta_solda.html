@@ -237,6 +237,25 @@
   .plano-row-mp:last-child { border-bottom: none; }
   .plano-item-label-mp { font-size: 11px; font-weight: 700; color: rgba(15,23,42,0.50); margin-bottom: 4px; }
 
+  #mpCliente { text-transform: uppercase; }
+
+  .print-header-verso { display: none; align-items: center; gap: 16px; padding: 12px 16px; border: 1px solid #ccc; border-bottom: none; background: #fff; }
+  .print-header-verso .print-header-logo img { height: 48px; width: auto; }
+  .print-header-verso .print-header-title { flex: 1; text-align: center; }
+  .print-header-verso .print-header-doc { text-align: right; font-size: 11px; color: #333; white-space: nowrap; }
+  .print-header-verso .print-header-doc .print-doc-num { font-weight: 700; font-size: 12px; }
+
+  .plano-print-table { display: none; width: 100%; border-collapse: collapse; font-size: 9px; }
+  .plano-print-table th, .plano-print-table td {
+    border: 1px solid #999; padding: 2px 3px; text-align: center; vertical-align: middle;
+  }
+  .plano-print-table th {
+    background: rgba(15,23,42,0.07); font-weight: 700; font-size: 8px;
+    text-transform: uppercase; letter-spacing: 0.3px; white-space: nowrap;
+  }
+  .plano-print-table td { height: 18px; }
+  .plano-print-table td.cell-text { text-align: left; }
+
   .print-header {
     display: none;
     align-items: center;
@@ -293,7 +312,6 @@
     #btnAddPlanoRow,
     #btnSalvarPlanoMp,
     .sign-btn,
-    #tab-plano,
     #tab-consultar-mp,
     [data-bs-dismiss],
     .modal,
@@ -304,7 +322,7 @@
     .container-fluid { padding: 0 !important; }
     section.content { padding: 0 !important; }
 
-    /* Print header compact */
+    /* Print header compact — frente */
     .print-header {
       display: flex !important;
       padding: 4px 8px !important;
@@ -317,7 +335,26 @@
     .print-header-doc .print-doc-num { font-size: 10px !important; }
 
     .tab-pane { display: block !important; opacity: 1 !important; }
-    #tab-plano, #tab-consultar-mp { display: none !important; }
+    #tab-consultar-mp { display: none !important; }
+
+    /* Verso — Plano de Ação: page 2 */
+    #tab-plano {
+      display: block !important;
+      page-break-before: always !important;
+    }
+    #tab-plano .mp-card,
+    #tab-plano #msgPlanoMp { display: none !important; }
+    .print-header-verso {
+      display: flex !important;
+      padding: 4px 8px !important;
+      gap: 8px !important;
+    }
+    .print-header-verso .print-header-logo img { height: 34px !important; }
+    .print-header-verso .print-header-doc { font-size: 9px !important; }
+    .print-header-verso .print-header-doc .print-doc-num { font-size: 10px !important; }
+    .plano-print-table { display: table !important; }
+    .plano-print-table th { font-size: 7px !important; padding: 1px 2px !important; }
+    .plano-print-table td { font-size: 8px !important; padding: 1px 2px !important; height: 14px !important; }
 
     /* Cards */
     .mp-card {
@@ -477,7 +514,6 @@
         </div>
         <div class="print-header-doc">
           <div class="print-doc-num">Nº <span id="printDocId">—</span></div>
-          <div id="printDocDate"></div>
         </div>
       </div>
 
@@ -623,6 +659,36 @@
 
     <!-- TAB PLANO DE AÇÃO -->
     <div class="tab-pane fade" id="tab-plano" role="tabpanel">
+
+      <div class="print-header-verso">
+        <div class="print-header-logo">
+          <img src="{{ url_for('static', filename='images/logos/logo.png') }}" alt="Venttos">
+        </div>
+        <div class="print-header-title">
+          <div class="print-title-main">Plano de Ação / Action Plan</div>
+          <div class="print-title-sub">Controle de Medição da Altura da Pasta de Solda/Adesivo</div>
+        </div>
+        <div class="print-header-doc">
+          <div class="print-doc-num">Ref. Nº <span id="printDocIdVerso">—</span></div>
+        </div>
+      </div>
+
+      <table class="plano-print-table" id="planoPrintTable">
+        <thead>
+          <tr>
+            <th style="width:42px;">DIA<br><span style="font-weight:400;font-size:7px;">(Day)</span></th>
+            <th style="width:50px;">ITEM</th>
+            <th>PROBLEMA<br><span style="font-weight:400;font-size:7px;">(Issue)</span></th>
+            <th>CAUSA<br><span style="font-weight:400;font-size:7px;">(Root Cause)</span></th>
+            <th>AÇÃO<br><span style="font-weight:400;font-size:7px;">(Action Plan)</span></th>
+            <th style="width:52px;">QUANDO?<br><span style="font-weight:400;font-size:7px;">(When?)</span></th>
+            <th style="width:72px;">RESPONSÁVEL<br><span style="font-weight:400;font-size:7px;">(PIC)</span></th>
+            <th style="width:62px;">ASSINATURA<br><span style="font-weight:400;font-size:7px;">(Signature)</span></th>
+            <th style="width:42px;">STATUS</th>
+          </tr>
+        </thead>
+        <tbody id="planoPrintBody"></tbody>
+      </table>
 
       <div id="msgPlanoMp"></div>
 
@@ -944,8 +1010,6 @@
     document.getElementById('docBannerText').textContent = `Documento ${label} aberto — continue preenchendo os horários restantes e clique em Atualizar`;
     document.getElementById('docBanner').classList.add('show');
     document.getElementById('printDocId').textContent = label;
-    const dateEl = document.getElementById('printDocDate');
-    if (dateEl) dateEl.textContent = new Date().toLocaleDateString('pt-BR');
     const btn = document.getElementById('btnSalvarMedicao');
     btn.innerHTML = '<i class="bi bi-arrow-repeat me-1"></i>Atualizar Medição';
     btn.classList.replace('btn-success', 'btn-primary');
@@ -955,8 +1019,6 @@
     documentoId = null;
     document.getElementById('docBanner').classList.remove('show');
     document.getElementById('printDocId').textContent = '—';
-    const dateEl = document.getElementById('printDocDate');
-    if (dateEl) dateEl.textContent = '';
     const btn = document.getElementById('btnSalvarMedicao');
     btn.innerHTML = '<i class="bi bi-send-check me-1"></i>Salvar Medição';
     btn.classList.replace('btn-primary', 'btn-success');
@@ -1070,7 +1132,7 @@
     const msgEl = document.getElementById('msgMedicao');
     const payload = {
       data:              document.getElementById('mpData').value,
-      cliente:           document.getElementById('mpCliente').value.trim() || null,
+      cliente:           document.getElementById('mpCliente').value.trim().toUpperCase() || null,
       espessura_stencil: document.getElementById('mpEspStencil').value.trim() || null,
       turno:             document.getElementById('mpTurno').value || null,
       modelo:            document.getElementById('mpModelo').value.trim() || null,
@@ -1190,8 +1252,6 @@
       }
 
       setDocumentoId(id, data.doc_id);
-      const dateEl = document.getElementById('printDocDate');
-      if (dateEl && data.data) dateEl.textContent = new Date(data.data + 'T00:00:00').toLocaleDateString('pt-BR');
       return true;
     } catch {
       if (errEl) { errEl.textContent = 'Erro de comunicação.'; errEl.classList.remove('d-none'); }
@@ -1398,6 +1458,51 @@
     document.getElementById('loadDocModal').addEventListener('show.bs.modal', () => {
       document.getElementById('loadDocId').value = '';
       document.getElementById('loadDocErr').classList.add('d-none');
+    });
+
+    document.getElementById('mpCliente').addEventListener('input', function () {
+      const pos = this.selectionStart;
+      this.value = this.value.toUpperCase();
+      this.setSelectionRange(pos, pos);
+    });
+
+    window.addEventListener('beforeprint', () => {
+      const docId = document.getElementById('printDocId').textContent;
+      const versoRef = document.getElementById('printDocIdVerso');
+      if (versoRef) versoRef.textContent = docId;
+
+      const dia  = document.getElementById('planoDia').value;
+      const item = document.getElementById('planoItem').value.trim();
+      const rows = document.querySelectorAll('#planoRowsContainer .plano-row-mp');
+      const tbody = document.getElementById('planoPrintBody');
+
+      const dataRows = [];
+      rows.forEach(row => {
+        dataRows.push({
+          dia,
+          item,
+          ocorrencia: row.querySelector('[data-plano="ocorrencia"]')?.value?.trim() || '',
+          causa:      row.querySelector('[data-plano="causa"]')?.value?.trim() || '',
+          acao:       row.querySelector('[data-plano="acao"]')?.value?.trim() || '',
+          quando:     row.querySelector('[data-plano="quando"]')?.value || '',
+          responsavel: row.querySelector('[data-plano="responsavel"]')?.value?.trim() || '',
+        });
+      });
+
+      const TOTAL_ROWS = 20;
+      while (dataRows.length < TOTAL_ROWS) dataRows.push(null);
+
+      tbody.innerHTML = dataRows.map(r => `<tr>
+        <td>${r?.dia || ''}</td>
+        <td>${r?.item || ''}</td>
+        <td class="cell-text">${r?.ocorrencia || ''}</td>
+        <td class="cell-text">${r?.causa || ''}</td>
+        <td class="cell-text">${r?.acao || ''}</td>
+        <td>${r?.quando || ''}</td>
+        <td>${r?.responsavel || ''}</td>
+        <td></td>
+        <td></td>
+      </tr>`).join('');
     });
   });
 })();
