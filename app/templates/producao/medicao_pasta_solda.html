@@ -279,6 +279,8 @@
 
     @page { size: A4 landscape; margin: 4mm; }
 
+    html, body { margin: 0 !important; padding: 0 !important; }
+
     .sidebar,
     .mobile-header,
     .desktop-header,
@@ -299,6 +301,8 @@
 
     .main { margin-left: 0 !important; padding-top: 0 !important; }
     .app  { display: block !important; }
+    .container-fluid { padding: 0 !important; }
+    section.content { padding: 0 !important; }
 
     /* Print header compact */
     .print-header {
@@ -321,6 +325,7 @@
       border: 1px solid #ccc !important;
       border-radius: 0 !important;
       margin-bottom: 3px !important;
+      overflow: visible !important;
     }
     .mp-card .mp-header { display: none !important; }
     .mp-body { padding: 3px !important; }
@@ -344,8 +349,15 @@
       border-radius: 0 !important;
     }
 
-    /* Measurement table */
-    .meas-table { font-size: 8px !important; }
+    /* Remove horizontal scroll from table wrapper */
+    .table-responsive { overflow: visible !important; }
+
+    /* Measurement table — forced to fit page width */
+    .meas-table {
+      font-size: 8px !important;
+      table-layout: fixed !important;
+      width: 100% !important;
+    }
     .meas-table th, .meas-table td {
       border-color: #999 !important;
       padding: 1px 2px !important;
@@ -354,9 +366,19 @@
     .meas-table .sign-row-label,
     .meas-table .sign-row-leader,
     .meas-table .hora-row-label { font-size: 8px !important; }
-    .meas-table .side-label,
-    .meas-table .row-label { font-size: 7px !important; }
-    .meas-table td input.meas-input { font-size: 8px !important; min-width: 30px !important; }
+    .meas-table .side-label {
+      font-size: 7px !important;
+      width: 36px !important;
+    }
+    .meas-table .row-label {
+      font-size: 7px !important;
+      width: 90px !important;
+    }
+    .meas-table td input.meas-input {
+      font-size: 8px !important;
+      min-width: 0 !important;
+      width: 100% !important;
+    }
     .signed-tag { font-size: 8px !important; }
 
     /* Observations */
