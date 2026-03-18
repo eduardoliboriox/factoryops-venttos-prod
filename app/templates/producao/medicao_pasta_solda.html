@@ -406,7 +406,7 @@
             <div class="mp-icon mp-icon-green"><i class="bi bi-grid-3x3"></i></div>
             <div>
               <div class="fw-bold">Medições por Horário</div>
-              <div class="mp-subtitle">2 componentes × FRONT/REAR × Menor/Maior valor · Pico</div>
+              <div class="mp-subtitle">2 componentes × FRONT/REAR × Menor Valor / Pico</div>
             </div>
           </div>
           <span class="badge text-bg-success">PASSO 2</span>
@@ -612,8 +612,8 @@
 
   const COMPONENTS = 2;
   const MEASURES = [
-    { key: 'menor', label: 'Menor valor', sublabel: '(smaller value) · Pico (Peak)' },
-    { key: 'maior', label: 'Maior valor', sublabel: '(major value) · Pico (Peak)'  },
+    { key: 'menor_valor', label: 'Menor Valor (Smaller Value)' },
+    { key: 'pico',        label: 'Pico (Peak)'                 },
   ];
   const SIDES = ['FRONT', 'REAR'];
 
@@ -637,8 +637,8 @@
         </td>
       </tr>`);
 
-      for (const meas of MEASURES) {
-        for (const side of SIDES) {
+      for (const side of SIDES) {
+        for (const meas of MEASURES) {
           const key = `comp${c}_${side}_${meas.key}`;
           const inputs = Array.from({length: 10}, (_, i) =>
             `<td><input class="meas-input" type="text" id="${key}_h${i+1}" placeholder="—"></td>`
@@ -646,10 +646,7 @@
 
           rows.push(`<tr>
             <td class="side-label">${side}</td>
-            <td class="row-label" colspan="2">
-              ${meas.label}<br>
-              <span style="font-weight:400;color:rgba(15,23,42,.40);font-size:9px;">${meas.sublabel}</span>
-            </td>
+            <td class="row-label" colspan="2">${meas.label}</td>
             ${inputs}
           </tr>`);
         }
@@ -833,8 +830,8 @@
   function coletarMedicoes() {
     const medicoes = [];
     for (let c = 1; c <= COMPONENTS; c++) {
-      for (const meas of MEASURES) {
-        for (const side of SIDES) {
+      for (const side of SIDES) {
+        for (const meas of MEASURES) {
           const key   = `comp${c}_${side}_${meas.key}`;
           const entry = { componente: c, lado: side, tipo_medida: meas.key, horarios: [] };
           for (let h = 1; h <= 10; h++) {
