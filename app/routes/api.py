@@ -427,6 +427,55 @@ def medicao_pasta_plano_acao_get(registro_id):
         return jsonify({"erro": "Erro ao buscar plano de ação"}), 500
 
 
+# ─── Limpeza Stencil ──────────────────────────────────────────────────────────
+
+@bp.route("/limpeza-stencil/registros", methods=["GET"])
+@login_required
+def limpeza_stencil_list():
+    from app.services import limpeza_stencil_service
+    data  = request.args.get("data") or None
+    linha = request.args.get("linha") or None
+    return jsonify(limpeza_stencil_service.listar_registros(data=data, linha=linha))
+
+
+@bp.route("/limpeza-stencil/registros", methods=["POST"])
+@login_required
+def limpeza_stencil_create():
+    from app.services import limpeza_stencil_service
+    data = request.get_json(silent=True) or {}
+    try:
+        registro = limpeza_stencil_service.criar_registro(data, current_user.id)
+        return jsonify({"sucesso": True, "id": registro["id"], "doc_id": registro.get("doc_id")}), 201
+    except ValueError as e:
+        return jsonify({"sucesso": False, "erro": str(e)}), 400
+    except Exception:
+        return jsonify({"sucesso": False, "erro": "Erro ao salvar registro"}), 500
+
+
+@bp.route("/limpeza-stencil/registros/<int:registro_id>", methods=["GET"])
+@login_required
+def limpeza_stencil_get(registro_id: int):
+    from app.services import limpeza_stencil_service
+    result = limpeza_stencil_service.buscar_registro(registro_id)
+    if not result:
+        return jsonify({"sucesso": False, "erro": "Registro não encontrado"}), 404
+    return jsonify(result)
+
+
+@bp.route("/limpeza-stencil/registros/<int:registro_id>", methods=["PATCH"])
+@login_required
+def limpeza_stencil_update(registro_id: int):
+    from app.services import limpeza_stencil_service
+    data = request.get_json(silent=True) or {}
+    try:
+        limpeza_stencil_service.atualizar_registro(registro_id, data)
+        return jsonify({"sucesso": True})
+    except ValueError as e:
+        return jsonify({"sucesso": False, "erro": str(e)}), 404
+    except Exception:
+        return jsonify({"sucesso": False, "erro": "Erro ao atualizar registro"}), 500
+
+
 # ─── Checklist ────────────────────────────────────────────────────────────────
 
 @bp.route("/checklist/itens", methods=["GET"])
