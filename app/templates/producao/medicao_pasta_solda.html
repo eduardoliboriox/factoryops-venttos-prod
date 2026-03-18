@@ -277,21 +277,28 @@
   @media print {
     * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 
-    body > * { display: none !important; }
-    #main-content, .content-wrapper, main, [id*="content"], [class*="content"] { display: block !important; }
-
-    .sidebar, nav, header, .navbar,
-    .page-header, .nav-tabs,
+    .sidebar,
+    .mobile-header,
+    .page-header,
+    .nav-tabs,
     #docBanner,
     .mp-header .btn,
     .mp-header .badge,
-    #btnSalvarMedicao, #btnLimparMedicao, #btnNovoDocumento,
-    #btnAddPlanoRow, #btnSalvarPlanoMp,
+    #btnSalvarMedicao,
+    #btnLimparMedicao,
+    #btnNovoDocumento,
+    #btnAddPlanoRow,
+    #btnSalvarPlanoMp,
     .sign-btn,
     .obs-section,
-    #tab-plano, #tab-consultar-mp,
+    #tab-plano,
+    #tab-consultar-mp,
     [data-bs-dismiss],
-    .modal { display: none !important; }
+    .modal,
+    .modal-backdrop { display: none !important; }
+
+    .main { margin-left: 0 !important; padding-top: 0 !important; }
+    .app  { display: block !important; }
 
     .print-header { display: flex !important; }
 
@@ -302,6 +309,7 @@
       box-shadow: none !important;
       border: 1px solid #ccc !important;
       border-radius: 0 !important;
+      margin-bottom: 8px !important;
     }
     .mp-card .mp-header { display: none !important; }
     .mp-body { padding: 8px !important; }
