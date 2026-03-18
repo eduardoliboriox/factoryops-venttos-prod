@@ -1,5 +1,14 @@
 ### Objetivo - (tarefas para você executar, aplicando com CLAUDE.md)
 
 ### 1. Adequação de documento real referente app/templates/producao
-* na página app/templates/producao/medicao_pasta_solda.html, temos que ajustar alguns pontos, como do documento real, ele tem a logo da empresa na esquerda, tem no centro, um titulo CONTROLE DE MEDIÇÃO DA ALTURA DA PASTA DE SOLDA/ADESIVO, e abaixo do titulo tem ele em ingles dentro de ( ). Isto é importante para na hora que que formos imprimir o documento ele tem que imprimir somente o documento, não outros coisas da pagina, como menu , block title, , é pra imprimir somente o documento.
-* o id do documento precisa ser com ano, para assim no futuro, vai dar pra saber quantos documentos tiveram por ano, entao o id é 1-2026
+* na página app/templates/producao/medicao_pasta_solda.html, o documento que é colocado para impressão precisa de ajustes, está mostrando o botao ?, o botao que tbm é menu com foto do usuario e está mostrando o user_name logado, temos que remover essas parte.
+* para conseguir imprimir em uma unica folha, eu tive que mexer nas configurações de immpressao que aparece no computador, isto não pode ser assim, por onde tem escala, eu tive que trocar de padrão para personlizado e colocar 80, ai ficou tudo em uma pagina, dar pra diminuir as margens ou padding do documento, ao redor tem espaço sobrando, e as pessoas aqui do trabalho gostam que vem abaixo o texto:
+  Observações:
+A medição deve ser realizada através do equipamento MALCOM TD-4M (The measurement is done on MALCOM TD-4M equipment)
+As linhas que não têm SPI devem registrar seus parâmetros neste documento. (The lines that do not have SPI must register their parameters in this document)
+Os pontos de medição estão indicados como pico de medida (The measurement points are indicated as measurement peaks)
+As linhas com SPI usam esse equipamento MALCOM TD-4M se estiverem fora das especificações. (The lines that do not use the equipment MALCOM TD-4M are those that do not have SPI)
+Caso alguma anomalia fora de especificações seja encontrada, avisar ao SMT Líder de Produção, Técnico de Produção ou Supervisor.
+As referências de medição para pasta de solda variam de acordo com a tolerância de cada produto.
+
+isto tbm precisa sair na impressao. 
