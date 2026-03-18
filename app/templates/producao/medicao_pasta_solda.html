@@ -406,7 +406,7 @@
             <div class="mp-icon mp-icon-green"><i class="bi bi-grid-3x3"></i></div>
             <div>
               <div class="fw-bold">Medições por Horário</div>
-              <div class="mp-subtitle">5 squeeges × FRONT/REAR × Menor/Maior valor · Pico</div>
+              <div class="mp-subtitle">2 componentes × FRONT/REAR × Menor/Maior valor · Pico</div>
             </div>
           </div>
           <span class="badge text-bg-success">PASSO 2</span>
@@ -416,7 +416,7 @@
             <table class="meas-table" id="measTable">
               <thead>
                 <tr>
-                  <th style="text-align:left;" colspan="3">Squeege / Posi. Mec. / Lado / Medida</th>
+                  <th style="text-align:left;" colspan="3">Componente / Posi. Mec. / Lado / Medida</th>
                   <th>1° HOR.</th>
                   <th>2° HOR.</th>
                   <th>3° HOR.</th>
@@ -447,7 +447,7 @@
 
           <div class="d-flex gap-2 flex-wrap mt-3 px-1">
             <button class="btn btn-success px-4 fw-bold" id="btnSalvarMedicao" type="button">
-              <i class="bi bi-send-check"></i> Salvar Medição
+              <i class="bi bi-send-check me-1"></i>Salvar Medição
             </button>
             <button class="btn btn-outline-secondary px-3" id="btnLimparMedicao" type="button">
               <i class="bi bi-x-lg"></i> Limpar
@@ -481,7 +481,7 @@
             </div>
             <div class="meta-field">
               <label>Item</label>
-              <input type="text" id="planoItem" placeholder="Ex: Squeege 3 FRONT">
+              <input type="text" id="planoItem" placeholder="Ex: Componente 1 FRONT">
             </div>
           </div>
           <div id="planoRowsContainer">
@@ -610,7 +610,7 @@
 (function () {
   "use strict";
 
-  const SQUEEGES = 5;
+  const COMPONENTS = 2;
   const MEASURES = [
     { key: 'menor', label: 'Menor valor', sublabel: '(smaller value) · Pico (Peak)' },
     { key: 'maior', label: 'Maior valor', sublabel: '(major value) · Pico (Peak)'  },
@@ -625,21 +625,21 @@
     const tbody = document.getElementById('measBody');
     const rows = [];
 
-    for (let sq = 1; sq <= SQUEEGES; sq++) {
+    for (let c = 1; c <= COMPONENTS; c++) {
       rows.push(`<tr>
         <td class="group-label" colspan="13">
           <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
-            <span>Squeege ${sq}</span>
+            <span>Componente ${c}</span>
             <span style="font-weight:400;font-size:10px;color:rgba(15,23,42,.55);">
-              Posi. Mec. (Mech Posi):&nbsp;<input class="posi-mec-input" type="text" id="posi_mec_sq${sq}" placeholder="Ex: HDMI, IC" autocomplete="off">
+              Posi. Mec. (Mech Posi):&nbsp;<input class="posi-mec-input" type="text" id="posi_mec_comp${c}" placeholder="Ex: HDMI, IC" autocomplete="off">
             </span>
           </div>
         </td>
       </tr>`);
 
-      for (const meas of MEASURES) {
-        for (const side of SIDES) {
-          const key = `sq${sq}_${side}_${meas.key}`;
+      for (const side of SIDES) {
+        for (const meas of MEASURES) {
+          const key = `comp${c}_${side}_${meas.key}`;
           const inputs = Array.from({length: 10}, (_, i) =>
             `<td><input class="meas-input" type="text" id="${key}_h${i+1}" placeholder="—"></td>`
           ).join('');
@@ -780,7 +780,7 @@
 
   function setDocumentoId(id) {
     documentoId = id;
-    document.getElementById('docBannerText').textContent = `Documento #${id} aberto — continue preenchendo os demais horários`;
+    document.getElementById('docBannerText').textContent = `Documento #${id} aberto — continue preenchendo os horários restantes e clique em Atualizar`;
     document.getElementById('docBanner').classList.add('show');
     const btn = document.getElementById('btnSalvarMedicao');
     btn.innerHTML = '<i class="bi bi-arrow-repeat me-1"></i>Atualizar Medição';
@@ -832,11 +832,11 @@
 
   function coletarMedicoes() {
     const medicoes = [];
-    for (let sq = 1; sq <= SQUEEGES; sq++) {
-      for (const meas of MEASURES) {
-        for (const side of SIDES) {
-          const key   = `sq${sq}_${side}_${meas.key}`;
-          const entry = { squeege: sq, lado: side, tipo_medida: meas.key, horarios: [] };
+    for (let c = 1; c <= COMPONENTS; c++) {
+      for (const side of SIDES) {
+        for (const meas of MEASURES) {
+          const key   = `comp${c}_${side}_${meas.key}`;
+          const entry = { componente: c, lado: side, tipo_medida: meas.key, horarios: [] };
           for (let h = 1; h <= 10; h++) {
             entry.horarios.push(document.getElementById(`${key}_h${h}`)?.value?.trim() || null);
           }
@@ -848,8 +848,8 @@
   }
 
   function coletarPosiMec() {
-    return Array.from({length: SQUEEGES}, (_, i) =>
-      document.getElementById(`posi_mec_sq${i+1}`)?.value?.trim() || null
+    return Array.from({length: COMPONENTS}, (_, i) =>
+      document.getElementById(`posi_mec_comp${i+1}`)?.value?.trim() || null
     );
   }
 
@@ -983,16 +983,16 @@
       safe('mpLinha', data.linha);
 
       if (Array.isArray(data.posi_mec)) {
-        for (let sq = 1; sq <= SQUEEGES; sq++) {
-          const el = document.getElementById(`posi_mec_sq${sq}`);
-          if (el) el.value = data.posi_mec[sq - 1] || '';
+        for (let c = 1; c <= COMPONENTS; c++) {
+          const el = document.getElementById(`posi_mec_comp${c}`);
+          if (el) el.value = data.posi_mec[c - 1] || '';
         }
       }
 
       if (Array.isArray(data.medicoes)) {
         for (const m of data.medicoes) {
           for (let h = 1; h <= 10; h++) {
-            const el = document.getElementById(`sq${m.squeege}_${m.lado}_${m.tipo_medida}_h${h}`);
+            const el = document.getElementById(`comp${m.componente}_${m.lado}_${m.tipo_medida}_h${h}`);
             if (el) el.value = m.horarios[h - 1] || '';
           }
         }
@@ -1153,7 +1153,7 @@
           <td>${esc(item.turno ? `${item.turno}° Turno` : null)}</td>
           <td>${esc(item.username)}</td>
           <td>
-            <button class="btn btn-sm btn-outline-primary me-1" data-edit-id="${esc(item.id)}" title="Editar">
+            <button class="btn btn-sm btn-outline-primary" data-edit-id="${esc(item.id)}" title="Editar">
               <i class="bi bi-pencil"></i>
             </button>
           </td>
@@ -1162,6 +1162,7 @@
         tbody.querySelectorAll('[data-edit-id]').forEach(btn => {
           btn.addEventListener('click', async () => {
             const id = parseInt(btn.dataset.editId);
+            limparMedicao();
             const ok = await carregarDocumento(id);
             if (ok) {
               bootstrap.Tab.getOrCreateInstance(document.querySelector('[data-bs-target="#tab-medicao"]')).show();
