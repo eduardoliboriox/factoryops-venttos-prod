@@ -277,6 +277,8 @@
   @media print {
     * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 
+    @page { size: A4 landscape; margin: 4mm; }
+
     .sidebar,
     .mobile-header,
     .desktop-header,
@@ -298,43 +300,75 @@
     .main { margin-left: 0 !important; padding-top: 0 !important; }
     .app  { display: block !important; }
 
-    .print-header { display: flex !important; }
+    /* Print header compact */
+    .print-header {
+      display: flex !important;
+      padding: 4px 8px !important;
+      gap: 8px !important;
+    }
+    .print-header-logo img { height: 34px !important; }
+    .print-title-main { font-size: 11px !important; }
+    .print-title-sub  { font-size: 9px !important; margin-top: 1px !important; }
+    .print-header-doc { font-size: 9px !important; }
+    .print-header-doc .print-doc-num { font-size: 10px !important; }
 
     .tab-pane { display: block !important; opacity: 1 !important; }
     #tab-plano, #tab-consultar-mp { display: none !important; }
 
+    /* Cards */
     .mp-card {
       box-shadow: none !important;
       border: 1px solid #ccc !important;
       border-radius: 0 !important;
-      margin-bottom: 4px !important;
+      margin-bottom: 3px !important;
     }
     .mp-card .mp-header { display: none !important; }
-    .mp-body { padding: 4px !important; }
+    .mp-body { padding: 3px !important; }
 
-    .doc-meta { gap: 6px !important; }
-    .doc-meta .meta-field label { font-size: 0.7rem !important; margin-bottom: 2px !important; }
+    /* Identification fields — single row */
+    .doc-meta {
+      display: flex !important;
+      flex-wrap: nowrap !important;
+      gap: 4px !important;
+    }
+    .doc-meta .meta-field { flex: 1 1 0; min-width: 0; }
+    .doc-meta .meta-field label {
+      font-size: 7px !important;
+      margin-bottom: 1px !important;
+      white-space: nowrap;
+    }
     .doc-meta .meta-field input,
-    .doc-meta .meta-field select { padding: 2px 6px !important; font-size: 11px !important; }
+    .doc-meta .meta-field select {
+      padding: 1px 3px !important;
+      font-size: 8px !important;
+      border-radius: 0 !important;
+    }
 
-    .meas-table { font-size: 9px !important; }
+    /* Measurement table */
+    .meas-table { font-size: 8px !important; }
     .meas-table th, .meas-table td {
       border-color: #999 !important;
-      padding: 2px 3px !important;
+      padding: 1px 2px !important;
     }
-    .meas-table { page-break-inside: avoid; }
+    .meas-table .group-label,
+    .meas-table .sign-row-label,
+    .meas-table .sign-row-leader,
+    .meas-table .hora-row-label { font-size: 8px !important; }
+    .meas-table .side-label,
+    .meas-table .row-label { font-size: 7px !important; }
+    .meas-table td input.meas-input { font-size: 8px !important; min-width: 30px !important; }
+    .signed-tag { font-size: 8px !important; }
 
+    /* Observations */
     .obs-section {
       border: 1px solid #ccc !important;
       border-radius: 0 !important;
-      padding: 6px 8px !important;
-      margin-top: 4px !important;
-      font-size: 9px !important;
+      padding: 3px 6px !important;
+      margin-top: 3px !important;
+      font-size: 7px !important;
     }
-    .obs-section ul { padding-left: 12px !important; }
-    .obs-section li { margin-bottom: 2px !important; }
-
-    @page { margin: 6mm; }
+    .obs-section ul { padding-left: 10px !important; margin: 0 !important; }
+    .obs-section li { margin-bottom: 1px !important; }
   }
 </style>
 
