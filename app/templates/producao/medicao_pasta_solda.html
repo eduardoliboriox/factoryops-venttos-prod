@@ -8,6 +8,9 @@
     <h1 class="page-header-name">Controle de Medição da Altura da Pasta de Solda/Adesivo</h1>
   </div>
   <div class="page-header-actions">
+    <button class="btn-header-icon" onclick="window.print()" title="Imprimir">
+      <i class="bi bi-printer"></i>
+    </button>
     <a href="{{ url_for('pages.inicio') }}" class="btn-header-icon" title="Voltar">
       <i class="bi bi-arrow-left"></i>
     </a>
@@ -21,9 +24,9 @@
 {% block content %}
 <style>
   .mp-card {
-    border: 1px solid rgba(15,23,42,0.10);
+    border: 1px solid var(--border);
     border-radius: 14px;
-    background: #fff;
+    background: var(--card);
     overflow: hidden;
     margin-bottom: 20px;
   }
@@ -48,21 +51,20 @@
   .mp-icon-green { background: rgba(25,135,84,0.12);  color: #198754; }
   .mp-icon-gray  { background: rgba(15,23,42,0.08);   color: rgba(15,23,42,0.60); }
   .mp-icon-red   { background: rgba(220,53,69,0.12);  color: #dc3545; }
-  .mp-subtitle { font-size: 12px; color: rgba(15,23,42,0.65); margin-top: 2px; }
+  .mp-subtitle { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
   .mp-body { padding: 16px; }
 
   .doc-meta {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
     gap: 12px;
-    margin-bottom: 16px;
+    margin-bottom: 0;
   }
   .doc-meta .meta-field label {
     display: block;
-    font-size: 10px;
-    font-weight: 700;
-    text-transform: uppercase;
-    color: rgba(15,23,42,0.50);
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-muted);
     margin-bottom: 4px;
   }
   .doc-meta .meta-field input,
@@ -72,6 +74,7 @@
     border-radius: 8px;
     padding: 6px 10px;
     font-size: 13px;
+    background: #fff;
   }
   .doc-meta .meta-field input:focus,
   .doc-meta .meta-field select:focus {
@@ -97,6 +100,7 @@
     font-size: 10px;
     text-transform: uppercase;
     white-space: nowrap;
+    letter-spacing: 0.5px;
   }
   .meas-table .group-label {
     font-weight: 700;
@@ -111,19 +115,19 @@
     font-weight: 700;
     background: rgba(15,23,42,0.03);
     text-align: left;
-    padding-left: 12px;
+    padding-left: 10px;
     white-space: nowrap;
-    width: 60px;
+    width: 50px;
   }
   .meas-table .row-label {
     font-size: 10px;
     background: rgba(15,23,42,0.02);
     text-align: left;
-    padding-left: 16px;
+    padding-left: 14px;
     white-space: nowrap;
-    width: 110px;
+    width: 120px;
   }
-  .meas-table td input {
+  .meas-table td input.meas-input {
     width: 100%;
     border: none;
     background: transparent;
@@ -133,10 +137,77 @@
     min-width: 55px;
     text-align: center;
   }
-  .meas-table td input:focus {
+  .meas-table td input.meas-input:focus {
     background: rgba(13,110,253,0.06);
     border-radius: 3px;
   }
+  .meas-table .sign-row-label {
+    font-size: 10px;
+    font-weight: 700;
+    background: rgba(25,135,84,0.05);
+    text-align: left;
+    padding-left: 8px;
+    white-space: nowrap;
+    color: #198754;
+  }
+  .meas-table .sign-row-leader {
+    font-size: 10px;
+    font-weight: 700;
+    background: rgba(13,110,253,0.05);
+    text-align: left;
+    padding-left: 8px;
+    white-space: nowrap;
+    color: #0d6efd;
+  }
+  .sign-cell { vertical-align: middle; text-align: center; min-width: 80px; }
+  .sign-cell .sign-btn {
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 6px;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .sign-cell .signed-tag {
+    font-size: 10px;
+    font-weight: 700;
+    color: #198754;
+    white-space: nowrap;
+  }
+  .sign-cell .sign-form {
+    display: none;
+    flex-direction: column;
+    gap: 3px;
+    padding: 4px;
+  }
+  .sign-cell .sign-form.open { display: flex; }
+  .sign-cell .sign-form input {
+    border: 1px solid rgba(15,23,42,0.18);
+    border-radius: 5px;
+    padding: 3px 5px;
+    font-size: 10px;
+    width: 100%;
+  }
+  .sign-cell .sign-form .sign-confirm-btn {
+    font-size: 9px;
+    padding: 2px 5px;
+    border-radius: 5px;
+    background: #198754;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .sign-cell .sign-form .sign-cancel-btn {
+    font-size: 9px;
+    padding: 2px 5px;
+    border-radius: 5px;
+    background: transparent;
+    color: rgba(15,23,42,0.50);
+    border: 1px solid rgba(15,23,42,0.20);
+    cursor: pointer;
+  }
+  .sign-error { font-size: 9px; color: #dc3545; }
+
   .obs-section {
     border: 1px solid rgba(15,23,42,0.12);
     border-radius: 8px;
@@ -147,13 +218,20 @@
   .obs-section ul {
     padding-left: 16px;
     margin: 0;
-    color: rgba(15,23,42,0.65);
+    color: var(--text-muted);
   }
   .obs-section li { margin-bottom: 4px; }
 
   .plano-row-mp { border-bottom: 1px solid rgba(15,23,42,0.08); padding: 12px 0; }
   .plano-row-mp:last-child { border-bottom: none; }
   .plano-item-label-mp { font-size: 11px; font-weight: 700; color: rgba(15,23,42,0.50); margin-bottom: 4px; }
+
+  @media print {
+    .page-header, .nav-tabs, .btn, button, .obs-section { display: none !important; }
+    .mp-card { box-shadow: none; border: 1px solid #ccc; border-radius: 0; }
+    .tab-pane { display: block !important; opacity: 1 !important; }
+    #tab-plano, #tab-consultar-mp { display: none !important; }
+  }
 </style>
 
 <div class="container-fluid">
@@ -183,7 +261,6 @@
 
       <div id="msgMedicao"></div>
 
-      <!-- Identificação -->
       <div class="mp-card">
         <div class="mp-header mp-header-blue">
           <div class="mp-title">
@@ -206,10 +283,6 @@
               <input type="text" id="mpCliente" placeholder="Nome do cliente">
             </div>
             <div class="meta-field">
-              <label>Esp. Stencil (Thickness)</label>
-              <input type="text" id="mpEspStencil" placeholder="Ex: 0.15mm">
-            </div>
-            <div class="meta-field">
               <label>Turno (Shift)</label>
               <select id="mpTurno">
                 <option value="">Selecione</option>
@@ -221,6 +294,10 @@
             <div class="meta-field">
               <label>Modelo (Model)</label>
               <input type="text" id="mpModelo" placeholder="Ex: ABC-123">
+            </div>
+            <div class="meta-field">
+              <label>Esp. Stencil (Thickness)</label>
+              <input type="text" id="mpEspStencil" placeholder="Ex: 0.15mm">
             </div>
             <div class="meta-field">
               <label>Tolerância (Tolerance)</label>
@@ -236,21 +313,28 @@
               </select>
             </div>
             <div class="meta-field">
+              <label>Setor</label>
+              <select id="mpSetor">
+                <option value="">Carregando...</option>
+              </select>
+            </div>
+            <div class="meta-field">
               <label>Linha (Line)</label>
-              <input type="text" id="mpLinha" placeholder="Ex: SMT-01">
+              <select id="mpLinha">
+                <option value="">Selecione o setor</option>
+              </select>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Tabela de medições -->
       <div class="mp-card">
         <div class="mp-header mp-header-green">
           <div class="mp-title">
             <div class="mp-icon mp-icon-green"><i class="bi bi-grid-3x3"></i></div>
             <div>
               <div class="fw-bold">Medições por Horário</div>
-              <div class="mp-subtitle">5 pontos de squeege × FRONT/REAR × Menor/Maior valor</div>
+              <div class="mp-subtitle">5 squeeges × FRONT/REAR × Menor/Maior valor · Pico</div>
             </div>
           </div>
           <span class="badge text-bg-success">PASSO 2</span>
@@ -260,7 +344,7 @@
             <table class="meas-table" id="measTable">
               <thead>
                 <tr>
-                  <th colspan="3" style="text-align:left;">Squeege / Lado / Medida</th>
+                  <th style="text-align:left;" colspan="3">Squeege / Lado / Medida</th>
                   <th>1° HOR.</th>
                   <th>2° HOR.</th>
                   <th>3° HOR.</th>
@@ -273,20 +357,19 @@
                   <th>10° HOR.</th>
                 </tr>
               </thead>
-              <tbody id="measBody">
-              </tbody>
+              <tbody id="measBody"></tbody>
             </table>
           </div>
 
           <div class="obs-section">
-            <strong style="font-size:11px;color:rgba(15,23,42,.65);">Observações:</strong>
+            <strong style="font-size:11px;color:var(--text-muted);">Observações:</strong>
             <ul>
               <li>A medição deve ser realizada através do equipamento MALCOM TD-4M (The measurement is done on MALCOM TD-4M equipment)</li>
               <li>As linhas que não têm SPI devem registrar seus parâmetros neste documento. (The lines that do not have SPI must register their parameters in this document)</li>
               <li>Os pontos de medição estão indicados como pico de medida (The measurement points are indicated as measurement peaks)</li>
-              <li>As linhas com SPI usam esse equipamento MALCOM TD-4M se elas estiverem fora das especificações. (The lines that do not use the equipment MALCOM TD-4M are those that do not have SPI)</li>
-              <li>Caso alguma anomalia fora de especificações seja encontrada, avisar ao SMT Líder de Produção, Técnico de Produção ou Supervisor. (If any abnormality out of specifications is found, notify the SMT Production Leader or Supervisor)</li>
-              <li>As referências de medição para pasta de solda variam de acordo com a tolerância de cada produto. (The measurement references for solder paste change according to the tolerance for each product)</li>
+              <li>As linhas com SPI usam esse equipamento MALCOM TD-4M se estiverem fora das especificações. (The lines that do not use the equipment MALCOM TD-4M are those that do not have SPI)</li>
+              <li>Caso alguma anomalia fora de especificações seja encontrada, avisar ao SMT Líder de Produção, Técnico de Produção ou Supervisor.</li>
+              <li>As referências de medição para pasta de solda variam de acordo com a tolerância de cada produto.</li>
             </ul>
           </div>
 
@@ -319,7 +402,7 @@
           </div>
         </div>
         <div class="mp-body">
-          <div class="doc-meta" style="grid-template-columns: repeat(auto-fit, minmax(120px,1fr));">
+          <div class="doc-meta" style="grid-template-columns: repeat(auto-fit, minmax(120px,1fr)); margin-bottom: 16px;">
             <div class="meta-field">
               <label>Dia</label>
               <input type="date" id="planoDia">
@@ -383,13 +466,21 @@
         </div>
         <div class="mp-body">
           <div class="row g-3 align-items-end">
-            <div class="col-md-3">
+            <div class="col-md-2">
               <label class="form-label" style="font-size:0.8rem;font-weight:600;">Data</label>
               <input class="form-control" type="date" id="filtroDataMp">
             </div>
-            <div class="col-md-3">
+            <div class="col-md-2">
+              <label class="form-label" style="font-size:0.8rem;font-weight:600;">Setor</label>
+              <select class="form-select" id="filtroSetorMp">
+                <option value="">Todos</option>
+              </select>
+            </div>
+            <div class="col-md-2">
               <label class="form-label" style="font-size:0.8rem;font-weight:600;">Linha</label>
-              <input class="form-control" id="filtroLinhaMp" placeholder="Ex: SMT-01">
+              <select class="form-select" id="filtroLinhaMp">
+                <option value="">Todas</option>
+              </select>
             </div>
             <div class="col-md-2">
               <button class="btn btn-primary w-100" type="button" id="btnConsultarMp">
@@ -401,6 +492,40 @@
       </div>
 
       <div id="msgConsultarMp"></div>
+
+      <div class="mp-card d-none" id="cardResultadosMp">
+        <div class="mp-header mp-header-gray">
+          <div class="mp-title">
+            <div class="mp-icon mp-icon-gray"><i class="bi bi-table"></i></div>
+            <div>
+              <div class="fw-bold">Resultados</div>
+              <div class="mp-subtitle" id="subtitleResultadosMp"></div>
+            </div>
+          </div>
+          <button class="btn btn-sm btn-outline-secondary" onclick="window.print()" title="Imprimir">
+            <i class="bi bi-printer me-1"></i> Imprimir
+          </button>
+        </div>
+        <div class="mp-body p-0">
+          <div class="table-responsive">
+            <table class="table table-sm table-hover mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>ID</th>
+                  <th>Data</th>
+                  <th>Setor</th>
+                  <th>Linha</th>
+                  <th>Modelo</th>
+                  <th>Turno</th>
+                  <th>Criado por</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="resultadosMpBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
 
     </div>
 
@@ -414,51 +539,203 @@
   "use strict";
 
   const SQUEEGES = 5;
-  const SIDES = ['FRONT', 'REAR'];
   const MEASURES = [
-    { key: 'menor_pico',  label: 'Menor valor (Pico)',  sublabel: '(smaller peak)' },
-    { key: 'menor_raio',  label: 'Menor valor (Raio)',  sublabel: '(smaller radius)' },
-    { key: 'maior_pico',  label: 'Maior valor (Pico)',  sublabel: '(major peak)' },
-    { key: 'maior_raio',  label: 'Maior valor (Raio)',  sublabel: '(major radius)' },
+    { key: 'menor', label: 'Menor valor', sublabel: '(smaller value) · Pico (Peak)' },
+    { key: 'maior', label: 'Maior valor', sublabel: '(major value) · Pico (Peak)'  },
   ];
+  const SIDES = ['FRONT', 'REAR'];
+
+  const signState = {};
 
   function buildMeasTable() {
     const tbody = document.getElementById('measBody');
     const rows = [];
 
     for (let sq = 1; sq <= SQUEEGES; sq++) {
-      rows.push(`<tr>
-        <td class="group-label" colspan="13">Squeege ${sq}</td>
-      </tr>`);
+      rows.push(`<tr><td class="group-label" colspan="13">Squeege ${sq}</td></tr>`);
 
-      for (const side of SIDES) {
-        for (const meas of MEASURES) {
+      for (const meas of MEASURES) {
+        for (const side of SIDES) {
           const key = `sq${sq}_${side}_${meas.key}`;
           const inputs = Array.from({length: 10}, (_, i) =>
-            `<td><input type="text" id="${key}_h${i+1}" placeholder="—"></td>`
+            `<td><input class="meas-input" type="text" id="${key}_h${i+1}" placeholder="—"></td>`
           ).join('');
 
           rows.push(`<tr>
-            <td class="side-label" colspan="1">${side}</td>
-            <td class="row-label" colspan="2">${meas.label}<br><span style="font-weight:400;color:rgba(15,23,42,.40);font-size:9px;">${meas.sublabel}</span></td>
+            <td class="side-label">${side}</td>
+            <td class="row-label" colspan="2">
+              ${meas.label}<br>
+              <span style="font-weight:400;color:rgba(15,23,42,.40);font-size:9px;">${meas.sublabel}</span>
+            </td>
             ${inputs}
           </tr>`);
         }
       }
+
+      const signOpCells = Array.from({length: 10}, (_, i) => {
+        const col = i + 1;
+        const id = `sign_op_sq${sq}_h${col}`;
+        return `<td class="sign-cell" id="${id}_cell">${buildSignCellHTML(id, 'op')}</td>`;
+      }).join('');
+
+      const signLidCells = Array.from({length: 10}, (_, i) => {
+        const col = i + 1;
+        const id = `sign_lid_sq${sq}_h${col}`;
+        return `<td class="sign-cell" id="${id}_cell">${buildSignCellHTML(id, 'lid')}</td>`;
+      }).join('');
+
+      rows.push(`<tr>
+        <td class="sign-row-label" colspan="3">Visto do(a) Operador(a)<br><span style="font-weight:400;font-size:9px;">(Operator Signature)</span></td>
+        ${signOpCells}
+      </tr>`);
+
+      rows.push(`<tr>
+        <td class="sign-row-leader" colspan="3">Visto do(a) Líder<br><span style="font-weight:400;font-size:9px;">(Leader Signature)</span></td>
+        ${signLidCells}
+      </tr>`);
     }
 
     tbody.innerHTML = rows.join('');
+    tbody.querySelectorAll('[data-sign-confirm]').forEach(btn => {
+      btn.addEventListener('click', () => confirmSign(btn.dataset.signId));
+    });
+    tbody.querySelectorAll('[data-sign-cancel]').forEach(btn => {
+      btn.addEventListener('click', () => cancelSign(btn.dataset.signId));
+    });
+    tbody.querySelectorAll('[data-sign-open]').forEach(btn => {
+      btn.addEventListener('click', () => openSign(btn.dataset.signId));
+    });
+  }
+
+  function buildSignCellHTML(id) {
+    return `
+      <button class="btn btn-outline-secondary sign-btn" data-sign-open="${id}" title="Assinar este horário">
+        <i class="bi bi-pen" style="font-size:10px;"></i>
+      </button>
+      <div class="sign-form" id="${id}_form">
+        <input type="text" placeholder="Usuário/Matrícula" id="${id}_user" autocomplete="off">
+        <input type="password" placeholder="Senha" id="${id}_pass" autocomplete="new-password">
+        <div class="d-flex gap-1">
+          <button class="sign-confirm-btn flex-fill" data-sign-confirm="${id}">Confirmar</button>
+          <button class="sign-cancel-btn" data-sign-cancel="${id}">✕</button>
+        </div>
+        <span class="sign-error d-none" id="${id}_err"></span>
+      </div>
+      <span class="signed-tag d-none" id="${id}_tag"></span>`;
+  }
+
+  function openSign(id) {
+    const cell = document.getElementById(`${id}_cell`);
+    cell.querySelector('[data-sign-open]').classList.add('d-none');
+    cell.querySelector(`#${id}_form`).classList.add('open');
+    cell.querySelector(`#${id}_user`).focus();
+  }
+
+  function cancelSign(id) {
+    const cell = document.getElementById(`${id}_cell`);
+    cell.querySelector('[data-sign-open]').classList.remove('d-none');
+    cell.querySelector(`#${id}_form`).classList.remove('open');
+    const err = cell.querySelector(`#${id}_err`);
+    err.textContent = '';
+    err.classList.add('d-none');
+  }
+
+  async function confirmSign(id) {
+    const cell = document.getElementById(`${id}_cell`);
+    const userInput = cell.querySelector(`#${id}_user`);
+    const passInput = cell.querySelector(`#${id}_pass`);
+    const errEl    = cell.querySelector(`#${id}_err`);
+    const confirmBtn = cell.querySelector('[data-sign-confirm]');
+
+    const matricula = userInput.value.trim();
+    const password  = passInput.value;
+
+    if (!matricula || !password) {
+      errEl.textContent = 'Preencha usuário e senha.';
+      errEl.classList.remove('d-none');
+      return;
+    }
+
+    confirmBtn.disabled = true;
+    confirmBtn.textContent = '...';
+
+    try {
+      const r = await fetch('/api/auth/confirm-extra', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+        body: JSON.stringify({ matricula, password }),
+      });
+      const data = await r.json().catch(() => ({}));
+
+      if (r.ok && data.success) {
+        const now = new Date();
+        const hhmm = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+        const tag = cell.querySelector(`#${id}_tag`);
+
+        signState[id] = { username: data.username, time: now.toISOString() };
+
+        tag.textContent = `${data.username} · ${hhmm}`;
+        tag.classList.remove('d-none');
+        cell.querySelector(`#${id}_form`).classList.remove('open');
+        cell.querySelector('[data-sign-open]').classList.add('d-none');
+      } else {
+        errEl.textContent = data.error || 'Credenciais inválidas.';
+        errEl.classList.remove('d-none');
+      }
+    } catch {
+      errEl.textContent = 'Erro de comunicação.';
+      errEl.classList.remove('d-none');
+    } finally {
+      confirmBtn.disabled = false;
+      confirmBtn.textContent = 'Confirmar';
+      passInput.value = '';
+    }
+  }
+
+  async function loadSectors(targetSelect, filtroSelect) {
+    try {
+      const r = await fetch('/api/production/sectors', { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+      const data = await r.json().catch(() => ({}));
+      const sectors = data.sectors || [];
+
+      [targetSelect, filtroSelect].forEach(sel => {
+        if (!sel) return;
+        const isFilter = sel === filtroSelect;
+        sel.innerHTML = isFilter
+          ? '<option value="">Todos</option>'
+          : '<option value="">Selecione o setor</option>';
+        sectors.forEach(s => {
+          const opt = document.createElement('option');
+          opt.value = s; opt.textContent = s;
+          sel.appendChild(opt);
+        });
+      });
+    } catch {}
+  }
+
+  async function loadLines(setor, targetSelect, placeholder) {
+    targetSelect.innerHTML = `<option value="">${placeholder}</option>`;
+    if (!setor) return;
+    try {
+      const r = await fetch(`/api/production/lines?setor=${encodeURIComponent(setor)}`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+      const data = await r.json().catch(() => ({}));
+      (data.lines || []).forEach(l => {
+        const opt = document.createElement('option');
+        opt.value = l; opt.textContent = l;
+        targetSelect.appendChild(opt);
+      });
+    } catch {}
   }
 
   function coletarMedicoes() {
     const medicoes = [];
     for (let sq = 1; sq <= SQUEEGES; sq++) {
-      for (const side of SIDES) {
-        for (const meas of MEASURES) {
+      for (const meas of MEASURES) {
+        for (const side of SIDES) {
+          const key = `sq${sq}_${side}_${meas.key}`;
           const entry = { squeege: sq, lado: side, tipo_medida: meas.key, horarios: [] };
           for (let h = 1; h <= 10; h++) {
-            const val = document.getElementById(`sq${sq}_${side}_${meas.key}_h${h}`)?.value?.trim() || null;
-            entry.horarios.push(val);
+            entry.horarios.push(document.getElementById(`${key}_h${h}`)?.value?.trim() || null);
           }
           if (entry.horarios.some(v => v)) medicoes.push(entry);
         }
@@ -467,17 +744,26 @@
     return medicoes;
   }
 
+  function coletarAssinaturas() {
+    return Object.entries(signState).map(([id, s]) => ({ campo: id, username: s.username, timestamp: s.time }));
+  }
+
   function limparMedicao() {
     document.getElementById('mpData').value = new Date().toISOString().slice(0, 10);
-    ['mpCliente','mpEspStencil','mpModelo','mpTolerancia','mpLinha'].forEach(id => {
+    ['mpCliente','mpEspStencil','mpModelo','mpTolerancia'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.value = '';
     });
-    ['mpTurno','mpLado'].forEach(id => {
+    ['mpTurno','mpLado','mpSetor'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.selectedIndex = 0;
     });
-    document.querySelectorAll('#measBody input').forEach(i => i.value = '');
+    document.getElementById('mpLinha').innerHTML = '<option value="">Selecione o setor</option>';
+    document.querySelectorAll('#measBody .meas-input').forEach(i => i.value = '');
+    Object.keys(signState).forEach(k => delete signState[k]);
+    document.querySelectorAll('.signed-tag').forEach(el => { el.textContent = ''; el.classList.add('d-none'); });
+    document.querySelectorAll('[data-sign-open]').forEach(el => el.classList.remove('d-none'));
+    document.querySelectorAll('.sign-form').forEach(el => el.classList.remove('open'));
   }
 
   function showMsg(el, tipo, texto) {
@@ -490,15 +776,17 @@
   async function salvarMedicao() {
     const msgEl = document.getElementById('msgMedicao');
     const payload = {
-      data: document.getElementById('mpData').value,
-      cliente: document.getElementById('mpCliente').value.trim() || null,
+      data:              document.getElementById('mpData').value,
+      cliente:           document.getElementById('mpCliente').value.trim() || null,
       espessura_stencil: document.getElementById('mpEspStencil').value.trim() || null,
-      turno: document.getElementById('mpTurno').value || null,
-      modelo: document.getElementById('mpModelo').value.trim() || null,
-      tolerancia: document.getElementById('mpTolerancia').value.trim() || null,
-      lado: document.getElementById('mpLado').value || null,
-      linha: document.getElementById('mpLinha').value.trim() || null,
-      medicoes: coletarMedicoes(),
+      turno:             document.getElementById('mpTurno').value || null,
+      modelo:            document.getElementById('mpModelo').value.trim() || null,
+      tolerancia:        document.getElementById('mpTolerancia').value.trim() || null,
+      lado:              document.getElementById('mpLado').value || null,
+      setor:             document.getElementById('mpSetor').value || null,
+      linha:             document.getElementById('mpLinha').value || null,
+      medicoes:          coletarMedicoes(),
+      assinaturas:       coletarAssinaturas(),
     };
 
     if (!payload.data || !payload.linha) {
@@ -563,19 +851,19 @@
 
   async function salvarPlanoMp() {
     const msgEl = document.getElementById('msgPlanoMp');
-    const rows = document.querySelectorAll('#planoRowsContainer .plano-row-mp');
+    const rows  = document.querySelectorAll('#planoRowsContainer .plano-row-mp');
     const itens = [];
 
     for (const row of rows) {
       const ocorrencia = row.querySelector('[data-plano="ocorrencia"]')?.value?.trim();
       if (!ocorrencia) continue;
       itens.push({
-        dia: document.getElementById('planoDia').value || null,
-        item: document.getElementById('planoItem').value.trim() || null,
+        dia:         document.getElementById('planoDia').value || null,
+        item:        document.getElementById('planoItem').value.trim() || null,
         ocorrencia,
-        causa: row.querySelector('[data-plano="causa"]')?.value?.trim() || null,
-        acao: row.querySelector('[data-plano="acao"]')?.value?.trim() || null,
-        quando: row.querySelector('[data-plano="quando"]')?.value || null,
+        causa:       row.querySelector('[data-plano="causa"]')?.value?.trim() || null,
+        acao:        row.querySelector('[data-plano="acao"]')?.value?.trim() || null,
+        quando:      row.querySelector('[data-plano="quando"]')?.value || null,
         responsavel: row.querySelector('[data-plano="responsavel"]')?.value?.trim() || null,
       });
     }
@@ -610,17 +898,82 @@
     }
   }
 
-  document.addEventListener('DOMContentLoaded', () => {
+  async function consultar() {
+    const msgEl = document.getElementById('msgConsultarMp');
+    const btn   = document.getElementById('btnConsultarMp');
+    btn.disabled = true;
+    const orig = btn.innerHTML;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+
+    const params = new URLSearchParams();
+    const data  = document.getElementById('filtroDataMp').value;
+    const setor = document.getElementById('filtroSetorMp').value;
+    const linha = document.getElementById('filtroLinhaMp').value;
+    if (data)  params.set('data', data);
+    if (setor) params.set('setor', setor);
+    if (linha) params.set('linha', linha);
+
+    try {
+      const r = await fetch(`/api/medicao-pasta/registros?${params}`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+      const list = await r.json().catch(() => null);
+
+      if (!r.ok || !Array.isArray(list)) {
+        showMsg(msgEl, 'danger', 'Erro ao buscar registros.');
+        return;
+      }
+
+      document.getElementById('subtitleResultadosMp').textContent = `${list.length} registro(s) encontrado(s)`;
+      const tbody = document.getElementById('resultadosMpBody');
+
+      if (!list.length) {
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center py-3" style="color:rgba(15,23,42,.40);">Nenhum registro encontrado.</td></tr>';
+      } else {
+        function esc(s) { return String(s ?? '—').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+        function fmtData(iso) { if (!iso) return '—'; try { return new Date(iso + (iso.includes('T') ? '' : 'T00:00:00')).toLocaleDateString('pt-BR'); } catch { return iso; } }
+        tbody.innerHTML = list.map(item => `<tr>
+          <td><strong>#${esc(item.id)}</strong></td>
+          <td>${fmtData(item.data)}</td>
+          <td>${esc(item.setor)}</td>
+          <td>${esc(item.linha)}</td>
+          <td>${esc(item.modelo)}</td>
+          <td>${esc(item.turno ? `${item.turno}° Turno` : null)}</td>
+          <td>${esc(item.username)}</td>
+          <td><button class="btn btn-sm btn-outline-primary" onclick="window.open('/producao/medicao-pasta-solda/${esc(item.id)}','_blank')"><i class="bi bi-eye"></i></button></td>
+        </tr>`).join('');
+      }
+
+      document.getElementById('cardResultadosMp').classList.remove('d-none');
+    } catch {
+      showMsg(msgEl, 'danger', 'Erro de comunicação com o servidor.');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = orig;
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', async () => {
     buildMeasTable();
+
     const today = new Date().toISOString().slice(0, 10);
-    document.getElementById('mpData').value = today;
-    document.getElementById('planoDia').value = today;
+    document.getElementById('mpData').value    = today;
+    document.getElementById('planoDia').value  = today;
     document.getElementById('filtroDataMp').value = today;
+
+    const mpSetor       = document.getElementById('mpSetor');
+    const mpLinha       = document.getElementById('mpLinha');
+    const filtroSetorMp = document.getElementById('filtroSetorMp');
+    const filtroLinhaMp = document.getElementById('filtroLinhaMp');
+
+    await loadSectors(mpSetor, filtroSetorMp);
+
+    mpSetor.addEventListener('change', () => loadLines(mpSetor.value, mpLinha, 'Selecione a linha'));
+    filtroSetorMp.addEventListener('change', () => loadLines(filtroSetorMp.value, filtroLinhaMp, 'Todas'));
 
     document.getElementById('btnSalvarMedicao').addEventListener('click', salvarMedicao);
     document.getElementById('btnLimparMedicao').addEventListener('click', limparMedicao);
     document.getElementById('btnAddPlanoRow').addEventListener('click', addPlanoRow);
     document.getElementById('btnSalvarPlanoMp').addEventListener('click', salvarPlanoMp);
+    document.getElementById('btnConsultarMp').addEventListener('click', consultar);
   });
 })();
 </script>
