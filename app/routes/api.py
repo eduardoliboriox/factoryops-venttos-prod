@@ -345,6 +345,71 @@ def remove_avatar():
         return jsonify({"sucesso": False, "erro": "Erro ao remover foto"}), 500
 
 
+# ─── Medição Pasta de Solda ───────────────────────────────────────────────────
+
+@bp.route("/medicao-pasta/registros", methods=["GET"])
+@login_required
+def medicao_pasta_list():
+    from app.services import medicao_pasta_service
+    data  = request.args.get("data") or None
+    setor = request.args.get("setor") or None
+    linha = request.args.get("linha") or None
+    return jsonify(medicao_pasta_service.listar_registros(data=data, setor=setor, linha=linha))
+
+
+@bp.route("/medicao-pasta/registros", methods=["POST"])
+@login_required
+def medicao_pasta_create():
+    from app.services import medicao_pasta_service
+    data = request.get_json(silent=True) or {}
+    try:
+        registro = medicao_pasta_service.criar_registro(data, current_user.id)
+        return jsonify({"sucesso": True, "id": registro["id"]}), 201
+    except ValueError as e:
+        return jsonify({"sucesso": False, "erro": str(e)}), 400
+    except Exception:
+        return jsonify({"sucesso": False, "erro": "Erro ao salvar medição"}), 500
+
+
+@bp.route("/medicao-pasta/registros/<int:registro_id>", methods=["GET"])
+@login_required
+def medicao_pasta_get(registro_id: int):
+    from app.services import medicao_pasta_service
+    result = medicao_pasta_service.buscar_registro(registro_id)
+    if not result:
+        return jsonify({"sucesso": False, "erro": "Registro não encontrado"}), 404
+    return jsonify(result)
+
+
+@bp.route("/medicao-pasta/registros/<int:registro_id>", methods=["PATCH"])
+@login_required
+def medicao_pasta_update(registro_id: int):
+    from app.services import medicao_pasta_service
+    data = request.get_json(silent=True) or {}
+    try:
+        medicao_pasta_service.atualizar_registro(registro_id, data)
+        return jsonify({"sucesso": True})
+    except ValueError as e:
+        return jsonify({"sucesso": False, "erro": str(e)}), 404
+    except Exception:
+        return jsonify({"sucesso": False, "erro": "Erro ao atualizar medição"}), 500
+
+
+@bp.route("/medicao-pasta/plano-acao", methods=["POST"])
+@login_required
+def medicao_pasta_plano_acao():
+    from app.services import medicao_pasta_service
+    data  = request.get_json(silent=True) or {}
+    itens = data.get("itens") or []
+    try:
+        medicao_pasta_service.salvar_plano_acao(itens, current_user.id)
+        return jsonify({"sucesso": True})
+    except ValueError as e:
+        return jsonify({"sucesso": False, "erro": str(e)}), 400
+    except Exception:
+        return jsonify({"sucesso": False, "erro": "Erro ao salvar plano de ação"}), 500
+
+
 # ─── Checklist ────────────────────────────────────────────────────────────────
 
 @bp.route("/checklist/itens", methods=["GET"])
