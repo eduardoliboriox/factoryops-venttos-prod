@@ -279,18 +279,16 @@
 
     .sidebar,
     .mobile-header,
-    .page-header,
+    .desktop-header,
+    .bottom-nav,
     .nav-tabs,
     #docBanner,
-    .mp-header .btn,
-    .mp-header .badge,
     #btnSalvarMedicao,
     #btnLimparMedicao,
     #btnNovoDocumento,
     #btnAddPlanoRow,
     #btnSalvarPlanoMp,
     .sign-btn,
-    .obs-section,
     #tab-plano,
     #tab-consultar-mp,
     [data-bs-dismiss],
@@ -309,15 +307,34 @@
       box-shadow: none !important;
       border: 1px solid #ccc !important;
       border-radius: 0 !important;
-      margin-bottom: 8px !important;
+      margin-bottom: 4px !important;
     }
     .mp-card .mp-header { display: none !important; }
-    .mp-body { padding: 8px !important; }
+    .mp-body { padding: 4px !important; }
 
-    .meas-table th, .meas-table td { border-color: #999 !important; }
+    .doc-meta { gap: 6px !important; }
+    .doc-meta .meta-field label { font-size: 0.7rem !important; margin-bottom: 2px !important; }
+    .doc-meta .meta-field input,
+    .doc-meta .meta-field select { padding: 2px 6px !important; font-size: 11px !important; }
+
+    .meas-table { font-size: 9px !important; }
+    .meas-table th, .meas-table td {
+      border-color: #999 !important;
+      padding: 2px 3px !important;
+    }
     .meas-table { page-break-inside: avoid; }
 
-    @page { margin: 10mm; }
+    .obs-section {
+      border: 1px solid #ccc !important;
+      border-radius: 0 !important;
+      padding: 6px 8px !important;
+      margin-top: 4px !important;
+      font-size: 9px !important;
+    }
+    .obs-section ul { padding-left: 12px !important; }
+    .obs-section li { margin-bottom: 2px !important; }
+
+    @page { margin: 6mm; }
   }
 </style>
 
