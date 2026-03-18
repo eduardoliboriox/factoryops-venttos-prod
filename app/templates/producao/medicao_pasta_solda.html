@@ -159,6 +159,15 @@
     white-space: nowrap;
     color: #0d6efd;
   }
+  .meas-table .hora-row-label {
+    font-size: 10px;
+    font-weight: 700;
+    background: rgba(255,193,7,0.08);
+    text-align: left;
+    padding-left: 8px;
+    white-space: nowrap;
+    color: #856404;
+  }
   .sign-cell { vertical-align: middle; text-align: center; min-width: 80px; }
   .sign-cell .sign-btn {
     font-size: 10px;
@@ -173,40 +182,42 @@
     color: #198754;
     white-space: nowrap;
   }
-  .sign-cell .sign-form {
-    display: none;
-    flex-direction: column;
-    gap: 3px;
-    padding: 4px;
-  }
-  .sign-cell .sign-form.open { display: flex; }
-  .sign-cell .sign-form input {
-    border: 1px solid rgba(15,23,42,0.18);
-    border-radius: 5px;
-    padding: 3px 5px;
+  .hora-cell {
     font-size: 10px;
-    width: 100%;
+    font-weight: 600;
+    color: #856404;
+    background: rgba(255,193,7,0.06);
   }
-  .sign-cell .sign-form .sign-confirm-btn {
-    font-size: 9px;
-    padding: 2px 5px;
-    border-radius: 5px;
-    background: #198754;
-    color: #fff;
+  .posi-mec-input {
     border: none;
-    cursor: pointer;
-    white-space: nowrap;
-  }
-  .sign-cell .sign-form .sign-cancel-btn {
-    font-size: 9px;
-    padding: 2px 5px;
-    border-radius: 5px;
+    border-bottom: 1px solid rgba(13,110,253,0.35);
     background: transparent;
-    color: rgba(15,23,42,0.50);
-    border: 1px solid rgba(15,23,42,0.20);
-    cursor: pointer;
+    font-size: 11px;
+    padding: 1px 4px;
+    outline: none;
+    width: 90px;
+    color: #0d6efd;
+    font-weight: 400;
   }
-  .sign-error { font-size: 9px; color: #dc3545; }
+  .posi-mec-input:focus {
+    border-bottom-color: #0d6efd;
+    background: rgba(13,110,253,0.05);
+    border-radius: 3px;
+  }
+  #docBanner {
+    display: none;
+    background: rgba(13,110,253,0.08);
+    border: 1px solid rgba(13,110,253,0.20);
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-size: 12px;
+    color: #0d6efd;
+    font-weight: 600;
+    margin-bottom: 12px;
+    align-items: center;
+    gap: 8px;
+  }
+  #docBanner.show { display: flex; }
 
   .obs-section {
     border: 1px solid rgba(15,23,42,0.12);
@@ -227,7 +238,7 @@
   .plano-item-label-mp { font-size: 11px; font-weight: 700; color: rgba(15,23,42,0.50); margin-bottom: 4px; }
 
   @media print {
-    .page-header, .nav-tabs, .btn, button, .obs-section { display: none !important; }
+    .page-header, .nav-tabs, .btn, button, .obs-section, #docBanner { display: none !important; }
     .mp-card { box-shadow: none; border: 1px solid #ccc; border-radius: 0; }
     .tab-pane { display: block !important; opacity: 1 !important; }
     #tab-plano, #tab-consultar-mp { display: none !important; }
@@ -235,6 +246,54 @@
 </style>
 
 <div class="container-fluid">
+
+  <!-- Signature Modal -->
+  <div class="modal fade" id="signModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header py-2">
+          <h6 class="modal-title mb-0" id="signModalTitle">Assinar</h6>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body py-3">
+          <div class="mb-2">
+            <label class="form-label" style="font-size:0.78rem;font-weight:600;">Usuário / Matrícula</label>
+            <input type="text" class="form-control form-control-sm" id="signModalUser" autocomplete="off" placeholder="Ex: 12345">
+          </div>
+          <div class="mb-2">
+            <label class="form-label" style="font-size:0.78rem;font-weight:600;">Senha</label>
+            <input type="password" class="form-control form-control-sm" id="signModalPass" autocomplete="new-password">
+          </div>
+          <div class="text-danger d-none" id="signModalErr" style="font-size:11px;"></div>
+        </div>
+        <div class="modal-footer py-2">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-success btn-sm" id="signModalConfirmBtn">Confirmar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Load Document Modal -->
+  <div class="modal fade" id="loadDocModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header py-2">
+          <h6 class="modal-title mb-0">Carregar Documento</h6>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body py-3">
+          <label class="form-label" style="font-size:0.78rem;font-weight:600;">Número do Documento (ID)</label>
+          <input type="number" class="form-control form-control-sm" id="loadDocId" min="1" placeholder="Ex: 42">
+          <div class="text-danger d-none mt-2" id="loadDocErr" style="font-size:11px;"></div>
+        </div>
+        <div class="modal-footer py-2">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-primary btn-sm" id="loadDocConfirmBtn">Carregar</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <ul class="nav nav-tabs mb-3" role="tablist">
     <li class="nav-item" role="presentation">
@@ -261,6 +320,14 @@
 
       <div id="msgMedicao"></div>
 
+      <div id="docBanner">
+        <i class="bi bi-file-earmark-check"></i>
+        <span id="docBannerText">Documento #— aberto</span>
+        <button type="button" class="btn btn-sm btn-outline-primary ms-auto" id="btnNovoDocumento">
+          <i class="bi bi-plus-lg me-1"></i>Novo
+        </button>
+      </div>
+
       <div class="mp-card">
         <div class="mp-header mp-header-blue">
           <div class="mp-title">
@@ -270,7 +337,12 @@
               <div class="mp-subtitle">PRO006 · Solder/Adhesive Paste Height Measurement Control</div>
             </div>
           </div>
-          <span class="badge text-bg-primary">PASSO 1</span>
+          <div class="d-flex align-items-center gap-2">
+            <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="modal" data-bs-target="#loadDocModal">
+              <i class="bi bi-folder2-open me-1"></i>Carregar
+            </button>
+            <span class="badge text-bg-primary">PASSO 1</span>
+          </div>
         </div>
         <div class="mp-body">
           <div class="doc-meta">
@@ -344,7 +416,7 @@
             <table class="meas-table" id="measTable">
               <thead>
                 <tr>
-                  <th style="text-align:left;" colspan="3">Squeege / Lado / Medida</th>
+                  <th style="text-align:left;" colspan="3">Squeege / Posi. Mec. / Lado / Medida</th>
                   <th>1° HOR.</th>
                   <th>2° HOR.</th>
                   <th>3° HOR.</th>
@@ -545,6 +617,8 @@
   ];
   const SIDES = ['FRONT', 'REAR'];
 
+  let documentoId = null;
+  let currentSignTarget = null;
   const signState = {};
 
   function buildMeasTable() {
@@ -552,7 +626,16 @@
     const rows = [];
 
     for (let sq = 1; sq <= SQUEEGES; sq++) {
-      rows.push(`<tr><td class="group-label" colspan="13">Squeege ${sq}</td></tr>`);
+      rows.push(`<tr>
+        <td class="group-label" colspan="13">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+            <span>Squeege ${sq}</span>
+            <span style="font-weight:400;font-size:10px;color:rgba(15,23,42,.55);">
+              Posi. Mec. (Mech Posi):&nbsp;<input class="posi-mec-input" type="text" id="posi_mec_sq${sq}" placeholder="Ex: HDMI, IC" autocomplete="off">
+            </span>
+          </div>
+        </td>
+      </tr>`);
 
       for (const meas of MEASURES) {
         for (const side of SIDES) {
@@ -571,81 +654,75 @@
           </tr>`);
         }
       }
-
-      const signOpCells = Array.from({length: 10}, (_, i) => {
-        const col = i + 1;
-        const id = `sign_op_sq${sq}_h${col}`;
-        return `<td class="sign-cell" id="${id}_cell">${buildSignCellHTML(id, 'op')}</td>`;
-      }).join('');
-
-      const signLidCells = Array.from({length: 10}, (_, i) => {
-        const col = i + 1;
-        const id = `sign_lid_sq${sq}_h${col}`;
-        return `<td class="sign-cell" id="${id}_cell">${buildSignCellHTML(id, 'lid')}</td>`;
-      }).join('');
-
-      rows.push(`<tr>
-        <td class="sign-row-label" colspan="3">Visto do(a) Operador(a)<br><span style="font-weight:400;font-size:9px;">(Operator Signature)</span></td>
-        ${signOpCells}
-      </tr>`);
-
-      rows.push(`<tr>
-        <td class="sign-row-leader" colspan="3">Visto do(a) Líder<br><span style="font-weight:400;font-size:9px;">(Leader Signature)</span></td>
-        ${signLidCells}
-      </tr>`);
     }
 
+    const horaCells = Array.from({length: 10}, (_, i) =>
+      `<td class="hora-cell" id="hora_h${i+1}">—</td>`
+    ).join('');
+
+    rows.push(`<tr>
+      <td class="hora-row-label" colspan="3">Hora das Medições<br><span style="font-weight:400;font-size:9px;">(Measurement Time)</span></td>
+      ${horaCells}
+    </tr>`);
+
+    const signOpCells = Array.from({length: 10}, (_, i) => {
+      const hora = i + 1;
+      return `<td class="sign-cell" id="sign_op_h${hora}_cell">
+        <button class="btn btn-outline-secondary sign-btn" data-role="op" data-hora="${hora}" title="Assinar este horário">
+          <i class="bi bi-pen" style="font-size:10px;"></i>
+        </button>
+        <span class="signed-tag d-none" id="sign_op_h${hora}_tag"></span>
+      </td>`;
+    }).join('');
+
+    rows.push(`<tr>
+      <td class="sign-row-label" colspan="3">Visto do(a) Operador(a)<br><span style="font-weight:400;font-size:9px;">(Operator Signature)</span></td>
+      ${signOpCells}
+    </tr>`);
+
+    const signLidCells = Array.from({length: 10}, (_, i) => {
+      const hora = i + 1;
+      return `<td class="sign-cell" id="sign_lid_h${hora}_cell">
+        <button class="btn btn-outline-secondary sign-btn" data-role="lid" data-hora="${hora}" title="Assinar este horário">
+          <i class="bi bi-pen" style="font-size:10px;"></i>
+        </button>
+        <span class="signed-tag d-none" id="sign_lid_h${hora}_tag"></span>
+      </td>`;
+    }).join('');
+
+    rows.push(`<tr>
+      <td class="sign-row-leader" colspan="3">Visto do(a) Líder<br><span style="font-weight:400;font-size:9px;">(Leader Signature)</span></td>
+      ${signLidCells}
+    </tr>`);
+
     tbody.innerHTML = rows.join('');
-    tbody.querySelectorAll('[data-sign-confirm]').forEach(btn => {
-      btn.addEventListener('click', () => confirmSign(btn.dataset.signId));
-    });
-    tbody.querySelectorAll('[data-sign-cancel]').forEach(btn => {
-      btn.addEventListener('click', () => cancelSign(btn.dataset.signId));
-    });
-    tbody.querySelectorAll('[data-sign-open]').forEach(btn => {
-      btn.addEventListener('click', () => openSign(btn.dataset.signId));
+
+    tbody.querySelectorAll('.sign-btn').forEach(btn => {
+      btn.addEventListener('click', () => openSignModal(btn.dataset.role, parseInt(btn.dataset.hora)));
     });
   }
 
-  function buildSignCellHTML(id) {
-    return `
-      <button class="btn btn-outline-secondary sign-btn" data-sign-open="${id}" title="Assinar este horário">
-        <i class="bi bi-pen" style="font-size:10px;"></i>
-      </button>
-      <div class="sign-form" id="${id}_form">
-        <input type="text" placeholder="Usuário/Matrícula" id="${id}_user" autocomplete="off">
-        <input type="password" placeholder="Senha" id="${id}_pass" autocomplete="new-password">
-        <div class="d-flex gap-1">
-          <button class="sign-confirm-btn flex-fill" data-sign-confirm="${id}">Confirmar</button>
-          <button class="sign-cancel-btn" data-sign-cancel="${id}">✕</button>
-        </div>
-        <span class="sign-error d-none" id="${id}_err"></span>
-      </div>
-      <span class="signed-tag d-none" id="${id}_tag"></span>`;
+  function openSignModal(role, hora) {
+    currentSignTarget = { role, hora };
+    const roleLabel = role === 'op' ? 'Operador(a)' : 'Líder';
+    document.getElementById('signModalTitle').textContent = `Assinar · ${hora}° Horário · ${roleLabel}`;
+    document.getElementById('signModalUser').value = '';
+    document.getElementById('signModalPass').value = '';
+    const errEl = document.getElementById('signModalErr');
+    errEl.classList.add('d-none');
+    errEl.textContent = '';
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('signModal')).show();
+    setTimeout(() => document.getElementById('signModalUser').focus(), 400);
   }
 
-  function openSign(id) {
-    const cell = document.getElementById(`${id}_cell`);
-    cell.querySelector('[data-sign-open]').classList.add('d-none');
-    cell.querySelector(`#${id}_form`).classList.add('open');
-    cell.querySelector(`#${id}_user`).focus();
-  }
+  async function confirmSignModal() {
+    if (!currentSignTarget) return;
 
-  function cancelSign(id) {
-    const cell = document.getElementById(`${id}_cell`);
-    cell.querySelector('[data-sign-open]').classList.remove('d-none');
-    cell.querySelector(`#${id}_form`).classList.remove('open');
-    const err = cell.querySelector(`#${id}_err`);
-    err.textContent = '';
-    err.classList.add('d-none');
-  }
-
-  async function confirmSign(id) {
-    const cell = document.getElementById(`${id}_cell`);
-    const userInput = cell.querySelector(`#${id}_user`);
-    const passInput = cell.querySelector(`#${id}_pass`);
-    const errEl    = cell.querySelector(`#${id}_err`);
-    const confirmBtn = cell.querySelector('[data-sign-confirm]');
+    const { role, hora } = currentSignTarget;
+    const userInput  = document.getElementById('signModalUser');
+    const passInput  = document.getElementById('signModalPass');
+    const errEl      = document.getElementById('signModalErr');
+    const confirmBtn = document.getElementById('signModalConfirmBtn');
 
     const matricula = userInput.value.trim();
     const password  = passInput.value;
@@ -668,16 +745,25 @@
       const data = await r.json().catch(() => ({}));
 
       if (r.ok && data.success) {
-        const now = new Date();
+        const now  = new Date();
         const hhmm = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-        const tag = cell.querySelector(`#${id}_tag`);
+        const key  = `${role}_h${hora}`;
 
-        signState[id] = { username: data.username, time: now.toISOString() };
+        signState[key] = { username: data.username, time: now.toISOString() };
 
-        tag.textContent = `${data.username} · ${hhmm}`;
+        const tag = document.getElementById(`sign_${role}_h${hora}_tag`);
+        tag.textContent = data.username;
         tag.classList.remove('d-none');
-        cell.querySelector(`#${id}_form`).classList.remove('open');
-        cell.querySelector('[data-sign-open]').classList.add('d-none');
+
+        const cell = document.getElementById(`sign_${role}_h${hora}_cell`);
+        cell.querySelector('.sign-btn').classList.add('d-none');
+
+        if (role === 'op') {
+          const horaCell = document.getElementById(`hora_h${hora}`);
+          if (horaCell) horaCell.textContent = hhmm;
+        }
+
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('signModal')).hide();
       } else {
         errEl.textContent = data.error || 'Credenciais inválidas.';
         errEl.classList.remove('d-none');
@@ -690,6 +776,23 @@
       confirmBtn.textContent = 'Confirmar';
       passInput.value = '';
     }
+  }
+
+  function setDocumentoId(id) {
+    documentoId = id;
+    document.getElementById('docBannerText').textContent = `Documento #${id} aberto — continue preenchendo os demais horários`;
+    document.getElementById('docBanner').classList.add('show');
+    const btn = document.getElementById('btnSalvarMedicao');
+    btn.innerHTML = '<i class="bi bi-arrow-repeat me-1"></i>Atualizar Medição';
+    btn.classList.replace('btn-success', 'btn-primary');
+  }
+
+  function clearDocumentoId() {
+    documentoId = null;
+    document.getElementById('docBanner').classList.remove('show');
+    const btn = document.getElementById('btnSalvarMedicao');
+    btn.innerHTML = '<i class="bi bi-send-check me-1"></i>Salvar Medição';
+    btn.classList.replace('btn-primary', 'btn-success');
   }
 
   async function loadSectors(targetSelect, filtroSelect) {
@@ -732,7 +835,7 @@
     for (let sq = 1; sq <= SQUEEGES; sq++) {
       for (const meas of MEASURES) {
         for (const side of SIDES) {
-          const key = `sq${sq}_${side}_${meas.key}`;
+          const key   = `sq${sq}_${side}_${meas.key}`;
           const entry = { squeege: sq, lado: side, tipo_medida: meas.key, horarios: [] };
           for (let h = 1; h <= 10; h++) {
             entry.horarios.push(document.getElementById(`${key}_h${h}`)?.value?.trim() || null);
@@ -744,8 +847,26 @@
     return medicoes;
   }
 
+  function coletarPosiMec() {
+    return Array.from({length: SQUEEGES}, (_, i) =>
+      document.getElementById(`posi_mec_sq${i+1}`)?.value?.trim() || null
+    );
+  }
+
+  function coletarHoras() {
+    return Array.from({length: 10}, (_, i) => {
+      const el = document.getElementById(`hora_h${i+1}`);
+      const v  = el?.textContent?.trim();
+      return (v && v !== '—') ? v : null;
+    });
+  }
+
   function coletarAssinaturas() {
-    return Object.entries(signState).map(([id, s]) => ({ campo: id, username: s.username, timestamp: s.time }));
+    return Object.entries(signState).map(([campo, s]) => ({
+      campo,
+      username:  s.username,
+      timestamp: s.time,
+    }));
   }
 
   function limparMedicao() {
@@ -760,17 +881,22 @@
     });
     document.getElementById('mpLinha').innerHTML = '<option value="">Selecione o setor</option>';
     document.querySelectorAll('#measBody .meas-input').forEach(i => i.value = '');
+    document.querySelectorAll('.posi-mec-input').forEach(i => i.value = '');
+    for (let h = 1; h <= 10; h++) {
+      const el = document.getElementById(`hora_h${h}`);
+      if (el) el.textContent = '—';
+    }
     Object.keys(signState).forEach(k => delete signState[k]);
     document.querySelectorAll('.signed-tag').forEach(el => { el.textContent = ''; el.classList.add('d-none'); });
-    document.querySelectorAll('[data-sign-open]').forEach(el => el.classList.remove('d-none'));
-    document.querySelectorAll('.sign-form').forEach(el => el.classList.remove('open'));
+    document.querySelectorAll('#measBody .sign-btn').forEach(el => el.classList.remove('d-none'));
+    clearDocumentoId();
   }
 
   function showMsg(el, tipo, texto) {
     el.innerHTML = `<div class="alert alert-${tipo} alert-dismissible fade show mb-3">
       ${texto}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>`;
-    if (tipo !== 'danger') setTimeout(() => { try { bootstrap.Alert.getOrCreateInstance(el.querySelector('.alert')).close(); } catch {} }, 4000);
+    if (tipo !== 'danger') setTimeout(() => { try { bootstrap.Alert.getOrCreateInstance(el.querySelector('.alert')).close(); } catch {} }, 5000);
   }
 
   async function salvarMedicao() {
@@ -785,7 +911,9 @@
       lado:              document.getElementById('mpLado').value || null,
       setor:             document.getElementById('mpSetor').value || null,
       linha:             document.getElementById('mpLinha').value || null,
+      posi_mec:          coletarPosiMec(),
       medicoes:          coletarMedicoes(),
+      horas:             coletarHoras(),
       assinaturas:       coletarAssinaturas(),
     };
 
@@ -794,21 +922,29 @@
       return;
     }
 
-    const btn = document.getElementById('btnSalvarMedicao');
+    const btn  = document.getElementById('btnSalvarMedicao');
     btn.disabled = true;
     const orig = btn.innerHTML;
     btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Salvando...';
 
     try {
-      const r = await fetch('/api/medicao-pasta/registros', {
-        method: 'POST',
+      const url    = documentoId ? `/api/medicao-pasta/registros/${documentoId}` : '/api/medicao-pasta/registros';
+      const method = documentoId ? 'PATCH' : 'POST';
+
+      const r = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
         body: JSON.stringify(payload),
       });
       const data = await r.json().catch(() => ({}));
+
       if (r.ok && data.sucesso) {
-        showMsg(msgEl, 'success', `Medição salva com sucesso! ID #${data.id || '—'}`);
-        limparMedicao();
+        if (!documentoId) {
+          setDocumentoId(data.id);
+          showMsg(msgEl, 'success', `Documento #${data.id} criado. Continue preenchendo os horários restantes e clique em Atualizar.`);
+        } else {
+          showMsg(msgEl, 'success', `Documento #${documentoId} atualizado com sucesso.`);
+        }
       } else {
         showMsg(msgEl, 'danger', data.erro || 'Erro ao salvar medição.');
       }
@@ -817,6 +953,80 @@
     } finally {
       btn.disabled = false;
       btn.innerHTML = orig;
+    }
+  }
+
+  async function carregarDocumento(id) {
+    const errEl = document.getElementById('loadDocErr');
+    if (errEl) { errEl.classList.add('d-none'); errEl.textContent = ''; }
+
+    try {
+      const r = await fetch(`/api/medicao-pasta/registros/${id}`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+      const data = await r.json().catch(() => null);
+
+      if (!r.ok || !data) {
+        if (errEl) { errEl.textContent = 'Documento não encontrado.'; errEl.classList.remove('d-none'); }
+        return false;
+      }
+
+      const safe = (elId, val) => { const el = document.getElementById(elId); if (el) el.value = val || ''; };
+      safe('mpData',        data.data);
+      safe('mpCliente',     data.cliente);
+      safe('mpEspStencil',  data.espessura_stencil);
+      safe('mpModelo',      data.modelo);
+      safe('mpTolerancia',  data.tolerancia);
+      safe('mpTurno',       data.turno);
+      safe('mpLado',        data.lado);
+      safe('mpSetor',       data.setor);
+
+      await loadLines(data.setor, document.getElementById('mpLinha'), 'Selecione a linha');
+      safe('mpLinha', data.linha);
+
+      if (Array.isArray(data.posi_mec)) {
+        for (let sq = 1; sq <= SQUEEGES; sq++) {
+          const el = document.getElementById(`posi_mec_sq${sq}`);
+          if (el) el.value = data.posi_mec[sq - 1] || '';
+        }
+      }
+
+      if (Array.isArray(data.medicoes)) {
+        for (const m of data.medicoes) {
+          for (let h = 1; h <= 10; h++) {
+            const el = document.getElementById(`sq${m.squeege}_${m.lado}_${m.tipo_medida}_h${h}`);
+            if (el) el.value = m.horarios[h - 1] || '';
+          }
+        }
+      }
+
+      if (Array.isArray(data.horas)) {
+        for (let h = 1; h <= 10; h++) {
+          const el = document.getElementById(`hora_h${h}`);
+          if (el) el.textContent = data.horas[h - 1] || '—';
+        }
+      }
+
+      if (Array.isArray(data.assinaturas)) {
+        for (const sig of data.assinaturas) {
+          const match = sig.campo?.match(/^(op|lid)_h(\d+)$/);
+          if (!match) continue;
+          const [, role, horaStr] = match;
+          const hora = parseInt(horaStr);
+
+          signState[sig.campo] = { username: sig.username, time: sig.timestamp };
+
+          const tag = document.getElementById(`sign_${role}_h${hora}_tag`);
+          if (tag) { tag.textContent = sig.username; tag.classList.remove('d-none'); }
+
+          const signBtn = document.getElementById(`sign_${role}_h${hora}_cell`)?.querySelector('.sign-btn');
+          if (signBtn) signBtn.classList.add('d-none');
+        }
+      }
+
+      setDocumentoId(id);
+      return true;
+    } catch {
+      if (errEl) { errEl.textContent = 'Erro de comunicação.'; errEl.classList.remove('d-none'); }
+      return false;
     }
   }
 
@@ -914,7 +1124,7 @@
     if (linha) params.set('linha', linha);
 
     try {
-      const r = await fetch(`/api/medicao-pasta/registros?${params}`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+      const r    = await fetch(`/api/medicao-pasta/registros?${params}`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
       const list = await r.json().catch(() => null);
 
       if (!r.ok || !Array.isArray(list)) {
@@ -929,7 +1139,11 @@
         tbody.innerHTML = '<tr><td colspan="8" class="text-center py-3" style="color:rgba(15,23,42,.40);">Nenhum registro encontrado.</td></tr>';
       } else {
         function esc(s) { return String(s ?? '—').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-        function fmtData(iso) { if (!iso) return '—'; try { return new Date(iso + (iso.includes('T') ? '' : 'T00:00:00')).toLocaleDateString('pt-BR'); } catch { return iso; } }
+        function fmtData(iso) {
+          if (!iso) return '—';
+          try { return new Date(iso + (iso.includes('T') ? '' : 'T00:00:00')).toLocaleDateString('pt-BR'); }
+          catch { return iso; }
+        }
         tbody.innerHTML = list.map(item => `<tr>
           <td><strong>#${esc(item.id)}</strong></td>
           <td>${fmtData(item.data)}</td>
@@ -938,8 +1152,23 @@
           <td>${esc(item.modelo)}</td>
           <td>${esc(item.turno ? `${item.turno}° Turno` : null)}</td>
           <td>${esc(item.username)}</td>
-          <td><button class="btn btn-sm btn-outline-primary" onclick="window.open('/producao/medicao-pasta-solda/${esc(item.id)}','_blank')"><i class="bi bi-eye"></i></button></td>
+          <td>
+            <button class="btn btn-sm btn-outline-primary me-1" data-edit-id="${esc(item.id)}" title="Editar">
+              <i class="bi bi-pencil"></i>
+            </button>
+          </td>
         </tr>`).join('');
+
+        tbody.querySelectorAll('[data-edit-id]').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            const id = parseInt(btn.dataset.editId);
+            const ok = await carregarDocumento(id);
+            if (ok) {
+              bootstrap.Tab.getOrCreateInstance(document.querySelector('[data-bs-target="#tab-medicao"]')).show();
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+          });
+        });
       }
 
       document.getElementById('cardResultadosMp').classList.remove('d-none');
@@ -955,8 +1184,8 @@
     buildMeasTable();
 
     const today = new Date().toISOString().slice(0, 10);
-    document.getElementById('mpData').value    = today;
-    document.getElementById('planoDia').value  = today;
+    document.getElementById('mpData').value       = today;
+    document.getElementById('planoDia').value     = today;
     document.getElementById('filtroDataMp').value = today;
 
     const mpSetor       = document.getElementById('mpSetor');
@@ -971,9 +1200,35 @@
 
     document.getElementById('btnSalvarMedicao').addEventListener('click', salvarMedicao);
     document.getElementById('btnLimparMedicao').addEventListener('click', limparMedicao);
+    document.getElementById('btnNovoDocumento').addEventListener('click', limparMedicao);
     document.getElementById('btnAddPlanoRow').addEventListener('click', addPlanoRow);
     document.getElementById('btnSalvarPlanoMp').addEventListener('click', salvarPlanoMp);
     document.getElementById('btnConsultarMp').addEventListener('click', consultar);
+    document.getElementById('signModalConfirmBtn').addEventListener('click', confirmSignModal);
+
+    document.getElementById('signModalPass').addEventListener('keydown', e => {
+      if (e.key === 'Enter') confirmSignModal();
+    });
+
+    document.getElementById('loadDocConfirmBtn').addEventListener('click', async () => {
+      const id = parseInt(document.getElementById('loadDocId').value);
+      if (!id || id < 1) {
+        const errEl = document.getElementById('loadDocErr');
+        errEl.textContent = 'Informe um ID válido.';
+        errEl.classList.remove('d-none');
+        return;
+      }
+      limparMedicao();
+      const ok = await carregarDocumento(id);
+      if (ok) {
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('loadDocModal')).hide();
+      }
+    });
+
+    document.getElementById('loadDocModal').addEventListener('show.bs.modal', () => {
+      document.getElementById('loadDocId').value = '';
+      document.getElementById('loadDocErr').classList.add('d-none');
+    });
   });
 })();
 </script>
