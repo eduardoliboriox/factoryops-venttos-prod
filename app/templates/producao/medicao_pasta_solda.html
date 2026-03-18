@@ -237,7 +237,7 @@
   .plano-row-mp:last-child { border-bottom: none; }
   .plano-item-label-mp { font-size: 11px; font-weight: 700; color: rgba(15,23,42,0.50); margin-bottom: 4px; }
 
-  #mpCliente { text-transform: uppercase; }
+  #mpCliente, #mpModelo { text-transform: uppercase; }
 
   .print-header-verso { display: none; align-items: center; gap: 16px; padding: 12px 16px; border: 1px solid #ccc; border-bottom: none; background: #fff; }
   .print-header-verso .print-header-logo img { height: 48px; width: auto; }
@@ -704,6 +704,16 @@
         </div>
         <div class="mp-body">
           <div class="doc-meta" style="grid-template-columns: repeat(auto-fit, minmax(120px,1fr)); margin-bottom: 16px;">
+            <div class="meta-field" style="flex: 0 0 auto; min-width: 220px;">
+              <label>Documento Nº (Document ID)</label>
+              <div style="display:flex;gap:6px;align-items:center;">
+                <input type="number" id="planoDocIdInput" min="1" placeholder="ID do documento" style="width:100%;border:1px solid rgba(15,23,42,0.14);border-radius:8px;padding:6px 10px;font-size:13px;">
+                <button type="button" id="btnCarregarPlano" class="btn btn-outline-primary btn-sm" style="white-space:nowrap;">
+                  <i class="bi bi-folder2-open"></i> Carregar
+                </button>
+              </div>
+              <div class="text-danger d-none mt-1" id="planoDocErr" style="font-size:11px;"></div>
+            </div>
             <div class="meta-field">
               <label>Dia</label>
               <input type="date" id="planoDia">
@@ -849,6 +859,16 @@
   let documentoId = null;
   let currentSignTarget = null;
   const signState = {};
+
+  let planoRegistroId  = null;
+  let planoDocLabel    = '—';
+
+  function fmtDataDia(iso) {
+    if (!iso) return '';
+    const parts = iso.split('-');
+    if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    return iso;
+  }
 
   function buildMeasTable() {
     const tbody = document.getElementById('measBody');
@@ -1135,7 +1155,7 @@
       cliente:           document.getElementById('mpCliente').value.trim().toUpperCase() || null,
       espessura_stencil: document.getElementById('mpEspStencil').value.trim() || null,
       turno:             document.getElementById('mpTurno').value || null,
-      modelo:            document.getElementById('mpModelo').value.trim() || null,
+      modelo:            document.getElementById('mpModelo').value.trim().toUpperCase() || null,
       tolerancia:        document.getElementById('mpTolerancia').value.trim() || null,
       lado:              document.getElementById('mpLado').value || null,
       setor:             document.getElementById('mpSetor').value || null,
@@ -1321,7 +1341,7 @@
       const r = await fetch('/api/medicao-pasta/plano-acao', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-        body: JSON.stringify({ itens }),
+        body: JSON.stringify({ itens, registro_id: planoRegistroId }),
       });
       const data = await r.json().catch(() => ({}));
       if (r.ok && data.sucesso) {
@@ -1460,16 +1480,64 @@
       document.getElementById('loadDocErr').classList.add('d-none');
     });
 
-    document.getElementById('mpCliente').addEventListener('input', function () {
-      const pos = this.selectionStart;
-      this.value = this.value.toUpperCase();
-      this.setSelectionRange(pos, pos);
+    ['mpCliente', 'mpModelo'].forEach(id => {
+      document.getElementById(id).addEventListener('input', function () {
+        const pos = this.selectionStart;
+        this.value = this.value.toUpperCase();
+        this.setSelectionRange(pos, pos);
+      });
+    });
+
+    document.getElementById('btnCarregarPlano').addEventListener('click', async () => {
+      const errEl = document.getElementById('planoDocErr');
+      errEl.classList.add('d-none');
+      const rawId = parseInt(document.getElementById('planoDocIdInput').value);
+      if (!rawId || rawId < 1) {
+        errEl.textContent = 'Informe um ID válido.';
+        errEl.classList.remove('d-none');
+        return;
+      }
+      const btn = document.getElementById('btnCarregarPlano');
+      btn.disabled = true;
+      try {
+        const r = await fetch(`/api/medicao-pasta/plano-acao/${rawId}`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+        if (!r.ok) throw new Error();
+        const itens = await r.json();
+        if (!Array.isArray(itens)) throw new Error();
+
+        planoRegistroId = rawId;
+        planoDocLabel   = String(rawId);
+
+        const container = document.getElementById('planoRowsContainer');
+        container.innerHTML = '';
+
+        if (itens.length) {
+          document.getElementById('planoDia').value   = itens[0].dia   || '';
+          document.getElementById('planoItem').value  = itens[0].item  || '';
+          itens.forEach(item => {
+            addPlanoRow();
+            const rows = container.querySelectorAll('.plano-row-mp');
+            const row  = rows[rows.length - 1];
+            row.querySelector('[data-plano="ocorrencia"]').value  = item.ocorrencia  || '';
+            row.querySelector('[data-plano="causa"]').value       = item.causa       || '';
+            row.querySelector('[data-plano="acao"]').value        = item.acao        || '';
+            row.querySelector('[data-plano="quando"]').value      = item.quando      || '';
+            row.querySelector('[data-plano="responsavel"]').value = item.responsavel || '';
+          });
+        } else {
+          addPlanoRow();
+        }
+      } catch {
+        errEl.textContent = 'Documento não encontrado ou sem plano de ação.';
+        errEl.classList.remove('d-none');
+      } finally {
+        btn.disabled = false;
+      }
     });
 
     window.addEventListener('beforeprint', () => {
-      const docId = document.getElementById('printDocId').textContent;
       const versoRef = document.getElementById('printDocIdVerso');
-      if (versoRef) versoRef.textContent = docId;
+      if (versoRef) versoRef.textContent = planoDocLabel;
 
       const dia  = document.getElementById('planoDia').value;
       const item = document.getElementById('planoItem').value.trim();
@@ -1478,15 +1546,15 @@
 
       const dataRows = [];
       rows.forEach(row => {
-        dataRows.push({
-          dia,
-          item,
-          ocorrencia: row.querySelector('[data-plano="ocorrencia"]')?.value?.trim() || '',
-          causa:      row.querySelector('[data-plano="causa"]')?.value?.trim() || '',
-          acao:       row.querySelector('[data-plano="acao"]')?.value?.trim() || '',
-          quando:     row.querySelector('[data-plano="quando"]')?.value || '',
-          responsavel: row.querySelector('[data-plano="responsavel"]')?.value?.trim() || '',
-        });
+        const ocorrencia  = row.querySelector('[data-plano="ocorrencia"]')?.value?.trim()  || '';
+        const causa       = row.querySelector('[data-plano="causa"]')?.value?.trim()       || '';
+        const acao        = row.querySelector('[data-plano="acao"]')?.value?.trim()        || '';
+        const quando      = row.querySelector('[data-plano="quando"]')?.value              || '';
+        const responsavel = row.querySelector('[data-plano="responsavel"]')?.value?.trim() || '';
+        const hasData = ocorrencia || causa || acao || quando || responsavel;
+        if (hasData) {
+          dataRows.push({ dia: fmtDataDia(dia), item, ocorrencia, causa, acao, quando: fmtDataDia(quando), responsavel });
+        }
       });
 
       const TOTAL_ROWS = 20;

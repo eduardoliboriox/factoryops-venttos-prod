@@ -199,15 +199,15 @@ def list_registros(data=None, setor=None, linha=None, limit=100) -> list:
             return cur.fetchall()
 
 
-def create_plano_acao_itens(itens: list, user_id: int):
+def create_plano_acao_itens(itens: list, user_id: int, registro_id: int | None = None):
     with get_db() as conn:
         with conn.cursor() as cur:
             for item in itens:
                 cur.execute(
                     """
                     INSERT INTO medicao_pasta_plano_acao
-                    (dia, item, ocorrencia, causa, acao, quando, responsavel, created_by)
-                    VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+                    (dia, item, ocorrencia, causa, acao, quando, responsavel, created_by, registro_id)
+                    VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
                     """,
                     (
                         item.get("dia") or None,
@@ -218,6 +218,22 @@ def create_plano_acao_itens(itens: list, user_id: int):
                         item.get("quando") or None,
                         item.get("responsavel") or None,
                         user_id,
+                        registro_id,
                     ),
                 )
         conn.commit()
+
+
+def get_plano_by_registro_id(registro_id: int) -> list:
+    with get_db() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                """
+                SELECT dia, item, ocorrencia, causa, acao, quando, responsavel
+                FROM medicao_pasta_plano_acao
+                WHERE registro_id = %s
+                ORDER BY id
+                """,
+                (registro_id,),
+            )
+            return cur.fetchall()
