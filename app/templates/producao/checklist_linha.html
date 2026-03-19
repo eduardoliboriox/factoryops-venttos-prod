@@ -161,12 +161,28 @@
 
   /* ══════════════════ PRINT ══════════════════ */
   @media print {
+    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
     @page { size: A4 landscape; margin: 8mm; }
 
-    .page-header, .doc-toolbar, .nav-tabs,
-    #tab-consultar, .d-print-none { display: none !important; }
+    html, body { margin: 0 !important; padding: 0 !important; }
 
-    body, .container-fluid { background: #fff !important; }
+    .sidebar,
+    .mobile-header,
+    .desktop-header,
+    .bottom-nav,
+    .page-header,
+    .doc-toolbar,
+    .nav-tabs,
+    #tab-consultar,
+    .d-print-none { display: none !important; }
+
+    .main { margin-left: 0 !important; padding-top: 0 !important; }
+    .app  { display: block !important; }
+    .container-fluid { padding: 0 !important; background: #fff !important; }
+    section.content { padding: 0 !important; }
+
+    body { background: #fff !important; }
 
     .print-header { display: flex !important; }
     .tab-pane { display: block !important; opacity: 1 !important; }
