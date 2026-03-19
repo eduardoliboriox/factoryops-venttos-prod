@@ -20,90 +20,221 @@
 
 {% block content %}
 <style>
+  /* ── Layout ── */
   .cl-card {
-    border: 1px solid rgba(15,23,42,0.10);
-    border-radius: 14px;
-    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--card);
+    margin-bottom: 16px;
     overflow: hidden;
-    box-shadow: 0 8px 24px rgba(15,23,42,0.06);
-    margin-bottom: 20px;
   }
-  .cl-card .cl-header {
+  .cl-card-body { padding: 16px; }
+
+  /* ── Toolbar ── */
+  .doc-toolbar {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding: 10px 14px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 14px;
+  }
+  .doc-id-badge {
+    font-size: .78rem; font-weight: 700; color: var(--text-muted);
+    background: rgba(15,23,42,.05); border-radius: 6px;
+    padding: 4px 10px; border: 1px solid var(--border);
+  }
+  .doc-id-badge.saved { color: #198754; background: rgba(25,135,84,.08); border-color: rgba(25,135,84,.25); }
+
+  /* ── Meta form ── */
+  .meta-label { font-size: .8rem; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; }
+  #clModelo { text-transform: uppercase; }
+
+  /* ── Grid table ── */
+  .cl-grid-wrap { overflow-x: auto; }
+  #clTable {
+    border-collapse: collapse;
+    font-size: 11px;
+    width: 100%;
+    min-width: 600px;
+  }
+  #clTable th {
+    background: rgba(15,23,42,.05);
+    font-size: 10px; font-weight: 700; text-transform: uppercase;
+    padding: 6px 4px; text-align: center;
+    border: 1px solid rgba(15,23,42,.12);
+    white-space: nowrap;
+  }
+  #clTable th.th-item { text-align: left; padding-left: 8px; min-width: 280px; }
+  #clTable th.th-num  { min-width: 32px; }
+  #clTable td {
+    border: 1px solid rgba(15,23,42,.09);
+    padding: 0;
+    vertical-align: middle;
+  }
+  #clTable td.td-num {
+    text-align: center; font-weight: 700; font-size: 10px;
+    color: var(--text-muted); padding: 4px;
+    background: rgba(15,23,42,.02);
+  }
+  #clTable td.td-item {
+    padding: 5px 8px; font-size: 11px; color: var(--text);
+    min-width: 280px;
+  }
+  #clTable td.td-item:nth-child(odd) { background: rgba(15,23,42,.01); }
+
+  /* ── Cells ── */
+  .cl-cell {
+    cursor: pointer;
+    text-align: center;
+    font-size: 9px;
+    font-weight: 800;
+    min-width: 30px;
+    height: 30px;
+    user-select: none;
+    transition: background .1s;
+    letter-spacing: .5px;
+  }
+  .cl-cell:hover { filter: brightness(.93); }
+  .cl-cell[data-status=""]    { background: #fff; color: rgba(15,23,42,.2); }
+  .cl-cell[data-status="OK"]  { background: #d1fae5; color: #065f46; }
+  .cl-cell[data-status="NOK"] { background: #fee2e2; color: #991b1b; }
+  .cl-cell[data-status="NA"]  { background: #f1f5f9; color: #64748b; }
+
+  /* ── Realizador ── */
+  .realizador-area {
+    margin-top: 16px;
+    padding: 12px 16px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
     gap: 12px;
-    padding: 14px 16px;
-    border-bottom: 1px solid rgba(15,23,42,0.08);
+    flex-wrap: wrap;
   }
-  .cl-card .cl-header-blue { background: linear-gradient(180deg, rgba(13,110,253,0.08), transparent); }
-  .cl-card .cl-header-green { background: linear-gradient(180deg, rgba(25,135,84,0.08), transparent); }
-  .cl-card .cl-header-gray { background: linear-gradient(180deg, rgba(15,23,42,0.05), transparent); }
-  .cl-card .cl-title { display: flex; align-items: center; gap: 10px; }
-  .cl-card .cl-icon {
-    width: 40px; height: 40px; border-radius: 12px;
-    display: grid; place-items: center; font-size: 18px;
+  .realizador-area label { font-size: .8rem; font-weight: 700; color: var(--text-muted); }
+  .realizador-area input {
+    border: none; border-bottom: 1.5px solid rgba(13,110,253,.4);
+    background: transparent; font-size: 13px; padding: 3px 6px;
+    width: 220px; border-radius: 0; outline: none;
   }
-  .cl-card .cl-icon-blue { background: rgba(13,110,253,0.12); color: #0d6efd; }
-  .cl-card .cl-icon-green { background: rgba(25,135,84,0.12); color: #198754; }
-  .cl-card .cl-icon-gray { background: rgba(15,23,42,0.08); color: rgba(15,23,42,0.60); }
-  .cl-card .cl-subtitle { font-size: 12px; color: rgba(15,23,42,0.65); margin-top: 2px; }
-  .cl-card .cl-body { padding: 16px; }
-  .cl-card .form-label { font-weight: 700; color: rgba(15,23,42,0.80); }
-  .cl-card .form-control,
-  .cl-card .form-select { border-radius: 12px; border-color: rgba(15,23,42,0.14); }
-  .hint { font-size: 12px; color: rgba(15,23,42,0.65); margin-top: 6px; }
+  .realizador-area input:focus { border-bottom-color: #0d6efd; }
 
-  .checklist-table { font-size: 13px; }
-  .checklist-table th {
-    background: rgba(15,23,42,0.05); font-weight: 700; font-size: 11px;
-    text-transform: uppercase; vertical-align: middle; white-space: nowrap;
-    padding: 8px 10px;
+  /* ── Legend ── */
+  .cl-legend {
+    display: flex; gap: 20px; flex-wrap: wrap;
+    padding: 10px 16px; border-top: 1px solid var(--border);
+    font-size: 11px;
   }
-  .checklist-table td { vertical-align: middle; padding: 8px 10px; }
-  .checklist-table tr.status-ok { background: rgba(25,135,84,0.04); }
-  .checklist-table tr.status-nok { background: rgba(220,53,69,0.05); }
-  .checklist-table tr.status-na { background: rgba(15,23,42,0.03); }
-
-  .status-btn-group { display: flex; gap: 4px; }
-  .status-btn-group input[type="radio"] { display: none; }
-  .status-btn-group label {
-    padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700;
-    cursor: pointer; border: 1px solid rgba(15,23,42,0.20); color: rgba(15,23,42,0.55);
-    transition: all 0.15s;
-  }
-  .status-btn-group input[value="ok"]:checked + label { background: #198754; border-color: #198754; color: #fff; }
-  .status-btn-group input[value="nok"]:checked + label { background: #dc3545; border-color: #dc3545; color: #fff; }
-  .status-btn-group input[value="na"]:checked + label { background: #6c757d; border-color: #6c757d; color: #fff; }
-
-  .num-badge {
+  .cl-legend-item { display: flex; align-items: center; gap: 6px; }
+  .cl-legend-dot {
+    width: 28px; height: 18px; border-radius: 4px;
     display: inline-flex; align-items: center; justify-content: center;
-    width: 24px; height: 24px; border-radius: 50%;
-    background: rgba(13,110,253,0.10); color: #0d6efd;
-    font-size: 11px; font-weight: 800;
+    font-size: 9px; font-weight: 800;
+  }
+  .cl-legend-dot.ok  { background: #d1fae5; color: #065f46; }
+  .cl-legend-dot.nok { background: #fee2e2; color: #991b1b; }
+  .cl-legend-dot.na  { background: #f1f5f9; color: #64748b; }
+
+  /* ── Consultar ── */
+  .result-row { cursor: pointer; }
+  .result-row:hover { background: rgba(13,110,253,.04); }
+
+  /* ══════════════════ PRINT ══════════════════ */
+  @media print {
+    @page { size: A4 landscape; margin: 8mm; }
+
+    .page-header, .doc-toolbar, .nav-tabs,
+    #tab-consultar, .d-print-none, .realizador-area input { display: none !important; }
+
+    body, .container-fluid { background: #fff !important; }
+
+    .print-header { display: flex !important; }
+    .tab-pane { display: block !important; opacity: 1 !important; }
+
+    #clTable { font-size: 7px; min-width: unset; width: 100%; }
+    #clTable th { font-size: 7px; padding: 3px 2px; }
+    #clTable th.th-item { min-width: unset; }
+    #clTable td.td-item { min-width: unset; font-size: 7px; padding: 2px 5px; }
+    #clTable td.td-num { font-size: 7px; padding: 2px; }
+    .cl-cell { font-size: 7px; height: 18px; min-width: 16px; }
+    .cl-grid-wrap { overflow: visible; }
+    .cl-card { border-radius: 0; margin-bottom: 6px; }
+    .cl-card-body { padding: 6px; }
+    .print-meta { display: flex !important; }
+    .realizador-area { padding: 6px 8px; margin-top: 8px; }
+    .realizador-area label { font-size: 7px; }
+    .cl-legend { padding: 4px 8px; font-size: 7px; }
+    .cl-legend-dot { width: 20px; height: 14px; font-size: 7px; }
   }
 
-  .sessao-row { cursor: pointer; }
-  .sessao-row:hover { background: rgba(13,110,253,0.04); }
+  .print-header {
+    display: none;
+    align-items: center;
+    gap: 16px;
+    padding: 10px 14px;
+    border: 1px solid #ccc;
+    border-bottom: none;
+    background: #fff;
+  }
+  .print-header img { height: 36px; }
+  .print-header-title { font-size: 13px; font-weight: 800; color: #0f172a; line-height: 1.2; }
+  .print-header-sub { font-size: 9px; color: #64748b; margin-top: 2px; }
+  .print-header-doc { margin-left: auto; text-align: right; }
+  .print-header-doc .doc-num { font-size: 13px; font-weight: 800; color: #0d6efd; }
+  .print-header-doc .doc-code { font-size: 8px; color: #64748b; }
 
-  .nok-badge { background: rgba(220,53,69,0.10); color: #dc3545; border-radius: 6px; padding: 2px 7px; font-size: 11px; font-weight: 700; }
-  .ok-badge  { background: rgba(25,135,84,0.10);  color: #198754; border-radius: 6px; padding: 2px 7px; font-size: 11px; font-weight: 700; }
-
-  .plano-row { border-bottom: 1px solid rgba(15,23,42,0.08); padding: 12px 0; }
-  .plano-row:last-child { border-bottom: none; }
-  .plano-item-label { font-size: 11px; font-weight: 700; color: rgba(15,23,42,0.50); margin-bottom: 4px; }
+  .print-meta {
+    display: none;
+    flex-wrap: wrap;
+    gap: 16px;
+    padding: 8px 14px;
+    border: 1px solid #ccc;
+    border-bottom: none;
+    background: #f8fafc;
+    font-size: 9px;
+  }
+  .print-meta-item strong { font-size: 8px; color: #64748b; display: block; }
+  .print-meta-item span   { font-size: 10px; font-weight: 700; color: #0f172a; }
 </style>
+
+<!-- Load doc modal -->
+<div class="modal fade" id="modalCarregar" tabindex="-1">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header py-2">
+        <h6 class="modal-title" style="font-size:.9rem;">Carregar Documento</h6>
+        <button type="button" class="btn-close btn-sm" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <label class="meta-label mb-1">ID do Documento</label>
+        <div class="input-group input-group-sm">
+          <span class="input-group-text fw-bold">CL-</span>
+          <input type="number" class="form-control" id="loadDocIdInput" placeholder="N°" min="1" style="border-radius:0;">
+          <span class="input-group-text fw-bold" id="loadDocYearSuffix">-2026</span>
+        </div>
+        <div class="text-danger mt-2 d-none" id="loadDocErr" style="font-size:.8rem;"></div>
+      </div>
+      <div class="modal-footer py-2">
+        <button type="button" class="btn btn-primary btn-sm" id="btnCarregarDoc">Carregar</button>
+        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <div class="container-fluid">
 
-  <ul class="nav nav-tabs mb-3" id="checklistTabs" role="tablist">
+  <ul class="nav nav-tabs mb-3 d-print-none" id="clTabs" role="tablist">
     <li class="nav-item" role="presentation">
-      <button class="nav-link active" id="tab-novo-btn" data-bs-toggle="tab" data-bs-target="#tab-novo" type="button" role="tab">
-        <i class="bi bi-clipboard-plus me-1"></i> Novo Checklist
+      <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-doc" type="button" role="tab">
+        <i class="bi bi-file-earmark-check me-1"></i> Documento
       </button>
     </li>
     <li class="nav-item" role="presentation">
-      <button class="nav-link" id="tab-consultar-btn" data-bs-toggle="tab" data-bs-target="#tab-consultar" type="button" role="tab">
+      <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-consultar" type="button" role="tab">
         <i class="bi bi-search me-1"></i> Consultar
       </button>
     </li>
@@ -111,28 +242,80 @@
 
   <div class="tab-content">
 
-    <!-- ═══════════════ TAB NOVO CHECKLIST ═══════════════ -->
-    <div class="tab-pane fade show active" id="tab-novo" role="tabpanel">
+    <!-- ══════════════ TAB DOCUMENTO ══════════════ -->
+    <div class="tab-pane fade show active" id="tab-doc" role="tabpanel">
 
-      <div id="msgChecklist"></div>
-
-      <!-- FASE 1: cabeçalho -->
-      <div class="cl-card" id="cardCabecalho">
-        <div class="cl-header cl-header-blue">
-          <div class="cl-title">
-            <div class="cl-icon cl-icon-blue"><i class="bi bi-clipboard-check"></i></div>
-            <div>
-              <div class="fw-bold">Identificação</div>
-              <div class="cl-subtitle">Selecione o setor e a linha para iniciar.</div>
-            </div>
-          </div>
-          <span class="badge text-bg-primary">PASSO 1</span>
+      <!-- Print header -->
+      <div class="print-header">
+        <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Venttos">
+        <div>
+          <div class="print-header-title">CHECKLIST DE VERIFICAÇÃO DA LINHA</div>
+          <div class="print-header-sub">Line's Checklist Verification · PRO011</div>
         </div>
-        <div class="cl-body">
+        <div class="print-header-doc ms-auto">
+          <div class="doc-num" id="printDocId">Novo Documento</div>
+          <div class="doc-code">Código: PRO011 · Rev. 09</div>
+        </div>
+      </div>
+
+      <!-- Print meta row -->
+      <div class="print-meta" id="printMeta">
+        <div class="print-meta-item"><strong>MÊS / ANO</strong><span id="printMesAno">-</span></div>
+        <div class="print-meta-item"><strong>SETOR</strong><span id="printSetor">-</span></div>
+        <div class="print-meta-item"><strong>LINHA</strong><span id="printLinha">-</span></div>
+        <div class="print-meta-item"><strong>TURNO</strong><span id="printTurno">-</span></div>
+        <div class="print-meta-item"><strong>MODELO</strong><span id="printModelo">-</span></div>
+      </div>
+
+      <!-- Toolbar -->
+      <div class="doc-toolbar d-print-none">
+        <button class="btn btn-outline-secondary btn-sm" id="btnNovo" title="Novo documento">
+          <i class="bi bi-file-earmark-plus"></i> Novo
+        </button>
+        <button class="btn btn-outline-primary btn-sm" id="btnAbrirCarregar" data-bs-toggle="modal" data-bs-target="#modalCarregar">
+          <i class="bi bi-folder2-open"></i> Carregar CL-
+        </button>
+        <span class="doc-id-badge" id="docIdBadge">Novo Documento</span>
+        <div class="ms-auto d-flex gap-2">
+          <button class="btn btn-success btn-sm fw-bold" id="btnSalvar">
+            <i class="bi bi-floppy"></i> Salvar
+          </button>
+          <button class="btn btn-outline-secondary btn-sm" onclick="window.print()">
+            <i class="bi bi-printer"></i> Imprimir
+          </button>
+        </div>
+      </div>
+
+      <div id="msgDoc" class="d-print-none"></div>
+
+      <!-- Meta card -->
+      <div class="cl-card d-print-none">
+        <div class="cl-card-body">
           <div class="row g-3">
-            <div class="col-md-2">
-              <label class="form-label">Setor</label>
-              <select class="form-select" id="ckSetor">
+            <div class="col-6 col-md-2">
+              <div class="meta-label">Mês</div>
+              <select class="form-select form-select-sm" id="clMes" style="border-radius:8px;">
+                <option value="1">Janeiro</option>
+                <option value="2">Fevereiro</option>
+                <option value="3">Março</option>
+                <option value="4">Abril</option>
+                <option value="5">Maio</option>
+                <option value="6">Junho</option>
+                <option value="7">Julho</option>
+                <option value="8">Agosto</option>
+                <option value="9">Setembro</option>
+                <option value="10">Outubro</option>
+                <option value="11">Novembro</option>
+                <option value="12">Dezembro</option>
+              </select>
+            </div>
+            <div class="col-6 col-md-1">
+              <div class="meta-label">Ano</div>
+              <input type="number" class="form-control form-control-sm" id="clAno" min="2024" max="2040" style="border-radius:8px;">
+            </div>
+            <div class="col-6 col-md-2">
+              <div class="meta-label">Setor</div>
+              <select class="form-select form-select-sm" id="clSetor" style="border-radius:8px;">
                 <option value="SMT">SMT</option>
                 <option value="PTH">PTH</option>
                 <option value="IM">IM</option>
@@ -140,112 +323,102 @@
                 <option value="VTT">VTT</option>
               </select>
             </div>
-            <div class="col-md-2">
-              <label class="form-label">Linha</label>
-              <select class="form-select" id="ckLinha"></select>
+            <div class="col-6 col-md-2">
+              <div class="meta-label">Linha</div>
+              <select class="form-select form-select-sm" id="clLinha" style="border-radius:8px;"></select>
             </div>
-            <div class="col-md-3">
-              <label class="form-label">Responsável</label>
-              <input class="form-control" id="ckResponsavel" placeholder="Nome do líder">
+            <div class="col-6 col-md-2">
+              <div class="meta-label">Turno</div>
+              <select class="form-select form-select-sm" id="clTurno" style="border-radius:8px;">
+                <option value="">-</option>
+                <option value="1">1° Turno</option>
+                <option value="2">2° Turno</option>
+                <option value="3">3° Turno</option>
+              </select>
             </div>
-            <div class="col-md-2">
-              <label class="form-label">Modelo (opcional)</label>
-              <input class="form-control" id="ckModelo" placeholder="Ex: ABC123">
-            </div>
-            <div class="col-md-2">
-              <label class="form-label">Mês (opcional)</label>
-              <input class="form-control" id="ckMes" placeholder="Ex: Mar/2026">
-            </div>
-            <div class="col-md-2">
-              <label class="form-label">Data</label>
-              <input class="form-control" type="date" id="ckData">
-            </div>
-            <div class="col-12">
-              <button class="btn btn-primary px-4" id="btnIniciarChecklist" type="button">
-                <i class="bi bi-play-fill"></i> Iniciar Checklist
-              </button>
+            <div class="col-6 col-md-3">
+              <div class="meta-label">Modelo (Model)</div>
+              <input type="text" class="form-control form-control-sm" id="clModelo" placeholder="Ex: ABC-123" style="border-radius:8px;">
             </div>
           </div>
         </div>
       </div>
 
-      <!-- FASE 2: itens (oculto até iniciar) -->
-      <div class="cl-card" id="cardItens" style="display:none;">
-        <div class="cl-header cl-header-green">
-          <div class="cl-title">
-            <div class="cl-icon cl-icon-green"><i class="bi bi-list-check"></i></div>
-            <div>
-              <div class="fw-bold">Itens de Verificação</div>
-              <div class="cl-subtitle" id="cardItensSubtitle">Marque cada item como OK, NOK ou N/A.</div>
-            </div>
-          </div>
-          <span class="badge text-bg-success">PASSO 2</span>
-        </div>
-        <div class="cl-body">
-          <div class="table-responsive">
-            <table class="table table-sm table-bordered checklist-table">
-              <thead>
-                <tr>
-                  <th style="width:40px;">N°</th>
-                  <th>Descrição</th>
-                  <th style="width:160px; text-align:center;">Status</th>
-                  <th style="min-width:200px;">Observação</th>
-                </tr>
-              </thead>
-              <tbody id="checklistTableBody"></tbody>
+      <!-- Grid card -->
+      <div class="cl-card">
+        <div class="cl-card-body p-0">
+          <div class="cl-grid-wrap">
+            <table id="clTable">
+              <thead id="clThead"></thead>
+              <tbody id="clTbody"></tbody>
             </table>
           </div>
-          <div class="d-flex gap-2 flex-wrap mt-2">
-            <button class="btn btn-success px-4 fw-bold" id="btnEnviarChecklist" type="button">
-              <i class="bi bi-send-check"></i> Enviar Checklist
-            </button>
-            <button class="btn btn-outline-secondary px-3" id="btnCancelarChecklist" type="button">
-              <i class="bi bi-x-lg"></i> Cancelar
-            </button>
-          </div>
-        </div>
-      </div>
 
-      <!-- FASE 3: plano de ação (oculto até enviar com NOK) -->
-      <div class="cl-card" id="cardPlano" style="display:none;">
-        <div class="cl-header cl-header-gray">
-          <div class="cl-title">
-            <div class="cl-icon cl-icon-gray"><i class="bi bi-exclamation-triangle"></i></div>
-            <div>
-              <div class="fw-bold">Plano de Ação</div>
-              <div class="cl-subtitle">Registre as ações para os itens NOK.</div>
-            </div>
+          <!-- Realizador -->
+          <div class="realizador-area d-print-none">
+            <label>Realizador do Checklist (Checklist Maker):</label>
+            <input type="text" id="clRealizador" placeholder="Nome do realizador">
           </div>
-          <span class="badge text-bg-warning text-dark">NOK ITEMS</span>
-        </div>
-        <div class="cl-body" id="cardPlanoBody">
+          <div class="realizador-area" id="printRealizador" style="display:none;">
+            <span style="font-size:9px;font-weight:700;color:#64748b;">REALIZADOR DO CHECKLIST (Checklist Maker):</span>
+            <span id="printRealizadorNome" style="font-size:11px;font-weight:700;color:#0f172a;margin-left:8px;min-width:120px;border-bottom:1px solid #ccc;display:inline-block;"></span>
+          </div>
+
+          <!-- Legend -->
+          <div class="cl-legend">
+            <span style="font-size:10px;font-weight:700;color:var(--text-muted);">Legenda (Subtitle):</span>
+            <span class="cl-legend-item">
+              <span class="cl-legend-dot ok">OK</span>
+              <span>Nenhum problema detectado (No problem detected)</span>
+            </span>
+            <span class="cl-legend-item">
+              <span class="cl-legend-dot nok">NOK</span>
+              <span>Problema detectado (Problem detected)</span>
+            </span>
+            <span class="cl-legend-item">
+              <span class="cl-legend-dot na">NA</span>
+              <span>Não aplicável (Not applicable)</span>
+            </span>
+            <span class="cl-legend-item" style="margin-left:auto;font-size:10px;color:var(--text-muted);">
+              Observações (Comments): clique na célula para alternar OK → NOK → NA
+            </span>
+          </div>
         </div>
       </div>
 
     </div>
 
-    <!-- ═══════════════ TAB CONSULTAR ═══════════════ -->
+    <!-- ══════════════ TAB CONSULTAR ══════════════ -->
     <div class="tab-pane fade" id="tab-consultar" role="tabpanel">
 
       <div class="cl-card">
-        <div class="cl-header cl-header-gray">
-          <div class="cl-title">
-            <div class="cl-icon cl-icon-gray"><i class="bi bi-funnel"></i></div>
-            <div>
-              <div class="fw-bold">Filtros</div>
-              <div class="cl-subtitle">Busque sessões por data, setor ou linha.</div>
-            </div>
-          </div>
-        </div>
-        <div class="cl-body">
+        <div class="cl-card-body">
           <div class="row g-3 align-items-end">
-            <div class="col-md-3">
-              <label class="form-label">Data</label>
-              <input class="form-control" type="date" id="filtroData">
+            <div class="col-6 col-md-2">
+              <div class="meta-label">Mês</div>
+              <select class="form-select form-select-sm" id="filtroMes" style="border-radius:8px;">
+                <option value="">Todos</option>
+                <option value="1">Janeiro</option>
+                <option value="2">Fevereiro</option>
+                <option value="3">Março</option>
+                <option value="4">Abril</option>
+                <option value="5">Maio</option>
+                <option value="6">Junho</option>
+                <option value="7">Julho</option>
+                <option value="8">Agosto</option>
+                <option value="9">Setembro</option>
+                <option value="10">Outubro</option>
+                <option value="11">Novembro</option>
+                <option value="12">Dezembro</option>
+              </select>
             </div>
-            <div class="col-md-2">
-              <label class="form-label">Setor</label>
-              <select class="form-select" id="filtroSetor">
+            <div class="col-6 col-md-1">
+              <div class="meta-label">Ano</div>
+              <input type="number" class="form-control form-control-sm" id="filtroAno" style="border-radius:8px;">
+            </div>
+            <div class="col-6 col-md-2">
+              <div class="meta-label">Setor</div>
+              <select class="form-select form-select-sm" id="filtroSetor" style="border-radius:8px;">
                 <option value="">Todos</option>
                 <option value="SMT">SMT</option>
                 <option value="PTH">PTH</option>
@@ -254,12 +427,14 @@
                 <option value="VTT">VTT</option>
               </select>
             </div>
-            <div class="col-md-2">
-              <label class="form-label">Linha</label>
-              <input class="form-control" id="filtroLinha" placeholder="Ex: SMT-01">
+            <div class="col-6 col-md-2">
+              <div class="meta-label">Linha</div>
+              <select class="form-select form-select-sm" id="filtroLinha" style="border-radius:8px;">
+                <option value="">Todas</option>
+              </select>
             </div>
             <div class="col-md-2">
-              <button class="btn btn-primary w-100" id="btnConsultar" type="button">
+              <button class="btn btn-primary btn-sm w-100" id="btnConsultar">
                 <i class="bi bi-search"></i> Buscar
               </button>
             </div>
@@ -270,29 +445,19 @@
       <div id="msgConsultar"></div>
 
       <div class="cl-card" id="cardResultados" style="display:none;">
-        <div class="cl-header cl-header-gray">
-          <div class="cl-title">
-            <div class="cl-icon cl-icon-gray"><i class="bi bi-table"></i></div>
-            <div>
-              <div class="fw-bold">Resultados</div>
-              <div class="cl-subtitle" id="resultadosSubtitle"></div>
-            </div>
-          </div>
-        </div>
-        <div class="cl-body p-0">
+        <div class="cl-card-body p-0">
           <div class="table-responsive">
             <table class="table table-sm table-hover mb-0">
               <thead class="table-light">
                 <tr>
                   <th>ID</th>
-                  <th>Data</th>
+                  <th>Mês/Ano</th>
                   <th>Setor</th>
                   <th>Linha</th>
+                  <th>Turno</th>
                   <th>Modelo</th>
-                  <th>Responsável</th>
+                  <th>Realizador</th>
                   <th>Criado por</th>
-                  <th>Itens</th>
-                  <th>NOK</th>
                   <th></th>
                 </tr>
               </thead>
@@ -303,7 +468,6 @@
       </div>
 
     </div>
-
   </div>
 </div>
 {% endblock %}
@@ -313,6 +477,9 @@
 (function () {
   "use strict";
 
+  const MESES = ["","Janeiro","Fevereiro","Março","Abril","Maio","Junho",
+                 "Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+
   const LINHAS = {
     SMT: ["SMT-01","SMT-02","SMT-03","SMT-04","SMT-05","SMT-06","SMT-07","SMT-08","SMT-09"],
     PTH: ["ADE-01","AXI-01","AXI-02","AXI-03","JUM-01","JUM-02","RAD-01","RAD-02","RAD-03","ROU-01","ROU-02","ROU-03","ROU-04"],
@@ -321,345 +488,368 @@
     VTT: ["VTT-01","VTT-02","VTT-03"],
   };
 
-  let itensCache = [];
-  let sessaoAtiva = null;
+  const ITEMS = [
+    { num: 1,  desc: "Todas as IDTS/formulário estão disponíveis nos postos de trabalho e atualizados conforme o sistema ?" },
+    { num: 2,  desc: "Todos os equipamentos da linha estão funcionando corretamente ?" },
+    { num: 3,  desc: "Os checklists de verificação dos equipamentos estão disponíveis ?" },
+    { num: 4,  desc: "Exaustor do forno está ligado ?" },
+    { num: 5,  desc: "A pasta de solda foi retirada da geladeira e está pronta para uso ?" },
+    { num: 6,  desc: "Material de limpeza manual do stencil está disponível ?" },
+    { num: 7,  desc: "Todo material de consumo está disponível ?" },
+    { num: 8,  desc: "Verificado se pasta de solda / adesivo estão devidamente etiquetados ?" },
+    { num: 9,  desc: "Existe papel de limpeza da printer carregado na máquina ?" },
+    { num: 10, desc: "Máquinas tem comunicação com o computador de linha ?" },
+    { num: 11, desc: "O modelo possui máscara de pinos ?" },
+    { num: 12, desc: "A pinagem está distribuída de forma adequada na printer referente ao modelo ?" },
+    { num: 13, desc: "A base da máquina está livre de componentes de precipitação (rejeitos) ?" },
+    { num: 14, desc: "Folhas de alimentação estão no processo ?" },
+    { num: 15, desc: "Foi realizada a manutenção diária de limpeza ?" },
+    { num: 16, desc: "Todo pessoal da linha está treinado e há registro na IDT ?" },
+    { num: 17, desc: "A caixa de rejeitos foi esvaziada com os respectivos relatórios ?" },
+    { num: 18, desc: "Confirmado se o nome do programa do perfil confere ?" },
+    { num: 19, desc: "Foi realizada a medição do perfil diário e confirmado os parâmetros ?" },
+    { num: 20, desc: "Placa de referência está presente no posto de inspeção ?" },
+    { num: 21, desc: "O material de reparo está disponível na bancada ?" },
+    { num: 22, desc: "Os magazines estão ajustados para a placa em produção ?" },
+    { num: 23, desc: "As etiquetas de controle da produção e formulários estão disponíveis ?" },
+    { num: 24, desc: "Todos da linha estão utilizando o material ESD ? Há registro de verificação ?" },
+    { num: 25, desc: "Cordões de aterramento e mantas estão integras ?" },
+    { num: 26, desc: "Os magazines estão organizados e os postos de trabalho arrumados ?" },
+    { num: 27, desc: "Lixeiras estão esvaziadas e prontas para uso ?" },
+    { num: 28, desc: "Os equipamentos estão devidamente identificados e calibrados ?" },
+    { num: 29, desc: "Verificado se solda em fio, pasta e fluxo estão com a etiqueta RoHS/Lead Free ?" },
+    { num: 30, desc: "Verificada a marcação de alimentação dos tapes ?" },
+    { num: 31, desc: "O 5S está sendo realizado (utilização, organização, limpeza, saúde e higiene, autodisciplina) ?" },
+    { num: 32, desc: "Verificação correta da fixação do stencil na printer ?" },
+  ];
+
+  const STATUS_CYCLE = ['', 'OK', 'NOK', 'NA'];
+
+  let registroId  = null;
+  let docId       = null;
+  let gridState   = {};
 
   function esc(s) {
     return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 
-  function fmtData(iso) {
-    if (!iso) return '—';
-    try {
-      const d = new Date(iso + (iso.includes('T') ? '' : 'T00:00:00'));
-      return d.toLocaleDateString('pt-BR');
-    } catch { return iso; }
-  }
-
-  function showMsg(el, tipo, texto) {
+  function showMsg(elId, tipo, texto) {
+    const el = document.getElementById(elId);
     el.innerHTML = `<div class="alert alert-${tipo} alert-dismissible fade show mb-3">
       ${esc(texto)}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>`;
-    if (tipo !== 'danger') setTimeout(() => { try { el.querySelector('.alert') && bootstrap.Alert.getOrCreateInstance(el.querySelector('.alert')).close(); } catch {} }, 4000);
+    if (tipo !== 'danger') setTimeout(() => {
+      try { bootstrap.Alert.getOrCreateInstance(el.querySelector('.alert'))?.close(); } catch {}
+    }, 4000);
   }
 
-  function renderLinhas(setor, sel) {
+  function daysInMonth(mes, ano) {
+    return new Date(ano, mes, 0).getDate();
+  }
+
+  function renderLinhas(setor, sel, selected) {
     const linhas = LINHAS[setor] || [];
     sel.innerHTML = '';
     for (const l of linhas) {
       const o = document.createElement('option');
       o.value = l; o.textContent = l;
+      if (selected && l === selected) o.selected = true;
       sel.appendChild(o);
     }
   }
 
-  async function api(url, opts) {
-    opts = opts || {};
-    const r = await fetch(url, {
-      method: opts.method || 'GET',
-      body: opts.body || undefined,
-      headers: Object.assign({ 'X-Requested-With': 'XMLHttpRequest', 'Content-Type': 'application/json' }, opts.headers || {}),
-    });
-    const data = await r.json().catch(() => ({}));
-    return { ok: r.ok, data };
-  }
+  function cellKey(itemNum, dia) { return `${itemNum}:${dia}`; }
 
-  async function loadItens() {
-    if (itensCache.length) return itensCache;
-    const { ok, data } = await api('/api/checklist/itens');
-    itensCache = (ok && Array.isArray(data)) ? data : [];
-    return itensCache;
-  }
+  function buildGrid() {
+    const mes = parseInt(document.getElementById('clMes').value);
+    const ano = parseInt(document.getElementById('clAno').value);
+    const days = daysInMonth(mes, ano);
 
-  function renderTableRow(item, idx) {
-    const n = item.numero;
-    return `<tr id="row-item-${item.id}" data-item-id="${item.id}">
-      <td class="text-center"><span class="num-badge">${n}</span></td>
-      <td>${esc(item.descricao)}</td>
-      <td>
-        <div class="status-btn-group justify-content-center">
-          <input type="radio" name="status_${item.id}" id="ok_${item.id}" value="ok">
-          <label for="ok_${item.id}">OK</label>
-          <input type="radio" name="status_${item.id}" id="nok_${item.id}" value="nok">
-          <label for="nok_${item.id}">NOK</label>
-          <input type="radio" name="status_${item.id}" id="na_${item.id}" value="na">
-          <label for="na_${item.id}">N/A</label>
-        </div>
-      </td>
-      <td>
-        <input class="form-control form-control-sm" type="text" id="obs_${item.id}" placeholder="Observação (opcional)" style="border-radius:8px;">
-      </td>
-    </tr>`;
-  }
+    const thead = document.getElementById('clThead');
+    const tbody = document.getElementById('clTbody');
 
-  function getRowStatus(tr) {
-    const checked = tr.querySelector('input[type="radio"]:checked');
-    return checked ? checked.value : null;
-  }
+    let headHtml = '<tr><th class="th-num">N°</th><th class="th-item">Ponto a Verificar (Verification Point)</th>';
+    for (let d = 1; d <= days; d++) headHtml += `<th>${d}</th>`;
+    headHtml += '</tr>';
+    thead.innerHTML = headHtml;
 
-  function bindRowHighlight(tbody) {
-    tbody.querySelectorAll('input[type="radio"]').forEach(radio => {
-      radio.addEventListener('change', () => {
-        const tr = radio.closest('tr');
-        tr.classList.remove('status-ok', 'status-nok', 'status-na');
-        if (radio.checked) tr.classList.add(`status-${radio.value}`);
+    let bodyHtml = '';
+    for (const item of ITEMS) {
+      bodyHtml += `<tr>
+        <td class="td-num">${item.num}</td>
+        <td class="td-item">${esc(item.desc)}</td>`;
+      for (let d = 1; d <= days; d++) {
+        const key    = cellKey(item.num, d);
+        const status = gridState[key] || '';
+        bodyHtml += `<td class="cl-cell" data-item="${item.num}" data-dia="${d}" data-status="${status}">${status}</td>`;
+      }
+      bodyHtml += '</tr>';
+    }
+    tbody.innerHTML = bodyHtml;
+
+    tbody.querySelectorAll('.cl-cell').forEach(cell => {
+      cell.addEventListener('click', () => {
+        const cur  = cell.dataset.status;
+        const next = STATUS_CYCLE[(STATUS_CYCLE.indexOf(cur) + 1) % STATUS_CYCLE.length];
+        cell.dataset.status = next;
+        cell.textContent    = next;
+        gridState[cellKey(Number(cell.dataset.item), Number(cell.dataset.dia))] = next;
       });
     });
+
+    updatePrintMeta();
   }
 
-  async function iniciarChecklist() {
-    const btn = document.getElementById('btnIniciarChecklist');
-    btn.disabled = true;
-    const orig = btn.innerHTML;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Carregando...';
+  function collectEntradas() {
+    return Object.entries(gridState)
+      .filter(([, status]) => status !== '')
+      .map(([key, status]) => {
+        const [item_num, dia] = key.split(':').map(Number);
+        return { item_num, dia, status };
+      });
+  }
+
+  function updateDocBadge() {
+    const badge    = document.getElementById('docIdBadge');
+    const printDoc = document.getElementById('printDocId');
+    const label    = docId || 'Novo Documento';
+    badge.textContent    = label;
+    printDoc.textContent = label;
+    badge.classList.toggle('saved', !!docId);
+  }
+
+  function updatePrintMeta() {
+    const mes = parseInt(document.getElementById('clMes').value);
+    const ano = parseInt(document.getElementById('clAno').value);
+    document.getElementById('printMesAno').textContent = `${MESES[mes]}/${ano}`;
+    document.getElementById('printSetor').textContent  = document.getElementById('clSetor').value;
+    document.getElementById('printLinha').textContent  = document.getElementById('clLinha').value;
+    const turnoVal = document.getElementById('clTurno').value;
+    document.getElementById('printTurno').textContent  = turnoVal ? `${turnoVal}° Turno` : '-';
+    document.getElementById('printModelo').textContent = document.getElementById('clModelo').value.trim() || '-';
+    const realizador = document.getElementById('clRealizador').value.trim();
+    document.getElementById('printRealizadorNome').textContent = realizador;
+    const ra = document.getElementById('printRealizador');
+    ra.style.display = 'flex';
+  }
+
+  function limpar() {
+    registroId = null;
+    docId      = null;
+    gridState  = {};
+    updateDocBadge();
+
+    const now = new Date();
+    document.getElementById('clMes').value  = String(now.getMonth() + 1);
+    document.getElementById('clAno').value  = String(now.getFullYear());
+    document.getElementById('clTurno').value   = '';
+    document.getElementById('clModelo').value  = '';
+    document.getElementById('clRealizador').value = '';
+
+    const setor = document.getElementById('clSetor').value;
+    renderLinhas(setor, document.getElementById('clLinha'));
+    buildGrid();
+    document.getElementById('msgDoc').innerHTML = '';
+  }
+
+  function carregarDocumento(id) {
+    const btn = document.getElementById('btnCarregarDoc');
+    const errEl = document.getElementById('loadDocErr');
+    errEl.classList.add('d-none');
+    btn.disabled  = true;
+    const orig    = btn.innerHTML;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+
+    fetch(`/api/checklist-linha/registros/${id}`, {
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.erro) { errEl.textContent = data.erro; errEl.classList.remove('d-none'); return; }
+
+      registroId = data.id;
+      docId      = data.doc_id;
+      updateDocBadge();
+
+      document.getElementById('clMes').value   = String(data.mes);
+      document.getElementById('clAno').value   = String(data.ano);
+      document.getElementById('clSetor').value = data.setor || 'SMT';
+      renderLinhas(data.setor || 'SMT', document.getElementById('clLinha'), data.linha);
+      document.getElementById('clTurno').value    = data.turno ? String(data.turno) : '';
+      document.getElementById('clModelo').value   = data.modelo || '';
+      document.getElementById('clRealizador').value = data.responsavel || '';
+
+      gridState = {};
+      for (const e of (data.entradas || [])) {
+        gridState[cellKey(e.item_num, e.dia)] = e.status;
+      }
+      buildGrid();
+
+      bootstrap.Modal.getInstance(document.getElementById('modalCarregar'))?.hide();
+      showMsg('msgDoc', 'success', `Documento ${docId} carregado.`);
+    })
+    .catch(() => { errEl.textContent = 'Erro ao carregar documento.'; errEl.classList.remove('d-none'); })
+    .finally(() => { btn.disabled = false; btn.innerHTML = orig; });
+  }
+
+  async function salvar() {
+    updatePrintMeta();
+
+    const mes  = parseInt(document.getElementById('clMes').value);
+    const ano  = parseInt(document.getElementById('clAno').value);
+    const setor = document.getElementById('clSetor').value;
+    const linha = document.getElementById('clLinha').value;
+
+    if (!setor || !linha) { showMsg('msgDoc', 'warning', 'Setor e linha são obrigatórios.'); return; }
+
+    const payload = {
+      mes,
+      ano,
+      setor,
+      linha,
+      turno:      document.getElementById('clTurno').value || null,
+      modelo:     document.getElementById('clModelo').value.trim().toUpperCase() || null,
+      responsavel: document.getElementById('clRealizador').value.trim() || null,
+      entradas:   collectEntradas(),
+    };
+
+    const btn  = document.getElementById('btnSalvar');
+    btn.disabled   = true;
+    const orig     = btn.innerHTML;
+    btn.innerHTML  = '<span class="spinner-border spinner-border-sm me-1"></span>Salvando...';
 
     try {
-      const itens = await loadItens();
-      if (!itens.length) {
-        showMsg(document.getElementById('msgChecklist'), 'danger', 'Não foi possível carregar os itens. Execute a migração 003 no banco.');
+      let url    = '/api/checklist-linha/registros';
+      let method = 'POST';
+      if (registroId) { url = `${url}/${registroId}`; method = 'PATCH'; }
+
+      const r    = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+        body: JSON.stringify(payload),
+      });
+      const data = await r.json();
+
+      if (!r.ok || !data.sucesso) {
+        showMsg('msgDoc', 'danger', data.erro || 'Erro ao salvar.');
         return;
       }
 
-      const setor = document.getElementById('ckSetor').value;
-      const linha = document.getElementById('ckLinha').value;
-      document.getElementById('cardItensSubtitle').textContent = `${setor} · ${linha}`;
-
-      const tbody = document.getElementById('checklistTableBody');
-      tbody.innerHTML = itens.map((item, i) => renderTableRow(item, i)).join('');
-      bindRowHighlight(tbody);
-
-      document.getElementById('cardItens').style.display = '';
-      document.getElementById('cardItens').scrollIntoView({ behavior: 'smooth', block: 'start' });
-    } finally {
-      btn.disabled = false;
-      btn.innerHTML = orig;
-    }
-  }
-
-  function cancelarChecklist() {
-    document.getElementById('cardItens').style.display = 'none';
-    document.getElementById('cardPlano').style.display = 'none';
-    document.getElementById('checklistTableBody').innerHTML = '';
-    document.getElementById('cardPlanoBody').innerHTML = '';
-    document.getElementById('msgChecklist').innerHTML = '';
-    sessaoAtiva = null;
-  }
-
-  async function enviarChecklist() {
-    const msgEl = document.getElementById('msgChecklist');
-    const itens = itensCache;
-    const tbody = document.getElementById('checklistTableBody');
-
-    const respostas = [];
-    let semResposta = 0;
-
-    for (const item of itens) {
-      const tr = tbody.querySelector(`#row-item-${item.id}`);
-      if (!tr) continue;
-      const status = getRowStatus(tr);
-      if (!status) { semResposta++; continue; }
-      const obs = tr.querySelector(`#obs_${item.id}`)?.value?.trim() || null;
-      respostas.push({ item_id: item.id, status, observacao: obs });
-    }
-
-    if (semResposta > 0) {
-      showMsg(msgEl, 'warning', `${semResposta} item(ns) sem resposta. Preencha todos os itens antes de enviar.`);
-      return;
-    }
-
-    const btn = document.getElementById('btnEnviarChecklist');
-    btn.disabled = true;
-    const orig = btn.innerHTML;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Enviando...';
-
-    try {
-      const payload = {
-        setor: document.getElementById('ckSetor').value,
-        linha: document.getElementById('ckLinha').value,
-        responsavel: document.getElementById('ckResponsavel').value.trim() || null,
-        modelo: document.getElementById('ckModelo').value.trim() || null,
-        mes: document.getElementById('ckMes').value.trim() || null,
-        data_sessao: document.getElementById('ckData').value || null,
-        respostas,
-      };
-
-      const { ok, data } = await api('/api/checklist/sessoes', { method: 'POST', body: JSON.stringify(payload) });
-
-      if (!ok || !data.sucesso) {
-        showMsg(msgEl, 'danger', data.erro || 'Erro ao enviar checklist.');
-        return;
-      }
-
-      sessaoAtiva = data.sessao_id;
-      showMsg(msgEl, 'success', `Checklist enviado com sucesso! Sessão #${sessaoAtiva}.`);
-      document.getElementById('cardItens').style.display = 'none';
-
-      const nokItens = respostas.filter(r => r.status === 'nok');
-      if (nokItens.length) {
-        renderPlanoDeAcao(nokItens);
-      }
-    } finally {
-      btn.disabled = false;
-      btn.innerHTML = orig;
-    }
-  }
-
-  function renderPlanoDeAcao(nokRespostas) {
-    const body = document.getElementById('cardPlanoBody');
-    const itensPorId = Object.fromEntries(itensCache.map(i => [i.id, i]));
-
-    body.innerHTML = nokRespostas.map(r => {
-      const item = itensPorId[r.item_id] || {};
-      return `<div class="plano-row" data-item-id="${r.item_id}">
-        <div class="d-flex align-items-start gap-2 mb-2">
-          <span class="num-badge flex-shrink-0">${item.numero || '?'}</span>
-          <strong>${esc(item.descricao || '')}</strong>
-          <span class="nok-badge ms-auto">NOK</span>
-        </div>
-        <div class="row g-2">
-          <div class="col-md-6">
-            <div class="plano-item-label">PROBLEMA</div>
-            <input class="form-control form-control-sm" type="text" data-field="problema" placeholder="Descreva o problema" style="border-radius:8px;">
-          </div>
-          <div class="col-md-6">
-            <div class="plano-item-label">CAUSA</div>
-            <input class="form-control form-control-sm" type="text" data-field="causa" placeholder="Causa identificada" style="border-radius:8px;">
-          </div>
-          <div class="col-md-6">
-            <div class="plano-item-label">AÇÃO</div>
-            <input class="form-control form-control-sm" type="text" data-field="acao" placeholder="Ação corretiva" style="border-radius:8px;">
-          </div>
-          <div class="col-md-3">
-            <div class="plano-item-label">QUANDO</div>
-            <input class="form-control form-control-sm" type="date" data-field="quando" style="border-radius:8px;">
-          </div>
-          <div class="col-md-3">
-            <div class="plano-item-label">RESPONSÁVEL</div>
-            <input class="form-control form-control-sm" type="text" data-field="responsavel" placeholder="Nome" style="border-radius:8px;">
-          </div>
-        </div>
-      </div>`;
-    }).join('');
-
-    body.innerHTML += `<div class="d-flex gap-2 flex-wrap mt-3">
-      <button class="btn btn-warning fw-bold px-4" id="btnSalvarPlano" type="button">
-        <i class="bi bi-save"></i> Salvar Plano de Ação
-      </button>
-      <span class="hint mb-0 align-self-center">Itens sem Problema preenchido serão ignorados.</span>
-    </div>`;
-
-    document.getElementById('cardPlano').style.display = '';
-    document.getElementById('cardPlano').scrollIntoView({ behavior: 'smooth', block: 'start' });
-
-    document.getElementById('btnSalvarPlano').addEventListener('click', salvarPlanoDeAcao);
-  }
-
-  async function salvarPlanoDeAcao() {
-    const msgEl = document.getElementById('msgChecklist');
-    const btn = document.getElementById('btnSalvarPlano');
-    btn.disabled = true;
-    const orig = btn.innerHTML;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Salvando...';
-
-    const rows = document.querySelectorAll('#cardPlanoBody .plano-row');
-    let salvos = 0;
-    let erros = 0;
-
-    for (const row of rows) {
-      const itemId = Number(row.dataset.itemId);
-      const problema = row.querySelector('[data-field="problema"]')?.value?.trim();
-      if (!problema) continue;
-
-      const payload = {
-        sessao_id: sessaoAtiva,
-        item_id: itemId,
-        problema,
-        causa: row.querySelector('[data-field="causa"]')?.value?.trim() || null,
-        acao: row.querySelector('[data-field="acao"]')?.value?.trim() || null,
-        quando: row.querySelector('[data-field="quando"]')?.value || null,
-        responsavel: row.querySelector('[data-field="responsavel"]')?.value?.trim() || null,
-      };
-
-      const { ok, data } = await api('/api/checklist/plano-acao', { method: 'POST', body: JSON.stringify(payload) });
-      if (ok && data.sucesso) salvos++;
-      else erros++;
-    }
-
-    btn.disabled = false;
-    btn.innerHTML = orig;
-
-    if (salvos && !erros) showMsg(msgEl, 'success', `Plano de ação salvo (${salvos} item(ns)).`);
-    else if (salvos && erros) showMsg(msgEl, 'warning', `${salvos} salvo(s) · ${erros} com erro.`);
-    else if (erros) showMsg(msgEl, 'danger', 'Erro ao salvar plano de ação.');
-    else showMsg(msgEl, 'info', 'Nenhum item com Problema preenchido foi encontrado.');
+      registroId = data.registro.id;
+      docId      = data.registro.doc_id;
+      updateDocBadge();
+      showMsg('msgDoc', 'success', `Documento ${docId} salvo com sucesso.`);
+    } catch { showMsg('msgDoc', 'danger', 'Erro de comunicação com o servidor.'); }
+    finally  { btn.disabled = false; btn.innerHTML = orig; }
   }
 
   async function consultar() {
-    const msgEl = document.getElementById('msgConsultar');
-    const btn = document.getElementById('btnConsultar');
-    btn.disabled = true;
-    const orig = btn.innerHTML;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>';
+    const btn  = document.getElementById('btnConsultar');
+    btn.disabled   = true;
+    const orig     = btn.innerHTML;
+    btn.innerHTML  = '<span class="spinner-border spinner-border-sm"></span>';
 
     const params = new URLSearchParams();
-    const data = document.getElementById('filtroData').value;
+    const mes   = document.getElementById('filtroMes').value;
+    const ano   = document.getElementById('filtroAno').value;
     const setor = document.getElementById('filtroSetor').value;
-    const linha = document.getElementById('filtroLinha').value.trim();
-    if (data) params.set('data_sessao', data);
+    const linha = document.getElementById('filtroLinha').value;
+    if (mes)   params.set('mes',   mes);
+    if (ano)   params.set('ano',   ano);
     if (setor) params.set('setor', setor);
     if (linha) params.set('linha', linha);
-    params.set('limit', '50');
 
     try {
-      const { ok, data: list } = await api(`/api/checklist/sessoes?${params}`);
-      if (!ok || !Array.isArray(list)) {
-        showMsg(msgEl, 'danger', 'Erro ao buscar sessões.');
-        return;
-      }
-
-      const subtitle = document.getElementById('resultadosSubtitle');
-      subtitle.textContent = `${list.length} sessão(ões) encontrada(s)`;
+      const r    = await fetch(`/api/checklist-linha/registros?${params}`, {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+      });
+      const list = await r.json();
 
       const tbody = document.getElementById('resultadosBody');
       if (!list.length) {
-        tbody.innerHTML = '<tr><td colspan="10" class="text-center py-3" style="color:rgba(15,23,42,.40);">Nenhuma sessão encontrada.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="9" class="text-center py-3" style="color:rgba(15,23,42,.40);">Nenhum registro encontrado.</td></tr>';
       } else {
-        tbody.innerHTML = list.map(s => `
-          <tr class="sessao-row" onclick="window.open('/producao/checklist-verificacao-linha/${esc(s.id)}', '_blank')" title="Ver detalhe">
-            <td><strong>#${esc(s.id)}</strong></td>
-            <td>${fmtData(s.data_sessao)}</td>
-            <td>${esc(s.setor)}</td>
-            <td>${esc(s.linha)}</td>
-            <td>${esc(s.modelo || '—')}</td>
-            <td>${esc(s.responsavel || '—')}</td>
-            <td>${esc(s.username || '—')}</td>
-            <td>${esc(s.total_respostas ?? 0)}</td>
-            <td>${s.total_nok > 0 ? `<span class="nok-badge">${s.total_nok}</span>` : '<span class="ok-badge">0</span>'}</td>
-            <td><a href="/producao/checklist-verificacao-linha/${esc(s.id)}" target="_blank" class="btn btn-sm btn-outline-primary" onclick="event.stopPropagation()"><i class="bi bi-eye"></i></a></td>
+        tbody.innerHTML = list.map(rec => `
+          <tr class="result-row" onclick="abrirRegistro(${rec.id})" title="Clique para editar">
+            <td><strong>${esc(rec.doc_id)}</strong></td>
+            <td>${esc(MESES[rec.mes] || rec.mes)}/${esc(rec.ano)}</td>
+            <td>${esc(rec.setor)}</td>
+            <td>${esc(rec.linha)}</td>
+            <td>${rec.turno ? rec.turno + '° Turno' : '—'}</td>
+            <td>${esc(rec.modelo || '—')}</td>
+            <td>${esc(rec.responsavel || '—')}</td>
+            <td>${esc(rec.username || '—')}</td>
+            <td>
+              <button class="btn btn-sm btn-outline-primary" onclick="event.stopPropagation(); abrirRegistro(${rec.id})">
+                <i class="bi bi-pencil"></i>
+              </button>
+            </td>
           </tr>`).join('');
       }
-
       document.getElementById('cardResultados').style.display = '';
-    } finally {
-      btn.disabled = false;
-      btn.innerHTML = orig;
-    }
+    } catch { showMsg('msgConsultar', 'danger', 'Erro ao buscar registros.'); }
+    finally  { btn.disabled = false; btn.innerHTML = orig; }
   }
 
+  window.abrirRegistro = function (id) {
+    bootstrap.Tab.getOrCreateInstance(document.querySelector('[data-bs-target="#tab-doc"]')).show();
+    carregarDocumento(id);
+  };
+
   document.addEventListener('DOMContentLoaded', () => {
-    const ckSetor = document.getElementById('ckSetor');
-    const ckLinha = document.getElementById('ckLinha');
-    renderLinhas(ckSetor.value, ckLinha);
-    ckSetor.addEventListener('change', () => renderLinhas(ckSetor.value, ckLinha));
+    const now = new Date();
+    document.getElementById('clMes').value   = String(now.getMonth() + 1);
+    document.getElementById('clAno').value   = String(now.getFullYear());
+    document.getElementById('filtroAno').value = String(now.getFullYear());
+    document.getElementById('loadDocYearSuffix').textContent = `-${now.getFullYear()}`;
 
-    const today = new Date().toISOString().slice(0, 10);
-    document.getElementById('ckData').value = today;
-    document.getElementById('filtroData').value = today;
+    const clSetor  = document.getElementById('clSetor');
+    const clLinha  = document.getElementById('clLinha');
+    renderLinhas(clSetor.value, clLinha);
+    clSetor.addEventListener('change', () => renderLinhas(clSetor.value, clLinha));
 
-    document.getElementById('btnIniciarChecklist').addEventListener('click', iniciarChecklist);
-    document.getElementById('btnEnviarChecklist').addEventListener('click', enviarChecklist);
-    document.getElementById('btnCancelarChecklist').addEventListener('click', cancelarChecklist);
+    const filtroSetor = document.getElementById('filtroSetor');
+    const filtroLinha = document.getElementById('filtroLinha');
+    function renderFiltroLinhas() {
+      const setor  = filtroSetor.value;
+      const linhas = setor ? (LINHAS[setor] || []) : [];
+      filtroLinha.innerHTML = '<option value="">Todas</option>';
+      linhas.forEach(l => {
+        const o = document.createElement('option');
+        o.value = l; o.textContent = l;
+        filtroLinha.appendChild(o);
+      });
+    }
+    filtroSetor.addEventListener('change', renderFiltroLinhas);
+
+    document.getElementById('clMes').addEventListener('change', buildGrid);
+    document.getElementById('clAno').addEventListener('change', buildGrid);
+    document.getElementById('clModelo').addEventListener('input', function () {
+      const pos = this.selectionStart;
+      this.value = this.value.toUpperCase();
+      this.setSelectionRange(pos, pos);
+    });
+
+    buildGrid();
+
+    document.getElementById('btnNovo').addEventListener('click', limpar);
+    document.getElementById('btnSalvar').addEventListener('click', salvar);
     document.getElementById('btnConsultar').addEventListener('click', consultar);
+
+    document.getElementById('btnCarregarDoc').addEventListener('click', () => {
+      const rawId = parseInt(document.getElementById('loadDocIdInput').value);
+      const errEl = document.getElementById('loadDocErr');
+      if (!rawId || rawId < 1) {
+        errEl.textContent = 'Informe um ID válido.';
+        errEl.classList.remove('d-none');
+        return;
+      }
+      carregarDocumento(rawId);
+    });
+
+    document.getElementById('loadDocIdInput').addEventListener('keydown', e => {
+      if (e.key === 'Enter') document.getElementById('btnCarregarDoc').click();
+    });
   });
 
 })();
