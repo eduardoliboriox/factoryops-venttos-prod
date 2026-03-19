@@ -3,7 +3,7 @@ from app.repositories import limpeza_stencil_repository
 
 
 def _serialize(value):
-    if isinstance(value, (datetime.date, datetime.datetime)):
+    if isinstance(value, (datetime.date, datetime.datetime, datetime.time)):
         return value.isoformat()
     return value
 
