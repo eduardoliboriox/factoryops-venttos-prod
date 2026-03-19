@@ -1,10 +1,8 @@
 ### Objetivo - (tarefas para você executar, aplicando com CLAUDE.md)
 
 ### 1. Adequação de documento real referente app/templates/producao
-* na página app/templates/producao/limpeza_stencil.html, alguns pontos terão como base a página app/templates/producao/medicao_pasta_solda.html, como select "setor" conectado com select "linha". Os campos Cliente (Customer), deve ser em letra maiuscula obrigatorialmente. 
-* no campo "modelo" que tem dentro Registros por Horário tbm deve ser obrigatorio ser mauisculo. no campo "fase" é um select com select "-", "TOP", "BOTTOM".
-* no campo "status" select com OK ou NG
-* no campo visto (pic) é um campo para assinatura, deve ser igual ocmo é na página app/templates/producao/medicao_pasta_solda.html, tbm precisa pegar o mesmo conceito de que o documento tem id, e que precisamos poder carregar o mesmo documento com o id, para continuar fazer o controle de limpeza de stencil até o final do turno. a assinatura do é da mesma forma, icone de caneta, aperta, digita matricula, e confirma, eu gosto que tem o titulo lider de Produção (production Leader) e pra supervisor tbm, a unica diferença de como fazem, é que vai ser assinatura digital, quando assinarem vai paracer o user_name
+* na página app/templates/producao/limpeza_stencil.html, tem um botão "carregar" ao lado de "passo 1", quando abre o campo para digitar , se colocar 1 e carregar vai dar certo, porem, o id do documento é  LS-1-2026, e nem dar pra digitar isto tudo lá, quando verem id  LS-1-2026 , mas so precisa digitar 1, vao achar estranho, precisamos ajustar isto. No campo onde pede pra digitar, o campo já precisa saber que é obrigatorio o LS- depois o usuario digita o id, ai depois aparece automaticamente o -2026, que no caso referente o ano atual.
+* o pessoal da produção faz um documento por modelo, então, na parte de Registros por Horário, quando ele digitar o modelo, já vamos saber qual modelo ele vai passar nos outros horários tbm, vamos poder repetir, mas essencial que seja feito com inteligencia porque não quero que apareça automaticamente o modelo quando nao foi feita a limpeza do stencil em determinado horario, portanto, vai aparecer o modelo automaticamente a partir do 2 horario se o operador começar a digitar o Horário Início (Start time), ai o campo modelo vai mostrar o modelo que foi colocado no campo no 1 horario.
 
-### 2. botao de impressao para app/templates/producao/limpeza_stencil.html
-* necessário adicionar a forma de imprimir o documento, exatamente como já foi realizada na pagina app/templates/producao/medicao_pasta_solda.html, o documento precisa caber na mesma folha, escala padrao.
+### 2. Consulta com formato padrao. em app/templates/producao/limpeza_stencil.html
+* tem uma parte que tem o botao consultar, fica ao lado de novo registro, a pagina consultar deve ser igual a pagina consultar da app/templates/producao/medicao_pasta_solda.html, com select do setor e linha 
