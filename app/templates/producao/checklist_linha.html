@@ -773,12 +773,12 @@
       const r    = await fetch('/api/auth/confirm-extra', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify({ matricula: username, password }),
       });
       const data = await r.json();
 
-      if (!r.ok || !data.username) {
-        errEl.textContent = data.erro || 'Credenciais inválidas.';
+      if (!r.ok || !data.success) {
+        errEl.textContent = data.error || 'Credenciais inválidas.';
         errEl.classList.remove('d-none');
         return;
       }
