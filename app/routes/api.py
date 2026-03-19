@@ -481,6 +481,59 @@ def limpeza_stencil_update(registro_id: int):
         return jsonify({"sucesso": False, "erro": "Erro ao atualizar registro"}), 500
 
 
+# ─── Checklist Linha (mensal) ─────────────────────────────────────────────────
+
+@bp.route("/checklist-linha/registros", methods=["GET"])
+@login_required
+def checklist_linha_list():
+    from app.services import checklist_linha_service
+    mes   = request.args.get("mes",  type=int)
+    ano   = request.args.get("ano",  type=int)
+    setor = request.args.get("setor") or None
+    linha = request.args.get("linha") or None
+    return jsonify(checklist_linha_service.listar_registros(mes=mes, ano=ano, setor=setor, linha=linha))
+
+
+@bp.route("/checklist-linha/registros", methods=["POST"])
+@login_required
+def checklist_linha_create():
+    from app.services import checklist_linha_service
+    try:
+        data   = request.get_json(force=True) or {}
+        result = checklist_linha_service.criar_registro(data, current_user.id)
+        return jsonify({"sucesso": True, "registro": result})
+    except ValueError as e:
+        return jsonify({"sucesso": False, "erro": str(e)}), 400
+    except Exception as e:
+        logger.exception("checklist_linha_create failed")
+        return jsonify({"sucesso": False, "erro": str(e)}), 500
+
+
+@bp.route("/checklist-linha/registros/<int:registro_id>", methods=["GET"])
+@login_required
+def checklist_linha_get(registro_id):
+    from app.services import checklist_linha_service
+    result = checklist_linha_service.buscar_registro(registro_id)
+    if not result:
+        return jsonify({"erro": "Não encontrado"}), 404
+    return jsonify(result)
+
+
+@bp.route("/checklist-linha/registros/<int:registro_id>", methods=["PATCH"])
+@login_required
+def checklist_linha_update(registro_id):
+    from app.services import checklist_linha_service
+    try:
+        data   = request.get_json(force=True) or {}
+        result = checklist_linha_service.atualizar_registro(registro_id, data)
+        return jsonify({"sucesso": True, "registro": result})
+    except ValueError as e:
+        return jsonify({"sucesso": False, "erro": str(e)}), 400
+    except Exception as e:
+        logger.exception("checklist_linha_update failed")
+        return jsonify({"sucesso": False, "erro": str(e)}), 500
+
+
 # ─── Checklist ────────────────────────────────────────────────────────────────
 
 @bp.route("/checklist/itens", methods=["GET"])
