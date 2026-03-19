@@ -884,7 +884,7 @@
           <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
             <span>Componente ${c}</span>
             <span style="font-weight:400;font-size:10px;color:rgba(15,23,42,.55);">
-              Posi. Mec. (Mech Posi):&nbsp;<input class="posi-mec-input" type="text" id="posi_mec_comp${c}" placeholder="Ex: HDMI, IC" autocomplete="off">
+              Posição Mecânica (mechanical position):&nbsp;<input class="posi-mec-input" type="text" id="posi_mec_comp${c}" placeholder="Ex: HDMI, IC" autocomplete="off" style="text-transform:uppercase;">
             </span>
           </div>
         </td>
@@ -1493,6 +1493,14 @@
         this.value = this.value.toUpperCase();
         this.setSelectionRange(pos, pos);
       });
+    });
+
+    document.addEventListener('input', function (e) {
+      if (e.target.classList.contains('posi-mec-input')) {
+        const pos = e.target.selectionStart;
+        e.target.value = e.target.value.toUpperCase();
+        e.target.setSelectionRange(pos, pos);
+      }
     });
 
     document.getElementById('btnCarregarPlano').addEventListener('click', async () => {
