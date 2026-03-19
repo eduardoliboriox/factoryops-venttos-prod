@@ -25,6 +25,8 @@ def criar_registro(data: dict, user_id: int) -> dict:
 
     if data.get("entradas"):
         checklist_linha_repository.upsert_entradas(registro_id, data["entradas"])
+    if data.get("assinaturas"):
+        checklist_linha_repository.upsert_assinaturas(registro_id, data["assinaturas"])
 
     return _serialize_row(registro)
 
@@ -35,6 +37,7 @@ def atualizar_registro(registro_id: int, data: dict) -> dict:
         raise ValueError("Registro não encontrado")
 
     checklist_linha_repository.upsert_entradas(registro_id, data.get("entradas") or [])
+    checklist_linha_repository.upsert_assinaturas(registro_id, data.get("assinaturas") or [])
 
     return _serialize_row(registro)
 
@@ -44,8 +47,18 @@ def buscar_registro(registro_id: int) -> dict | None:
     if not result:
         return None
 
-    entradas = [_serialize_row(e) for e in result.pop("entradas", [])]
-    return {**_serialize_row(result), "entradas": entradas}
+    entradas    = [_serialize_row(e) for e in result.pop("entradas", [])]
+    assinaturas = [_serialize_row(a) for a in result.pop("assinaturas", [])]
+    return {**_serialize_row(result), "entradas": entradas, "assinaturas": assinaturas}
+
+
+def salvar_plano_acao(registro_id: int, itens: list, user_id: int):
+    checklist_linha_repository.upsert_plano_acao(registro_id, itens, user_id)
+
+
+def buscar_plano_acao(registro_id: int) -> list:
+    rows = checklist_linha_repository.get_plano_by_registro_id(registro_id)
+    return [_serialize_row(r) for r in rows]
 
 
 def listar_registros(mes=None, ano=None, setor=None, linha=None) -> list:

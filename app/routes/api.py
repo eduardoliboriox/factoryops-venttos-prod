@@ -534,6 +534,26 @@ def checklist_linha_update(registro_id):
         return jsonify({"sucesso": False, "erro": str(e)}), 500
 
 
+@bp.route("/checklist-linha/registros/<int:registro_id>/plano-acao", methods=["GET"])
+@login_required
+def checklist_linha_plano_get(registro_id):
+    from app.services import checklist_linha_service
+    return jsonify(checklist_linha_service.buscar_plano_acao(registro_id))
+
+
+@bp.route("/checklist-linha/registros/<int:registro_id>/plano-acao", methods=["POST"])
+@login_required
+def checklist_linha_plano_save(registro_id):
+    from app.services import checklist_linha_service
+    try:
+        itens = request.get_json(force=True) or []
+        checklist_linha_service.salvar_plano_acao(registro_id, itens, current_user.id)
+        return jsonify({"sucesso": True})
+    except Exception as e:
+        logger.exception("checklist_linha_plano_save failed")
+        return jsonify({"sucesso": False, "erro": str(e)}), 500
+
+
 # ─── Checklist ────────────────────────────────────────────────────────────────
 
 @bp.route("/checklist/itens", methods=["GET"])
