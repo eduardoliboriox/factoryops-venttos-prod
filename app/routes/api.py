@@ -1,5 +1,8 @@
+import logging
 from flask import Blueprint, request, jsonify
 from flask_login import login_required, current_user
+
+logger = logging.getLogger(__name__)
 
 from app.services import modelos_service, production_lines_service, time_studies_service
 from app.services.employees_service import buscar_funcionario
@@ -448,8 +451,9 @@ def limpeza_stencil_create():
         return jsonify({"sucesso": True, "id": registro["id"], "doc_id": registro.get("doc_id")}), 201
     except ValueError as e:
         return jsonify({"sucesso": False, "erro": str(e)}), 400
-    except Exception:
-        return jsonify({"sucesso": False, "erro": "Erro ao salvar registro"}), 500
+    except Exception as e:
+        logger.exception("Erro ao salvar limpeza stencil")
+        return jsonify({"sucesso": False, "erro": str(e)}), 500
 
 
 @bp.route("/limpeza-stencil/registros/<int:registro_id>", methods=["GET"])
