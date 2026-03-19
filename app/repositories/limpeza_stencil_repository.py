@@ -18,10 +18,10 @@ def create_registro(data: dict, user_id: int) -> dict:
     with get_db() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
             cur.execute(
-                "SELECT COALESCE(MAX(sequencia), 0) + 1 FROM limpeza_stencil_registros WHERE ano=%s",
+                "SELECT COALESCE(MAX(sequencia), 0) + 1 AS next_seq FROM limpeza_stencil_registros WHERE ano=%s",
                 (ano,),
             )
-            sequencia = cur.fetchone()["coalesce"]
+            sequencia = cur.fetchone()["next_seq"]
             doc_id = f"LS-{sequencia}-{ano}"
 
             cur.execute(
