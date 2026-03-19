@@ -104,23 +104,40 @@
   .cl-cell[data-status="NOK"] { background: #fee2e2; color: #991b1b; }
   .cl-cell[data-status="NA"]  { background: #f1f5f9; color: #64748b; }
 
-  /* ── Realizador ── */
-  .realizador-area {
-    margin-top: 16px;
-    padding: 12px 16px;
-    border-top: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    flex-wrap: wrap;
+  /* ── Signature row ── */
+  .cl-sign-cell {
+    text-align: center; vertical-align: middle;
+    min-width: 30px; height: 60px; padding: 2px !important;
+    background: rgba(13,110,253,.03);
   }
-  .realizador-area label { font-size: .8rem; font-weight: 700; color: var(--text-muted); }
-  .realizador-area input {
-    border: none; border-bottom: 1.5px solid rgba(13,110,253,.4);
-    background: transparent; font-size: 13px; padding: 3px 6px;
-    width: 220px; border-radius: 0; outline: none;
+  .sign-btn-dia {
+    background: none; border: none; padding: 0; cursor: pointer;
+    color: rgba(15,23,42,.40); font-size: 14px; line-height: 1; transition: color .15s;
   }
-  .realizador-area input:focus { border-bottom-color: #0d6efd; }
+  .sign-btn-dia:hover { color: #0d6efd; }
+  .sign-name-dia {
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    font-size: 8px; font-weight: 700; color: #0f172a;
+    white-space: nowrap; display: inline-block;
+    max-height: 56px; overflow: hidden; line-height: 1.1;
+  }
+  .td-sign-label {
+    padding: 4px 8px !important; font-size: 9px; font-weight: 700;
+    color: var(--text-muted); text-transform: uppercase; letter-spacing: .3px;
+    background: rgba(13,110,253,.04); min-width: 280px; line-height: 1.3;
+  }
+
+  /* ── Plano de ação ── */
+  .plano-row-cl { padding: 12px 0; border-bottom: 1px solid rgba(15,23,42,.07); }
+  .plano-row-cl:last-child { border-bottom: none; }
+  .plano-item-label { font-size: 11px; font-weight: 700; color: rgba(15,23,42,.50); margin-bottom: 4px; }
+  .plano-print-table { display: none; width: 100%; border-collapse: collapse; font-size: 9px; }
+  .plano-print-table th, .plano-print-table td { border: 1px solid #bbb; padding: 3px 5px; vertical-align: top; }
+  .plano-print-table th {
+    background: rgba(15,23,42,.07); font-size: 8px; font-weight: 700;
+    text-transform: uppercase; text-align: center;
+  }
 
   /* ── Legend ── */
   .cl-legend {
@@ -147,7 +164,7 @@
     @page { size: A4 landscape; margin: 8mm; }
 
     .page-header, .doc-toolbar, .nav-tabs,
-    #tab-consultar, .d-print-none, .realizador-area input { display: none !important; }
+    #tab-consultar, .d-print-none { display: none !important; }
 
     body, .container-fluid { background: #fff !important; }
 
@@ -160,15 +177,34 @@
     #clTable td.td-item { min-width: unset; font-size: 7px; padding: 2px 5px; }
     #clTable td.td-num { font-size: 7px; padding: 2px; }
     .cl-cell { font-size: 7px; height: 18px; min-width: 16px; }
+    .cl-sign-cell { height: 40px; min-width: 16px; }
+    .sign-name-dia { font-size: 6px; max-height: 36px; }
+    .sign-btn-dia { display: none !important; }
+    .td-sign-label { font-size: 7px; min-width: unset; padding: 2px 4px !important; }
     .cl-grid-wrap { overflow: visible; }
     .cl-card { border-radius: 0; margin-bottom: 6px; }
     .cl-card-body { padding: 6px; }
     .print-meta { display: flex !important; }
-    .realizador-area { padding: 6px 8px; margin-top: 8px; }
-    .realizador-area label { font-size: 7px; }
     .cl-legend { padding: 4px 8px; font-size: 7px; }
     .cl-legend-dot { width: 20px; height: 14px; font-size: 7px; }
+
+    #tab-plano { page-break-before: always; }
+    .print-header-verso { display: flex !important; }
+    .plano-print-table { display: table !important; }
+    .plano-print-table th { font-size: 7px !important; padding: 1px 2px !important; }
+    .plano-print-table td { font-size: 8px !important; padding: 1px 3px !important; height: 14px !important; }
+    #clPlanoForm { display: none !important; }
   }
+
+  .print-header-verso {
+    display: none; align-items: center; gap: 16px;
+    padding: 10px 14px; border: 1px solid #ccc; border-bottom: none; background: #fff;
+  }
+  .print-header-verso img { height: 36px; }
+  .print-header-verso-title { font-size: 13px; font-weight: 800; color: #0f172a; line-height: 1.2; }
+  .print-header-verso-sub { font-size: 9px; color: #64748b; margin-top: 2px; }
+  .print-header-verso-doc { margin-left: auto; text-align: right; }
+  .print-header-verso-doc .doc-num { font-size: 13px; font-weight: 800; color: #0d6efd; }
 
   .print-header {
     display: none;
@@ -225,12 +261,44 @@
   </div>
 </div>
 
+<!-- Signature modal -->
+<div class="modal fade" id="signModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-sm modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header py-2">
+        <h6 class="modal-title mb-0" id="signModalTitle">Assinar</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body py-3">
+        <div class="mb-2">
+          <label class="form-label" style="font-size:.78rem;font-weight:600;">Usuário / Matrícula</label>
+          <input type="text" class="form-control form-control-sm" id="signModalUser" autocomplete="off" placeholder="Ex: 12345">
+        </div>
+        <div class="mb-2">
+          <label class="form-label" style="font-size:.78rem;font-weight:600;">Senha</label>
+          <input type="password" class="form-control form-control-sm" id="signModalPass" autocomplete="new-password">
+        </div>
+        <div class="text-danger d-none" id="signModalErr" style="font-size:11px;"></div>
+      </div>
+      <div class="modal-footer py-2">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-success btn-sm" id="signModalConfirmBtn">Confirmar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="container-fluid">
 
   <ul class="nav nav-tabs mb-3 d-print-none" id="clTabs" role="tablist">
     <li class="nav-item" role="presentation">
       <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-doc" type="button" role="tab">
         <i class="bi bi-file-earmark-check me-1"></i> Documento
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-plano" type="button" role="tab">
+        <i class="bi bi-exclamation-triangle me-1"></i> Plano de Ação
       </button>
     </li>
     <li class="nav-item" role="presentation">
@@ -354,16 +422,6 @@
             </table>
           </div>
 
-          <!-- Realizador -->
-          <div class="realizador-area d-print-none">
-            <label>Realizador do Checklist (Checklist Maker):</label>
-            <input type="text" id="clRealizador" placeholder="Nome do realizador">
-          </div>
-          <div class="realizador-area" id="printRealizador" style="display:none;">
-            <span style="font-size:9px;font-weight:700;color:#64748b;">REALIZADOR DO CHECKLIST (Checklist Maker):</span>
-            <span id="printRealizadorNome" style="font-size:11px;font-weight:700;color:#0f172a;margin-left:8px;min-width:120px;border-bottom:1px solid #ccc;display:inline-block;"></span>
-          </div>
-
           <!-- Legend -->
           <div class="cl-legend">
             <span style="font-size:10px;font-weight:700;color:var(--text-muted);">Legenda (Subtitle):</span>
@@ -379,9 +437,69 @@
               <span class="cl-legend-dot na">NA</span>
               <span>Não aplicável (Not applicable)</span>
             </span>
-            <span class="cl-legend-item" style="margin-left:auto;font-size:10px;color:var(--text-muted);">
-              Observações (Comments): clique na célula para alternar OK → NOK → NA
+            <span class="cl-legend-item d-print-none" style="margin-left:auto;font-size:10px;color:var(--text-muted);">
+              Clique na célula para alternar OK/NOK/NA · Clique em <i class="bi bi-pen"></i> para assinar o dia
             </span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ══════════════ TAB PLANO DE AÇÃO (VERSO) ══════════════ -->
+    <div class="tab-pane fade" id="tab-plano" role="tabpanel">
+
+      <div class="print-header-verso">
+        <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Venttos">
+        <div>
+          <div class="print-header-verso-title">Plano de Ação / Action Plan</div>
+          <div class="print-header-verso-sub">Checklist de Verificação da Linha · PRO011</div>
+        </div>
+        <div class="print-header-verso-doc">
+          <div class="doc-num" id="printDocIdVerso">—</div>
+        </div>
+      </div>
+
+      <table class="plano-print-table" id="clPlanoPrintTable">
+        <thead>
+          <tr>
+            <th style="width:32px;">DIA<br><span style="font-weight:400;font-size:7px;">(Day)</span></th>
+            <th style="width:36px;">ITEM N°</th>
+            <th>PROBLEMA<br><span style="font-weight:400;font-size:7px;">(Issue)</span></th>
+            <th>CAUSA<br><span style="font-weight:400;font-size:7px;">(Root Cause)</span></th>
+            <th>AÇÃO<br><span style="font-weight:400;font-size:7px;">(Action Plan)</span></th>
+            <th style="width:50px;">QUANDO?<br><span style="font-weight:400;font-size:7px;">(When?)</span></th>
+            <th style="width:70px;">RESPONSÁVEL<br><span style="font-weight:400;font-size:7px;">(PIC)</span></th>
+          </tr>
+        </thead>
+        <tbody id="clPlanoPrintBody"></tbody>
+      </table>
+
+      <div id="clPlanoForm">
+        <div id="msgPlano" class="d-print-none"></div>
+        <div class="cl-card">
+          <div class="cl-card-body">
+            <div class="d-flex align-items-center gap-2 mb-3 flex-wrap">
+              <div style="width:36px;height:36px;border-radius:10px;background:rgba(220,53,69,.10);color:#dc3545;display:grid;place-items:center;font-size:16px;">
+                <i class="bi bi-exclamation-triangle"></i>
+              </div>
+              <div>
+                <div class="fw-bold">Plano de Ação</div>
+                <div style="font-size:12px;color:var(--text-muted);">Registre ações corretivas para itens NOK. <span id="planoDocInfo"></span></div>
+              </div>
+              <div class="ms-auto d-flex gap-2 d-print-none">
+                <button class="btn btn-outline-secondary btn-sm" id="btnAddPlanoRow">
+                  <i class="bi bi-plus"></i> Adicionar linha
+                </button>
+                <button class="btn btn-warning btn-sm fw-bold" id="btnSalvarPlano">
+                  <i class="bi bi-save"></i> Salvar Plano
+                </button>
+              </div>
+            </div>
+            <div id="planoRowsContainer"></div>
+            <div class="text-muted d-print-none" style="font-size:11px;margin-top:8px;">
+              Linhas sem Problema preenchido são ignoradas ao salvar.
+            </div>
           </div>
         </div>
       </div>
@@ -456,7 +574,6 @@
                   <th>Linha</th>
                   <th>Turno</th>
                   <th>Modelo</th>
-                  <th>Realizador</th>
                   <th>Criado por</th>
                   <th></th>
                 </tr>
@@ -525,9 +642,11 @@
 
   const STATUS_CYCLE = ['', 'OK', 'NOK', 'NA'];
 
-  let registroId  = null;
-  let docId       = null;
-  let gridState   = {};
+  let registroId     = null;
+  let docId          = null;
+  let gridState      = {};
+  let signState      = {};
+  let currentSignDia = null;
 
   function esc(s) {
     return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -560,9 +679,21 @@
 
   function cellKey(itemNum, dia) { return `${itemNum}:${dia}`; }
 
+  function renderSignCell(dia) {
+    const cell = document.querySelector(`.cl-sign-cell[data-dia="${dia}"]`);
+    if (!cell) return;
+    const username = signState[dia];
+    if (username) {
+      cell.innerHTML = `<span class="sign-name-dia" title="${esc(username)}">${esc(username)}</span>`;
+    } else {
+      cell.innerHTML = `<button class="sign-btn-dia" data-dia="${dia}" title="Assinar dia ${dia}"><i class="bi bi-pen"></i></button>`;
+      cell.querySelector('.sign-btn-dia').addEventListener('click', () => openSignModal(dia));
+    }
+  }
+
   function buildGrid() {
-    const mes = parseInt(document.getElementById('clMes').value);
-    const ano = parseInt(document.getElementById('clAno').value);
+    const mes  = parseInt(document.getElementById('clMes').value);
+    const ano  = parseInt(document.getElementById('clAno').value);
     const days = daysInMonth(mes, ano);
 
     const thead = document.getElementById('clThead');
@@ -585,6 +716,15 @@
       }
       bodyHtml += '</tr>';
     }
+
+    bodyHtml += '<tr>';
+    bodyHtml += '<td class="td-num" style="vertical-align:middle;"></td>';
+    bodyHtml += '<td class="td-sign-label">REALIZADOR DO CHECKLIST<br><span style="font-weight:400;">(Checklist Maker)</span></td>';
+    for (let d = 1; d <= days; d++) {
+      bodyHtml += `<td class="cl-sign-cell" data-dia="${d}"></td>`;
+    }
+    bodyHtml += '</tr>';
+
     tbody.innerHTML = bodyHtml;
 
     tbody.querySelectorAll('.cl-cell').forEach(cell => {
@@ -597,7 +737,62 @@
       });
     });
 
+    for (let d = 1; d <= days; d++) renderSignCell(d);
+
     updatePrintMeta();
+  }
+
+  function openSignModal(dia) {
+    currentSignDia = dia;
+    document.getElementById('signModalTitle').textContent = `Assinar — Dia ${dia}`;
+    document.getElementById('signModalUser').value = '';
+    document.getElementById('signModalPass').value = '';
+    document.getElementById('signModalErr').classList.add('d-none');
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('signModal')).show();
+    setTimeout(() => document.getElementById('signModalUser').focus(), 300);
+  }
+
+  async function confirmSign() {
+    const username = document.getElementById('signModalUser').value.trim();
+    const password = document.getElementById('signModalPass').value;
+    const errEl    = document.getElementById('signModalErr');
+    const btn      = document.getElementById('signModalConfirmBtn');
+
+    if (!username || !password) {
+      errEl.textContent = 'Preencha usuário e senha.';
+      errEl.classList.remove('d-none');
+      return;
+    }
+
+    btn.disabled  = true;
+    const orig    = btn.innerHTML;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+    errEl.classList.add('d-none');
+
+    try {
+      const r    = await fetch('/api/auth/confirm-extra', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+        body: JSON.stringify({ username, password }),
+      });
+      const data = await r.json();
+
+      if (!r.ok || !data.username) {
+        errEl.textContent = data.erro || 'Credenciais inválidas.';
+        errEl.classList.remove('d-none');
+        return;
+      }
+
+      signState[currentSignDia] = data.username;
+      renderSignCell(currentSignDia);
+      bootstrap.Modal.getInstance(document.getElementById('signModal')).hide();
+    } catch {
+      errEl.textContent = 'Erro de comunicação.';
+      errEl.classList.remove('d-none');
+    } finally {
+      btn.disabled  = false;
+      btn.innerHTML = orig;
+    }
   }
 
   function collectEntradas() {
@@ -609,6 +804,14 @@
       });
   }
 
+  function collectAssinaturas() {
+    return Object.entries(signState).map(([dia, username]) => ({
+      dia: Number(dia),
+      username,
+      timestamp: new Date().toISOString(),
+    }));
+  }
+
   function updateDocBadge() {
     const badge    = document.getElementById('docIdBadge');
     const printDoc = document.getElementById('printDocId');
@@ -616,6 +819,12 @@
     badge.textContent    = label;
     printDoc.textContent = label;
     badge.classList.toggle('saved', !!docId);
+
+    const versoDoc = document.getElementById('printDocIdVerso');
+    if (versoDoc) versoDoc.textContent = label;
+
+    const planoInfo = document.getElementById('planoDocInfo');
+    if (planoInfo) planoInfo.textContent = docId ? `Documento: ${docId}` : '';
   }
 
   function updatePrintMeta() {
@@ -627,33 +836,30 @@
     const turnoVal = document.getElementById('clTurno').value;
     document.getElementById('printTurno').textContent  = turnoVal ? `${turnoVal}° Turno` : '-';
     document.getElementById('printModelo').textContent = document.getElementById('clModelo').value.trim() || '-';
-    const realizador = document.getElementById('clRealizador').value.trim();
-    document.getElementById('printRealizadorNome').textContent = realizador;
-    const ra = document.getElementById('printRealizador');
-    ra.style.display = 'flex';
   }
 
   function limpar() {
     registroId = null;
     docId      = null;
     gridState  = {};
+    signState  = {};
     updateDocBadge();
 
     const now = new Date();
-    document.getElementById('clMes').value  = String(now.getMonth() + 1);
-    document.getElementById('clAno').value  = String(now.getFullYear());
-    document.getElementById('clTurno').value   = '';
-    document.getElementById('clModelo').value  = '';
-    document.getElementById('clRealizador').value = '';
+    document.getElementById('clMes').value   = String(now.getMonth() + 1);
+    document.getElementById('clAno').value   = String(now.getFullYear());
+    document.getElementById('clTurno').value = '';
+    document.getElementById('clModelo').value = '';
 
     const setor = document.getElementById('clSetor').value;
     renderLinhas(setor, document.getElementById('clLinha'));
     buildGrid();
+    limparPlano();
     document.getElementById('msgDoc').innerHTML = '';
   }
 
   function carregarDocumento(id) {
-    const btn = document.getElementById('btnCarregarDoc');
+    const btn   = document.getElementById('btnCarregarDoc');
     const errEl = document.getElementById('loadDocErr');
     errEl.classList.add('d-none');
     btn.disabled  = true;
@@ -675,15 +881,21 @@
       document.getElementById('clAno').value   = String(data.ano);
       document.getElementById('clSetor').value = data.setor || 'SMT';
       renderLinhas(data.setor || 'SMT', document.getElementById('clLinha'), data.linha);
-      document.getElementById('clTurno').value    = data.turno ? String(data.turno) : '';
-      document.getElementById('clModelo').value   = data.modelo || '';
-      document.getElementById('clRealizador').value = data.responsavel || '';
+      document.getElementById('clTurno').value  = data.turno ? String(data.turno) : '';
+      document.getElementById('clModelo').value = data.modelo || '';
 
       gridState = {};
       for (const e of (data.entradas || [])) {
         gridState[cellKey(e.item_num, e.dia)] = e.status;
       }
+
+      signState = {};
+      for (const a of (data.assinaturas || [])) {
+        signState[a.dia] = a.username;
+      }
+
       buildGrid();
+      carregarPlano(registroId);
 
       bootstrap.Modal.getInstance(document.getElementById('modalCarregar'))?.hide();
       showMsg('msgDoc', 'success', `Documento ${docId} carregado.`);
@@ -695,8 +907,8 @@
   async function salvar() {
     updatePrintMeta();
 
-    const mes  = parseInt(document.getElementById('clMes').value);
-    const ano  = parseInt(document.getElementById('clAno').value);
+    const mes   = parseInt(document.getElementById('clMes').value);
+    const ano   = parseInt(document.getElementById('clAno').value);
     const setor = document.getElementById('clSetor').value;
     const linha = document.getElementById('clLinha').value;
 
@@ -707,16 +919,16 @@
       ano,
       setor,
       linha,
-      turno:      document.getElementById('clTurno').value || null,
-      modelo:     document.getElementById('clModelo').value.trim().toUpperCase() || null,
-      responsavel: document.getElementById('clRealizador').value.trim() || null,
-      entradas:   collectEntradas(),
+      turno:       document.getElementById('clTurno').value || null,
+      modelo:      document.getElementById('clModelo').value.trim().toUpperCase() || null,
+      entradas:    collectEntradas(),
+      assinaturas: collectAssinaturas(),
     };
 
     const btn  = document.getElementById('btnSalvar');
-    btn.disabled   = true;
-    const orig     = btn.innerHTML;
-    btn.innerHTML  = '<span class="spinner-border spinner-border-sm me-1"></span>Salvando...';
+    btn.disabled  = true;
+    const orig    = btn.innerHTML;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Salvando...';
 
     try {
       let url    = '/api/checklist-linha/registros';
@@ -743,11 +955,132 @@
     finally  { btn.disabled = false; btn.innerHTML = orig; }
   }
 
+  function makePlanoRow(data) {
+    data = data || {};
+    const div = document.createElement('div');
+    div.className = 'plano-row-cl';
+    div.innerHTML = `
+      <div class="row g-2 align-items-start">
+        <div class="col-6 col-md-1">
+          <div class="plano-item-label">Dia</div>
+          <input type="number" class="form-control form-control-sm plano-dia" min="1" max="31" placeholder="—" value="${esc(data.dia || '')}">
+        </div>
+        <div class="col-6 col-md-1">
+          <div class="plano-item-label">Item N°</div>
+          <input type="number" class="form-control form-control-sm plano-item-num" min="1" max="32" placeholder="—" value="${esc(data.item_num || '')}">
+        </div>
+        <div class="col-12 col-md-2">
+          <div class="plano-item-label">Problema <span style="color:#dc3545;">*</span></div>
+          <input type="text" class="form-control form-control-sm plano-problema" placeholder="Descreva o problema" value="${esc(data.problema || '')}">
+        </div>
+        <div class="col-12 col-md-2">
+          <div class="plano-item-label">Causa</div>
+          <input type="text" class="form-control form-control-sm plano-causa" placeholder="Causa raiz" value="${esc(data.causa || '')}">
+        </div>
+        <div class="col-12 col-md-2">
+          <div class="plano-item-label">Ação</div>
+          <input type="text" class="form-control form-control-sm plano-acao" placeholder="Ação corretiva" value="${esc(data.acao || '')}">
+        </div>
+        <div class="col-6 col-md-1">
+          <div class="plano-item-label">Quando?</div>
+          <input type="date" class="form-control form-control-sm plano-quando" value="${esc(data.quando || '')}">
+        </div>
+        <div class="col-6 col-md-2">
+          <div class="plano-item-label">Responsável</div>
+          <input type="text" class="form-control form-control-sm plano-responsavel" placeholder="Nome" value="${esc(data.responsavel || '')}">
+        </div>
+        <div class="col-md-1 d-flex align-items-end">
+          <button type="button" class="btn btn-outline-danger btn-sm w-100 btn-remove-plano" title="Remover linha">
+            <i class="bi bi-trash"></i>
+          </button>
+        </div>
+      </div>`;
+    div.querySelector('.btn-remove-plano').addEventListener('click', () => div.remove());
+    return div;
+  }
+
+  function limparPlano() {
+    document.getElementById('planoRowsContainer').innerHTML = '';
+    document.getElementById('clPlanoPrintBody').innerHTML = '';
+    if (document.getElementById('msgPlano')) {
+      document.getElementById('msgPlano').innerHTML = '';
+    }
+  }
+
+  function collectPlanoItens() {
+    return Array.from(document.querySelectorAll('#planoRowsContainer .plano-row-cl')).map(row => ({
+      dia:         row.querySelector('.plano-dia').value || null,
+      item_num:    row.querySelector('.plano-item-num').value || null,
+      problema:    row.querySelector('.plano-problema').value,
+      causa:       row.querySelector('.plano-causa').value,
+      acao:        row.querySelector('.plano-acao').value,
+      quando:      row.querySelector('.plano-quando').value || null,
+      responsavel: row.querySelector('.plano-responsavel').value,
+    }));
+  }
+
+  function renderPlanoPrintTable(itens) {
+    const tbody = document.getElementById('clPlanoPrintBody');
+    if (!itens.length) { tbody.innerHTML = ''; return; }
+    tbody.innerHTML = itens.map(it => `<tr>
+      <td style="text-align:center;">${esc(it.dia || '—')}</td>
+      <td style="text-align:center;">${esc(it.item_num || '—')}</td>
+      <td>${esc(it.problema || '')}</td>
+      <td>${esc(it.causa || '')}</td>
+      <td>${esc(it.acao || '')}</td>
+      <td>${esc(it.quando || '')}</td>
+      <td>${esc(it.responsavel || '')}</td>
+    </tr>`).join('');
+  }
+
+  function carregarPlano(id) {
+    fetch(`/api/checklist-linha/registros/${id}/plano-acao`, {
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(r => r.json())
+    .then(itens => {
+      limparPlano();
+      const container = document.getElementById('planoRowsContainer');
+      itens.forEach(it => container.appendChild(makePlanoRow(it)));
+      renderPlanoPrintTable(itens);
+    })
+    .catch(() => {});
+  }
+
+  async function salvarPlano() {
+    if (!registroId) {
+      showMsg('msgPlano', 'warning', 'Salve o documento principal antes do plano de ação.');
+      return;
+    }
+    const itens = collectPlanoItens();
+    const btn   = document.getElementById('btnSalvarPlano');
+    btn.disabled  = true;
+    const orig    = btn.innerHTML;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Salvando...';
+
+    try {
+      const r = await fetch(`/api/checklist-linha/registros/${registroId}/plano-acao`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+        body: JSON.stringify({ itens }),
+      });
+      const data = await r.json();
+
+      if (!r.ok || !data.sucesso) {
+        showMsg('msgPlano', 'danger', data.erro || 'Erro ao salvar plano.');
+        return;
+      }
+      renderPlanoPrintTable(itens.filter(it => (it.problema || '').trim()));
+      showMsg('msgPlano', 'success', 'Plano de ação salvo com sucesso.');
+    } catch { showMsg('msgPlano', 'danger', 'Erro de comunicação com o servidor.'); }
+    finally  { btn.disabled = false; btn.innerHTML = orig; }
+  }
+
   async function consultar() {
     const btn  = document.getElementById('btnConsultar');
-    btn.disabled   = true;
-    const orig     = btn.innerHTML;
-    btn.innerHTML  = '<span class="spinner-border spinner-border-sm"></span>';
+    btn.disabled  = true;
+    const orig    = btn.innerHTML;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
 
     const params = new URLSearchParams();
     const mes   = document.getElementById('filtroMes').value;
@@ -767,7 +1100,7 @@
 
       const tbody = document.getElementById('resultadosBody');
       if (!list.length) {
-        tbody.innerHTML = '<tr><td colspan="9" class="text-center py-3" style="color:rgba(15,23,42,.40);">Nenhum registro encontrado.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center py-3" style="color:rgba(15,23,42,.40);">Nenhum registro encontrado.</td></tr>';
       } else {
         tbody.innerHTML = list.map(rec => `
           <tr class="result-row" onclick="abrirRegistro(${rec.id})" title="Clique para editar">
@@ -777,7 +1110,6 @@
             <td>${esc(rec.linha)}</td>
             <td>${rec.turno ? rec.turno + '° Turno' : '—'}</td>
             <td>${esc(rec.modelo || '—')}</td>
-            <td>${esc(rec.responsavel || '—')}</td>
             <td>${esc(rec.username || '—')}</td>
             <td>
               <button class="btn btn-sm btn-outline-primary" onclick="event.stopPropagation(); abrirRegistro(${rec.id})">
@@ -798,13 +1130,13 @@
 
   document.addEventListener('DOMContentLoaded', () => {
     const now = new Date();
-    document.getElementById('clMes').value   = String(now.getMonth() + 1);
-    document.getElementById('clAno').value   = String(now.getFullYear());
+    document.getElementById('clMes').value     = String(now.getMonth() + 1);
+    document.getElementById('clAno').value     = String(now.getFullYear());
     document.getElementById('filtroAno').value = String(now.getFullYear());
     document.getElementById('loadDocYearSuffix').textContent = `-${now.getFullYear()}`;
 
-    const clSetor  = document.getElementById('clSetor');
-    const clLinha  = document.getElementById('clLinha');
+    const clSetor = document.getElementById('clSetor');
+    const clLinha = document.getElementById('clLinha');
     renderLinhas(clSetor.value, clLinha);
     clSetor.addEventListener('change', () => renderLinhas(clSetor.value, clLinha));
 
@@ -835,6 +1167,16 @@
     document.getElementById('btnNovo').addEventListener('click', limpar);
     document.getElementById('btnSalvar').addEventListener('click', salvar);
     document.getElementById('btnConsultar').addEventListener('click', consultar);
+
+    document.getElementById('signModalConfirmBtn').addEventListener('click', confirmSign);
+    document.getElementById('signModalPass').addEventListener('keydown', e => {
+      if (e.key === 'Enter') confirmSign();
+    });
+
+    document.getElementById('btnAddPlanoRow').addEventListener('click', () => {
+      document.getElementById('planoRowsContainer').appendChild(makePlanoRow());
+    });
+    document.getElementById('btnSalvarPlano').addEventListener('click', salvarPlano);
 
     document.getElementById('btnCarregarDoc').addEventListener('click', () => {
       const rawId = parseInt(document.getElementById('loadDocIdInput').value);

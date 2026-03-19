@@ -16,8 +16,8 @@ def create_registro(data: dict, user_id: int) -> dict:
             cur.execute(
                 """
                 INSERT INTO checklist_linha_registros
-                (doc_id, ano, sequencia, mes, setor, linha, turno, modelo, responsavel, created_by)
-                VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                (doc_id, ano, sequencia, mes, setor, linha, turno, modelo, created_by)
+                VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
                 RETURNING *
                 """,
                 (
@@ -29,7 +29,6 @@ def create_registro(data: dict, user_id: int) -> dict:
                     data.get("linha"),
                     data.get("turno") or None,
                     data.get("modelo") or None,
-                    data.get("responsavel") or None,
                     user_id,
                 ),
             )
@@ -44,7 +43,7 @@ def update_registro(registro_id: int, data: dict) -> dict | None:
             cur.execute(
                 """
                 UPDATE checklist_linha_registros
-                SET mes=%s, setor=%s, linha=%s, turno=%s, modelo=%s, responsavel=%s
+                SET mes=%s, setor=%s, linha=%s, turno=%s, modelo=%s
                 WHERE id=%s
                 RETURNING *
                 """,
@@ -54,7 +53,6 @@ def update_registro(registro_id: int, data: dict) -> dict | None:
                     data.get("linha"),
                     data.get("turno") or None,
                     data.get("modelo") or None,
-                    data.get("responsavel") or None,
                     registro_id,
                 ),
             )
@@ -77,6 +75,55 @@ def upsert_entradas(registro_id: int, entradas: list):
                     VALUES (%s,%s,%s,%s)
                     """,
                     (registro_id, int(e["item_num"]), int(e["dia"]), e["status"]),
+                )
+        conn.commit()
+
+
+def upsert_assinaturas(registro_id: int, assinaturas: list):
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "DELETE FROM checklist_linha_assinaturas WHERE registro_id=%s",
+                (registro_id,),
+            )
+            for a in assinaturas:
+                cur.execute(
+                    """
+                    INSERT INTO checklist_linha_assinaturas (registro_id, dia, username, timestamp)
+                    VALUES (%s,%s,%s,%s)
+                    """,
+                    (registro_id, int(a["dia"]), a["username"], a.get("timestamp")),
+                )
+        conn.commit()
+
+
+def upsert_plano_acao(registro_id: int, itens: list, user_id: int):
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "DELETE FROM checklist_linha_plano_acao WHERE registro_id=%s",
+                (registro_id,),
+            )
+            for item in itens:
+                if not (item.get("problema") or "").strip():
+                    continue
+                cur.execute(
+                    """
+                    INSERT INTO checklist_linha_plano_acao
+                    (registro_id, dia, item_num, problema, causa, acao, quando, responsavel, created_by)
+                    VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                    """,
+                    (
+                        registro_id,
+                        item.get("dia") or None,
+                        item.get("item_num") or None,
+                        item["problema"].strip(),
+                        item.get("causa") or None,
+                        item.get("acao") or None,
+                        item.get("quando") or None,
+                        item.get("responsavel") or None,
+                        user_id,
+                    ),
                 )
         conn.commit()
 
@@ -106,7 +153,32 @@ def get_registro_by_id(registro_id: int) -> dict | None:
                 (registro_id,),
             )
             entradas = cur.fetchall()
-    return {**registro, "entradas": list(entradas)}
+            cur.execute(
+                """
+                SELECT dia, username, timestamp
+                FROM checklist_linha_assinaturas
+                WHERE registro_id=%s
+                ORDER BY dia
+                """,
+                (registro_id,),
+            )
+            assinaturas = cur.fetchall()
+    return {**registro, "entradas": list(entradas), "assinaturas": list(assinaturas)}
+
+
+def get_plano_by_registro_id(registro_id: int) -> list:
+    with get_db() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                """
+                SELECT dia, item_num, problema, causa, acao, quando, responsavel
+                FROM checklist_linha_plano_acao
+                WHERE registro_id=%s
+                ORDER BY id
+                """,
+                (registro_id,),
+            )
+            return cur.fetchall()
 
 
 def list_registros(mes=None, ano=None, setor=None, linha=None, limit=100) -> list:
@@ -131,7 +203,7 @@ def list_registros(mes=None, ano=None, setor=None, linha=None, limit=100) -> lis
             cur.execute(
                 f"""
                 SELECT r.id, r.doc_id, r.mes, r.ano, r.setor, r.linha, r.turno,
-                       r.modelo, r.responsavel, r.created_at, u.username
+                       r.modelo, r.created_at, u.username
                 FROM checklist_linha_registros r
                 LEFT JOIN users u ON u.id = r.created_by
                 {where}
