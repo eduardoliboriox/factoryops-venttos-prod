@@ -3,6 +3,16 @@ from psycopg.rows import dict_row
 from app.extensions import get_db
 
 
+def _to_time(val) -> datetime.time | None:
+    if not val:
+        return None
+    try:
+        parts = str(val).split(':')
+        return datetime.time(int(parts[0]), int(parts[1]))
+    except (ValueError, AttributeError, IndexError):
+        return None
+
+
 def create_registro(data: dict, user_id: int) -> dict:
     ano = datetime.date.today().year
     with get_db() as conn:
@@ -84,8 +94,8 @@ def upsert_horarios(registro_id: int, horarios: list):
                     (
                         registro_id,
                         int(h["posicao"]),
-                        h.get("horario_inicio") or None,
-                        h.get("horario_fim") or None,
+                        _to_time(h.get("horario_inicio")),
+                        _to_time(h.get("horario_fim")),
                         h.get("modelo") or None,
                         h.get("fase") or None,
                         h.get("status") or None,
