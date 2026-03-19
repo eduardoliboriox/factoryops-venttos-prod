@@ -469,8 +469,12 @@
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body py-3">
-          <label class="form-label" style="font-size:0.78rem;font-weight:600;">Número do Documento (ID)</label>
-          <input type="number" class="form-control form-control-sm" id="loadDocId" min="1" placeholder="Ex: 42">
+          <label class="form-label" style="font-size:0.78rem;font-weight:600;">Número do Documento</label>
+          <div class="input-group input-group-sm">
+            <span class="input-group-text">MA-</span>
+            <input type="number" class="form-control" id="loadDocId" min="1" placeholder="Ex: 1">
+            <span class="input-group-text" id="loadDocYearSuffix"></span>
+          </div>
           <div class="text-danger d-none mt-2" id="loadDocErr" style="font-size:11px;"></div>
         </div>
         <div class="modal-footer py-2">
@@ -510,7 +514,7 @@
         </div>
         <div class="print-header-title">
           <div class="print-title-main">Controle de Medição da Altura da Pasta de Solda/Adesivo</div>
-          <div class="print-title-sub">(Solder/Adhesive Paste Height Measurement Control)</div>
+          <div class="print-title-sub">(Solder/Adhesive Paste Height Measurement Control) · PRO006</div>
         </div>
         <div class="print-header-doc">
           <div class="print-doc-num">Nº <span id="printDocId">—</span></div>
@@ -1479,6 +1483,9 @@
       document.getElementById('loadDocId').value = '';
       document.getElementById('loadDocErr').classList.add('d-none');
     });
+
+    const loadDocYearSuffix = document.getElementById('loadDocYearSuffix');
+    if (loadDocYearSuffix) loadDocYearSuffix.textContent = `-${new Date().getFullYear()}`;
 
     ['mpCliente', 'mpModelo'].forEach(id => {
       document.getElementById(id).addEventListener('input', function () {

@@ -14,7 +14,7 @@ def create_registro(data: dict, user_id: int) -> dict:
                 (ano,),
             )
             sequencia = cur.fetchone()["coalesce"]
-            doc_id    = f"{sequencia}-{ano}"
+            doc_id    = f"MA-{sequencia}-{ano}"
 
             cur.execute(
                 """
