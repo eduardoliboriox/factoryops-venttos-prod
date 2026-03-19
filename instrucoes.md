@@ -1,4 +1,4 @@
 ### Objetivo - (tarefas para você executar, aplicando com CLAUDE.md)
 
 ### 1. ajuste referente app/templates/producao
-* na página app/templates/producao/checklist_linha.html, é necessário ajuste na pagina impressao do documento, está muito fora do padrão. Está mostrando itens de menu, a logo está quebrando, está aparecendo username logado e botao de logout, basta verificado como as outras paginas impressao da pagina app/templates/producao/medicao_pasta_solda.html por exemplo. é pra seguir o mesmo padrão só muda porque outro conteudo, outro nome.
+* na página app/templates/producao/checklist_linha.html, é necessário ajuste na pagina impressao do documento, está muito fora do padrão. Está mostrando itens de menu, a logo está quebrando, está aparecendo username logado e botao de logout, basta verificado como as outras paginas impressao da pagina app/templates/producao/medicao_pasta_solda.html por exemplo. é pra seguir o mesmo padrão só muda porque outro conteudo, outro nome. Ajuste para somente o conteudo igual como fizemos na outra pagina.
