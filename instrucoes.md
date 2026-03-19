@@ -1,4 +1,6 @@
 ### Objetivo - (tarefas para você executar, aplicando com CLAUDE.md)
 
 ### 1. ajuste referente app/templates/producao
-* na página app/templates/producao/checklist_linha.html, é necessário ajuste na pagina impressao do documento, está muito fora do padrão. Está mostrando itens de menu, a logo está quebrando, está aparecendo username logado e botao de logout, basta verificado como as outras paginas impressao da pagina app/templates/producao/medicao_pasta_solda.html por exemplo. é pra seguir o mesmo padrão só muda porque outro conteudo, outro nome. Ajuste para somente o conteudo igual como fizemos na outra pagina.
+* na página app/templates/producao/checklist_linha.html, na pagina impressao do documento é a logo na esquerda , no meio o titulo, abaixo do titulo tem a versao em ingles em parenteses e • codigo, e na direita é so o id complelto CL-1-2026, mas tem um texto abaixo do id que precisa ser removido "Código: PRO011 · Rev. 09"
+
+usamos a mesma imagem de logo, mas nessa pagina está quebrado, nao carrega a imagem, apenas verifique a mesma logo usada no documento controle medição da altura de pasta de solda...na pagina impressao de la tem a logo normal.
