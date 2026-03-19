@@ -369,8 +369,12 @@
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body py-3">
-          <label class="form-label" style="font-size:0.78rem;font-weight:600;">Número do Documento (ID)</label>
-          <input type="number" class="form-control form-control-sm" id="loadDocId" min="1" placeholder="Ex: 42">
+          <label class="form-label" style="font-size:0.78rem;font-weight:600;">Número do Documento</label>
+          <div class="input-group input-group-sm">
+            <span class="input-group-text">LS-</span>
+            <input type="number" class="form-control" id="loadDocId" min="1" placeholder="Ex: 1">
+            <span class="input-group-text" id="loadDocYearSuffix"></span>
+          </div>
           <div class="text-danger d-none mt-2" id="loadDocErr" style="font-size:11px;"></div>
         </div>
         <div class="modal-footer py-2">
@@ -647,13 +651,21 @@
         </div>
         <div class="st-body">
           <div class="row g-3 align-items-end">
-            <div class="col-md-3">
+            <div class="col-md-2">
               <label class="form-label" style="font-size:0.8rem;font-weight:600;">Data</label>
               <input class="form-control" type="date" id="filtroDataSt">
             </div>
-            <div class="col-md-3">
+            <div class="col-md-2">
+              <label class="form-label" style="font-size:0.8rem;font-weight:600;">Setor</label>
+              <select class="form-select" id="filtroSetorSt">
+                <option value="">Todos</option>
+              </select>
+            </div>
+            <div class="col-md-2">
               <label class="form-label" style="font-size:0.8rem;font-weight:600;">Linha</label>
-              <input class="form-control" id="filtroLinhaSt" placeholder="Ex: SMT-01">
+              <select class="form-select" id="filtroLinhaSt">
+                <option value="">Todas</option>
+              </select>
             </div>
             <div class="col-md-2">
               <button class="btn btn-primary w-100" id="btnConsultarSt" type="button">
@@ -724,12 +736,23 @@
     try {
       const r    = await fetch('/api/production/sectors', { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
       const data = await r.json().catch(() => ({}));
-      const sel  = document.getElementById('stSetor');
-      sel.innerHTML = '<option value="">Selecione o setor</option>';
-      (data.sectors || []).forEach(s => {
+      const sectors = data.sectors || [];
+
+      const selForm   = document.getElementById('stSetor');
+      const selFiltro = document.getElementById('filtroSetorSt');
+
+      selForm.innerHTML = '<option value="">Selecione o setor</option>';
+      sectors.forEach(s => {
         const opt = document.createElement('option');
         opt.value = s; opt.textContent = s;
-        sel.appendChild(opt);
+        selForm.appendChild(opt);
+      });
+
+      selFiltro.innerHTML = '<option value="">Todos</option>';
+      sectors.forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s; opt.textContent = s;
+        selFiltro.appendChild(opt);
       });
     } catch {}
   }
@@ -737,6 +760,21 @@
   async function loadLines(setor) {
     const sel = document.getElementById('stLinha');
     sel.innerHTML = '<option value="">Selecione a linha</option>';
+    if (!setor) return;
+    try {
+      const r    = await fetch(`/api/production/lines?setor=${encodeURIComponent(setor)}`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+      const data = await r.json().catch(() => ({}));
+      (data.lines || []).forEach(l => {
+        const opt = document.createElement('option');
+        opt.value = l; opt.textContent = l;
+        sel.appendChild(opt);
+      });
+    } catch {}
+  }
+
+  async function loadFiltroLinhas(setor) {
+    const sel = document.getElementById('filtroLinhaSt');
+    sel.innerHTML = '<option value="">Todas</option>';
     if (!setor) return;
     try {
       const r    = await fetch(`/api/production/lines?setor=${encodeURIComponent(setor)}`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
@@ -1036,8 +1074,10 @@
 
     const params = new URLSearchParams();
     const data  = document.getElementById('filtroDataSt').value;
-    const linha = document.getElementById('filtroLinhaSt').value.trim();
+    const setor = document.getElementById('filtroSetorSt').value;
+    const linha = document.getElementById('filtroLinhaSt').value;
     if (data)  params.set('data', data);
+    if (setor) params.set('setor', setor);
     if (linha) params.set('linha', linha);
 
     try {
@@ -1096,16 +1136,34 @@
   /* ── Init ──────────────────────────────────────────────────────────── */
 
   document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('stData').value = new Date().toISOString().slice(0, 10);
-    document.getElementById('filtroDataSt').value = new Date().toISOString().slice(0, 10);
+    const today = new Date();
+    document.getElementById('stData').value = today.toISOString().slice(0, 10);
+    document.getElementById('filtroDataSt').value = today.toISOString().slice(0, 10);
+
+    const yearSuffix = document.getElementById('loadDocYearSuffix');
+    if (yearSuffix) yearSuffix.textContent = `-${today.getFullYear()}`;
 
     loadSectors();
 
     document.getElementById('stSetor').addEventListener('change', e => loadLines(e.target.value));
+    document.getElementById('filtroSetorSt').addEventListener('change', e => loadFiltroLinhas(e.target.value));
 
     document.querySelectorAll('.modelo-input').forEach(input => {
       input.addEventListener('input', () => { input.value = input.value.toUpperCase(); });
     });
+
+    for (let col = 2; col <= 10; col++) {
+      const inicioEl = document.querySelector(`[data-row="inicio"][data-col="${col}"]`);
+      if (!inicioEl) continue;
+      inicioEl.addEventListener('input', () => {
+        if (!inicioEl.value) return;
+        const modeloEl = document.querySelector(`[data-row="modelo"][data-col="${col}"]`);
+        if (modeloEl && !modeloEl.value) {
+          const modelo1 = document.querySelector('[data-row="modelo"][data-col="1"]')?.value || '';
+          if (modelo1) modeloEl.value = modelo1;
+        }
+      });
+    }
 
     document.querySelectorAll('.sign-btn[data-role]').forEach(btn => {
       btn.addEventListener('click', () => {
