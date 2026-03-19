@@ -170,12 +170,15 @@ def get_registro_by_id(registro_id: int) -> dict | None:
     return {**registro, "horarios": list(horarios), "assinaturas": list(assinaturas)}
 
 
-def list_registros(data=None, linha=None, limit=100) -> list:
+def list_registros(data=None, setor=None, linha=None, limit=100) -> list:
     filters = []
     params = []
     if data:
         filters.append("r.data=%s")
         params.append(data)
+    if setor:
+        filters.append("r.setor=%s")
+        params.append(setor)
     if linha:
         filters.append("r.linha=%s")
         params.append(linha)

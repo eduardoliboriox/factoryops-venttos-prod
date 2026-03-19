@@ -51,6 +51,6 @@ def buscar_registro(registro_id: int) -> dict | None:
     return {**_serialize_row(result), "horarios": horarios, "assinaturas": assinaturas}
 
 
-def listar_registros(data=None, linha=None) -> list:
-    rows = limpeza_stencil_repository.list_registros(data=data, linha=linha)
+def listar_registros(data=None, setor=None, linha=None) -> list:
+    rows = limpeza_stencil_repository.list_registros(data=data, setor=setor, linha=linha)
     return [_serialize_row(r) for r in rows]

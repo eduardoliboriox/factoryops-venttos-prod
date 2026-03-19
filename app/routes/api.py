@@ -437,8 +437,9 @@ def medicao_pasta_plano_acao_get(registro_id):
 def limpeza_stencil_list():
     from app.services import limpeza_stencil_service
     data  = request.args.get("data") or None
+    setor = request.args.get("setor") or None
     linha = request.args.get("linha") or None
-    return jsonify(limpeza_stencil_service.listar_registros(data=data, linha=linha))
+    return jsonify(limpeza_stencil_service.listar_registros(data=data, setor=setor, linha=linha))
 
 
 @bp.route("/limpeza-stencil/registros", methods=["POST"])
