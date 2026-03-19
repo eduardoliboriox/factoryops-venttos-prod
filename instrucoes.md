@@ -36,8 +36,9 @@
 31. O 5S está sendo realizado (utilização, organização, limpeza, sáude e higiene, autodisciplina) ?
 32. Verificação correta da fixação do stencil na printer ?
 
-mais pra baixo tem REALIZADOR DO CHECKLIST (Checklist Maker)
+mais pra baixo tem REALIZADOR DO CHECKLIST (Checklist Maker)   
 depois tem um texto de legenda:
+Legenda (subtitle):      Observações (Comments)
 OK  Nenhum problema detectado (no problem detected)
 NOK Problema detectado (problem detected)
 NA Não aplicável (not applicable)
