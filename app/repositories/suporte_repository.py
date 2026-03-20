@@ -79,3 +79,41 @@ def create_ticket_message(data: dict):
                 data["mensagem"],
             ))
             conn.commit()
+
+
+def list_all_tickets():
+    with get_db() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute("""
+                SELECT st.*, u.username, u.full_name,
+                       (SELECT COUNT(*) FROM support_messages sm WHERE sm.ticket_id = st.id) AS total_messages,
+                       (SELECT MAX(sm2.created_at) FROM support_messages sm2 WHERE sm2.ticket_id = st.id) AS last_message_at
+                FROM support_tickets st
+                LEFT JOIN users u ON u.id = st.user_id
+                ORDER BY st.status ASC, COALESCE(
+                    (SELECT MAX(sm3.created_at) FROM support_messages sm3 WHERE sm3.ticket_id = st.id),
+                    st.created_at
+                ) DESC
+            """)
+            return cur.fetchall()
+
+
+def get_ticket_by_id(ticket_id: int):
+    with get_db() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute("""
+                SELECT st.*, u.username, u.full_name
+                FROM support_tickets st
+                LEFT JOIN users u ON u.id = st.user_id
+                WHERE st.id = %s
+            """, (ticket_id,))
+            return cur.fetchone()
+
+
+def close_ticket(ticket_id: int):
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                UPDATE support_tickets SET status = 'closed' WHERE id = %s
+            """, (ticket_id,))
+            conn.commit()

@@ -85,7 +85,8 @@
       "suporte_centro_conhecimento": "Centro de Conhecimento",
       "suporte_ouvidoria": "Ouvidoria",
       "suporte_especializado": "Suporte Especializado",
-      "admin_backup": "Backup"
+      "admin_backup": "Backup",
+      "admin_chamados": "Chamados de Suporte"
     } %}
 
     <span class="mobile-page-title">
@@ -244,6 +245,10 @@
 
     <div class="sidebar-footer">
       {% if current_user.is_authenticated and current_user.is_admin %}
+      <a href="{{ url_for('pages.admin_chamados') }}"
+         class="{% if active_menu == 'admin_chamados' %}active{% endif %}">
+        <i class="bi bi-headset"></i> Chamados
+      </a>
       <a href="{{ url_for('pages.admin_backup') }}"
          class="{% if active_menu == 'admin_backup' %}active{% endif %}">
         <i class="bi bi-database"></i> Backup
