@@ -201,20 +201,23 @@
     background: rgba(13,110,253,0.05);
     border-radius: 3px;
   }
-  #docBanner {
-    display: none;
-    background: rgba(13,110,253,0.08);
-    border: 1px solid rgba(13,110,253,0.20);
-    border-radius: 8px;
-    padding: 8px 14px;
-    font-size: 12px;
-    color: #0d6efd;
-    font-weight: 600;
-    margin-bottom: 12px;
+  .doc-toolbar {
+    display: flex;
     align-items: center;
     gap: 8px;
+    flex-wrap: wrap;
+    padding: 10px 14px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 14px;
   }
-  #docBanner.show { display: flex; }
+  .doc-id-badge {
+    font-size: .78rem; font-weight: 700; color: var(--text-muted);
+    background: rgba(15,23,42,.05); border-radius: 6px;
+    padding: 4px 10px; border: 1px solid var(--border);
+  }
+  .doc-id-badge.saved { color: #198754; background: rgba(25,135,84,.08); border-color: rgba(25,135,84,.25); }
 
   .obs-section {
     border: 1px solid rgba(15,23,42,0.12);
@@ -302,14 +305,12 @@
     .desktop-header,
     .bottom-nav,
     .nav-tabs,
-    #docBanner,
-    #btnSalvarMedicao,
-    #btnLimparMedicao,
-    #btnNovoDocumento,
+    .doc-toolbar,
     #btnAddPlanoRow,
     #btnSalvarPlanoMp,
     .sign-btn,
     #tab-consultar-mp,
+    .d-print-none,
     [data-bs-dismiss],
     .modal,
     .modal-backdrop { display: none !important; }
@@ -518,15 +519,25 @@
         </div>
       </div>
 
-      <div id="msgMedicao"></div>
-
-      <div id="docBanner">
-        <i class="bi bi-file-earmark-check"></i>
-        <span id="docBannerText">Documento #— aberto</span>
-        <button type="button" class="btn btn-sm btn-outline-primary ms-auto" id="btnNovoDocumento">
-          <i class="bi bi-plus-lg me-1"></i>Novo
+      <div class="doc-toolbar d-print-none">
+        <button class="btn btn-outline-secondary btn-sm" id="btnNovo">
+          <i class="bi bi-file-earmark-plus"></i> Novo
         </button>
+        <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#loadDocModal">
+          <i class="bi bi-folder2-open"></i> Carregar MA-
+        </button>
+        <span class="doc-id-badge" id="docIdBadge">Novo Documento</span>
+        <div class="ms-auto d-flex gap-2">
+          <button class="btn btn-success btn-sm fw-bold" id="btnSalvarMedicao" type="button">
+            <i class="bi bi-floppy"></i> Salvar
+          </button>
+          <button class="btn btn-outline-secondary btn-sm" onclick="window.print()" type="button">
+            <i class="bi bi-printer"></i> Imprimir
+          </button>
+        </div>
       </div>
+
+      <div id="msgMedicao"></div>
 
       <div class="mp-card">
         <div class="mp-header mp-header-blue">
@@ -537,12 +548,7 @@
               <div class="mp-subtitle">PRO006 · Solder/Adhesive Paste Height Measurement Control</div>
             </div>
           </div>
-          <div class="d-flex align-items-center gap-2">
-            <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="modal" data-bs-target="#loadDocModal">
-              <i class="bi bi-folder2-open me-1"></i>Carregar
-            </button>
-            <span class="badge text-bg-primary">PASSO 1</span>
-          </div>
+          <span class="badge text-bg-primary">PASSO 1</span>
         </div>
         <div class="mp-body">
           <div class="doc-meta">
@@ -645,17 +651,6 @@
             </ul>
           </div>
 
-          <div class="d-flex gap-2 flex-wrap mt-3 px-1">
-            <button class="btn btn-success px-4 fw-bold" id="btnSalvarMedicao" type="button">
-              <i class="bi bi-send-check me-1"></i>Salvar Medição
-            </button>
-            <button class="btn btn-outline-secondary px-3" id="btnLimparMedicao" type="button">
-              <i class="bi bi-x-lg"></i> Limpar
-            </button>
-            <button class="btn btn-outline-secondary px-3 ms-auto d-print-none" onclick="window.print()" type="button">
-              <i class="bi bi-printer"></i> Imprimir
-            </button>
-          </div>
         </div>
       </div>
 
@@ -1031,20 +1026,23 @@
   function setDocumentoId(id, docId) {
     documentoId = id;
     const label = docId || String(id);
-    document.getElementById('docBannerText').textContent = `Documento ${label} aberto — continue preenchendo os horários restantes e clique em Atualizar`;
-    document.getElementById('docBanner').classList.add('show');
+    const badge = document.getElementById('docIdBadge');
+    badge.textContent = label;
+    badge.classList.add('saved');
     document.getElementById('printDocId').textContent = label;
     const btn = document.getElementById('btnSalvarMedicao');
-    btn.innerHTML = '<i class="bi bi-arrow-repeat me-1"></i>Atualizar Medição';
+    btn.innerHTML = '<i class="bi bi-arrow-repeat me-1"></i>Atualizar';
     btn.classList.replace('btn-success', 'btn-primary');
   }
 
   function clearDocumentoId() {
     documentoId = null;
-    document.getElementById('docBanner').classList.remove('show');
+    const badge = document.getElementById('docIdBadge');
+    badge.textContent = 'Novo Documento';
+    badge.classList.remove('saved');
     document.getElementById('printDocId').textContent = '—';
     const btn = document.getElementById('btnSalvarMedicao');
-    btn.innerHTML = '<i class="bi bi-send-check me-1"></i>Salvar Medição';
+    btn.innerHTML = '<i class="bi bi-floppy me-1"></i>Salvar';
     btn.classList.replace('btn-primary', 'btn-success');
   }
 
@@ -1453,8 +1451,7 @@
     filtroSetorMp.addEventListener('change', () => loadLines(filtroSetorMp.value, filtroLinhaMp, 'Todas'));
 
     document.getElementById('btnSalvarMedicao').addEventListener('click', salvarMedicao);
-    document.getElementById('btnLimparMedicao').addEventListener('click', limparMedicao);
-    document.getElementById('btnNovoDocumento').addEventListener('click', limparMedicao);
+    document.getElementById('btnNovo').addEventListener('click', limparMedicao);
     document.getElementById('btnAddPlanoRow').addEventListener('click', addPlanoRow);
     document.getElementById('btnSalvarPlanoMp').addEventListener('click', salvarPlanoMp);
     document.getElementById('btnConsultarMp').addEventListener('click', consultar);

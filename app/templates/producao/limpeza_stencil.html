@@ -193,20 +193,23 @@
     color: #198754;
   }
 
-  #docBanner {
-    display: none;
-    background: rgba(13,110,253,0.08);
-    border: 1px solid rgba(13,110,253,0.20);
-    border-radius: 8px;
-    padding: 8px 14px;
-    font-size: 12px;
-    color: #0d6efd;
-    font-weight: 600;
-    margin-bottom: 12px;
+  .doc-toolbar {
+    display: flex;
     align-items: center;
     gap: 8px;
+    flex-wrap: wrap;
+    padding: 10px 14px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 14px;
   }
-  #docBanner.show { display: flex; }
+  .doc-id-badge {
+    font-size: .78rem; font-weight: 700; color: var(--text-muted);
+    background: rgba(15,23,42,.05); border-radius: 6px;
+    padding: 4px 10px; border: 1px solid var(--border);
+  }
+  .doc-id-badge.saved { color: #198754; background: rgba(25,135,84,.08); border-color: rgba(25,135,84,.25); }
 
   /* ── Print header ──────────────────────────────── */
   .print-header {
@@ -241,12 +244,10 @@
     .desktop-header,
     .bottom-nav,
     .nav-tabs,
-    #docBanner,
-    #btnSalvarStencil,
-    #btnLimparStencil,
-    #btnNovoDoc,
+    .doc-toolbar,
     .sign-btn,
     #tab-consultar,
+    .d-print-none,
     [data-bs-dismiss],
     .modal,
     .modal-backdrop { display: none !important; }
@@ -414,15 +415,25 @@
         </div>
       </div>
 
-      <div id="msgStencil"></div>
-
-      <div id="docBanner">
-        <i class="bi bi-file-earmark-check"></i>
-        <span id="docBannerText">Documento aberto</span>
-        <button type="button" class="btn btn-sm btn-outline-primary ms-auto" id="btnNovoDoc">
-          <i class="bi bi-plus-lg me-1"></i>Novo
+      <div class="doc-toolbar d-print-none">
+        <button class="btn btn-outline-secondary btn-sm" id="btnNovo">
+          <i class="bi bi-file-earmark-plus"></i> Novo
         </button>
+        <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#loadDocModal">
+          <i class="bi bi-folder2-open"></i> Carregar LS-
+        </button>
+        <span class="doc-id-badge" id="docIdBadge">Novo Documento</span>
+        <div class="ms-auto d-flex gap-2">
+          <button class="btn btn-success btn-sm fw-bold" id="btnSalvarStencil" type="button">
+            <i class="bi bi-floppy"></i> Salvar
+          </button>
+          <button class="btn btn-outline-secondary btn-sm" onclick="window.print()" type="button">
+            <i class="bi bi-printer"></i> Imprimir
+          </button>
+        </div>
       </div>
+
+      <div id="msgStencil"></div>
 
       <div class="st-card">
         <div class="st-header st-header-blue">
@@ -433,12 +444,7 @@
               <div class="st-subtitle">ENG016 · Stencil Cleaning Control</div>
             </div>
           </div>
-          <div class="d-flex align-items-center gap-2">
-            <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="modal" data-bs-target="#loadDocModal">
-              <i class="bi bi-folder2-open me-1"></i>Carregar
-            </button>
-            <span class="badge text-bg-primary">PASSO 1</span>
-          </div>
+          <span class="badge text-bg-primary">PASSO 1</span>
         </div>
         <div class="st-body">
           <div class="doc-meta">
@@ -620,17 +626,6 @@
             </div>
           </div>
 
-          <div class="d-flex gap-2 flex-wrap mt-2 px-2 pb-2">
-            <button class="btn btn-success px-4 fw-bold" id="btnSalvarStencil" type="button">
-              <i class="bi bi-send-check"></i> Salvar Registro
-            </button>
-            <button class="btn btn-outline-secondary px-3" id="btnLimparStencil" type="button">
-              <i class="bi bi-x-lg"></i> Limpar
-            </button>
-            <button class="btn btn-outline-secondary px-3 ms-auto d-print-none" onclick="window.print()" type="button">
-              <i class="bi bi-printer"></i> Imprimir
-            </button>
-          </div>
         </div>
       </div>
 
@@ -872,20 +867,23 @@
   function setDocumentoId(id, docId) {
     documentoId = id;
     const label = docId || String(id);
-    document.getElementById('docBannerText').textContent = `Documento ${label} aberto — continue preenchendo os horários restantes e clique em Atualizar`;
-    document.getElementById('docBanner').classList.add('show');
+    const badge = document.getElementById('docIdBadge');
+    badge.textContent = label;
+    badge.classList.add('saved');
     document.getElementById('printDocId').textContent = label;
     const btn = document.getElementById('btnSalvarStencil');
-    btn.innerHTML = '<i class="bi bi-arrow-repeat me-1"></i>Atualizar Registro';
+    btn.innerHTML = '<i class="bi bi-arrow-repeat me-1"></i>Atualizar';
     btn.classList.replace('btn-success', 'btn-primary');
   }
 
   function clearDocumentoId() {
     documentoId = null;
-    document.getElementById('docBanner').classList.remove('show');
+    const badge = document.getElementById('docIdBadge');
+    badge.textContent = 'Novo Documento';
+    badge.classList.remove('saved');
     document.getElementById('printDocId').textContent = '—';
     const btn = document.getElementById('btnSalvarStencil');
-    btn.innerHTML = '<i class="bi bi-send-check me-1"></i>Salvar Registro';
+    btn.innerHTML = '<i class="bi bi-floppy me-1"></i>Salvar';
     btn.classList.replace('btn-primary', 'btn-success');
   }
 
@@ -1179,10 +1177,8 @@
     });
 
     document.getElementById('btnSalvarStencil').addEventListener('click', salvar);
-    document.getElementById('btnLimparStencil').addEventListener('click', limparFormulario);
+    document.getElementById('btnNovo').addEventListener('click', limparFormulario);
     document.getElementById('btnConsultarSt').addEventListener('click', consultar);
-
-    document.getElementById('btnNovoDoc').addEventListener('click', limparFormulario);
 
     document.getElementById('loadDocConfirmBtn').addEventListener('click', async () => {
       const id = parseInt(document.getElementById('loadDocId').value);
