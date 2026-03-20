@@ -107,7 +107,7 @@
   /* ── Signature row ── */
   .cl-sign-cell {
     text-align: center; vertical-align: middle;
-    min-width: 30px; height: 60px; padding: 2px !important;
+    min-width: 30px; height: 100px; padding: 2px !important;
     background: rgba(13,110,253,.03);
   }
   .sign-btn-dia {
@@ -120,7 +120,7 @@
     transform: rotate(180deg);
     font-size: 8px; font-weight: 700; color: #0f172a;
     white-space: nowrap; display: inline-block;
-    max-height: 56px; overflow: hidden; line-height: 1.1;
+    max-height: 96px; overflow: hidden; line-height: 1.1;
   }
   .td-sign-label {
     padding: 4px 8px !important; font-size: 9px; font-weight: 700;
@@ -133,7 +133,8 @@
   .plano-row-cl:last-child { border-bottom: none; }
   .plano-item-label { font-size: 11px; font-weight: 700; color: rgba(15,23,42,.50); margin-bottom: 4px; }
   .plano-print-table { display: none; width: 100%; border-collapse: collapse; font-size: 9px; }
-  .plano-print-table th, .plano-print-table td { border: 1px solid #bbb; padding: 3px 5px; vertical-align: top; }
+  .plano-print-table th, .plano-print-table td { border: 1px solid #bbb; padding: 3px 5px; vertical-align: top; min-height: 14px; }
+  .plano-print-table tbody tr { height: 14px; }
   .plano-print-table th {
     background: rgba(15,23,42,.07); font-size: 8px; font-weight: 700;
     text-transform: uppercase; text-align: center;
@@ -193,8 +194,8 @@
     #clTable td.td-item { min-width: unset; font-size: 6.5px; padding: 1px 4px; }
     #clTable td.td-num { font-size: 6.5px; padding: 1px; }
     .cl-cell { font-size: 6.5px; height: 15px; min-width: 14px; }
-    .cl-sign-cell { height: 34px; min-width: 14px; }
-    .sign-name-dia { font-size: 5.5px; max-height: 30px; }
+    .cl-sign-cell { height: 60px; min-width: 14px; }
+    .sign-name-dia { font-size: 5.5px; max-height: 56px; }
     .sign-btn-dia { display: none !important; }
     .td-sign-label { font-size: 6.5px; min-width: unset; padding: 1px 3px !important; }
     .cl-grid-wrap { overflow: visible; }
@@ -486,13 +487,15 @@
       <table class="plano-print-table" id="clPlanoPrintTable">
         <thead>
           <tr>
-            <th style="width:32px;">DIA<br><span style="font-weight:400;font-size:7px;">(Day)</span></th>
-            <th style="width:36px;">ITEM N°</th>
+            <th style="width:28px;">DIA<br><span style="font-weight:400;font-size:7px;">(Day)</span></th>
+            <th style="width:32px;">ITEM N°</th>
             <th>PROBLEMA<br><span style="font-weight:400;font-size:7px;">(Issue)</span></th>
             <th>CAUSA<br><span style="font-weight:400;font-size:7px;">(Root Cause)</span></th>
             <th>AÇÃO<br><span style="font-weight:400;font-size:7px;">(Action Plan)</span></th>
-            <th style="width:50px;">QUANDO?<br><span style="font-weight:400;font-size:7px;">(When?)</span></th>
-            <th style="width:70px;">RESPONSÁVEL<br><span style="font-weight:400;font-size:7px;">(PIC)</span></th>
+            <th style="width:46px;">QUANDO?<br><span style="font-weight:400;font-size:7px;">(When?)</span></th>
+            <th style="width:64px;">RESPONSÁVEL<br><span style="font-weight:400;font-size:7px;">(PIC)</span></th>
+            <th style="width:58px;">ASSINATURA<br><span style="font-weight:400;font-size:7px;">(Signature)</span></th>
+            <th style="width:40px;">STATUS</th>
           </tr>
         </thead>
         <tbody id="clPlanoPrintBody"></tbody>
@@ -1036,10 +1039,10 @@
 
   function limparPlano() {
     document.getElementById('planoRowsContainer').innerHTML = '';
-    document.getElementById('clPlanoPrintBody').innerHTML = '';
     if (document.getElementById('msgPlano')) {
       document.getElementById('msgPlano').innerHTML = '';
     }
+    renderPlanoPrintTable([]);
   }
 
   function collectPlanoItens() {
@@ -1055,17 +1058,23 @@
   }
 
   function renderPlanoPrintTable(itens) {
+    const PRINT_MIN_ROWS = 12;
     const tbody = document.getElementById('clPlanoPrintBody');
-    if (!itens.length) { tbody.innerHTML = ''; return; }
-    tbody.innerHTML = itens.map(it => `<tr>
-      <td style="text-align:center;">${esc(it.dia || '—')}</td>
-      <td style="text-align:center;">${esc(it.item_num || '—')}</td>
+    const dataRows = itens.map(it => `<tr>
+      <td style="text-align:center;">${esc(it.dia || '')}</td>
+      <td style="text-align:center;">${esc(it.item_num || '')}</td>
       <td>${esc(it.problema || '')}</td>
       <td>${esc(it.causa || '')}</td>
       <td>${esc(it.acao || '')}</td>
       <td>${esc(it.quando || '')}</td>
       <td>${esc(it.responsavel || '')}</td>
+      <td></td>
+      <td></td>
     </tr>`).join('');
+    const emptyCount = Math.max(0, PRINT_MIN_ROWS - itens.length);
+    const emptyRow   = `<tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>`;
+    const emptyRows  = emptyRow.repeat(emptyCount);
+    tbody.innerHTML  = dataRows + emptyRows;
   }
 
   function carregarPlano(id) {
