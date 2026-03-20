@@ -287,6 +287,61 @@ def suporte_especializado():
 
 # ─── Admin ────────────────────────────────────────────────────────────────────
 
+@bp.route("/admin/chamados", methods=["GET"])
+@login_required
+@admin_required
+def admin_chamados():
+    from flask import request
+    from app.repositories.suporte_repository import list_all_tickets, get_ticket_by_id, list_ticket_messages
+
+    ticket_id = request.args.get("ticket_id", type=int)
+    tickets = list_all_tickets()
+    selected_ticket = None
+    selected_messages = []
+
+    if ticket_id:
+        selected_ticket = get_ticket_by_id(ticket_id)
+        if selected_ticket:
+            selected_messages = list_ticket_messages(ticket_id)
+
+    return render_template(
+        "admin/chamados.html",
+        active_menu="admin_chamados",
+        tickets=tickets,
+        selected_ticket=selected_ticket,
+        selected_messages=selected_messages,
+    )
+
+
+@bp.route("/admin/chamados/<int:ticket_id>/responder", methods=["POST"])
+@login_required
+@admin_required
+def admin_chamados_responder(ticket_id):
+    from flask import request, redirect, url_for
+    from app.repositories.suporte_repository import get_ticket_by_id, create_ticket_message
+
+    mensagem = request.form.get("mensagem", "").strip()
+    if mensagem and get_ticket_by_id(ticket_id):
+        create_ticket_message({
+            "ticket_id": ticket_id,
+            "user_id": current_user.id,
+            "is_support": True,
+            "mensagem": mensagem,
+        })
+    return redirect(url_for("pages.admin_chamados", ticket_id=ticket_id))
+
+
+@bp.route("/admin/chamados/<int:ticket_id>/fechar", methods=["POST"])
+@login_required
+@admin_required
+def admin_chamados_fechar(ticket_id):
+    from flask import redirect, url_for
+    from app.repositories.suporte_repository import close_ticket
+
+    close_ticket(ticket_id)
+    return redirect(url_for("pages.admin_chamados"))
+
+
 @bp.route("/admin/backup", methods=["GET", "POST"])
 @login_required
 @admin_required

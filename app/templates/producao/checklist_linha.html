@@ -163,7 +163,7 @@
   @media print {
     * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 
-    @page { size: A4 landscape; margin: 8mm; }
+    @page { size: A4 landscape; margin: 5mm; }
 
     html, body { margin: 0 !important; padding: 0 !important; }
 
@@ -187,28 +187,28 @@
     .print-header { display: flex !important; }
     .tab-pane { display: block !important; opacity: 1 !important; }
 
-    #clTable { font-size: 7px; min-width: unset; width: 100%; }
-    #clTable th { font-size: 7px; padding: 3px 2px; }
+    #clTable { font-size: 6.5px; min-width: unset; width: 100%; }
+    #clTable th { font-size: 6.5px; padding: 2px 1px; }
     #clTable th.th-item { min-width: unset; }
-    #clTable td.td-item { min-width: unset; font-size: 7px; padding: 2px 5px; }
-    #clTable td.td-num { font-size: 7px; padding: 2px; }
-    .cl-cell { font-size: 7px; height: 18px; min-width: 16px; }
-    .cl-sign-cell { height: 40px; min-width: 16px; }
-    .sign-name-dia { font-size: 6px; max-height: 36px; }
+    #clTable td.td-item { min-width: unset; font-size: 6.5px; padding: 1px 4px; }
+    #clTable td.td-num { font-size: 6.5px; padding: 1px; }
+    .cl-cell { font-size: 6.5px; height: 15px; min-width: 14px; }
+    .cl-sign-cell { height: 34px; min-width: 14px; }
+    .sign-name-dia { font-size: 5.5px; max-height: 30px; }
     .sign-btn-dia { display: none !important; }
-    .td-sign-label { font-size: 7px; min-width: unset; padding: 2px 4px !important; }
+    .td-sign-label { font-size: 6.5px; min-width: unset; padding: 1px 3px !important; }
     .cl-grid-wrap { overflow: visible; }
-    .cl-card { border-radius: 0; margin-bottom: 6px; }
-    .cl-card-body { padding: 6px; }
+    .cl-card { border-radius: 0; margin-bottom: 4px; }
+    .cl-card-body { padding: 4px; }
     .print-meta { display: flex !important; }
-    .cl-legend { padding: 4px 8px; font-size: 7px; }
-    .cl-legend-dot { width: 20px; height: 14px; font-size: 7px; }
+    .cl-legend { padding: 3px 6px; font-size: 6.5px; }
+    .cl-legend-dot { width: 18px; height: 12px; font-size: 6.5px; }
 
     #tab-plano { page-break-before: always; }
     .print-header-verso { display: flex !important; }
     .plano-print-table { display: table !important; }
-    .plano-print-table th { font-size: 7px !important; padding: 1px 2px !important; }
-    .plano-print-table td { font-size: 8px !important; padding: 1px 3px !important; height: 14px !important; }
+    .plano-print-table th { font-size: 6.5px !important; padding: 1px 2px !important; }
+    .plano-print-table td { font-size: 7px !important; padding: 1px 3px !important; height: 13px !important; }
     #clPlanoForm { display: none !important; }
   }
 
@@ -343,11 +343,11 @@
 
       <!-- Print meta row -->
       <div class="print-meta" id="printMeta">
-        <div class="print-meta-item"><strong>MÊS / ANO</strong><span id="printMesAno">-</span></div>
-        <div class="print-meta-item"><strong>SETOR</strong><span id="printSetor">-</span></div>
-        <div class="print-meta-item"><strong>LINHA</strong><span id="printLinha">-</span></div>
-        <div class="print-meta-item"><strong>TURNO</strong><span id="printTurno">-</span></div>
-        <div class="print-meta-item"><strong>MODELO</strong><span id="printModelo">-</span></div>
+        <div class="print-meta-item"><strong>MÊS / ANO <span style="font-weight:400;font-size:7px;">(Month / Year)</span></strong><span id="printMesAno">-</span></div>
+        <div class="print-meta-item"><strong>SETOR <span style="font-weight:400;font-size:7px;">(Sector)</span></strong><span id="printSetor">-</span></div>
+        <div class="print-meta-item"><strong>LINHA <span style="font-weight:400;font-size:7px;">(Line)</span></strong><span id="printLinha">-</span></div>
+        <div class="print-meta-item"><strong>TURNO <span style="font-weight:400;font-size:7px;">(Shift)</span></strong><span id="printTurno">-</span></div>
+        <div class="print-meta-item"><strong>MODELO <span style="font-weight:400;font-size:7px;">(Model)</span></strong><span id="printModelo">-</span></div>
       </div>
 
       <!-- Toolbar -->
@@ -376,7 +376,7 @@
         <div class="cl-card-body">
           <div class="row g-3">
             <div class="col-6 col-md-2">
-              <div class="meta-label">Mês</div>
+              <div class="meta-label">Mês <span style="font-weight:400;color:var(--text-muted);font-size:.75rem;">(Month)</span></div>
               <select class="form-select form-select-sm" id="clMes" style="border-radius:8px;">
                 <option value="1">Janeiro</option>
                 <option value="2">Fevereiro</option>
@@ -393,11 +393,11 @@
               </select>
             </div>
             <div class="col-6 col-md-1">
-              <div class="meta-label">Ano</div>
+              <div class="meta-label">Ano <span style="font-weight:400;color:var(--text-muted);font-size:.75rem;">(Year)</span></div>
               <input type="number" class="form-control form-control-sm" id="clAno" min="2024" max="2040" style="border-radius:8px;">
             </div>
             <div class="col-6 col-md-2">
-              <div class="meta-label">Setor</div>
+              <div class="meta-label">Setor <span style="font-weight:400;color:var(--text-muted);font-size:.75rem;">(Sector)</span></div>
               <select class="form-select form-select-sm" id="clSetor" style="border-radius:8px;">
                 <option value="SMT">SMT</option>
                 <option value="PTH">PTH</option>
@@ -407,11 +407,11 @@
               </select>
             </div>
             <div class="col-6 col-md-2">
-              <div class="meta-label">Linha</div>
+              <div class="meta-label">Linha <span style="font-weight:400;color:var(--text-muted);font-size:.75rem;">(Line)</span></div>
               <select class="form-select form-select-sm" id="clLinha" style="border-radius:8px;"></select>
             </div>
             <div class="col-6 col-md-2">
-              <div class="meta-label">Turno</div>
+              <div class="meta-label">Turno <span style="font-weight:400;color:var(--text-muted);font-size:.75rem;">(Shift)</span></div>
               <select class="form-select form-select-sm" id="clTurno" style="border-radius:8px;">
                 <option value="">-</option>
                 <option value="1">1° Turno</option>

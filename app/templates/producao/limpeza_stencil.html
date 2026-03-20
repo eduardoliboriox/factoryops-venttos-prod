@@ -8,9 +8,6 @@
     <h1 class="page-header-name">Controle de Limpeza do Stencil</h1>
   </div>
   <div class="page-header-actions">
-    <button class="btn-header-icon" onclick="window.print()" title="Imprimir">
-      <i class="bi bi-printer"></i>
-    </button>
     <a href="{{ url_for('pages.inicio') }}" class="btn-header-icon" title="Voltar">
       <i class="bi bi-arrow-left"></i>
     </a>
@@ -629,6 +626,9 @@
             </button>
             <button class="btn btn-outline-secondary px-3" id="btnLimparStencil" type="button">
               <i class="bi bi-x-lg"></i> Limpar
+            </button>
+            <button class="btn btn-outline-secondary px-3 ms-auto d-print-none" onclick="window.print()" type="button">
+              <i class="bi bi-printer"></i> Imprimir
             </button>
           </div>
         </div>
