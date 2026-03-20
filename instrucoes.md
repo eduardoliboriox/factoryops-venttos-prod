@@ -1,9 +1,11 @@
 ### Objetivo - (tarefas para você executar, aplicando com CLAUDE.md)
 
-### 1. select "qualidade" na hora de se cadastrar
-* nas páginas app/templates/auth/register.html (desktop) e app/templates/auth/mobile/register_form.html (mobile) que são as formas de cadastro é preciso adicionar no select de setor a opção "qualidade".
+### 1. Ajuste bilingue
+* na página app/templates/producao/checklist_linha.html, tanto no documento quanto na pagina de print (impressão) ajuste alguns titulos que ainda não estão bilingue, como MÊS / ANO, SETOR, LINHA, TURNO, MODELO.
+* na página de impressão de app/templates/producao/checklist_linha.html, não em um unica pagina, tente ajustar mais um pouco para caber.
 
-### 2. Melhoria da tela de recuperação de senha
-* a pagina app/templates/auth/forgot_password.html está muito simples, melhore, deixando mais profissional para desktop e mobile.
+### 2. Padrão das telas e botões na app/templates/producao
+* as páginas app/templates/producao/medicao_pasta_solda.html, app/templates/producao/limpeza_stencil.html, app/templates/producao/checklist_linha.html eu tenho alguns pontos que não mantenha o padrão visual e funcionlidade do sistema. como o botão de imprimir, nao está na mesma pagina entre as paginas.eu gosto de como é na pagina app/templates/producao/checklist_linha.htm
 
-### 3. 
+### 3. tela de chamado
+* quando um usuario abrir um chamado, eu quero ter uma pagina especial, para ver os chamados abertos, tipo e etc, entao, responder, mandando uma mensagem par ao operador que responder
