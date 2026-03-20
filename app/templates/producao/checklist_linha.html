@@ -334,7 +334,7 @@
         <img src="{{ url_for('static', filename='images/logos/logo.png') }}" alt="Venttos">
         <div style="flex:1;text-align:center;">
           <div class="print-header-title">CHECKLIST DE VERIFICAÇÃO DA LINHA</div>
-          <div class="print-header-sub">Line's Checklist Verification · PRO011</div>
+          <div class="print-header-sub">(Line's Checklist Verification) · PRO011</div>
         </div>
         <div class="print-header-doc">
           <div class="doc-num">Nº <span id="printDocId">Novo Documento</span></div>
@@ -468,11 +468,19 @@
         <img src="{{ url_for('static', filename='images/logos/logo.png') }}" alt="Venttos">
         <div style="flex:1;text-align:center;">
           <div class="print-header-verso-title">Plano de Ação / Action Plan</div>
-          <div class="print-header-verso-sub">Checklist de Verificação da Linha · PRO011</div>
+          <div class="print-header-verso-sub">(Line's Checklist Verification) · PRO011</div>
         </div>
         <div class="print-header-verso-doc">
           <div class="doc-num">Nº <span id="printDocIdVerso">—</span></div>
         </div>
+      </div>
+
+      <div class="print-meta" id="printMetaVerso">
+        <div class="print-meta-item"><strong>MÊS / ANO <span style="font-weight:400;font-size:7px;">(Month / Year)</span></strong><span id="printMesAnoV">-</span></div>
+        <div class="print-meta-item"><strong>SETOR <span style="font-weight:400;font-size:7px;">(Sector)</span></strong><span id="printSetorV">-</span></div>
+        <div class="print-meta-item"><strong>LINHA <span style="font-weight:400;font-size:7px;">(Line)</span></strong><span id="printLinhaV">-</span></div>
+        <div class="print-meta-item"><strong>TURNO <span style="font-weight:400;font-size:7px;">(Shift)</span></strong><span id="printTurnoV">-</span></div>
+        <div class="print-meta-item"><strong>MODELO <span style="font-weight:400;font-size:7px;">(Model)</span></strong><span id="printModeloV">-</span></div>
       </div>
 
       <table class="plano-print-table" id="clPlanoPrintTable">
@@ -843,14 +851,26 @@
   }
 
   function updatePrintMeta() {
-    const mes = parseInt(document.getElementById('clMes').value);
-    const ano = parseInt(document.getElementById('clAno').value);
-    document.getElementById('printMesAno').textContent = `${MESES[mes]}/${ano}`;
-    document.getElementById('printSetor').textContent  = document.getElementById('clSetor').value;
-    document.getElementById('printLinha').textContent  = document.getElementById('clLinha').value;
+    const mes     = parseInt(document.getElementById('clMes').value);
+    const ano     = parseInt(document.getElementById('clAno').value);
+    const setor   = document.getElementById('clSetor').value;
+    const linha   = document.getElementById('clLinha').value;
     const turnoVal = document.getElementById('clTurno').value;
-    document.getElementById('printTurno').textContent  = turnoVal ? `${turnoVal}° Turno` : '-';
-    document.getElementById('printModelo').textContent = document.getElementById('clModelo').value.trim() || '-';
+    const turno   = turnoVal ? `${turnoVal}° Turno` : '-';
+    const modelo  = document.getElementById('clModelo').value.trim() || '-';
+    const mesAno  = `${MESES[mes]}/${ano}`;
+
+    document.getElementById('printMesAno').textContent  = mesAno;
+    document.getElementById('printSetor').textContent   = setor;
+    document.getElementById('printLinha').textContent   = linha;
+    document.getElementById('printTurno').textContent   = turno;
+    document.getElementById('printModelo').textContent  = modelo;
+
+    document.getElementById('printMesAnoV').textContent = mesAno;
+    document.getElementById('printSetorV').textContent  = setor;
+    document.getElementById('printLinhaV').textContent  = linha;
+    document.getElementById('printTurnoV').textContent  = turno;
+    document.getElementById('printModeloV').textContent = modelo;
   }
 
   function limpar() {
