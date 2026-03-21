@@ -8,6 +8,9 @@
     <h1 class="page-header-name">Produção Coletada</h1>
   </div>
   <div class="page-header-actions">
+    <span class="badge text-bg-danger me-1" style="font-size:0.7rem;padding:5px 8px;">
+      <i class="bi bi-shield-lock"></i> Admin
+    </span>
     <a href="{{ url_for('pages.inicio') }}" class="btn-header-icon" title="Voltar">
       <i class="bi bi-arrow-left"></i>
     </a>
@@ -23,8 +26,11 @@
 
   {% if erro %}
   <div class="alert alert-warning d-flex align-items-center gap-2 mb-4">
-    <i class="bi bi-exclamation-triangle-fill"></i>
-    <div>{{ erro }}</div>
+    <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+    <div>
+      <strong>Tabela não encontrada.</strong> Execute o SQL de migração no banco antes de usar esta página.<br>
+      <code class="small">CREATE TABLE producao_coletada ...</code>
+    </div>
   </div>
   {% endif %}
 
@@ -32,15 +38,15 @@
   <div class="card mb-4">
     <div class="card-body p-3">
       <form method="GET" class="row g-2 align-items-end">
-        <div class="col-sm-6 col-md-2">
+        <div class="col-6 col-md-2">
           <label class="form-label">Data inicial</label>
           <input type="date" class="form-control" name="dataInicial" value="{{ data_inicial }}">
         </div>
-        <div class="col-sm-6 col-md-2">
+        <div class="col-6 col-md-2">
           <label class="form-label">Data final</label>
           <input type="date" class="form-control" name="dataFinal" value="{{ data_final }}">
         </div>
-        <div class="col-sm-6 col-md-2">
+        <div class="col-6 col-md-2">
           <label class="form-label">Setor</label>
           <select class="form-select" name="setor">
             <option value="">Todos</option>
@@ -49,7 +55,7 @@
             {% endfor %}
           </select>
         </div>
-        <div class="col-sm-6 col-md-2">
+        <div class="col-6 col-md-2">
           <label class="form-label">Linha</label>
           <select class="form-select" name="linha">
             <option value="">Todas</option>
@@ -58,15 +64,15 @@
             {% endfor %}
           </select>
         </div>
-        <div class="col-sm-6 col-md-2">
+        <div class="col-6 col-md-2">
           <label class="form-label">Turno</label>
           <input type="text" class="form-control" name="turno" value="{{ turno }}" placeholder="Ex: 1º">
         </div>
-        <div class="col-sm-6 col-md-2 d-flex gap-2">
+        <div class="col-6 col-md-2 d-flex gap-2">
           <button type="submit" class="btn btn-primary flex-fill fw-semibold">
             <i class="bi bi-search"></i> Filtrar
           </button>
-          <a href="{{ url_for('pages.pcp_producao_coletada') }}" class="btn btn-outline-secondary" title="Limpar">
+          <a href="{{ url_for('pages.pcp_producao_coletada') }}" class="btn btn-outline-secondary" title="Limpar filtros">
             <i class="bi bi-x-lg"></i>
           </a>
         </div>
@@ -75,7 +81,7 @@
   </div>
 
   <!-- KPIs -->
-  {% if kpis %}
+  {% if not erro %}
   <div class="row g-3 mb-4">
     <div class="col-6 col-md-3">
       <div class="stat-card">
@@ -87,21 +93,21 @@
     <div class="col-6 col-md-3">
       <div class="stat-card">
         <div class="stat-icon-success"><i class="bi bi-check2-circle"></i></div>
-        <div class="stat-value">{{ kpis.producao_total | default(0) | int }}</div>
+        <div class="stat-value">{{ (kpis.producao_total | default(0)) | int | string | replace(',', '.') }}</div>
         <div class="stat-label">Produção Total</div>
       </div>
     </div>
     <div class="col-6 col-md-3">
       <div class="stat-card">
         <div class="stat-icon-warning"><i class="bi bi-arrow-down-circle"></i></div>
-        <div class="stat-value">{{ kpis.perda_total | default(0) | int }}</div>
+        <div class="stat-value">{{ (kpis.perda_total | default(0)) | int }}</div>
         <div class="stat-label">Perda Total</div>
       </div>
     </div>
     <div class="col-6 col-md-3">
       <div class="stat-card">
         <div class="stat-icon-danger"><i class="bi bi-bug"></i></div>
-        <div class="stat-value">{{ kpis.defeitos_total | default(0) | int }}</div>
+        <div class="stat-value">{{ (kpis.defeitos_total | default(0)) | int }}</div>
         <div class="stat-label">Defeitos Total</div>
       </div>
     </div>
@@ -113,21 +119,21 @@
     <div class="card-body p-0">
       <div class="d-flex align-items-center justify-content-between px-3 py-2 border-bottom">
         <div>
-          <div class="fw-bold">Registros</div>
+          <div class="fw-bold">Registros coletados</div>
           <div class="text-muted small">
             {{ data_inicial }} → {{ data_final }}
-            {% if setor %} · {{ setor }}{% endif %}
-            {% if linha %} · {{ linha }}{% endif %}
-            {% if turno %} · {{ turno }}{% endif %}
+            {% if setor %}&nbsp;·&nbsp;{{ setor }}{% endif %}
+            {% if linha %}&nbsp;·&nbsp;{{ linha }}{% endif %}
+            {% if turno %}&nbsp;·&nbsp;{{ turno }}{% endif %}
           </div>
         </div>
-        <div class="text-muted small">{{ registros | length }} registros</div>
+        <div class="text-muted small fw-semibold">{{ registros | length }} registros</div>
       </div>
 
       {% if registros %}
       <div class="table-responsive">
-        <table class="table table-sm table-hover mb-0" style="font-size: 0.82rem;">
-          <thead class="table-light">
+        <table class="table table-sm table-hover mb-0" style="font-size:0.8rem;">
+          <thead class="table-light" style="font-size:0.72rem;text-transform:uppercase;letter-spacing:.4px;">
             <tr>
               <th>Data</th>
               <th>Setor</th>
@@ -142,36 +148,51 @@
               <th class="text-end">Defeitos</th>
               <th>Parada</th>
               <th>Observação</th>
+              <th class="text-muted">Coletado em</th>
             </tr>
           </thead>
           <tbody>
             {% for r in registros %}
             <tr>
               <td class="text-nowrap">{{ r.data }}</td>
-              <td><span class="badge text-bg-secondary">{{ r.setor }}</span></td>
-              <td>{{ r.linha }}</td>
-              <td>{{ r.turno }}</td>
+              <td>
+                <span class="badge text-bg-secondary" style="font-size:.7rem;">{{ r.setor }}</span>
+              </td>
+              <td class="text-nowrap">{{ r.linha }}</td>
+              <td class="text-nowrap">{{ r.turno }}</td>
               <td class="fw-semibold">{{ r.modelo }}</td>
-              <td>{{ r.familia }}</td>
+              <td class="text-muted">{{ r.familia }}</td>
               <td>{{ r.hora_inicio }}</td>
               <td>{{ r.hora_fim }}</td>
-              <td class="text-end fw-semibold text-success">{{ r.producao_real | default(0) }}</td>
-              <td class="text-end text-warning">{{ r.qtd_perda | default(0) }}</td>
-              <td class="text-end text-danger">{{ r.defeitos | default(0) }}</td>
-              <td class="text-muted small">{{ r.descricao_parada or '' }}</td>
-              <td class="text-muted small">{{ r.observacao or '' }}</td>
+              <td class="text-end fw-bold text-success">{{ r.producao_real | default(0) }}</td>
+              <td class="text-end {% if r.qtd_perda %}text-warning fw-semibold{% else %}text-muted{% endif %}">
+                {{ r.qtd_perda | default(0) }}
+              </td>
+              <td class="text-end {% if r.defeitos %}text-danger fw-semibold{% else %}text-muted{% endif %}">
+                {{ r.defeitos | default(0) }}
+              </td>
+              <td class="text-muted small">{{ r.descricao_parada or '—' }}</td>
+              <td class="text-muted small">{{ r.observacao or '—' }}</td>
+              <td class="text-muted small text-nowrap">
+                {% if r.coletado_em %}
+                  {{ r.coletado_em.strftime('%d/%m %H:%M') if r.coletado_em else '—' }}
+                {% endif %}
+              </td>
             </tr>
             {% endfor %}
           </tbody>
         </table>
       </div>
       {% else %}
-      <div class="p-4 text-center text-muted">
-        <i class="bi bi-inbox fs-2 d-block mb-2"></i>
-        Nenhum registro encontrado para o período selecionado.
-        {% if not erro %}
-        <div class="small mt-1">Execute o coletor para importar dados: <code>python coletor.py</code></div>
-        {% endif %}
+      <div class="p-5 text-center text-muted">
+        <i class="bi bi-inbox fs-1 d-block mb-3 opacity-25"></i>
+        <div class="fw-semibold">Nenhum registro encontrado</div>
+        <div class="small mt-1">
+          {% if not erro %}
+          Execute o coletor para importar dados:
+          <code>python coletor.py</code>
+          {% endif %}
+        </div>
       </div>
       {% endif %}
     </div>
