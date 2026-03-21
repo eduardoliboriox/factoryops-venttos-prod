@@ -61,7 +61,7 @@ def smt_dashboard():
 @bp.route("/smt/modelos")
 @login_required
 def smt_modelos():
-    return render_template("funcionalidades/modelos.html", active_menu="smt_modelos")
+    return render_template("funcionalidades/modelos_smt.html", active_menu="smt_modelos")
 
 
 @bp.route("/smt/cadastro")
