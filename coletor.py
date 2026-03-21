@@ -33,7 +33,7 @@ SENHA         = "123456"
 PORTA_PCP     = 5001
 
 # URL do banco Railway — cole aqui a sua DATABASE_URL do Railway
-DATABASE_URL  = "postgresql://postgres:SENHA@host.railway.app:PORT/railway"
+DATABASE_URL  = "postgresql://postgres:BBxAZvsZUNZDwUhMjUtNSsgDoqskKTwK@caboose.proxy.rlwy.net:11094/railway"
 # ─────────────────────────────────────────────
 
 app = Flask(__name__)
