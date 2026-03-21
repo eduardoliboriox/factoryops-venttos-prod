@@ -44,7 +44,7 @@
   'smt_estudo_tempo','engenharia_folha_crono'
 ] %}
 {% set _pcp_menus = [
-  'pcp_controle_ops','pcp_planejamento','pcp_entregas'
+  'pcp_controle_ops','pcp_planejamento','pcp_entregas','pcp_producao_coletada'
 ] %}
 {% set _sup_menus = [
   'suporte_centro_conhecimento','suporte_ouvidoria','suporte_especializado'
@@ -82,6 +82,7 @@
       "pcp_controle_ops": "Controle de OPs",
       "pcp_planejamento": "Planejamento",
       "pcp_entregas": "Entregas",
+      "pcp_producao_coletada": "Produção Coletada",
       "suporte_centro_conhecimento": "Centro de Conhecimento",
       "suporte_ouvidoria": "Ouvidoria",
       "suporte_especializado": "Suporte Especializado",
@@ -238,6 +239,12 @@
                class="{% if active_menu == 'pcp_entregas' %}active{% endif %}">
               <i class="bi bi-truck"></i> Entregas
             </a>
+            {% if current_user.is_authenticated and current_user.is_admin %}
+            <a href="{{ url_for('pages.pcp_producao_coletada') }}"
+               class="{% if active_menu == 'pcp_producao_coletada' %}active{% endif %}">
+              <i class="bi bi-database-down"></i> Produção Coletada
+            </a>
+            {% endif %}
           </div>
         </div>
       </div>
