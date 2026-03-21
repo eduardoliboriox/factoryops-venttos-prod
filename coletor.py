@@ -3,12 +3,18 @@ PCP Venttos - Coletor de Produção
 Busca dados da API interna do Input BI (sem autenticação) e salva no banco Railway.
 
 Uso:
-    python coletor.py                         # coleta hoje e sobe Flask na :5001
-    python coletor.py --data 2026-03-20       # coleta uma data específica
-    python coletor.py --de 2026-03-01 --ate 2026-03-20  # coleta intervalo
+    python coletor.py --de 2026-03-01 --ate 2026-03-20
+        → coleta e salva direto no banco (PC precisa de internet)
+
+    python coletor.py --de 2026-03-01 --ate 2026-03-20 --json dados.json
+        → coleta e salva em arquivo local (usar quando sem internet)
+
+    python coletor.py --importar dados.json
+        → lê o arquivo e salva no banco (rodar no PC com internet)
 """
 
 import sys
+import json
 import requests
 import psycopg
 from datetime import datetime, date
@@ -181,21 +187,46 @@ if __name__ == "__main__":
     print("  PCP Venttos - Coletor de Produção")
     print("=" * 50)
 
+    # Modo: importar de arquivo JSON para o banco
+    if "--importar" in args:
+        arquivo = args[args.index("--importar") + 1]
+        print(f"  Lendo: {arquivo}")
+        with open(arquivo, "r", encoding="utf-8") as f:
+            dados = json.load(f)
+        print(f"  Registros no arquivo: {len(dados)}")
+        print(f"  Salvos: {salvar_no_banco(dados)}")
+        sys.exit(0)
+
+    # Modo: coleta por data única
     if "--data" in args:
         data  = args[args.index("--data") + 1]
         dados = buscar_producao(data, data)
         print(f"  Buscados: {len(dados)} registros para {data}")
-        print(f"  Salvos:   {salvar_no_banco(dados)}")
+        if "--json" in args:
+            arquivo = args[args.index("--json") + 1]
+            with open(arquivo, "w", encoding="utf-8") as f:
+                json.dump(dados, f, ensure_ascii=False, default=str)
+            print(f"  Salvo em arquivo: {arquivo}")
+        else:
+            print(f"  Salvos no banco: {salvar_no_banco(dados)}")
         sys.exit(0)
 
+    # Modo: coleta por intervalo
     if "--de" in args and "--ate" in args:
         de   = args[args.index("--de")  + 1]
         ate  = args[args.index("--ate") + 1]
         dados = buscar_producao(de, ate)
         print(f"  Buscados: {len(dados)} registros de {de} a {ate}")
-        print(f"  Salvos:   {salvar_no_banco(dados)}")
+        if "--json" in args:
+            arquivo = args[args.index("--json") + 1]
+            with open(arquivo, "w", encoding="utf-8") as f:
+                json.dump(dados, f, ensure_ascii=False, default=str)
+            print(f"  Salvo em arquivo: {arquivo}")
+        else:
+            print(f"  Salvos no banco: {salvar_no_banco(dados)}")
         sys.exit(0)
 
+    # Modo padrão: coleta hoje e sobe Flask
     hoje  = str(date.today())
     dados = buscar_producao(hoje, hoje)
     print(f"  Coletados hoje: {len(dados)} registros")
