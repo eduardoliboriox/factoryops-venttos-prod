@@ -176,6 +176,7 @@ def engenharia_folha_crono():
 
 @bp.route("/pcp/producao-coletada")
 @login_required
+@admin_required
 def pcp_producao_coletada():
     from flask import request
     from app.services import producao_coletada_service as svc
