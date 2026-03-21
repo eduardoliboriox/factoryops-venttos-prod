@@ -174,6 +174,46 @@ def engenharia_folha_crono():
 
 # ─── PCP ─────────────────────────────────────────────────────────────────────
 
+@bp.route("/pcp/producao-coletada")
+@login_required
+def pcp_producao_coletada():
+    from flask import request
+    from app.services import producao_coletada_service as svc
+
+    data_inicial_pad, data_final_pad = svc.data_padrao()
+
+    data_inicial = request.args.get("dataInicial", data_inicial_pad)
+    data_final   = request.args.get("dataFinal",   data_final_pad)
+    setor        = request.args.get("setor",  "")
+    linha        = request.args.get("linha",  "")
+    turno        = request.args.get("turno",  "")
+
+    try:
+        registros = svc.listar(data_inicial, data_final, setor, linha, turno)
+        kpis      = svc.totais(data_inicial, data_final, setor, linha, turno)
+        filtros   = svc.filtros_disponiveis()
+        erro      = None
+    except Exception:
+        registros = []
+        kpis      = {}
+        filtros   = {"setores": [], "linhas": []}
+        erro      = "Tabela ainda não existe — execute o SQL de migração no banco."
+
+    return render_template(
+        "pcp/producao_coletada.html",
+        active_menu="pcp_producao_coletada",
+        data_inicial=data_inicial,
+        data_final=data_final,
+        setor=setor,
+        linha=linha,
+        turno=turno,
+        registros=registros,
+        kpis=kpis,
+        filtros=filtros,
+        erro=erro,
+    )
+
+
 @bp.route("/pcp/controle-ops")
 @login_required
 def pcp_controle_ops():

@@ -1,0 +1,181 @@
+{% extends "layouts/app.html" %}
+{% block title %}PCP · Produção Coletada{% endblock %}
+
+{% block page_title %}
+<div class="page-header">
+  <div class="page-header-title">
+    <span class="page-header-section">PCP</span>
+    <h1 class="page-header-name">Produção Coletada</h1>
+  </div>
+  <div class="page-header-actions">
+    <a href="{{ url_for('pages.inicio') }}" class="btn-header-icon" title="Voltar">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
+      <i class="bi bi-arrows-fullscreen"></i>
+    </button>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+  {% if erro %}
+  <div class="alert alert-warning d-flex align-items-center gap-2 mb-4">
+    <i class="bi bi-exclamation-triangle-fill"></i>
+    <div>{{ erro }}</div>
+  </div>
+  {% endif %}
+
+  <!-- Filtros -->
+  <div class="card mb-4">
+    <div class="card-body p-3">
+      <form method="GET" class="row g-2 align-items-end">
+        <div class="col-sm-6 col-md-2">
+          <label class="form-label">Data inicial</label>
+          <input type="date" class="form-control" name="dataInicial" value="{{ data_inicial }}">
+        </div>
+        <div class="col-sm-6 col-md-2">
+          <label class="form-label">Data final</label>
+          <input type="date" class="form-control" name="dataFinal" value="{{ data_final }}">
+        </div>
+        <div class="col-sm-6 col-md-2">
+          <label class="form-label">Setor</label>
+          <select class="form-select" name="setor">
+            <option value="">Todos</option>
+            {% for s in filtros.setores %}
+            <option value="{{ s }}" {% if s == setor %}selected{% endif %}>{{ s }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-sm-6 col-md-2">
+          <label class="form-label">Linha</label>
+          <select class="form-select" name="linha">
+            <option value="">Todas</option>
+            {% for l in filtros.linhas %}
+            <option value="{{ l }}" {% if l == linha %}selected{% endif %}>{{ l }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-sm-6 col-md-2">
+          <label class="form-label">Turno</label>
+          <input type="text" class="form-control" name="turno" value="{{ turno }}" placeholder="Ex: 1º">
+        </div>
+        <div class="col-sm-6 col-md-2 d-flex gap-2">
+          <button type="submit" class="btn btn-primary flex-fill fw-semibold">
+            <i class="bi bi-search"></i> Filtrar
+          </button>
+          <a href="{{ url_for('pages.pcp_producao_coletada') }}" class="btn btn-outline-secondary" title="Limpar">
+            <i class="bi bi-x-lg"></i>
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- KPIs -->
+  {% if kpis %}
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+      <div class="stat-card">
+        <div class="stat-icon-primary"><i class="bi bi-list-ol"></i></div>
+        <div class="stat-value">{{ kpis.total_registros | default(0) }}</div>
+        <div class="stat-label">Registros</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card">
+        <div class="stat-icon-success"><i class="bi bi-check2-circle"></i></div>
+        <div class="stat-value">{{ kpis.producao_total | default(0) | int }}</div>
+        <div class="stat-label">Produção Total</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card">
+        <div class="stat-icon-warning"><i class="bi bi-arrow-down-circle"></i></div>
+        <div class="stat-value">{{ kpis.perda_total | default(0) | int }}</div>
+        <div class="stat-label">Perda Total</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card">
+        <div class="stat-icon-danger"><i class="bi bi-bug"></i></div>
+        <div class="stat-value">{{ kpis.defeitos_total | default(0) | int }}</div>
+        <div class="stat-label">Defeitos Total</div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Tabela -->
+  <div class="card">
+    <div class="card-body p-0">
+      <div class="d-flex align-items-center justify-content-between px-3 py-2 border-bottom">
+        <div>
+          <div class="fw-bold">Registros</div>
+          <div class="text-muted small">
+            {{ data_inicial }} → {{ data_final }}
+            {% if setor %} · {{ setor }}{% endif %}
+            {% if linha %} · {{ linha }}{% endif %}
+            {% if turno %} · {{ turno }}{% endif %}
+          </div>
+        </div>
+        <div class="text-muted small">{{ registros | length }} registros</div>
+      </div>
+
+      {% if registros %}
+      <div class="table-responsive">
+        <table class="table table-sm table-hover mb-0" style="font-size: 0.82rem;">
+          <thead class="table-light">
+            <tr>
+              <th>Data</th>
+              <th>Setor</th>
+              <th>Linha</th>
+              <th>Turno</th>
+              <th>Modelo</th>
+              <th>Família</th>
+              <th>Início</th>
+              <th>Fim</th>
+              <th class="text-end">Produção</th>
+              <th class="text-end">Perda</th>
+              <th class="text-end">Defeitos</th>
+              <th>Parada</th>
+              <th>Observação</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in registros %}
+            <tr>
+              <td class="text-nowrap">{{ r.data }}</td>
+              <td><span class="badge text-bg-secondary">{{ r.setor }}</span></td>
+              <td>{{ r.linha }}</td>
+              <td>{{ r.turno }}</td>
+              <td class="fw-semibold">{{ r.modelo }}</td>
+              <td>{{ r.familia }}</td>
+              <td>{{ r.hora_inicio }}</td>
+              <td>{{ r.hora_fim }}</td>
+              <td class="text-end fw-semibold text-success">{{ r.producao_real | default(0) }}</td>
+              <td class="text-end text-warning">{{ r.qtd_perda | default(0) }}</td>
+              <td class="text-end text-danger">{{ r.defeitos | default(0) }}</td>
+              <td class="text-muted small">{{ r.descricao_parada or '' }}</td>
+              <td class="text-muted small">{{ r.observacao or '' }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="p-4 text-center text-muted">
+        <i class="bi bi-inbox fs-2 d-block mb-2"></i>
+        Nenhum registro encontrado para o período selecionado.
+        {% if not erro %}
+        <div class="small mt-1">Execute o coletor para importar dados: <code>python coletor.py</code></div>
+        {% endif %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}
