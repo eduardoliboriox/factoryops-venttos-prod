@@ -82,3 +82,57 @@ def linhas_disponiveis(setor: str = "") -> list:
             else:
                 cur.execute("SELECT DISTINCT linha FROM producao_coletada WHERE linha IS NOT NULL ORDER BY linha")
             return [r[0] for r in cur.fetchall()]
+
+
+def importar_registros(registros: list) -> dict:
+    salvos = 0
+    erros  = 0
+
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            for r in registros:
+                try:
+                    cur.execute("""
+                        INSERT INTO producao_coletada (
+                            id, data, setor, linha, turno, semana, modelo, familia,
+                            hora_inicio, hora_fim, intervalo, producao_real, qtd_perda,
+                            defeitos, parada_seg, codigo_parada, descricao_parada,
+                            observacao, coletado_em
+                        ) VALUES (
+                            %s, %s, %s, %s, %s, %s, %s, %s,
+                            %s, %s, %s, %s, %s,
+                            %s, %s, %s, %s,
+                            %s, NOW()
+                        )
+                        ON CONFLICT (id) DO UPDATE SET
+                            producao_real    = EXCLUDED.producao_real,
+                            qtd_perda        = EXCLUDED.qtd_perda,
+                            defeitos         = EXCLUDED.defeitos,
+                            descricao_parada = EXCLUDED.descricao_parada,
+                            observacao       = EXCLUDED.observacao,
+                            coletado_em      = NOW()
+                    """, (
+                        r.get("id"),
+                        r.get("data"),
+                        r.get("setor", ""),
+                        r.get("linha", ""),
+                        r.get("turno", ""),
+                        r.get("semana"),
+                        r.get("modelo", ""),
+                        r.get("familia", ""),
+                        r.get("hora_inicio", ""),
+                        r.get("hora_fim", ""),
+                        r.get("intervalo", ""),
+                        r.get("producao_real", 0),
+                        r.get("qtd_perda", 0),
+                        r.get("defeitos", 0),
+                        r.get("parada_seg"),
+                        r.get("codigo_parada"),
+                        r.get("descricao_parada"),
+                        r.get("observacao"),
+                    ))
+                    salvos += 1
+                except Exception:
+                    erros += 1
+
+    return {"salvos": salvos, "erros": erros, "total": len(registros)}

@@ -215,6 +215,37 @@ def pcp_producao_coletada():
     )
 
 
+@bp.route("/pcp/producao-coletada/importar", methods=["POST"])
+@login_required
+@admin_required
+def pcp_producao_coletada_importar():
+    from flask import request, redirect, url_for, flash
+    from app.services import producao_coletada_service as svc
+
+    arquivo = request.files.get("arquivo_json")
+    if not arquivo or not arquivo.filename:
+        flash("Nenhum arquivo enviado.", "danger")
+        return redirect(url_for("pages.pcp_producao_coletada"))
+
+    if not arquivo.filename.endswith(".json"):
+        flash("Somente arquivos .json são aceitos.", "danger")
+        return redirect(url_for("pages.pcp_producao_coletada"))
+
+    try:
+        resultado = svc.importar_de_arquivo(arquivo.read())
+        flash(
+            f"Importação concluída: {resultado['salvos']} registros salvos"
+            + (f", {resultado['erros']} erros" if resultado["erros"] else "") + ".",
+            "success" if not resultado["erros"] else "warning",
+        )
+    except ValueError as e:
+        flash(str(e), "danger")
+    except Exception:
+        flash("Erro inesperado ao importar. Verifique o arquivo e tente novamente.", "danger")
+
+    return redirect(url_for("pages.pcp_producao_coletada"))
+
+
 @bp.route("/pcp/controle-ops")
 @login_required
 def pcp_controle_ops():
