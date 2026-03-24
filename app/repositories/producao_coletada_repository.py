@@ -85,13 +85,13 @@ def linhas_disponiveis(setor: str = "") -> list:
 
 
 def importar_registros(registros: list) -> dict:
-    salvos = 0
-    erros  = 0
+    if not registros:
+        return {"salvos": 0, "erros": 0}
 
-    with get_db() as conn:
-        with conn.cursor() as cur:
-            for r in registros:
-                try:
+    try:
+        with get_db() as conn:
+            with conn.cursor() as cur:
+                for r in registros:
                     cur.execute("""
                         INSERT INTO producao_coletada (
                             id, data, setor, linha, turno, semana, modelo, familia,
@@ -131,8 +131,6 @@ def importar_registros(registros: list) -> dict:
                         r.get("descricao_parada"),
                         r.get("observacao"),
                     ))
-                    salvos += 1
-                except Exception:
-                    erros += 1
-
-    return {"salvos": salvos, "erros": erros, "total": len(registros)}
+        return {"salvos": len(registros), "erros": 0}
+    except Exception:
+        return {"salvos": 0, "erros": len(registros)}

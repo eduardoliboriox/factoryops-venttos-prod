@@ -219,31 +219,33 @@ def pcp_producao_coletada():
 @login_required
 @admin_required
 def pcp_producao_coletada_importar():
-    from flask import request, redirect, url_for, flash
+    from flask import request, jsonify
     from app.services import producao_coletada_service as svc
 
     arquivo = request.files.get("arquivo_json")
     if not arquivo or not arquivo.filename:
-        flash("Nenhum arquivo enviado.", "danger")
-        return redirect(url_for("pages.pcp_producao_coletada"))
+        return jsonify({"erro": "Nenhum arquivo enviado."}), 400
 
     if not arquivo.filename.endswith(".json"):
-        flash("Somente arquivos .json são aceitos.", "danger")
-        return redirect(url_for("pages.pcp_producao_coletada"))
+        return jsonify({"erro": "Somente arquivos .json são aceitos."}), 400
 
     try:
-        resultado = svc.importar_de_arquivo(arquivo.read())
-        flash(
-            f"Importação concluída: {resultado['salvos']} registros salvos"
-            + (f", {resultado['erros']} erros" if resultado["erros"] else "") + ".",
-            "success" if not resultado["erros"] else "warning",
-        )
+        job_id = svc.iniciar_importacao(arquivo.read())
+        return jsonify({"job_id": job_id})
     except ValueError as e:
-        flash(str(e), "danger")
+        return jsonify({"erro": str(e)}), 400
     except Exception:
-        flash("Erro inesperado ao importar. Verifique o arquivo e tente novamente.", "danger")
+        return jsonify({"erro": "Erro inesperado ao processar o arquivo."}), 500
 
-    return redirect(url_for("pages.pcp_producao_coletada"))
+
+@bp.route("/pcp/producao-coletada/importar/progresso/<job_id>")
+@login_required
+@admin_required
+def pcp_producao_coletada_progresso(job_id):
+    from flask import jsonify
+    from app.services import producao_coletada_service as svc
+
+    return jsonify(svc.status_importacao(job_id))
 
 
 @bp.route("/pcp/controle-ops")
