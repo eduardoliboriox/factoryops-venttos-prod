@@ -68,7 +68,7 @@ def setores_disponiveis() -> list:
     with get_db() as conn:
         with conn.cursor() as cur:
             cur.execute("SELECT DISTINCT setor FROM producao_coletada WHERE setor IS NOT NULL ORDER BY setor")
-            return [r[0] for r in cur.fetchall()]
+            return [r["setor"] for r in cur.fetchall()]
 
 
 def linhas_disponiveis(setor: str = "") -> list:
@@ -81,7 +81,7 @@ def linhas_disponiveis(setor: str = "") -> list:
                 )
             else:
                 cur.execute("SELECT DISTINCT linha FROM producao_coletada WHERE linha IS NOT NULL ORDER BY linha")
-            return [r[0] for r in cur.fetchall()]
+            return [r["linha"] for r in cur.fetchall()]
 
 
 def importar_registros(registros: list) -> dict:
