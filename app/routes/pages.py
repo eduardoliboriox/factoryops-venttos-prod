@@ -194,11 +194,11 @@ def pcp_producao_coletada():
         kpis      = svc.totais(data_inicial, data_final, setor, linha, turno)
         filtros   = svc.filtros_disponiveis()
         erro      = None
-    except Exception:
+    except Exception as e:
         registros = []
         kpis      = {}
         filtros   = {"setores": [], "linhas": []}
-        erro      = "Tabela ainda não existe — execute o SQL de migração no banco."
+        erro      = str(e)
 
     return render_template(
         "pcp/producao_coletada.html",
