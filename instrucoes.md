@@ -1,11 +1,38 @@
 ### Objetivo - (tarefas para você executar, aplicando com CLAUDE.md)
 
-### 1. webscryping
-* Minha importação resultou em:
-Importação concluída: 128514 registros salvos.
+### 1. Como usar os dados de produção coletados
+* existem 3 turnos, 1º Turno, 2º Turno e 3º Turno, eu precisa informar os horarios de cada turno, para organizar como usar os dados de cada linha em cada turno, pra depois filtrar por modelo e usar isto em uma forma melhor de pcp usa pra organizar a produção.
+1º Turno:
+07:00 às 08:00
+08:00 às 09:00
+09:00 às 10:00
+10:00 às 11:00
+11:00 às 12:00
+12:00 às 13:00
+13:00 às 14:00
+14:00 às 15:00
+15:00 às 16:00
+16:00 às 16:48
 
-Tabela não encontrada. Execute o SQL de migração no banco antes de usar esta página.
-CREATE TABLE producao_coletada ...
+2º Turno:
+16:48 às 17:00
+17:00 às 18:00
+18:00 às 19:00
+19:00 às 20:00
+20:00 às 21:00
+21:00 às 22:00
+22:00 às 23:00
+23:00 às 00:00
+00:00 às 01:00
+01:00 às 02:00
+02:00 às 02:35
 
-### 2. melhoria na pagina pcp/producao-coletada
-* eu quero que o botão de importar fica na pagina e não como um botao la no block title da pagina. 
+3º Turno:
+02:35 às 03:00
+03:00 às 04:00
+04:00 às 05:00
+05:00 às 06:00
+06:00 às 07:00
+
+
+
