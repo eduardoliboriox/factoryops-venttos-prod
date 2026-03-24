@@ -34,5 +34,9 @@
 05:00 às 06:00
 06:00 às 07:00
 
+### 2. meLHORIA NA IMPORTAÇÃO, 
+* na pagina pcp/producao-coletada, coloque o passo a passo, para eu coletar o dados json por data, sem direitinho, porque eu sei que abri o cmd no pc, coloque cd "C:\Users\eduardo.liborio\Desktop\Programação", depois eu abri o cd smt-manager-venttos-prod e depois python coletor.py --de 2026-03-01 --ate 2026-03-24 --json dados.json, ao baixar ficou o dados json na raiz do meu repo, quanto mais eu vou importanto, vai ficar uma bagunça, com muitos dados json, seria bom ter uma pasta dentro do repo, somente pra isto.
+* no sistma, que quero selecinar, eu quero baixar de x data até x outra data, ai apertar confirmar e o sistema me resulta python coletor.py --de 2026-03-01 --ate 2026-03-24 --json dados.json com um botao de copiar, pra eu ir direto no cmd e colar.
+, 
 
 
