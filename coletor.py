@@ -11,24 +11,28 @@ Uso:
 
     python coletor.py --importar dados.json
         → lê o arquivo e salva no banco (rodar no PC com internet)
+
+Variáveis de ambiente necessárias (arquivo .env ou ambiente):
+    DATABASE_URL     → string de conexão PostgreSQL Railway
+    VENTTOS_API_URL  → URL base da API local (padrão: http://192.168.1.35:5000/api/producao)
 """
 
+import os
 import sys
 import json
 import requests
 import psycopg
 from datetime import datetime, date
-from flask import Flask, jsonify, request
+
+from dotenv import load_dotenv
+load_dotenv()
 
 # ─────────────────────────────────────────────
-# CONFIGURAÇÃO — ajuste aqui se mudar
+# CONFIGURAÇÃO — lida do ambiente
 # ─────────────────────────────────────────────
-VENTTOS_API  = "http://192.168.1.35:5000/api/producao"
-PORTA_PCP    = 5001
-DATABASE_URL = "postgresql://postgres:BBxAZvsZUNZDwUhMjUtNSsgDoqskKTwK@caboose.proxy.rlwy.net:11094/railway"
+VENTTOS_API  = os.environ.get("VENTTOS_API_URL", "http://192.168.1.35:5000/api/producao")
+DATABASE_URL = os.environ.get("DATABASE_URL", "")
 # ─────────────────────────────────────────────
-
-app = Flask(__name__)
 
 
 def _agora() -> str:
@@ -40,10 +44,17 @@ def buscar_producao(data_inicial: str, data_final: str) -> list:
     try:
         resp = requests.get(VENTTOS_API, params=params, timeout=30)
         resp.raise_for_status()
-        return [_normalizar(r) for r in resp.json()]
+        todos = [_normalizar(r) for r in resp.json()]
+        return [r for r in todos if _data_no_intervalo(r["data"], data_inicial, data_final)]
     except Exception as e:
         print(f"[{_agora()}] Erro ao buscar produção: {e}")
         return []
+
+
+def _data_no_intervalo(data: str, data_inicial: str, data_final: str) -> bool:
+    if not data:
+        return False
+    return data_inicial <= data <= data_final
 
 
 def _normalizar(r: dict) -> dict:
@@ -81,6 +92,9 @@ def _extrair_hora(iso: str) -> str:
 
 def salvar_no_banco(registros: list) -> int:
     if not registros:
+        return 0
+    if not DATABASE_URL:
+        print(f"[{_agora()}] Erro: DATABASE_URL não configurada. Defina no arquivo .env.")
         return 0
 
     salvos = 0
@@ -123,59 +137,6 @@ def salvar_no_banco(registros: list) -> int:
     except Exception as e:
         print(f"[{_agora()}] Erro ao salvar no banco: {e}")
         return 0
-
-
-def _resumir(registros: list) -> list:
-    resumo = {}
-    for r in registros:
-        chave = f"{r['setor']} | {r['linha']}"
-        if chave not in resumo:
-            resumo[chave] = {
-                "setor": r["setor"], "linha": r["linha"],
-                "producao_total": 0, "perda_total": 0,
-                "defeitos_total": 0, "registros": 0,
-            }
-        resumo[chave]["producao_total"] += r["producao_real"] or 0
-        resumo[chave]["perda_total"]    += r["qtd_perda"] or 0
-        resumo[chave]["defeitos_total"] += r["defeitos"] or 0
-        resumo[chave]["registros"]      += 1
-    return list(resumo.values())
-
-
-# ─────────────────────────────────────────────
-# ENDPOINTS FLASK (debug local)
-# ─────────────────────────────────────────────
-
-@app.route("/api/producao", methods=["GET"])
-def producao():
-    data_inicial = request.args.get("dataInicial", str(date.today()))
-    data_final   = request.args.get("dataFinal",   str(date.today()))
-    setor        = request.args.get("setor", "").upper()
-    linha        = request.args.get("linha", "").upper()
-    turno        = request.args.get("turno", "")
-
-    dados = buscar_producao(data_inicial, data_final)
-    if setor: dados = [d for d in dados if d["setor"].upper() == setor]
-    if linha: dados = [d for d in dados if d["linha"].upper() == linha]
-    if turno: dados = [d for d in dados if turno.lower() in d["turno"].lower()]
-
-    return jsonify({"data_inicial": data_inicial, "data_final": data_final,
-                    "total": len(dados), "coletado_em": _agora(), "dados": dados})
-
-
-@app.route("/api/coletar", methods=["GET"])
-def coletar_e_salvar():
-    data_inicial = request.args.get("dataInicial", str(date.today()))
-    data_final   = request.args.get("dataFinal",   str(date.today()))
-    dados  = buscar_producao(data_inicial, data_final)
-    salvos = salvar_no_banco(dados)
-    return jsonify({"data_inicial": data_inicial, "data_final": data_final,
-                    "coletado_em": _agora(), "buscados": len(dados), "salvos_no_banco": salvos})
-
-
-@app.route("/api/status", methods=["GET"])
-def status():
-    return jsonify({"ok": True, "servidor": VENTTOS_API, "hora_atual": _agora()})
 
 
 # ─────────────────────────────────────────────
@@ -226,10 +187,8 @@ if __name__ == "__main__":
             print(f"  Salvos no banco: {salvar_no_banco(dados)}")
         sys.exit(0)
 
-    # Modo padrão: coleta hoje e sobe Flask
+    # Modo padrão: coleta hoje e salva no banco
     hoje  = str(date.today())
     dados = buscar_producao(hoje, hoje)
     print(f"  Coletados hoje: {len(dados)} registros")
     salvar_no_banco(dados)
-    print(f"  Flask rodando em: http://localhost:{PORTA_PCP}")
-    app.run(host="0.0.0.0", port=PORTA_PCP, debug=False)

@@ -11,6 +11,9 @@
     <span class="badge text-bg-danger me-1" style="font-size:0.7rem;padding:5px 8px;">
       <i class="bi bi-shield-lock"></i> Admin
     </span>
+    <button class="btn-header-icon" data-bs-toggle="modal" data-bs-target="#modalImportar" title="Importar JSON">
+      <i class="bi bi-upload"></i>
+    </button>
     <a href="{{ url_for('pages.inicio') }}" class="btn-header-icon" title="Voltar">
       <i class="bi bi-arrow-left"></i>
     </a>
@@ -23,6 +26,16 @@
 
 {% block content %}
 <div class="container-fluid">
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+    <div class="alert alert-{{ category }} alert-dismissible d-flex align-items-center gap-2 mb-4" role="alert">
+      <i class="bi bi-{% if category == 'success' %}check-circle-fill{% elif category == 'warning' %}exclamation-triangle-fill{% else %}x-circle-fill{% endif %} fs-5 flex-shrink-0"></i>
+      <div>{{ message }}</div>
+      <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+  {% endwith %}
 
   {% if erro %}
   <div class="alert alert-warning d-flex align-items-center gap-2 mb-4">
@@ -189,8 +202,7 @@
         <div class="fw-semibold">Nenhum registro encontrado</div>
         <div class="small mt-1">
           {% if not erro %}
-          Execute o coletor para importar dados:
-          <code>python coletor.py</code>
+          Use o botão <i class="bi bi-upload"></i> no cabeçalho para importar um arquivo <code>.json</code> coletado.
           {% endif %}
         </div>
       </div>
@@ -198,5 +210,44 @@
     </div>
   </div>
 
+</div>
+
+<!-- Modal: Importar JSON -->
+<div class="modal fade" id="modalImportar" tabindex="-1" aria-labelledby="modalImportarLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content" style="border-radius:12px;border-color:var(--border);">
+      <div class="modal-header border-bottom" style="border-color:var(--border) !important;">
+        <h5 class="modal-title fw-semibold" id="modalImportarLabel">
+          <i class="bi bi-upload me-2 text-primary"></i>Importar dados coletados
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST" action="{{ url_for('pages.pcp_producao_coletada_importar') }}" enctype="multipart/form-data">
+        <div class="modal-body">
+          <p class="text-muted small mb-3">
+            Selecione o arquivo <code>.json</code> gerado pelo <code>coletor.py</code>.<br>
+            Registros existentes serão atualizados; novos serão inseridos.
+          </p>
+          <div class="mb-3">
+            <label class="form-label fw-semibold" style="font-size:0.8rem;">Arquivo JSON</label>
+            <input type="file" class="form-control" name="arquivo_json" accept=".json" required>
+          </div>
+          <div class="alert alert-info d-flex gap-2 align-items-start py-2 px-3 mb-0" style="font-size:0.8rem;border-radius:8px;">
+            <i class="bi bi-info-circle-fill flex-shrink-0 mt-1"></i>
+            <div>
+              Para gerar o arquivo, execute no PC da fábrica:<br>
+              <code>python coletor.py --de 2026-03-01 --ate 2026-03-24 --json dados.json</code>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer border-top" style="border-color:var(--border) !important;">
+          <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary btn-sm fw-semibold">
+            <i class="bi bi-upload me-1"></i>Importar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
 </div>
 {% endblock %}
