@@ -11,9 +11,6 @@
     <span class="badge text-bg-danger me-1" style="font-size:0.7rem;padding:5px 8px;">
       <i class="bi bi-shield-lock"></i> Admin
     </span>
-    <button class="btn-header-icon" data-bs-toggle="modal" data-bs-target="#modalImportar" title="Importar JSON">
-      <i class="bi bi-upload"></i>
-    </button>
     <a href="{{ url_for('pages.inicio') }}" class="btn-header-icon" title="Voltar">
       <i class="bi bi-arrow-left"></i>
     </a>
@@ -30,10 +27,7 @@
   {% if erro %}
   <div class="alert alert-warning d-flex align-items-center gap-2 mb-4">
     <i class="bi bi-exclamation-triangle-fill fs-5"></i>
-    <div>
-      <strong>Tabela não encontrada.</strong> Execute o SQL de migração no banco antes de usar esta página.<br>
-      <code class="small">CREATE TABLE producao_coletada ...</code>
-    </div>
+    <div><strong>Erro ao carregar dados:</strong> {{ erro }}</div>
   </div>
   {% endif %}
 
@@ -130,7 +124,12 @@
             {% if turno %}&nbsp;·&nbsp;{{ turno }}{% endif %}
           </div>
         </div>
-        <div class="text-muted small fw-semibold">{{ registros | length }} registros</div>
+        <div class="d-flex align-items-center gap-3">
+          <span class="text-muted small fw-semibold">{{ registros | length }} registros</span>
+          <button class="btn btn-primary btn-sm fw-semibold" data-bs-toggle="modal" data-bs-target="#modalImportar">
+            <i class="bi bi-upload me-1"></i>Importar JSON
+          </button>
+        </div>
       </div>
 
       {% if registros %}
