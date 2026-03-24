@@ -248,6 +248,51 @@ def pcp_producao_coletada_progresso(job_id):
     return jsonify(svc.status_importacao(job_id))
 
 
+@bp.route("/pcp/turnos", methods=["GET", "POST"])
+@login_required
+@admin_required
+def pcp_turnos():
+    from flask import request, flash, redirect, url_for
+    from app.services import turno_config_service as svc
+
+    erro = None
+    turnos = {}
+
+    if request.method == "POST":
+        acao = request.form.get("acao")
+        if acao == "adicionar":
+            try:
+                svc.adicionar(
+                    request.form.get("turno", ""),
+                    request.form.get("hora_inicio", ""),
+                    request.form.get("hora_fim", ""),
+                )
+                flash("Intervalo adicionado.", "success")
+            except ValueError as e:
+                flash(str(e), "danger")
+            except Exception:
+                flash("Erro ao salvar. Verifique se a tabela foi criada.", "danger")
+        elif acao == "excluir":
+            try:
+                svc.excluir(int(request.form.get("id")))
+                flash("Intervalo removido.", "success")
+            except Exception:
+                flash("Erro ao remover.", "danger")
+        return redirect(url_for("pages.pcp_turnos"))
+
+    try:
+        turnos = svc.listar_por_turno()
+    except Exception as e:
+        erro = str(e)
+
+    return render_template(
+        "pcp/turnos.html",
+        active_menu="pcp_turnos",
+        turnos=turnos,
+        erro=erro,
+    )
+
+
 @bp.route("/pcp/controle-ops")
 @login_required
 def pcp_controle_ops():

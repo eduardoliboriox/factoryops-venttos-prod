@@ -31,6 +31,55 @@
   </div>
   {% endif %}
 
+  <!-- Gerador de Comando -->
+  <div class="card mb-4" style="border-color:var(--border);border-radius:12px;">
+    <div class="card-header py-2 px-3 d-flex align-items-center gap-2"
+         style="border-color:var(--border);border-radius:12px 12px 0 0;background:var(--card);">
+      <i class="bi bi-terminal text-primary"></i>
+      <span class="fw-semibold" style="font-size:0.9rem;">Coletar dados do PC da fábrica</span>
+    </div>
+    <div class="card-body p-3">
+      <div class="row g-3 align-items-end">
+        <div class="col-12 col-md-5">
+          <p class="text-muted small mb-2">
+            Passo a passo: abra o <strong>CMD</strong>, navegue até o repositório e execute o comando gerado abaixo.
+          </p>
+          <div class="bg-dark text-white rounded px-3 py-2 small font-monospace mb-2" style="font-size:0.78rem;border-radius:8px !important;">
+            cd "C:\Users\eduardo.liborio\Desktop\Programação\smt-manager-venttos-prod"
+          </div>
+        </div>
+        <div class="col-6 col-md-2">
+          <label class="form-label fw-semibold" style="font-size:0.8rem;">Data inicial</label>
+          <input type="date" class="form-control form-control-sm" id="coletaDe">
+        </div>
+        <div class="col-6 col-md-2">
+          <label class="form-label fw-semibold" style="font-size:0.8rem;">Data final</label>
+          <input type="date" class="form-control form-control-sm" id="coletaAte">
+        </div>
+        <div class="col-12 col-md-3 d-flex gap-2 align-items-end">
+          <button class="btn btn-outline-primary btn-sm fw-semibold flex-fill" onclick="gerarComando()">
+            <i class="bi bi-play-fill me-1"></i>Gerar comando
+          </button>
+        </div>
+      </div>
+      <div id="blocoComando" style="display:none;" class="mt-3">
+        <label class="form-label fw-semibold" style="font-size:0.8rem;">Comando gerado — copie e execute no CMD:</label>
+        <div class="d-flex gap-2 align-items-stretch">
+          <input type="text" class="form-control form-control-sm font-monospace" id="comandoGerado"
+                 readonly style="font-size:0.8rem;background:#1e293b;color:#e2e8f0;border-radius:8px;">
+          <button class="btn btn-primary btn-sm fw-semibold px-3" onclick="copiarComando()" title="Copiar">
+            <i class="bi bi-clipboard" id="iconeCopiar"></i>
+          </button>
+        </div>
+        <div class="text-muted small mt-2">
+          <i class="bi bi-info-circle me-1"></i>
+          O arquivo será salvo em <code>coletas/</code> dentro do repositório. Após coletar, use o botão
+          <strong>Importar JSON</strong> abaixo para enviar ao banco.
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Filtros -->
   <div class="card mb-4">
     <div class="card-body p-3">
@@ -402,5 +451,31 @@
     document.getElementById("percentualProgresso").textContent = "0%";
   });
 }());
+
+(function () {
+  const hoje = new Date().toISOString().slice(0, 10);
+  document.getElementById("coletaDe").value = hoje;
+  document.getElementById("coletaAte").value = hoje;
+}());
+
+function gerarComando() {
+  const de  = document.getElementById("coletaDe").value;
+  const ate = document.getElementById("coletaAte").value;
+  if (!de || !ate) { alert("Selecione as datas."); return; }
+  const arquivo = "coletas/dados_" + de + "_" + ate + ".json";
+  const cmd = "python coletor.py --de " + de + " --ate " + ate + " --json " + arquivo;
+  document.getElementById("comandoGerado").value = cmd;
+  document.getElementById("blocoComando").style.display = "";
+  document.getElementById("iconeCopiar").className = "bi bi-clipboard";
+}
+
+function copiarComando() {
+  const input = document.getElementById("comandoGerado");
+  navigator.clipboard.writeText(input.value).then(function () {
+    const icone = document.getElementById("iconeCopiar");
+    icone.className = "bi bi-clipboard-check";
+    setTimeout(function () { icone.className = "bi bi-clipboard"; }, 2000);
+  });
+}
 </script>
 {% endblock %}
