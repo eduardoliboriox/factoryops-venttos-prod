@@ -47,7 +47,7 @@
   'pcp_controle_ops','pcp_apontamento','pcp_planejamento','pcp_entregas','pcp_producao_coletada'
 ] %}
 {% set _config_menus = [
-  'config_turnos','config_linhas'
+  'config_turnos','config_linhas','config_paradas'
 ] %}
 {% set _sup_menus = [
   'suporte_centro_conhecimento','suporte_ouvidoria','suporte_especializado'
@@ -89,6 +89,7 @@
       "pcp_producao_coletada": "Produção Coletada",
       "config_turnos": "Turnos",
       "config_linhas": "Linhas e Setores",
+      "config_paradas": "Paradas de Linha",
       "suporte_centro_conhecimento": "Centro de Conhecimento",
       "suporte_ouvidoria": "Ouvidoria",
       "suporte_especializado": "Suporte Especializado",
@@ -279,6 +280,10 @@
             <a href="{{ url_for('pages.config_linhas') }}"
                class="{% if active_menu == 'config_linhas' %}active{% endif %}">
               <i class="bi bi-diagram-2"></i> Linhas e Setores
+            </a>
+            <a href="{{ url_for('pages.config_paradas') }}"
+               class="{% if active_menu == 'config_paradas' %}active{% endif %}">
+              <i class="bi bi-pause-circle"></i> Paradas de Linha
             </a>
           </div>
         </div>

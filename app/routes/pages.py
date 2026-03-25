@@ -280,14 +280,14 @@ def config_turnos():
                 flash("Intervalo adicionado.", "success")
             except ValueError as e:
                 flash(str(e), "danger")
-            except Exception:
-                flash("Erro ao salvar. Verifique se a tabela foi criada.", "danger")
+            except Exception as e:
+                flash(str(e), "danger")
         elif acao == "excluir":
             try:
                 svc.excluir(int(request.form.get("id")))
                 flash("Intervalo removido.", "success")
-            except Exception:
-                flash("Erro ao remover.", "danger")
+            except Exception as e:
+                flash(str(e), "danger")
         return redirect(url_for("pages.config_turnos"))
 
     try:
@@ -361,6 +361,51 @@ def config_linhas_remover():
         return jsonify({"ok": True})
     except Exception as e:
         return jsonify({"erro": str(e)}), 500
+
+
+@bp.route("/config/paradas", methods=["GET", "POST"])
+@login_required
+@admin_required
+def config_paradas():
+    from flask import request, flash, redirect, url_for
+    from app.services import parada_config_service as svc
+
+    erro    = None
+    paradas = {}
+    opcoes  = {}
+
+    if request.method == "POST":
+        acao = request.form.get("acao")
+        if acao == "adicionar":
+            try:
+                svc.adicionar(request.form)
+                flash("Parada adicionada.", "success")
+            except ValueError as e:
+                flash(str(e), "danger")
+            except Exception as e:
+                flash(str(e), "danger")
+        elif acao == "excluir":
+            try:
+                svc.excluir(int(request.form.get("id")))
+                flash("Parada removida.", "success")
+            except Exception as e:
+                flash(str(e), "danger")
+        return redirect(url_for("pages.config_paradas"))
+
+    try:
+        paradas = svc.listar_por_setor()
+        opcoes  = svc.opcoes_linha()
+    except Exception as e:
+        erro = str(e)
+
+    return render_template(
+        "config/paradas.html",
+        active_menu="config_paradas",
+        paradas=paradas,
+        opcoes=opcoes,
+        tipos=["INTERVALO", "GINASTICA", "DDS", "ALMOCO", "SETUP", "OUTROS"],
+        erro=erro,
+    )
 
 
 # ─── PCP ─────────────────────────────────────────────────────────────────────
