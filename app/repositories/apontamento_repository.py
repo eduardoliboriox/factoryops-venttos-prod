@@ -94,11 +94,13 @@ def ops_abertas(setor: str = "") -> list:
         with conn.cursor(row_factory=dict_row) as cur:
             cur.execute(f"""
                 SELECT id, numero_op, produto, filial, setor, fase_modelo,
-                       quantidade, produzido, saldo
+                       quantidade, produzido, saldo, top_feito, bottom_feito
                 FROM (
                     SELECT
                         co.id, co.numero_op, co.produto, co.filial, co.setor, co.fase_modelo,
                         co.quantidade, co.produzido,
+                        COALESCE(SUM(CASE WHEN a.fase = 'TOP'    THEN a.quantidade ELSE 0 END), 0) AS top_feito,
+                        COALESCE(SUM(CASE WHEN a.fase = 'BOTTOM' THEN a.quantidade ELSE 0 END), 0) AS bottom_feito,
                         CASE WHEN co.fase_modelo = 'AMBAS' THEN
                             co.quantidade - LEAST(
                                 COALESCE(SUM(CASE WHEN a.fase = 'TOP'    THEN a.quantidade ELSE 0 END), 0),

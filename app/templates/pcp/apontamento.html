@@ -394,9 +394,13 @@ function preencherSelectOP(termo, setor) {
     if (setor && op.setor && op.setor !== setor) return;
     if (lower && !op.numero_op.toLowerCase().includes(lower) && !op.produto.toLowerCase().includes(lower)) return;
     const opt = document.createElement("option");
-    opt.value           = op.id;
-    opt.dataset.produto = op.produto;
-    opt.dataset.saldo   = op.saldo;
+    opt.value                = op.id;
+    opt.dataset.produto      = op.produto;
+    opt.dataset.saldo        = op.saldo;
+    opt.dataset.faseModelo   = op.fase_modelo || "";
+    opt.dataset.quantidade   = op.quantidade || 0;
+    opt.dataset.topFeito     = op.top_feito || 0;
+    opt.dataset.bottomFeito  = op.bottom_feito || 0;
     opt.textContent     = op.numero_op + " · " + op.produto + " · Saldo: " + Number(op.saldo).toLocaleString("pt-BR");
     sel.appendChild(opt);
   });
@@ -428,7 +432,7 @@ document.getElementById("selectOP").addEventListener("change", function () {
   const modeloBate  = produto.trim().toUpperCase() === modeloAtual.trim().toUpperCase();
 
   document.getElementById("opProduto").textContent = produto;
-  document.getElementById("opSaldo").textContent   = Number(opt.dataset.saldo).toLocaleString("pt-BR");
+  document.getElementById("opSaldo").textContent   = Number(saldoEfetivo(opt)).toLocaleString("pt-BR");
   box.style.display = "";
 
   if (!modeloBate) {
@@ -441,6 +445,26 @@ document.getElementById("selectOP").addEventListener("change", function () {
   verificarSaldo();
 });
 
+function saldoEfetivo(opt) {
+  if (!opt || !opt.value) return 0;
+  if (opt.dataset.faseModelo === "AMBAS" && _setorAtivo === "SMD") {
+    const fase = document.querySelector('input[name="modalFase"]:checked');
+    if (fase && fase.value === "TOP")
+      return parseInt(opt.dataset.quantidade || 0) - parseInt(opt.dataset.topFeito || 0);
+    if (fase && fase.value === "BOTTOM")
+      return parseInt(opt.dataset.quantidade || 0) - parseInt(opt.dataset.bottomFeito || 0);
+  }
+  return parseInt(opt.dataset.saldo || 0);
+}
+
+function atualizarSaldoExibido() {
+  const sel = document.getElementById("selectOP");
+  if (!sel.value) return;
+  const opt = sel.options[sel.selectedIndex];
+  document.getElementById("opSaldo").textContent = Number(saldoEfetivo(opt)).toLocaleString("pt-BR");
+  verificarSaldo();
+}
+
 function verificarSaldo() {
   const avSaldo   = document.getElementById("avisoSaldo");
   const avSaldoTx = document.getElementById("avisoSaldoTexto");
@@ -448,7 +472,7 @@ function verificarSaldo() {
   if (!sel.value) { avSaldo.style.display = "none"; return; }
 
   const opt        = sel.options[sel.selectedIndex];
-  const saldo      = parseInt(opt.dataset.saldo || "0");
+  const saldo      = saldoEfetivo(opt);
   const quantidade = parseInt(document.getElementById("inputQuantidade").value || "0");
 
   if (quantidade > 0 && saldo >= 0 && quantidade > saldo) {
@@ -458,6 +482,10 @@ function verificarSaldo() {
     avSaldo.style.display = "none";
   }
 }
+
+document.querySelectorAll('input[name="modalFase"]').forEach(function(radio) {
+  radio.addEventListener("change", atualizarSaldoExibido);
+});
 
 function confirmarVincular() {
   const opId = document.getElementById("selectOP").value;
