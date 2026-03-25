@@ -192,7 +192,7 @@ def pcp_producao_coletada():
     try:
         registros = svc.listar(data_inicial, data_final, setor, linha, turno)
         kpis      = svc.totais(data_inicial, data_final, setor, linha, turno)
-        filtros   = svc.filtros_disponiveis(setor)
+        filtros   = svc.filtros_disponiveis()
         erro      = None
     except Exception as e:
         registros = []
