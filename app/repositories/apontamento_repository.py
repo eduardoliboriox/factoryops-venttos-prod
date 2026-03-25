@@ -153,7 +153,7 @@ def vincular(data: str, turno: str, modelo: str, linha: str, op_id: int, quantid
             """, (op_id, data, turno, modelo, linha, quantidade, fase or None, lote or None))
             cur.execute("SELECT fase_modelo FROM controle_ops WHERE id = %s", (op_id,))
             op_row = cur.fetchone()
-            fase_modelo = op_row[0] if op_row else None
+            fase_modelo = op_row["fase_modelo"] if op_row else None
             if fase_modelo == "AMBAS":
                 cur.execute("""
                     UPDATE controle_ops SET produzido = (
