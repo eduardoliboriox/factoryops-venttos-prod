@@ -330,9 +330,12 @@
         <input type="hidden" id="hiddenSetor">
         <input type="hidden" id="hiddenProducao">
       </div>
+      <div id="erroModal" class="mx-3 mb-2 alert alert-danger py-2 px-3" style="display:none;font-size:0.82rem;border-radius:8px;">
+        <i class="bi bi-x-circle-fill me-1"></i><span id="erroModalTexto"></span>
+      </div>
       <div class="modal-footer border-top" style="border-color:var(--border) !important;">
         <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
-        <button type="button" class="btn btn-primary btn-sm fw-semibold" onclick="confirmarVincular()">
+        <button type="button" class="btn btn-primary btn-sm fw-semibold" id="btnVincular" onclick="confirmarVincular()">
           <i class="bi bi-link-45deg me-1"></i>Vincular
         </button>
       </div>
@@ -382,6 +385,8 @@ function abrirVincular(btn) {
     document.querySelectorAll('input[name="modalFase"]').forEach(r => r.checked = false);
   }
 
+  document.getElementById("erroModal").style.display = "none";
+  document.getElementById("btnVincular").disabled = false;
   preencherSelectOP("", _setorAtivo);
   new bootstrap.Modal(document.getElementById("modalVincular")).show();
 }
@@ -501,6 +506,11 @@ function confirmarVincular() {
     fase = checkedFase.value;
   }
 
+  const btnVincular = document.getElementById("btnVincular");
+  const erroModal   = document.getElementById("erroModal");
+  erroModal.style.display = "none";
+  btnVincular.disabled = true;
+
   fetch(URL_VINCULAR, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -518,15 +528,21 @@ function confirmarVincular() {
   })
   .then(r => r.json())
   .then(data => {
-    bootstrap.Modal.getInstance(document.getElementById("modalVincular")).hide();
     if (data.ok) {
+      bootstrap.Modal.getInstance(document.getElementById("modalVincular")).hide();
       mostrarAlerta("success", "OP vinculada com sucesso.");
       setTimeout(() => location.reload(), 800);
     } else {
-      mostrarAlerta("danger", data.erro || "Erro ao vincular.");
+      document.getElementById("erroModalTexto").textContent = data.erro || "Erro ao vincular.";
+      erroModal.style.display = "";
+      btnVincular.disabled = false;
     }
   })
-  .catch(() => mostrarAlerta("danger", "Erro de conexão."));
+  .catch(() => {
+    document.getElementById("erroModalTexto").textContent = "Erro de conexão. Tente novamente.";
+    erroModal.style.display = "";
+    btnVincular.disabled = false;
+  });
 }
 
 function desvincular(apontamentoId, label) {
