@@ -2,13 +2,16 @@ from app.extensions import get_db
 from psycopg.rows import dict_row
 
 
-def listar(filial: str = "", status: str = "") -> list:
+def listar(filial: str = "", status: str = "", setor: str = "") -> list:
     filtros = ["1=1"]
     params  = []
 
     if filial:
         filtros.append("filial = %s")
         params.append(filial)
+    if setor:
+        filtros.append("setor = %s")
+        params.append(setor)
     if status == "aberta":
         filtros.append("quantidade > produzido")
     elif status == "concluida":
@@ -19,7 +22,7 @@ def listar(filial: str = "", status: str = "") -> list:
         with conn.cursor(row_factory=dict_row) as cur:
             cur.execute(f"""
                 SELECT
-                    id, filial, numero_op, produto, descricao, armazem,
+                    id, filial, numero_op, produto, descricao, armazem, setor,
                     quantidade, produzido,
                     (quantidade - produzido) AS saldo,
                     pedido_venda, item_pedido_venda, criado_em
@@ -35,19 +38,42 @@ def inserir(data: dict) -> None:
         with conn.cursor() as cur:
             cur.execute("""
                 INSERT INTO controle_ops (
-                    filial, numero_op, produto, descricao, armazem,
+                    filial, numero_op, produto, descricao, armazem, setor,
                     quantidade, pedido_venda, item_pedido_venda
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
             """, (
                 data["filial"],
                 data["numero_op"],
                 data["produto"],
                 data.get("descricao") or None,
                 data.get("armazem") or None,
+                data.get("setor") or None,
                 data["quantidade"],
                 data.get("pedido_venda") or None,
                 data.get("item_pedido_venda") or None,
             ))
+
+
+def inserir_lote(registros: list[dict]) -> None:
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            for data in registros:
+                cur.execute("""
+                    INSERT INTO controle_ops (
+                        filial, numero_op, produto, descricao, armazem, setor,
+                        quantidade, pedido_venda, item_pedido_venda
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """, (
+                    data["filial"],
+                    data["numero_op"],
+                    data["produto"],
+                    data.get("descricao") or None,
+                    data.get("armazem") or None,
+                    data.get("setor") or None,
+                    data["quantidade"],
+                    data.get("pedido_venda") or None,
+                    data.get("item_pedido_venda") or None,
+                ))
 
 
 def filiais_disponiveis() -> list:

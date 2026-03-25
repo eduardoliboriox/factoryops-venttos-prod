@@ -376,11 +376,13 @@ def pcp_controle_ops():
     filiais = []
     filial  = request.args.get("filial", "")
     status  = request.args.get("status", "")
+    setor   = request.args.get("setor",  "")
 
     if request.method == "POST":
         try:
             svc.cadastrar(request.form)
-            flash("OP cadastrada com sucesso.", "success")
+            roteiro = request.form.get("roteiro_padrao") == "1"
+            flash("Roteiro criado: 3 OPs cadastradas (PTH, IM, SMD)." if roteiro else "OP cadastrada com sucesso.", "success")
         except ValueError as e:
             flash(str(e), "danger")
         except Exception:
@@ -388,7 +390,7 @@ def pcp_controle_ops():
         return redirect(url_for("pages.pcp_controle_ops"))
 
     try:
-        ops     = svc.listar(filial, status)
+        ops     = svc.listar(filial, status, setor)
         filiais = svc.filiais_disponiveis()
     except Exception as e:
         erro = str(e)
@@ -400,6 +402,7 @@ def pcp_controle_ops():
         filiais=filiais,
         filial=filial,
         status=status,
+        setor=setor,
         erro=erro,
     )
 
@@ -420,7 +423,7 @@ def pcp_apontamento():
 
     try:
         apontamentos = svc.listar_agrupado(data_inicial, data_final, setor, linha, turno)
-        ops          = svc.ops_abertas()
+        ops          = svc.ops_abertas("")
         filtros      = pc_svc.filtros_disponiveis(setor)
         erro         = None
     except Exception as e:
@@ -450,7 +453,7 @@ def pcp_apontamento_vincular():
     from flask import request, jsonify
     from app.services import apontamento_service as svc
 
-    data     = request.get_json(silent=True) or {}
+    data = request.get_json(silent=True) or {}
     try:
         svc.vincular(
             data.get("data", ""),
@@ -459,6 +462,9 @@ def pcp_apontamento_vincular():
             data.get("linha", ""),
             int(data.get("op_id", 0)),
             int(data.get("quantidade", 0)),
+            setor=data.get("setor", ""),
+            fase=data.get("fase") or None,
+            lote=data.get("lote") or None,
         )
         return jsonify({"ok": True})
     except (ValueError, Exception) as e:
