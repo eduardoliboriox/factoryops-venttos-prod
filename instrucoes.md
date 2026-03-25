@@ -1,5 +1,11 @@
 ### Objetivo - (tarefas para você executar, aplicando com CLAUDE.md)
 
 ### 1. Saldo Considerando fases no smt
-* na pagina controle de ops, eu tenho uma op cadastrada, EBRJFB01001,EBRJFB01002 e EBRJFB01003, sao referente ao padrao de roteiro, do modelo conjunto 9, com saldo de 500 para cada parte e esse modelo é top e bottom. Quando eu fui na pagina de apontamento, apertei em vincular e lancei 470 no TOP, a op que tem 500 ficou 30. mas eu preciso que o sistema entenda nessa parte que se tivesse marcado o BOTTOM, a op deveria aparecer como 500, e lançar a o que foi produção, pq no caso de modelos que sao duas vezes como no smt isto vai fazer diferença, por exemplo, se passar 470 outro dia e for vincular...mas o saldo so tem 30..como vai ficar.
-* o sistema precisa bloquear quando nao for o mesmo modelo e quando nao tiver saldo.
+* na pagina controle de ops, eu tenho somente uma op cadastrado, roteiro padrão:
+EBRTP602003	1	SMD	AMBAS	CONJUNTO 9 - PB320	PLACA DE CIRCUITO IMPRESSO MONTADA DE USO EM INFORMÁTICA	5	5000	0	5000	—	Aberta	
+EBRTP602002	1	IM	AMBAS	CONJUNTO 9 - PB320	PLACA DE CIRCUITO IMPRESSO MONTADA DE USO EM INFORMÁTICA	5	5000	0	5000	—	Aberta	
+EBRTP602001	1	PTH	AMBAS	CONJUNTO 9 - PB320	PLACA DE CIRCUITO IMPRESSO MONTADA DE USO EM INFORMÁTICA	5	5000	0	5000	—	Aberta
+* Agora vou na pagina de apontamento e busco uma produção do mesmo modelo:
+  2026-03-25	1º Turno	SMD	SMD-05	CONJUNTO 9 - PB 320	HARMAN DA AMAZONIA INDUSTRIA ELETRONICA E PARTICIPACOES LTDA	348	btn vincular
+  contudo, apesar de ter vindo como 348, o sistema de onde eu pego a informação não separa fase, então eu sei porque mandaram o quadro de produção que é 200 da fase top e 148 da fase bottom.
+eu vou abrir com o botão "vincular" e vou lançar o vinculo de 200 na fase top, como a parte do SMD é especial em relação aos demais roteiros de setor, a op que é de 5000, considerando que nesse caso o modelo é top e bottom, como mostra la na pagina controle de ops, eu vou abrir o vincular, vou marcar top, vou escolher a op, e vou vincular, o saldo para top deve ser 4.800, mas quando eu abrir o vincular e selecionar BOTTOM, deve está com 5000 porque eu ainda não gastei nenhum saldo bottom. depois que eu vincular top, vou vincular bottom. mas não está pegando. 
