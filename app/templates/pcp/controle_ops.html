@@ -1,5 +1,5 @@
 {% extends "layouts/app.html" %}
-{% block title %}Controle de OPs{% endblock %}
+{% block title %}PCP · Controle de OPs{% endblock %}
 
 {% block page_title %}
 <div class="page-header">
@@ -8,9 +8,11 @@
     <h1 class="page-header-name">Controle de OPs</h1>
   </div>
   <div class="page-header-actions">
-    <a href="{{ url_for('pages.inicio') }}" class="btn-header-icon" title="Voltar">
-      <i class="bi bi-arrow-left"></i>
-    </a>
+    <button class="btn btn-primary btn-sm fw-semibold"
+            style="border-radius:6px;"
+            data-bs-toggle="modal" data-bs-target="#modalNovaOP">
+      <i class="bi bi-plus-lg me-1"></i>Nova OP
+    </button>
     <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
       <i class="bi bi-arrows-fullscreen"></i>
     </button>
@@ -19,13 +21,195 @@
 {% endblock %}
 
 {% block content %}
-<div class="under-construction-wrapper">
-  <div class="under-construction-card">
-    <div class="uc-icon">
-      <i class="bi bi-tools"></i>
+<div class="container-fluid">
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+    <div class="alert alert-{{ category }} alert-dismissible d-flex align-items-center gap-2 mb-4" role="alert">
+      <i class="bi bi-{% if category == 'success' %}check-circle-fill{% else %}x-circle-fill{% endif %} fs-5 flex-shrink-0"></i>
+      <div>{{ message }}</div>
+      <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
     </div>
-    <h2 class="uc-title">Controle de OPs</h2>
-    <p class="uc-subtitle">Esta funcionalidade está em desenvolvimento e estará disponível em breve.</p>
+    {% endfor %}
+  {% endwith %}
+
+  <!-- Filtros -->
+  <form method="GET" class="row g-2 mb-4 align-items-end">
+    <div class="col-12 col-sm-6 col-md-3">
+      <label class="form-label fw-semibold" style="font-size:0.8rem;">Filial</label>
+      <select name="filial" class="form-select form-select-sm" style="border-radius:8px;">
+        <option value="">Todas</option>
+        {% for f in filiais %}
+        <option value="{{ f }}" {% if filial == f %}selected{% endif %}>{{ f }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-12 col-sm-6 col-md-3">
+      <label class="form-label fw-semibold" style="font-size:0.8rem;">Status</label>
+      <select name="status" class="form-select form-select-sm" style="border-radius:8px;">
+        <option value="">Todos</option>
+        <option value="aberta" {% if status == 'aberta' %}selected{% endif %}>Abertas</option>
+        <option value="concluida" {% if status == 'concluida' %}selected{% endif %}>Concluídas</option>
+      </select>
+    </div>
+    <div class="col-auto">
+      <button type="submit" class="btn btn-outline-primary btn-sm" style="border-radius:6px;">
+        <i class="bi bi-funnel me-1"></i>Filtrar
+      </button>
+    </div>
+    {% if filial or status %}
+    <div class="col-auto">
+      <a href="{{ url_for('pages.pcp_controle_ops') }}" class="btn btn-outline-secondary btn-sm" style="border-radius:6px;">
+        <i class="bi bi-x-lg me-1"></i>Limpar
+      </a>
+    </div>
+    {% endif %}
+  </form>
+
+  <!-- Tabela de OPs -->
+  <div class="card" style="border-radius:12px;border-color:var(--border);">
+    <div class="card-body p-0">
+      {% if ops %}
+      <div class="table-responsive">
+        <table class="table table-hover mb-0" style="font-size:0.85rem;">
+          <thead style="font-size:0.72rem;text-transform:uppercase;letter-spacing:.5px;background:var(--bg);">
+            <tr>
+              <th class="ps-3 py-2">Nº OP</th>
+              <th>Filial</th>
+              <th>Produto</th>
+              <th>Descrição</th>
+              <th>Armazém</th>
+              <th class="text-end">Qtd</th>
+              <th class="text-end">Produzido</th>
+              <th class="text-end">Saldo</th>
+              <th>Pedido / Item</th>
+              <th>Criado em</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for op in ops %}
+            {% set concluida = op.saldo <= 0 %}
+            <tr class="{% if concluida %}table-success{% endif %}">
+              <td class="ps-3 fw-semibold">{{ op.numero_op }}</td>
+              <td>
+                <span class="badge bg-secondary" style="font-size:0.7rem;">{{ op.filial }}</span>
+              </td>
+              <td class="fw-semibold">{{ op.produto }}</td>
+              <td class="text-muted">{{ op.descricao or '—' }}</td>
+              <td class="text-muted">{{ op.armazem or '—' }}</td>
+              <td class="text-end">{{ op.quantidade }}</td>
+              <td class="text-end">{{ op.produzido }}</td>
+              <td class="text-end fw-semibold {% if concluida %}text-success{% elif op.saldo < op.quantidade * 0.2 %}text-warning{% endif %}">
+                {{ op.saldo }}
+              </td>
+              <td class="text-muted" style="font-size:0.78rem;">
+                {% if op.pedido_venda %}
+                  {{ op.pedido_venda }}{% if op.item_pedido_venda %} / {{ op.item_pedido_venda }}{% endif %}
+                {% else %}
+                  —
+                {% endif %}
+              </td>
+              <td class="text-muted" style="font-size:0.78rem;">
+                {{ op.criado_em.strftime('%d/%m/%Y') if op.criado_em else '—' }}
+              </td>
+              <td class="text-end pe-2">
+                <span class="badge {% if concluida %}text-bg-success{% else %}text-bg-warning text-dark{% endif %}"
+                      style="font-size:0.68rem;">
+                  {% if concluida %}Concluída{% else %}Aberta{% endif %}
+                </span>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="p-5 text-center text-muted">
+        <i class="bi bi-file-earmark-text d-block fs-1 mb-3 opacity-25"></i>
+        <p class="mb-0">Nenhuma OP encontrada.</p>
+        <button class="btn btn-primary btn-sm mt-3 fw-semibold"
+                data-bs-toggle="modal" data-bs-target="#modalNovaOP">
+          <i class="bi bi-plus-lg me-1"></i>Cadastrar primeira OP
+        </button>
+      </div>
+      {% endif %}
+    </div>
+    {% if ops %}
+    <div class="card-footer text-muted small px-3 py-2 d-flex gap-3"
+         style="border-color:var(--border);border-radius:0 0 12px 12px;">
+      <span>{{ ops | length }} OPs</span>
+      <span>{{ ops | selectattr('saldo', 'gt', 0) | list | length }} abertas</span>
+      <span>{{ ops | selectattr('saldo', 'le', 0) | list | length }} concluídas</span>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+
+<!-- Modal: Nova OP -->
+<div class="modal fade" id="modalNovaOP" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content" style="border-radius:12px;border-color:var(--border);">
+      <div class="modal-header border-bottom" style="border-color:var(--border) !important;">
+        <h6 class="modal-title fw-semibold">
+          <i class="bi bi-file-earmark-plus me-2 text-primary"></i>Nova Ordem de Produção
+        </h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST">
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-12 col-sm-6">
+              <label class="form-label fw-semibold" style="font-size:0.8rem;">Número da OP <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" name="numero_op" required
+                     placeholder="Ex: 100001" style="border-radius:8px;">
+            </div>
+            <div class="col-12 col-sm-6">
+              <label class="form-label fw-semibold" style="font-size:0.8rem;">Filial <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" name="filial" required
+                     placeholder="Ex: Matriz" style="border-radius:8px;">
+            </div>
+            <div class="col-12 col-sm-6">
+              <label class="form-label fw-semibold" style="font-size:0.8rem;">Produto <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" name="produto" required
+                     placeholder="Ex: PCBA-001" style="border-radius:8px;">
+            </div>
+            <div class="col-12 col-sm-6">
+              <label class="form-label fw-semibold" style="font-size:0.8rem;">Armazém</label>
+              <input type="text" class="form-control" name="armazem"
+                     placeholder="Ex: 01" style="border-radius:8px;">
+            </div>
+            <div class="col-12">
+              <label class="form-label fw-semibold" style="font-size:0.8rem;">Descrição</label>
+              <input type="text" class="form-control" name="descricao"
+                     placeholder="Descrição do produto" style="border-radius:8px;">
+            </div>
+            <div class="col-12 col-sm-4">
+              <label class="form-label fw-semibold" style="font-size:0.8rem;">Quantidade <span class="text-danger">*</span></label>
+              <input type="number" class="form-control" name="quantidade" required
+                     min="1" placeholder="0" style="border-radius:8px;">
+            </div>
+            <div class="col-12 col-sm-4">
+              <label class="form-label fw-semibold" style="font-size:0.8rem;">Pedido de Venda</label>
+              <input type="text" class="form-control" name="pedido_venda"
+                     placeholder="Opcional" style="border-radius:8px;">
+            </div>
+            <div class="col-12 col-sm-4">
+              <label class="form-label fw-semibold" style="font-size:0.8rem;">Item Pedido de Venda</label>
+              <input type="text" class="form-control" name="item_pedido_venda"
+                     placeholder="Opcional" style="border-radius:8px;">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer border-top" style="border-color:var(--border) !important;">
+          <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary btn-sm fw-semibold">
+            <i class="bi bi-check-lg me-1"></i>Cadastrar OP
+          </button>
+        </div>
+      </form>
+    </div>
   </div>
 </div>
 {% endblock %}
