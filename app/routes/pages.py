@@ -248,14 +248,24 @@ def pcp_producao_coletada_progresso(job_id):
     return jsonify(svc.status_importacao(job_id))
 
 
-@bp.route("/pcp/turnos", methods=["GET", "POST"])
+# ─── CONFIGURAÇÕES DO SISTEMA ────────────────────────────────────────────────
+
+@bp.route("/pcp/turnos")
 @login_required
 @admin_required
 def pcp_turnos():
+    from flask import redirect, url_for
+    return redirect(url_for("pages.config_turnos"))
+
+
+@bp.route("/config/turnos", methods=["GET", "POST"])
+@login_required
+@admin_required
+def config_turnos():
     from flask import request, flash, redirect, url_for
     from app.services import turno_config_service as svc
 
-    erro = None
+    erro   = None
     turnos = {}
 
     if request.method == "POST":
@@ -278,7 +288,7 @@ def pcp_turnos():
                 flash("Intervalo removido.", "success")
             except Exception:
                 flash("Erro ao remover.", "danger")
-        return redirect(url_for("pages.pcp_turnos"))
+        return redirect(url_for("pages.config_turnos"))
 
     try:
         turnos = svc.listar_por_turno()
@@ -286,17 +296,112 @@ def pcp_turnos():
         erro = str(e)
 
     return render_template(
-        "pcp/turnos.html",
-        active_menu="pcp_turnos",
+        "config/turnos.html",
+        active_menu="config_turnos",
         turnos=turnos,
         erro=erro,
     )
 
 
-@bp.route("/pcp/controle-ops")
+@bp.route("/config/linhas")
+@login_required
+@admin_required
+def config_linhas():
+    from app.services import linha_config_service as svc
+
+    erro   = None
+    setores = {}
+    linhas  = []
+
+    try:
+        setores = svc.listar_por_setor()
+        linhas  = svc.listar_linhas_producao()
+    except Exception as e:
+        erro = str(e)
+
+    return render_template(
+        "config/linhas.html",
+        active_menu="config_linhas",
+        setores=setores,
+        linhas=linhas,
+        erro=erro,
+    )
+
+
+@bp.route("/config/linhas/atribuir", methods=["POST"])
+@login_required
+@admin_required
+def config_linhas_atribuir():
+    from flask import request, jsonify
+    from app.services import linha_config_service as svc
+
+    data  = request.get_json(silent=True) or {}
+    setor = data.get("setor", "")
+    linha = data.get("linha", "")
+
+    try:
+        svc.atribuir(setor, linha)
+        return jsonify({"ok": True})
+    except ValueError as e:
+        return jsonify({"erro": str(e)}), 400
+    except Exception as e:
+        return jsonify({"erro": str(e)}), 500
+
+
+@bp.route("/config/linhas/remover", methods=["POST"])
+@login_required
+@admin_required
+def config_linhas_remover():
+    from flask import request, jsonify
+    from app.services import linha_config_service as svc
+
+    data = request.get_json(silent=True) or {}
+    try:
+        svc.remover(int(data.get("id")))
+        return jsonify({"ok": True})
+    except Exception as e:
+        return jsonify({"erro": str(e)}), 500
+
+
+# ─── PCP ─────────────────────────────────────────────────────────────────────
+
+@bp.route("/pcp/controle-ops", methods=["GET", "POST"])
 @login_required
 def pcp_controle_ops():
-    return render_template("pcp/controle_ops.html", active_menu="pcp_controle_ops")
+    from flask import request, flash, redirect, url_for
+    from app.services import controle_ops_service as svc
+
+    erro    = None
+    ops     = []
+    filiais = []
+    filial  = request.args.get("filial", "")
+    status  = request.args.get("status", "")
+
+    if request.method == "POST":
+        try:
+            svc.cadastrar(request.form)
+            flash("OP cadastrada com sucesso.", "success")
+        except ValueError as e:
+            flash(str(e), "danger")
+        except Exception:
+            flash("Erro ao cadastrar. Verifique se a tabela foi criada.", "danger")
+        return redirect(url_for("pages.pcp_controle_ops"))
+
+    try:
+        ops     = svc.listar(filial, status)
+        filiais = svc.filiais_disponiveis()
+    except Exception as e:
+        erro = str(e)
+
+    return render_template(
+        "pcp/controle_ops.html",
+        active_menu="pcp_controle_ops",
+        ops=ops,
+        filiais=filiais,
+        filial=filial,
+        status=status,
+        erro=erro,
+    )
 
 
 @bp.route("/pcp/planejamento")

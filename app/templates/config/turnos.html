@@ -1,0 +1,213 @@
+{% extends "layouts/app.html" %}
+{% block title %}Configurações · Turnos{% endblock %}
+
+{% block page_title %}
+<div class="page-header">
+  <div class="page-header-title">
+    <span class="page-header-section">Configurações do Sistema</span>
+    <h1 class="page-header-name">Configuração de Turnos</h1>
+  </div>
+  <div class="page-header-actions">
+    <span class="badge text-bg-danger me-1" style="font-size:0.7rem;padding:5px 8px;">
+      <i class="bi bi-shield-lock"></i> Admin
+    </span>
+    <a href="{{ url_for('pages.inicio') }}" class="btn-header-icon" title="Voltar">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
+      <i class="bi bi-arrows-fullscreen"></i>
+    </button>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+    <div class="alert alert-{{ category }} alert-dismissible d-flex align-items-center gap-2 mb-4" role="alert">
+      <i class="bi bi-{% if category == 'success' %}check-circle-fill{% else %}x-circle-fill{% endif %} fs-5 flex-shrink-0"></i>
+      <div>{{ message }}</div>
+      <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+  {% endwith %}
+
+  {% if erro %}
+  <div class="alert alert-warning d-flex gap-2 align-items-start mb-4">
+    <i class="bi bi-exclamation-triangle-fill fs-5 flex-shrink-0 mt-1"></i>
+    <div>
+      <strong>Tabela não encontrada.</strong> Execute o SQL abaixo no banco (Railway → psql) antes de usar esta página.
+      <div class="mt-2">
+        <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="collapse" data-bs-target="#sqlMigration">
+          <i class="bi bi-code-slash me-1"></i>Ver SQL de migração
+        </button>
+      </div>
+      <div class="collapse mt-3" id="sqlMigration">
+        <pre class="bg-dark text-white p-3 rounded small" id="sqlBlock" style="font-size:0.75rem;line-height:1.6;">CREATE TABLE IF NOT EXISTS turno_config (
+    id          SERIAL PRIMARY KEY,
+    turno       VARCHAR(20) NOT NULL,
+    hora_inicio VARCHAR(5)  NOT NULL,
+    hora_fim    VARCHAR(5)  NOT NULL,
+    ordem       INT         NOT NULL DEFAULT 0
+);
+
+INSERT INTO turno_config (turno, hora_inicio, hora_fim, ordem) VALUES
+  ('1º Turno', '07:00', '08:00',  1),
+  ('1º Turno', '08:00', '09:00',  2),
+  ('1º Turno', '09:00', '10:00',  3),
+  ('1º Turno', '10:00', '11:00',  4),
+  ('1º Turno', '11:00', '12:00',  5),
+  ('1º Turno', '12:00', '13:00',  6),
+  ('1º Turno', '13:00', '14:00',  7),
+  ('1º Turno', '14:00', '15:00',  8),
+  ('1º Turno', '15:00', '16:00',  9),
+  ('1º Turno', '16:00', '16:48', 10),
+  ('2º Turno', '16:48', '17:00', 11),
+  ('2º Turno', '17:00', '18:00', 12),
+  ('2º Turno', '18:00', '19:00', 13),
+  ('2º Turno', '19:00', '20:00', 14),
+  ('2º Turno', '20:00', '21:00', 15),
+  ('2º Turno', '21:00', '22:00', 16),
+  ('2º Turno', '22:00', '23:00', 17),
+  ('2º Turno', '23:00', '00:00', 18),
+  ('2º Turno', '00:00', '01:00', 19),
+  ('2º Turno', '01:00', '02:00', 20),
+  ('2º Turno', '02:00', '02:35', 21),
+  ('3º Turno', '02:35', '03:00', 22),
+  ('3º Turno', '03:00', '04:00', 23),
+  ('3º Turno', '04:00', '05:00', 24),
+  ('3º Turno', '05:00', '06:00', 25),
+  ('3º Turno', '06:00', '07:00', 26);</pre>
+        <button class="btn btn-sm btn-outline-secondary" onclick="copiarSQL()">
+          <i class="bi bi-clipboard me-1"></i>Copiar SQL
+        </button>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if not erro %}
+  <div class="row g-4">
+
+    {% set cores   = {'1º Turno': 'warning', '2º Turno': 'primary', '3º Turno': 'secondary'} %}
+    {% set icones  = {'1º Turno': 'bi-sun',  '2º Turno': 'bi-moon-stars', '3º Turno': 'bi-moon'} %}
+
+    {% for nome_turno, intervalos in turnos.items() %}
+    <div class="col-12 col-lg-4">
+      <div class="card h-100" style="border-radius:12px;border-color:var(--border);">
+        <div class="card-header d-flex align-items-center justify-content-between py-2 px-3"
+             style="border-radius:12px 12px 0 0;border-color:var(--border);background:var(--card);">
+          <div class="d-flex align-items-center gap-2">
+            <i class="bi {{ icones[nome_turno] }} text-{{ cores[nome_turno] }}"></i>
+            <span class="fw-semibold">{{ nome_turno }}</span>
+            <span class="badge bg-{{ cores[nome_turno] }} text-dark" style="font-size:0.7rem;">
+              {{ intervalos | length }} intervalos
+            </span>
+          </div>
+          <button class="btn btn-outline-primary btn-sm" style="border-radius:6px;"
+                  data-bs-toggle="modal" data-bs-target="#modalAdicionar"
+                  data-turno="{{ nome_turno }}">
+            <i class="bi bi-plus-lg"></i>
+          </button>
+        </div>
+        <div class="card-body p-0">
+          {% if intervalos %}
+          <table class="table table-sm table-hover mb-0" style="font-size:0.82rem;">
+            <thead class="table-light" style="font-size:0.72rem;text-transform:uppercase;letter-spacing:.4px;">
+              <tr>
+                <th class="ps-3">#</th>
+                <th>Início</th>
+                <th>Fim</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for iv in intervalos %}
+              <tr>
+                <td class="ps-3 text-muted">{{ loop.index }}</td>
+                <td class="fw-semibold">{{ iv.hora_inicio }}</td>
+                <td class="text-muted">{{ iv.hora_fim }}</td>
+                <td class="text-end pe-2">
+                  <form method="POST" style="display:inline;"
+                        onsubmit="return confirm('Remover este intervalo?')">
+                    <input type="hidden" name="acao" value="excluir">
+                    <input type="hidden" name="id" value="{{ iv.id }}">
+                    <button type="submit" class="btn btn-link btn-sm text-danger p-0" title="Remover">
+                      <i class="bi bi-trash3"></i>
+                    </button>
+                  </form>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          {% else %}
+          <div class="p-4 text-center text-muted small">
+            <i class="bi bi-clock d-block fs-3 mb-2 opacity-25"></i>
+            Nenhum intervalo cadastrado
+          </div>
+          {% endif %}
+        </div>
+        {% if intervalos %}
+        <div class="card-footer text-muted small px-3 py-2"
+             style="border-color:var(--border);border-radius:0 0 12px 12px;">
+          {{ intervalos[0].hora_inicio }} → {{ intervalos[-1].hora_fim }}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+
+  </div>
+  {% endif %}
+
+</div>
+
+<!-- Modal: adicionar intervalo -->
+<div class="modal fade" id="modalAdicionar" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content" style="border-radius:12px;border-color:var(--border);">
+      <div class="modal-header border-bottom" style="border-color:var(--border) !important;">
+        <h6 class="modal-title fw-semibold" id="tituloModal">
+          <i class="bi bi-clock-history me-2 text-primary"></i>Novo intervalo
+        </h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST">
+        <input type="hidden" name="acao" value="adicionar">
+        <input type="hidden" name="turno" id="inputTurno">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label fw-semibold" style="font-size:0.8rem;">Início</label>
+            <input type="time" class="form-control" name="hora_inicio" required>
+          </div>
+          <div class="mb-0">
+            <label class="form-label fw-semibold" style="font-size:0.8rem;">Fim</label>
+            <input type="time" class="form-control" name="hora_fim" required>
+          </div>
+        </div>
+        <div class="modal-footer border-top" style="border-color:var(--border) !important;">
+          <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary btn-sm fw-semibold">Adicionar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+document.getElementById("modalAdicionar").addEventListener("show.bs.modal", function (e) {
+  const turno = e.relatedTarget.dataset.turno;
+  document.getElementById("inputTurno").value = turno;
+  document.getElementById("tituloModal").innerHTML =
+    '<i class="bi bi-clock-history me-2 text-primary"></i>Novo intervalo — ' + turno;
+});
+
+function copiarSQL() {
+  navigator.clipboard.writeText(document.getElementById("sqlBlock").textContent)
+    .then(function() { alert("SQL copiado!"); });
+}
+</script>
+{% endblock %}
