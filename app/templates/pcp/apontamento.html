@@ -400,9 +400,9 @@ function preencherSelectOP(termo, setor) {
     opt.textContent     = op.numero_op + " · " + op.produto + " · Saldo: " + Number(op.saldo).toLocaleString("pt-BR");
     sel.appendChild(opt);
   });
-  document.getElementById("infoOP").style.display          = "none";
-  document.getElementById("avisoModelo").style.display     = "none";
-  document.getElementById("avisoSaldo").style.display      = "none";
+  document.getElementById("infoOP").style.display      = "none";
+  document.getElementById("avisoModelo").style.display = "none";
+  document.getElementById("avisoSaldo").style.display  = "none";
 }
 
 function filtrarOPs(termo) {
@@ -423,9 +423,9 @@ document.getElementById("selectOP").addEventListener("change", function () {
     return;
   }
 
-  const produto      = opt.dataset.produto || "";
-  const modeloAtual  = document.getElementById("hiddenModelo").value || "";
-  const modeloBate   = produto.trim().toUpperCase() === modeloAtual.trim().toUpperCase();
+  const produto     = opt.dataset.produto || "";
+  const modeloAtual = document.getElementById("hiddenModelo").value || "";
+  const modeloBate  = produto.trim().toUpperCase() === modeloAtual.trim().toUpperCase();
 
   document.getElementById("opProduto").textContent = produto;
   document.getElementById("opSaldo").textContent   = Number(opt.dataset.saldo).toLocaleString("pt-BR");

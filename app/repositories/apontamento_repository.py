@@ -84,25 +84,37 @@ def listar_agrupado(data_inicial: str, data_final: str, setor: str = "", linha: 
 
 
 def ops_abertas(setor: str = "") -> list:
+    params = []
+    setor_where = ""
+    if setor:
+        setor_where = "AND (co.setor = %s OR co.setor IS NULL)"
+        params.append(setor)
+
     with get_db() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
-            if setor:
-                cur.execute("""
-                    SELECT id, numero_op, produto, filial, setor, quantidade, produzido,
-                           (quantidade - produzido) AS saldo
-                    FROM controle_ops
-                    WHERE quantidade > produzido
-                      AND (setor = %s OR setor IS NULL)
-                    ORDER BY numero_op
-                """, (setor,))
-            else:
-                cur.execute("""
-                    SELECT id, numero_op, produto, filial, setor, quantidade, produzido,
-                           (quantidade - produzido) AS saldo
-                    FROM controle_ops
-                    WHERE quantidade > produzido
-                    ORDER BY numero_op
-                """)
+            cur.execute(f"""
+                SELECT id, numero_op, produto, filial, setor, fase_modelo,
+                       quantidade, produzido, saldo
+                FROM (
+                    SELECT
+                        co.id, co.numero_op, co.produto, co.filial, co.setor, co.fase_modelo,
+                        co.quantidade, co.produzido,
+                        CASE WHEN co.fase_modelo = 'AMBAS' THEN
+                            co.quantidade - LEAST(
+                                COALESCE(SUM(CASE WHEN a.fase = 'TOP'    THEN a.quantidade ELSE 0 END), 0),
+                                COALESCE(SUM(CASE WHEN a.fase = 'BOTTOM' THEN a.quantidade ELSE 0 END), 0)
+                            )
+                        ELSE (co.quantidade - co.produzido)
+                        END AS saldo
+                    FROM controle_ops co
+                    LEFT JOIN apontamento a ON a.op_id = co.id
+                    WHERE 1=1 {setor_where}
+                    GROUP BY co.id, co.numero_op, co.produto, co.filial, co.setor,
+                             co.fase_modelo, co.quantidade, co.produzido
+                ) sub
+                WHERE saldo > 0
+                ORDER BY numero_op
+            """, params)
             return cur.fetchall()
 
 
@@ -111,11 +123,16 @@ def buscar_op_para_vincular(op_id: int) -> dict | None:
         with conn.cursor(row_factory=dict_row) as cur:
             cur.execute("""
                 SELECT
-                    co.id, co.produto, co.fase_modelo,
-                    co.quantidade, co.produzido,
-                    (co.quantidade - co.produzido) AS saldo,
+                    co.id, co.produto, co.fase_modelo, co.quantidade,
                     COALESCE(SUM(CASE WHEN a.fase = 'TOP'    THEN a.quantidade ELSE 0 END), 0) AS top_feito,
-                    COALESCE(SUM(CASE WHEN a.fase = 'BOTTOM' THEN a.quantidade ELSE 0 END), 0) AS bottom_feito
+                    COALESCE(SUM(CASE WHEN a.fase = 'BOTTOM' THEN a.quantidade ELSE 0 END), 0) AS bottom_feito,
+                    CASE WHEN co.fase_modelo = 'AMBAS' THEN
+                        co.quantidade - LEAST(
+                            COALESCE(SUM(CASE WHEN a.fase = 'TOP'    THEN a.quantidade ELSE 0 END), 0),
+                            COALESCE(SUM(CASE WHEN a.fase = 'BOTTOM' THEN a.quantidade ELSE 0 END), 0)
+                        )
+                    ELSE (co.quantidade - co.produzido)
+                    END AS saldo
                 FROM controle_ops co
                 LEFT JOIN apontamento a ON a.op_id = co.id
                 WHERE co.id = %s
@@ -182,31 +199,36 @@ def fila_producao() -> list:
     with get_db() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
             cur.execute("""
-                SELECT
-                    co.setor,
-                    co.id,
-                    co.numero_op,
-                    co.produto,
-                    co.descricao,
-                    co.fase_modelo,
-                    co.quantidade,
-                    co.produzido,
-                    (co.quantidade - co.produzido) AS saldo,
-                    COALESCE(SUM(CASE WHEN a.fase = 'TOP'    THEN a.quantidade ELSE 0 END), 0) AS top_feito,
-                    COALESCE(SUM(CASE WHEN a.fase = 'BOTTOM' THEN a.quantidade ELSE 0 END), 0) AS bottom_feito,
-                    GREATEST(0,
-                        COALESCE(SUM(CASE WHEN a.fase = 'TOP'    THEN a.quantidade ELSE 0 END), 0) -
-                        COALESCE(SUM(CASE WHEN a.fase = 'BOTTOM' THEN a.quantidade ELSE 0 END), 0)
-                    ) AS aguardando_bottom,
-                    GREATEST(0,
-                        COALESCE(SUM(CASE WHEN a.fase = 'BOTTOM' THEN a.quantidade ELSE 0 END), 0) -
-                        COALESCE(SUM(CASE WHEN a.fase = 'TOP'    THEN a.quantidade ELSE 0 END), 0)
-                    ) AS aguardando_top
-                FROM controle_ops co
-                LEFT JOIN apontamento a ON a.op_id = co.id
-                WHERE co.quantidade > co.produzido
-                GROUP BY co.setor, co.id, co.numero_op, co.produto, co.descricao,
-                         co.fase_modelo, co.quantidade, co.produzido
-                ORDER BY co.setor NULLS LAST, co.numero_op
+                SELECT setor, id, numero_op, produto, descricao, fase_modelo,
+                       quantidade, produzido, saldo,
+                       top_feito, bottom_feito, aguardando_bottom, aguardando_top
+                FROM (
+                    SELECT
+                        co.setor, co.id, co.numero_op, co.produto, co.descricao,
+                        co.fase_modelo, co.quantidade, co.produzido,
+                        COALESCE(SUM(CASE WHEN a.fase = 'TOP'    THEN a.quantidade ELSE 0 END), 0) AS top_feito,
+                        COALESCE(SUM(CASE WHEN a.fase = 'BOTTOM' THEN a.quantidade ELSE 0 END), 0) AS bottom_feito,
+                        GREATEST(0,
+                            COALESCE(SUM(CASE WHEN a.fase = 'TOP'    THEN a.quantidade ELSE 0 END), 0) -
+                            COALESCE(SUM(CASE WHEN a.fase = 'BOTTOM' THEN a.quantidade ELSE 0 END), 0)
+                        ) AS aguardando_bottom,
+                        GREATEST(0,
+                            COALESCE(SUM(CASE WHEN a.fase = 'BOTTOM' THEN a.quantidade ELSE 0 END), 0) -
+                            COALESCE(SUM(CASE WHEN a.fase = 'TOP'    THEN a.quantidade ELSE 0 END), 0)
+                        ) AS aguardando_top,
+                        CASE WHEN co.fase_modelo = 'AMBAS' THEN
+                            co.quantidade - LEAST(
+                                COALESCE(SUM(CASE WHEN a.fase = 'TOP'    THEN a.quantidade ELSE 0 END), 0),
+                                COALESCE(SUM(CASE WHEN a.fase = 'BOTTOM' THEN a.quantidade ELSE 0 END), 0)
+                            )
+                        ELSE (co.quantidade - co.produzido)
+                        END AS saldo
+                    FROM controle_ops co
+                    LEFT JOIN apontamento a ON a.op_id = co.id
+                    GROUP BY co.setor, co.id, co.numero_op, co.produto, co.descricao,
+                             co.fase_modelo, co.quantidade, co.produzido
+                ) sub
+                WHERE saldo > 0
+                ORDER BY setor NULLS LAST, numero_op
             """)
             return cur.fetchall()
