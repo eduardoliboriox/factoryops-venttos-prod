@@ -1,7 +1,5 @@
 ### Objetivo - (tarefas para você executar, aplicando com CLAUDE.md)
 
 ### 1. Saldo Considerando fases no smt
-* na pagina controle de ops, eu tenho uma op cadastrada, EBRJFB01001,EBRJFB01002 e EBRJFB01003, sao referente ao padrao de roteiro, do modelo conjunto 9, com saldo de 500 para cada parte e esse modelo é top e bottom. Quando eu fui na pagina de apontamento e lancei a fase top vinculado a uma producao la no SMT, o saldo ficou como 30 porque a produção era 470, contudo, o modelo é top e bottom como ta descrito na criação da op, e passou 470 do top, portanto, no smt em especial eu ainda vou passar 470 do bottom tbm. ai essa placa estaria completa. se fosse um modelo já top o saldo estaria correto, mas temos que lembrar desse detalhe de fase no Smt.
-
-### 2. Tela apos apontemnto/vinculo
-* preciso ver apos o que foi produzido e apontado, como devo proceder, alias essa parte é a parte do planemento , onde eu vou pegar o que foi apontado, colocar modelos para produzir em cada linha, no smt, ver o que tem complementar, tipo, passou a primeira fase, agora vou fazer a outra fase da placa para completar ela. Mas para planejar corretamente...preciso ver o que tenho e o que é pra fazer com base nos dados.
+* na pagina controle de ops, eu tenho uma op cadastrada, EBRJFB01001,EBRJFB01002 e EBRJFB01003, sao referente ao padrao de roteiro, do modelo conjunto 9, com saldo de 500 para cada parte e esse modelo é top e bottom. Quando eu fui na pagina de apontamento, apertei em vincular e lancei 470 no TOP, a op que tem 500 ficou 30. mas eu preciso que o sistema entenda nessa parte que se tivesse marcado o BOTTOM, a op deveria aparecer como 500, e lançar a o que foi produção, pq no caso de modelos que sao duas vezes como no smt isto vai fazer diferença, por exemplo, se passar 470 outro dia e for vincular...mas o saldo so tem 30..como vai ficar.
+* o sistema precisa bloquear quando nao for o mesmo modelo e quando nao tiver saldo.
