@@ -106,6 +106,24 @@ def ops_abertas(setor: str = "") -> list:
             return cur.fetchall()
 
 
+def buscar_op_para_vincular(op_id: int) -> dict | None:
+    with get_db() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute("""
+                SELECT
+                    co.id, co.produto, co.fase_modelo,
+                    co.quantidade, co.produzido,
+                    (co.quantidade - co.produzido) AS saldo,
+                    COALESCE(SUM(CASE WHEN a.fase = 'TOP'    THEN a.quantidade ELSE 0 END), 0) AS top_feito,
+                    COALESCE(SUM(CASE WHEN a.fase = 'BOTTOM' THEN a.quantidade ELSE 0 END), 0) AS bottom_feito
+                FROM controle_ops co
+                LEFT JOIN apontamento a ON a.op_id = co.id
+                WHERE co.id = %s
+                GROUP BY co.id, co.produto, co.fase_modelo, co.quantidade, co.produzido
+            """, (op_id,))
+            return cur.fetchone()
+
+
 def vincular(data: str, turno: str, modelo: str, linha: str, op_id: int, quantidade: int,
              fase: str = None, lote: str = None) -> None:
     with get_db() as conn:

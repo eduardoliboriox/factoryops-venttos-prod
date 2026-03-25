@@ -33,6 +33,29 @@ def vincular(data: str, turno: str, modelo: str, linha: str, op_id: int, quantid
     if setor not in SETORES_SMD:
         fase_norm = None
 
+    op = repo.buscar_op_para_vincular(op_id)
+    if not op:
+        raise ValueError("OP não encontrada.")
+
+    if op["produto"].strip().upper() != modelo.strip().upper():
+        raise ValueError(
+            f"Modelo incompatível: produção é '{modelo}' mas a OP é para '{op['produto']}'. "
+            "Selecione a OP correta."
+        )
+
+    if op["fase_modelo"] == "AMBAS" and fase_norm:
+        fase_feita = op["top_feito"] if fase_norm == "TOP" else op["bottom_feito"]
+        disponivel = op["quantidade"] - fase_feita
+        if quantidade > disponivel:
+            raise ValueError(
+                f"Saldo insuficiente para {fase_norm}: disponível {disponivel}, solicitado {quantidade}."
+            )
+    else:
+        if quantidade > op["saldo"]:
+            raise ValueError(
+                f"Saldo insuficiente: disponível {op['saldo']}, solicitado {quantidade}."
+            )
+
     repo.vincular(data, turno, modelo, linha, op_id, quantidade, fase_norm, lote or None)
 
 
