@@ -94,7 +94,7 @@
         </div>
         <div class="col-6 col-md-2">
           <label class="form-label">Setor</label>
-          <select class="form-select" name="setor" id="selectSetor" onchange="onSetorChange(this)">
+          <select class="form-select" name="setor">
             <option value="">Todos</option>
             {% for s in filtros.setores %}
             <option value="{{ s }}" {% if s == setor %}selected{% endif %}>{{ s }}</option>
@@ -103,7 +103,7 @@
         </div>
         <div class="col-6 col-md-2">
           <label class="form-label">Linha</label>
-          <select class="form-select" name="linha" id="selectLinha">
+          <select class="form-select" name="linha">
             <option value="">Todas</option>
             {% for l in filtros.linhas %}
             <option value="{{ l }}" {% if l == linha %}selected{% endif %}>{{ l }}</option>
@@ -112,12 +112,7 @@
         </div>
         <div class="col-6 col-md-2">
           <label class="form-label">Turno</label>
-          <select class="form-select" name="turno">
-            <option value="">Todos</option>
-            <option value="1º Turno" {% if turno == "1º Turno" %}selected{% endif %}>1º Turno</option>
-            <option value="2º Turno" {% if turno == "2º Turno" %}selected{% endif %}>2º Turno</option>
-            <option value="3º Turno" {% if turno == "3º Turno" %}selected{% endif %}>3º Turno</option>
-          </select>
+          <input type="text" class="form-control" name="turno" value="{{ turno }}" placeholder="Ex: 1º">
         </div>
         <div class="col-6 col-md-2 d-flex gap-2">
           <button type="submit" class="btn btn-primary flex-fill fw-semibold">
@@ -481,11 +476,6 @@ function copiarComando() {
     icone.className = "bi bi-clipboard-check";
     setTimeout(function () { icone.className = "bi bi-clipboard"; }, 2000);
   });
-}
-
-function onSetorChange(select) {
-  document.getElementById("selectLinha").value = "";
-  select.form.submit();
 }
 </script>
 {% endblock %}
