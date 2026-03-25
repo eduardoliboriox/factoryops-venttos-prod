@@ -13,8 +13,8 @@ def listar(data_inicial: str, data_final: str, setor: str = "", linha: str = "",
         filtros.append("linha = %s")
         params.append(linha)
     if turno:
-        filtros.append("turno ILIKE %s")
-        params.append(f"%{turno}%")
+        filtros.append("turno = %s")
+        params.append(turno)
 
     where = " AND ".join(filtros)
 
@@ -45,8 +45,8 @@ def totais(data_inicial: str, data_final: str, setor: str = "", linha: str = "",
         filtros.append("linha = %s")
         params.append(linha)
     if turno:
-        filtros.append("turno ILIKE %s")
-        params.append(f"%{turno}%")
+        filtros.append("turno = %s")
+        params.append(turno)
 
     where = " AND ".join(filtros)
 
@@ -67,7 +67,7 @@ def totais(data_inicial: str, data_final: str, setor: str = "", linha: str = "",
 def setores_disponiveis() -> list:
     with get_db() as conn:
         with conn.cursor() as cur:
-            cur.execute("SELECT DISTINCT setor FROM producao_coletada WHERE setor IS NOT NULL ORDER BY setor")
+            cur.execute("SELECT DISTINCT setor FROM linha_config ORDER BY setor")
             return [r["setor"] for r in cur.fetchall()]
 
 
@@ -76,11 +76,11 @@ def linhas_disponiveis(setor: str = "") -> list:
         with conn.cursor() as cur:
             if setor:
                 cur.execute(
-                    "SELECT DISTINCT linha FROM producao_coletada WHERE setor = %s AND linha IS NOT NULL ORDER BY linha",
+                    "SELECT linha FROM linha_config WHERE setor = %s ORDER BY linha",
                     (setor,)
                 )
             else:
-                cur.execute("SELECT DISTINCT linha FROM producao_coletada WHERE linha IS NOT NULL ORDER BY linha")
+                cur.execute("SELECT linha FROM linha_config ORDER BY linha")
             return [r["linha"] for r in cur.fetchall()]
 
 
