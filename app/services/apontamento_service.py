@@ -48,7 +48,8 @@ def vincular(data: str, turno: str, modelo: str, linha: str, op_id: int, quantid
         disponivel = op["quantidade"] - fase_feita
         if quantidade > disponivel:
             raise ValueError(
-                f"Saldo insuficiente para {fase_norm}: disponível {disponivel}, solicitado {quantidade}."
+                f"Saldo insuficiente para fase {fase_norm}: "
+                f"disponível {disponivel}, solicitado {quantidade}."
             )
     else:
         if quantidade > op["saldo"]:
