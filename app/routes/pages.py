@@ -280,14 +280,14 @@ def config_turnos():
                 flash("Intervalo adicionado.", "success")
             except ValueError as e:
                 flash(str(e), "danger")
-            except Exception:
-                flash("Erro ao salvar. Verifique se a tabela foi criada.", "danger")
+            except Exception as e:
+                flash(str(e), "danger")
         elif acao == "excluir":
             try:
                 svc.excluir(int(request.form.get("id")))
                 flash("Intervalo removido.", "success")
-            except Exception:
-                flash("Erro ao remover.", "danger")
+            except Exception as e:
+                flash(str(e), "danger")
         return redirect(url_for("pages.config_turnos"))
 
     try:
@@ -361,6 +361,51 @@ def config_linhas_remover():
         return jsonify({"ok": True})
     except Exception as e:
         return jsonify({"erro": str(e)}), 500
+
+
+@bp.route("/config/paradas", methods=["GET", "POST"])
+@login_required
+@admin_required
+def config_paradas():
+    from flask import request, flash, redirect, url_for
+    from app.services import parada_config_service as svc
+
+    erro    = None
+    paradas = {}
+    opcoes  = {}
+
+    if request.method == "POST":
+        acao = request.form.get("acao")
+        if acao == "adicionar":
+            try:
+                svc.adicionar(request.form)
+                flash("Parada adicionada.", "success")
+            except ValueError as e:
+                flash(str(e), "danger")
+            except Exception as e:
+                flash(str(e), "danger")
+        elif acao == "excluir":
+            try:
+                svc.excluir(int(request.form.get("id")))
+                flash("Parada removida.", "success")
+            except Exception as e:
+                flash(str(e), "danger")
+        return redirect(url_for("pages.config_paradas"))
+
+    try:
+        paradas = svc.listar_por_setor()
+        opcoes  = svc.opcoes_linha()
+    except Exception as e:
+        erro = str(e)
+
+    return render_template(
+        "config/paradas.html",
+        active_menu="config_paradas",
+        paradas=paradas,
+        opcoes=opcoes,
+        tipos=["INTERVALO", "GINASTICA", "DDS", "ALMOCO", "SETUP", "OUTROS"],
+        erro=erro,
+    )
 
 
 # ─── PCP ─────────────────────────────────────────────────────────────────────
@@ -518,7 +563,126 @@ def pcp_apontamento_desvincular():
 @bp.route("/pcp/planejamento")
 @login_required
 def pcp_planejamento():
-    return render_template("pcp/planejamento.html", active_menu="pcp_planejamento")
+    from flask import request
+    from app.services import planejamento_service as svc
+    from app.services import producao_coletada_service as pc_svc
+    from datetime import date
+
+    data_str = request.args.get("data",  str(date.today()))
+    turno    = request.args.get("turno", "")
+    setor    = request.args.get("setor", "")
+    linha    = request.args.get("linha", "")
+    erro     = None
+    planos   = []
+    ops      = []
+    filtros  = {"setores": [], "linhas": []}
+    opcoes   = {}
+
+    try:
+        planos  = svc.listar(data_str, turno, setor, linha)
+        ops     = svc.ops_disponiveis()
+        filtros = pc_svc.filtros_disponiveis(setor)
+        opcoes  = svc.opcoes_linha()
+    except Exception as e:
+        erro = str(e)
+
+    return render_template(
+        "pcp/planejamento.html",
+        active_menu="pcp_planejamento",
+        data_selecionada=data_str,
+        turno=turno,
+        setor=setor,
+        linha=linha,
+        planos=planos,
+        ops=ops,
+        filtros=filtros,
+        opcoes=opcoes,
+        erro=erro,
+    )
+
+
+@bp.route("/pcp/planejamento/criar", methods=["POST"])
+@login_required
+def pcp_planejamento_criar():
+    from flask import request, jsonify
+    from flask_login import current_user
+    from app.services import planejamento_service as svc
+
+    data = request.get_json(silent=True) or {}
+    try:
+        resultado = svc.criar(data, username=current_user.username)
+        return jsonify({"ok": True, **resultado})
+    except ValueError as e:
+        return jsonify({"erro": str(e)}), 400
+    except Exception as e:
+        return jsonify({"erro": str(e)}), 500
+
+
+@bp.route("/pcp/planejamento/<int:plan_id>/editar", methods=["POST"])
+@login_required
+def pcp_planejamento_editar(plan_id):
+    from flask import request, jsonify
+    from app.services import planejamento_service as svc
+
+    data = request.get_json(silent=True) or {}
+    try:
+        resultado = svc.atualizar(plan_id, data)
+        return jsonify({"ok": True, **resultado})
+    except ValueError as e:
+        return jsonify({"erro": str(e)}), 400
+    except Exception as e:
+        return jsonify({"erro": str(e)}), 500
+
+
+@bp.route("/pcp/planejamento/<int:plan_id>/status", methods=["POST"])
+@login_required
+def pcp_planejamento_status(plan_id):
+    from flask import request, jsonify
+    from app.services import planejamento_service as svc
+
+    data = request.get_json(silent=True) or {}
+    try:
+        svc.atualizar_status(plan_id, data.get("status", ""))
+        return jsonify({"ok": True})
+    except ValueError as e:
+        return jsonify({"erro": str(e)}), 400
+    except Exception as e:
+        return jsonify({"erro": str(e)}), 500
+
+
+@bp.route("/pcp/planejamento/<int:plan_id>/excluir", methods=["POST"])
+@login_required
+def pcp_planejamento_excluir(plan_id):
+    from flask import jsonify
+    from app.services import planejamento_service as svc
+
+    try:
+        svc.excluir(plan_id)
+        return jsonify({"ok": True})
+    except Exception as e:
+        return jsonify({"erro": str(e)}), 500
+
+
+@bp.route("/pcp/planejamento/plano-de-voo")
+@login_required
+def pcp_planejamento_plano_de_voo():
+    from flask import request, jsonify
+    from app.services import planejamento_service as svc
+    from datetime import date
+
+    data_str = request.args.get("data", str(date.today()))
+    try:
+        agrupado = svc.plano_de_voo(data_str)
+        serializado = {
+            linha: [
+                {k: (str(v) if hasattr(v, "strftime") else v) for k, v in item.items()}
+                for item in itens
+            ]
+            for linha, itens in agrupado.items()
+        }
+        return jsonify(serializado)
+    except Exception as e:
+        return jsonify({"erro": str(e)}), 500
 
 
 @bp.route("/pcp/entregas")

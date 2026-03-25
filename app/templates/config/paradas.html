@@ -1,0 +1,241 @@
+{% extends "layouts/app.html" %}
+{% block title %}Configurações · Paradas de Linha{% endblock %}
+
+{% block page_title %}
+<div class="page-header">
+  <div class="page-header-title">
+    <span class="page-header-section">Configurações do Sistema</span>
+    <h1 class="page-header-name">Paradas de Linha</h1>
+  </div>
+  <div class="page-header-actions">
+    <span class="badge text-bg-danger me-1" style="font-size:0.7rem;padding:5px 8px;">
+      <i class="bi bi-shield-lock"></i> Admin
+    </span>
+    <a href="{{ url_for('pages.inicio') }}" class="btn-header-icon" title="Voltar">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
+      <i class="bi bi-arrows-fullscreen"></i>
+    </button>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+    <div class="alert alert-{{ category }} alert-dismissible d-flex align-items-center gap-2 mb-4" role="alert">
+      <i class="bi bi-{% if category == 'success' %}check-circle-fill{% else %}x-circle-fill{% endif %} fs-5 flex-shrink-0"></i>
+      <div>{{ message }}</div>
+      <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+  {% endwith %}
+
+  {% if erro %}
+  <div class="alert alert-warning d-flex gap-2 align-items-center mb-4">
+    <i class="bi bi-exclamation-triangle-fill fs-5 flex-shrink-0"></i>
+    <div><strong>Erro ao carregar:</strong> {{ erro }}</div>
+  </div>
+  {% endif %}
+
+  <div class="row g-4">
+
+    <!-- Formulário -->
+    <div class="col-12 col-lg-4">
+      <div class="card" style="border-radius:12px;border-color:var(--border);">
+        <div class="card-header py-2 px-3 d-flex align-items-center gap-2"
+             style="border-radius:12px 12px 0 0;border-color:var(--border);background:var(--card);">
+          <i class="bi bi-plus-circle text-primary"></i>
+          <span class="fw-semibold" style="font-size:0.9rem;">Nova Parada</span>
+        </div>
+        <div class="card-body">
+          <form method="POST">
+            <input type="hidden" name="acao" value="adicionar">
+
+            <div class="mb-3">
+              <label class="form-label fw-semibold" style="font-size:0.8rem;">
+                Tipo <span class="text-danger">*</span>
+              </label>
+              <select class="form-select form-select-sm" name="tipo" required style="border-radius:8px;">
+                <option value="">Selecione</option>
+                {% set tipo_labels = {
+                  'INTERVALO': 'Intervalo',
+                  'GINASTICA': 'Ginástica Laboral',
+                  'DDS':       'DDS / Segurança',
+                  'ALMOCO':    'Almoço',
+                  'SETUP':     'Setup',
+                  'OUTROS':    'Outros'
+                } %}
+                {% for t in tipos %}
+                <option value="{{ t }}">{{ tipo_labels[t] }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-semibold" style="font-size:0.8rem;">
+                Nome <span class="text-danger">*</span>
+              </label>
+              <input type="text" class="form-control form-control-sm" name="nome"
+                     placeholder="Ex: Intervalo Manhã, Setup SMD" required style="border-radius:8px;">
+            </div>
+
+            <div class="row g-2 mb-3">
+              <div class="col-6">
+                <label class="form-label fw-semibold" style="font-size:0.8rem;">Setor</label>
+                <select class="form-select form-select-sm" name="setor" id="selectSetor"
+                        onchange="filtrarLinhas(this.value)" style="border-radius:8px;">
+                  <option value="">Todos os setores</option>
+                  {% for setor in opcoes.keys() | sort %}
+                  <option value="{{ setor }}">{{ setor }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="col-6">
+                <label class="form-label fw-semibold" style="font-size:0.8rem;">Linha</label>
+                <select class="form-select form-select-sm" name="linha" id="selectLinha" style="border-radius:8px;">
+                  <option value="">Todas as linhas</option>
+                  {% for setor, linhas in opcoes.items() %}
+                    {% for l in linhas | sort %}
+                    <option value="{{ l }}" data-setor="{{ setor }}">{{ l }}</option>
+                    {% endfor %}
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+
+            <div class="row g-2 mb-3">
+              <div class="col-7">
+                <label class="form-label fw-semibold" style="font-size:0.8rem;">
+                  Horário início
+                  <span class="text-muted fw-normal">(opcional para Setup)</span>
+                </label>
+                <input type="time" class="form-control form-control-sm" name="hora_inicio" style="border-radius:8px;">
+              </div>
+              <div class="col-5">
+                <label class="form-label fw-semibold" style="font-size:0.8rem;">
+                  Duração (min) <span class="text-danger">*</span>
+                </label>
+                <input type="number" class="form-control form-control-sm" name="duracao_min"
+                       min="0" value="0" required style="border-radius:8px;">
+              </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-sm w-100 fw-semibold" style="border-radius:8px;">
+              <i class="bi bi-plus-lg me-1"></i>Adicionar
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Lista por setor -->
+    <div class="col-12 col-lg-8">
+      {% if paradas %}
+        {% set tipo_badge = {
+          'INTERVALO': 'info',
+          'GINASTICA': 'success',
+          'DDS':       'warning',
+          'ALMOCO':    'primary',
+          'SETUP':     'secondary',
+          'OUTROS':    'light'
+        } %}
+        {% set tipo_label = {
+          'INTERVALO': 'Intervalo',
+          'GINASTICA': 'Ginástica',
+          'DDS':       'DDS',
+          'ALMOCO':    'Almoço',
+          'SETUP':     'Setup',
+          'OUTROS':    'Outros'
+        } %}
+        {% for setor_nome, itens in paradas.items() %}
+        <div class="card mb-3" style="border-radius:12px;border-color:var(--border);">
+          <div class="card-header py-2 px-3 d-flex align-items-center justify-content-between"
+               style="border-radius:12px 12px 0 0;border-color:var(--border);background:var(--bg);">
+            <div class="d-flex align-items-center gap-2">
+              <i class="bi bi-pause-circle text-muted"></i>
+              <span class="fw-semibold" style="font-size:0.9rem;">{{ setor_nome }}</span>
+              <span class="badge bg-secondary" style="font-size:0.68rem;">{{ itens | length }}</span>
+            </div>
+          </div>
+          <div class="card-body p-0">
+            <table class="table table-sm table-hover mb-0" style="font-size:0.82rem;">
+              <thead style="font-size:0.72rem;text-transform:uppercase;letter-spacing:.4px;background:var(--bg);">
+                <tr>
+                  <th class="ps-3 py-2">Tipo</th>
+                  <th>Nome</th>
+                  <th>Linha</th>
+                  <th>Início</th>
+                  <th class="text-end">Duração</th>
+                  <th class="pe-3"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for p in itens %}
+                <tr>
+                  <td class="ps-3">
+                    <span class="badge bg-{{ tipo_badge.get(p.tipo, 'light') }}
+                          {% if p.tipo in ['DDS','OUTROS'] %}text-dark{% endif %}"
+                          style="font-size:0.68rem;">
+                      {{ tipo_label.get(p.tipo, p.tipo) }}
+                    </span>
+                  </td>
+                  <td class="fw-semibold">{{ p.nome }}</td>
+                  <td class="text-muted small">{{ p.linha or '—' }}</td>
+                  <td class="text-muted small">
+                    {% if p.hora_inicio %}{{ p.hora_inicio }}{% else %}—{% endif %}
+                  </td>
+                  <td class="text-end fw-semibold">{{ p.duracao_min }} min</td>
+                  <td class="text-end pe-3">
+                    <form method="POST" style="display:inline;"
+                          onsubmit="return confirm('Remover esta parada?')">
+                      <input type="hidden" name="acao" value="excluir">
+                      <input type="hidden" name="id" value="{{ p.id }}">
+                      <button type="submit" class="btn btn-link btn-sm text-danger p-0" title="Remover">
+                        <i class="bi bi-trash3"></i>
+                      </button>
+                    </form>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          <div class="card-footer text-muted small px-3 py-2"
+               style="border-color:var(--border);border-radius:0 0 12px 12px;">
+            Total: {{ itens | sum(attribute='duracao_min') }} min de paradas
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+      <div class="card" style="border-radius:12px;border-color:var(--border);">
+        <div class="card-body p-5 text-center text-muted">
+          <i class="bi bi-pause-circle d-block fs-1 mb-3 opacity-25"></i>
+          <p class="mb-0 fw-semibold">Nenhuma parada configurada</p>
+          <p class="small mt-1">Cadastre as paradas de linha no formulário ao lado.</p>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+
+<script>
+const OPCOES_LINHAS = {{ opcoes | tojson }};
+
+function filtrarLinhas(setor) {
+  const sel = document.getElementById("selectLinha");
+  const opts = sel.querySelectorAll("option[data-setor]");
+  opts.forEach(function(opt) {
+    opt.style.display = (!setor || opt.dataset.setor === setor) ? "" : "none";
+  });
+  if (sel.value && sel.options[sel.selectedIndex].dataset.setor !== setor) {
+    sel.value = "";
+  }
+}
+</script>
+{% endblock %}
