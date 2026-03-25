@@ -160,15 +160,17 @@ def desvincular(apontamento_id: int) -> None:
                 """, (row["quantidade"], row["op_id"]))
 
 
-def fila_complemento_smd() -> list:
+def fila_producao() -> list:
     with get_db() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
             cur.execute("""
                 SELECT
+                    co.setor,
                     co.id,
                     co.numero_op,
                     co.produto,
                     co.descricao,
+                    co.fase_modelo,
                     co.quantidade,
                     co.produzido,
                     (co.quantidade - co.produzido) AS saldo,
@@ -184,10 +186,9 @@ def fila_complemento_smd() -> list:
                     ) AS aguardando_top
                 FROM controle_ops co
                 LEFT JOIN apontamento a ON a.op_id = co.id
-                WHERE co.fase_modelo = 'AMBAS'
-                GROUP BY co.id, co.numero_op, co.produto, co.descricao, co.quantidade, co.produzido
-                HAVING co.quantidade > co.produzido
-                    OR COALESCE(SUM(a.quantidade), 0) > 0
-                ORDER BY co.numero_op
+                WHERE co.quantidade > co.produzido
+                GROUP BY co.setor, co.id, co.numero_op, co.produto, co.descricao,
+                         co.fase_modelo, co.quantidade, co.produzido
+                ORDER BY co.setor NULLS LAST, co.numero_op
             """)
             return cur.fetchall()
