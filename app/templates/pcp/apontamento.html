@@ -291,6 +291,10 @@
         <select class="form-select mb-2" id="selectOP" size="5" style="border-radius:8px;height:auto;">
           <option value="">— Selecione —</option>
         </select>
+        <div id="avisoModelo" class="alert alert-danger py-2 px-3 mb-2" style="display:none;font-size:0.82rem;border-radius:8px;">
+          <i class="bi bi-exclamation-triangle-fill me-1"></i>
+          <span id="avisoModeloTexto"></span>
+        </div>
         <div id="infoOP" class="p-2 rounded mb-3" style="display:none;background:var(--bg);font-size:0.82rem;">
           <div><span class="text-muted">Produto:</span> <strong id="opProduto"></strong></div>
           <div><span class="text-muted">Saldo disponível:</span> <strong id="opSaldo"></strong></div>
@@ -303,8 +307,11 @@
               Quantidade <span class="text-danger">*</span>
             </label>
             <input type="number" class="form-control" id="inputQuantidade"
-                   min="1" style="border-radius:8px;">
+                   min="1" style="border-radius:8px;" oninput="verificarSaldo()">
             <div class="form-text" id="qtdHint" style="font-size:0.75rem;"></div>
+            <div id="avisoSaldo" class="mt-1" style="display:none;font-size:0.78rem;color:#dc3545;">
+              <i class="bi bi-x-circle-fill me-1"></i><span id="avisoSaldoTexto"></span>
+            </div>
           </div>
           <div class="col-6">
             <label class="form-label fw-semibold" style="font-size:0.8rem;">
@@ -393,7 +400,9 @@ function preencherSelectOP(termo, setor) {
     opt.textContent     = op.numero_op + " · " + op.produto + " · Saldo: " + Number(op.saldo).toLocaleString("pt-BR");
     sel.appendChild(opt);
   });
-  document.getElementById("infoOP").style.display = "none";
+  document.getElementById("infoOP").style.display          = "none";
+  document.getElementById("avisoModelo").style.display     = "none";
+  document.getElementById("avisoSaldo").style.display      = "none";
 }
 
 function filtrarOPs(termo) {
@@ -401,13 +410,54 @@ function filtrarOPs(termo) {
 }
 
 document.getElementById("selectOP").addEventListener("change", function () {
-  const opt = this.options[this.selectedIndex];
-  const box = document.getElementById("infoOP");
-  if (!this.value) { box.style.display = "none"; return; }
-  document.getElementById("opProduto").textContent = opt.dataset.produto;
+  const opt     = this.options[this.selectedIndex];
+  const box     = document.getElementById("infoOP");
+  const avMod   = document.getElementById("avisoModelo");
+  const avModTx = document.getElementById("avisoModeloTexto");
+
+  document.getElementById("avisoSaldo").style.display = "none";
+
+  if (!this.value) {
+    box.style.display   = "none";
+    avMod.style.display = "none";
+    return;
+  }
+
+  const produto      = opt.dataset.produto || "";
+  const modeloAtual  = document.getElementById("hiddenModelo").value || "";
+  const modeloBate   = produto.trim().toUpperCase() === modeloAtual.trim().toUpperCase();
+
+  document.getElementById("opProduto").textContent = produto;
   document.getElementById("opSaldo").textContent   = Number(opt.dataset.saldo).toLocaleString("pt-BR");
   box.style.display = "";
+
+  if (!modeloBate) {
+    avModTx.textContent = `Modelo incompatível: produção é "${modeloAtual}" mas a OP é para "${produto}".`;
+    avMod.style.display = "";
+  } else {
+    avMod.style.display = "none";
+  }
+
+  verificarSaldo();
 });
+
+function verificarSaldo() {
+  const avSaldo   = document.getElementById("avisoSaldo");
+  const avSaldoTx = document.getElementById("avisoSaldoTexto");
+  const sel       = document.getElementById("selectOP");
+  if (!sel.value) { avSaldo.style.display = "none"; return; }
+
+  const opt        = sel.options[sel.selectedIndex];
+  const saldo      = parseInt(opt.dataset.saldo || "0");
+  const quantidade = parseInt(document.getElementById("inputQuantidade").value || "0");
+
+  if (quantidade > 0 && saldo >= 0 && quantidade > saldo) {
+    avSaldoTx.textContent = `Saldo insuficiente: disponível ${saldo.toLocaleString("pt-BR")}, solicitado ${quantidade.toLocaleString("pt-BR")}.`;
+    avSaldo.style.display = "";
+  } else {
+    avSaldo.style.display = "none";
+  }
+}
 
 function confirmarVincular() {
   const opId = document.getElementById("selectOP").value;
