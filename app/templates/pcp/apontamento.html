@@ -120,10 +120,9 @@
               </td>
 
               {% if is_smd %}
-              {# SMD: duas linhas de vínculo — TOP e BOTTOM #}
+              {# SMD: status de TOP e BOTTOM + botão único vincular #}
               <td>
                 <div class="d-flex flex-column gap-1">
-                  {# TOP #}
                   <div class="d-flex align-items-center gap-2">
                     <span class="badge bg-primary" style="font-size:0.65rem;min-width:52px;">TOP</span>
                     {% if ap.top_id %}
@@ -134,7 +133,6 @@
                     <span class="text-muted small">—</span>
                     {% endif %}
                   </div>
-                  {# BOTTOM #}
                   <div class="d-flex align-items-center gap-2">
                     <span class="badge bg-secondary" style="font-size:0.65rem;min-width:52px;">BOTTOM</span>
                     {% if ap.bot_id %}
@@ -149,36 +147,28 @@
               </td>
               <td class="text-end pe-3">
                 <div class="d-flex flex-column gap-1 align-items-end">
-                  {# Ação TOP #}
                   {% if ap.top_id %}
                   <button class="btn btn-outline-danger btn-sm" style="border-radius:6px;font-size:0.75rem;"
-                          onclick="desvincular({{ ap.top_id }}, 'TOP')" title="Desvincular TOP">
+                          onclick="desvincular({{ ap.top_id }}, 'TOP')">
                     <i class="bi bi-x-lg"></i> TOP
                   </button>
-                  {% else %}
+                  {% endif %}
+                  {% if ap.bot_id %}
+                  <button class="btn btn-outline-danger btn-sm" style="border-radius:6px;font-size:0.75rem;"
+                          onclick="desvincular({{ ap.bot_id }}, 'BOTTOM')">
+                    <i class="bi bi-x-lg"></i> BOTTOM
+                  </button>
+                  {% endif %}
+                  {% if not ap.top_id or not ap.bot_id %}
                   <button class="btn btn-outline-primary btn-sm" style="border-radius:6px;font-size:0.75rem;"
                           onclick="abrirVincular(this)"
                           data-data="{{ ap.data }}" data-turno="{{ ap.turno }}"
                           data-modelo="{{ ap.modelo }}" data-linha="{{ ap.linha }}"
-                          data-setor="{{ ap.setor }}" data-fase="TOP"
+                          data-setor="{{ ap.setor }}" data-fase=""
+                          data-top-livre="{{ 'true' if not ap.top_id else 'false' }}"
+                          data-bot-livre="{{ 'true' if not ap.bot_id else 'false' }}"
                           data-producao="{{ ap.producao_total | int }}">
-                    <i class="bi bi-link-45deg"></i> TOP
-                  </button>
-                  {% endif %}
-                  {# Ação BOTTOM #}
-                  {% if ap.bot_id %}
-                  <button class="btn btn-outline-danger btn-sm" style="border-radius:6px;font-size:0.75rem;"
-                          onclick="desvincular({{ ap.bot_id }}, 'BOTTOM')" title="Desvincular BOTTOM">
-                    <i class="bi bi-x-lg"></i> BOTTOM
-                  </button>
-                  {% else %}
-                  <button class="btn btn-outline-secondary btn-sm" style="border-radius:6px;font-size:0.75rem;"
-                          onclick="abrirVincular(this)"
-                          data-data="{{ ap.data }}" data-turno="{{ ap.turno }}"
-                          data-modelo="{{ ap.modelo }}" data-linha="{{ ap.linha }}"
-                          data-setor="{{ ap.setor }}" data-fase="BOTTOM"
-                          data-producao="{{ ap.producao_total | int }}">
-                    <i class="bi bi-link-45deg"></i> BOTTOM
+                    <i class="bi bi-link-45deg me-1"></i>Vincular
                   </button>
                   {% endif %}
                 </div>
@@ -263,10 +253,6 @@
             <div class="col-6"><span class="text-muted">Turno:</span> <strong id="infoTurno"></strong></div>
             <div class="col-6"><span class="text-muted">Modelo:</span> <strong id="infoModelo"></strong></div>
             <div class="col-6"><span class="text-muted">Linha:</span> <strong id="infoLinha"></strong></div>
-            <div class="col-6 mt-1" id="rowFase" style="display:none;">
-              <span class="text-muted">Fase:</span>
-              <span class="badge bg-primary ms-1" id="infoFase"></span>
-            </div>
             <div class="col-6 mt-1">
               <span class="text-muted">Produção:</span>
               <strong class="text-success" id="infoProducao"></strong>
@@ -274,9 +260,35 @@
           </div>
         </div>
 
-        <!-- Seleção de OP -->
+        <!-- Fase (SMD) -->
+        <div id="rowFaseSelect" style="display:none;" class="mb-3">
+          <label class="form-label fw-semibold" style="font-size:0.8rem;">
+            Fase <span class="text-danger">*</span>
+          </label>
+          <div class="d-flex gap-2">
+            <div class="form-check form-check-inline">
+              <input class="form-check-input" type="radio" name="modalFase" id="faseTop" value="TOP">
+              <label class="form-check-label fw-semibold" for="faseTop">TOP</label>
+            </div>
+            <div class="form-check form-check-inline">
+              <input class="form-check-input" type="radio" name="modalFase" id="faseBottom" value="BOTTOM">
+              <label class="form-check-label fw-semibold" for="faseBottom">BOTTOM</label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Busca + Seleção de OP -->
         <label class="form-label fw-semibold" style="font-size:0.8rem;">OP <span class="text-danger">*</span></label>
-        <select class="form-select mb-2" id="selectOP" style="border-radius:8px;">
+        <div class="input-group mb-2">
+          <span class="input-group-text" style="border-radius:8px 0 0 8px;border-color:#dee2e6;">
+            <i class="bi bi-search" style="font-size:0.8rem;"></i>
+          </span>
+          <input type="text" class="form-control" id="buscaOP"
+                 placeholder="Buscar por nº OP ou produto..."
+                 oninput="filtrarOPs(this.value)"
+                 style="border-radius:0 8px 8px 0;">
+        </div>
+        <select class="form-select mb-2" id="selectOP" size="5" style="border-radius:8px;height:auto;">
           <option value="">— Selecione —</option>
         </select>
         <div id="infoOP" class="p-2 rounded mb-3" style="display:none;background:var(--bg);font-size:0.82rem;">
@@ -286,7 +298,7 @@
 
         <!-- Lote (opcional) -->
         <label class="form-label fw-semibold" style="font-size:0.8rem;">
-          Lote <span class="text-muted fw-normal">(opcional — para rastreabilidade)</span>
+          Lote <span class="text-muted fw-normal">(opcional)</span>
         </label>
         <input type="text" class="form-control" id="inputLote"
                placeholder="Ex: L2026-001" style="border-radius:8px;">
@@ -297,7 +309,6 @@
         <input type="hidden" id="hiddenModelo">
         <input type="hidden" id="hiddenLinha">
         <input type="hidden" id="hiddenSetor">
-        <input type="hidden" id="hiddenFase">
         <input type="hidden" id="hiddenProducao">
       </div>
       <div class="modal-footer border-top" style="border-color:var(--border) !important;">
@@ -316,55 +327,63 @@ const URL_DESVINCULAR = "{{ url_for('pages.pcp_apontamento_desvincular') }}";
 
 const OPS_JSON = {{ ops | tojson }};
 
+let _setorAtivo = "";
+
 function abrirVincular(btn) {
   const d = btn.dataset;
-  const fase  = d.fase  || "";
-  const setor = d.setor || "";
+  _setorAtivo = d.setor || "";
 
-  document.getElementById("infoData").textContent    = d.data;
-  document.getElementById("infoTurno").textContent   = d.turno;
-  document.getElementById("infoModelo").textContent  = d.modelo;
-  document.getElementById("infoLinha").textContent   = d.linha;
+  document.getElementById("infoData").textContent     = d.data;
+  document.getElementById("infoTurno").textContent    = d.turno;
+  document.getElementById("infoModelo").textContent   = d.modelo;
+  document.getElementById("infoLinha").textContent    = d.linha;
   document.getElementById("infoProducao").textContent = Number(d.producao).toLocaleString("pt-BR");
 
-  const rowFase = document.getElementById("rowFase");
-  if (fase) {
-    document.getElementById("infoFase").textContent = fase;
-    rowFase.style.display = "";
-    document.getElementById("tituloModalVincular").innerHTML =
-      '<i class="bi bi-link-45deg me-2 text-primary"></i>Vincular OP — ' + fase;
+  document.getElementById("hiddenData").value     = d.data;
+  document.getElementById("hiddenTurno").value    = d.turno;
+  document.getElementById("hiddenModelo").value   = d.modelo;
+  document.getElementById("hiddenLinha").value    = d.linha;
+  document.getElementById("hiddenSetor").value    = _setorAtivo;
+  document.getElementById("hiddenProducao").value = d.producao;
+  document.getElementById("inputLote").value      = "";
+  document.getElementById("infoOP").style.display = "none";
+  document.getElementById("buscaOP").value        = "";
+
+  const rowFaseSelect = document.getElementById("rowFaseSelect");
+  if (_setorAtivo === "SMD") {
+    rowFaseSelect.style.display = "";
+    const topLivre = d.topLivre === "true";
+    const botLivre = d.botLivre === "true";
+    document.getElementById("faseTop").checked    = topLivre;
+    document.getElementById("faseBottom").checked = !topLivre && botLivre;
   } else {
-    rowFase.style.display = "none";
-    document.getElementById("tituloModalVincular").innerHTML =
-      '<i class="bi bi-link-45deg me-2 text-primary"></i>Vincular OP';
+    rowFaseSelect.style.display = "none";
+    document.querySelectorAll('input[name="modalFase"]').forEach(r => r.checked = false);
   }
 
-  document.getElementById("hiddenData").value    = d.data;
-  document.getElementById("hiddenTurno").value   = d.turno;
-  document.getElementById("hiddenModelo").value  = d.modelo;
-  document.getElementById("hiddenLinha").value   = d.linha;
-  document.getElementById("hiddenSetor").value   = setor;
-  document.getElementById("hiddenFase").value    = fase;
-  document.getElementById("hiddenProducao").value = d.producao;
-  document.getElementById("inputLote").value     = "";
-  document.getElementById("infoOP").style.display = "none";
-
-  preencherSelectOP(setor);
+  preencherSelectOP("", _setorAtivo);
   new bootstrap.Modal(document.getElementById("modalVincular")).show();
 }
 
-function preencherSelectOP(setor) {
-  const sel = document.getElementById("selectOP");
+function preencherSelectOP(termo, setor) {
+  const sel   = document.getElementById("selectOP");
+  const lower = (termo || "").toLowerCase();
   sel.innerHTML = '<option value="">— Selecione —</option>';
   OPS_JSON.forEach(function(op) {
     if (setor && op.setor && op.setor !== setor) return;
+    if (lower && !op.numero_op.toLowerCase().includes(lower) && !op.produto.toLowerCase().includes(lower)) return;
     const opt = document.createElement("option");
-    opt.value = op.id;
+    opt.value           = op.id;
     opt.dataset.produto = op.produto;
     opt.dataset.saldo   = op.saldo;
-    opt.textContent = op.numero_op + " · " + op.produto + " · Saldo: " + Number(op.saldo).toLocaleString("pt-BR");
+    opt.textContent     = op.numero_op + " · " + op.produto + " · Saldo: " + Number(op.saldo).toLocaleString("pt-BR");
     sel.appendChild(opt);
   });
+  document.getElementById("infoOP").style.display = "none";
+}
+
+function filtrarOPs(termo) {
+  preencherSelectOP(termo, _setorAtivo);
 }
 
 document.getElementById("selectOP").addEventListener("change", function () {
@@ -380,6 +399,13 @@ function confirmarVincular() {
   const opId = document.getElementById("selectOP").value;
   if (!opId) { alert("Selecione uma OP."); return; }
 
+  let fase = null;
+  if (_setorAtivo === "SMD") {
+    const checkedFase = document.querySelector('input[name="modalFase"]:checked');
+    if (!checkedFase) { alert("Selecione a fase (TOP ou BOTTOM)."); return; }
+    fase = checkedFase.value;
+  }
+
   fetch(URL_VINCULAR, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -389,7 +415,7 @@ function confirmarVincular() {
       modelo:     document.getElementById("hiddenModelo").value,
       linha:      document.getElementById("hiddenLinha").value,
       setor:      document.getElementById("hiddenSetor").value,
-      fase:       document.getElementById("hiddenFase").value || null,
+      fase:       fase,
       lote:       document.getElementById("inputLote").value.trim() || null,
       op_id:      parseInt(opId),
       quantidade: parseInt(document.getElementById("hiddenProducao").value),
