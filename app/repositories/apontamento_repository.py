@@ -23,12 +23,12 @@ def listar_agrupado(data_inicial: str, data_final: str, setor: str = "", linha: 
             cur.execute(f"""
                 WITH agrupado AS (
                     SELECT
-                        data, turno, setor, linha, modelo,
-                        MAX(familia)       AS familia,
-                        SUM(producao_real) AS producao_total
-                    FROM producao_coletada
+                        pc.data, pc.turno, pc.setor, pc.linha, pc.modelo,
+                        MAX(pc.familia)       AS familia,
+                        SUM(pc.producao_real) AS producao_total
+                    FROM producao_coletada pc
                     WHERE {where}
-                    GROUP BY data, turno, setor, linha, modelo
+                    GROUP BY pc.data, pc.turno, pc.setor, pc.linha, pc.modelo
                 )
                 SELECT
                     g.data, g.turno, g.setor, g.linha, g.modelo,
