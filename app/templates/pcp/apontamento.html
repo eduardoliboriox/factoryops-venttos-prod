@@ -296,12 +296,24 @@
           <div><span class="text-muted">Saldo disponível:</span> <strong id="opSaldo"></strong></div>
         </div>
 
-        <!-- Lote (opcional) -->
-        <label class="form-label fw-semibold" style="font-size:0.8rem;">
-          Lote <span class="text-muted fw-normal">(opcional)</span>
-        </label>
-        <input type="text" class="form-control" id="inputLote"
-               placeholder="Ex: L2026-001" style="border-radius:8px;">
+        <!-- Quantidade -->
+        <div class="row g-2 mb-3">
+          <div class="col-6">
+            <label class="form-label fw-semibold" style="font-size:0.8rem;">
+              Quantidade <span class="text-danger">*</span>
+            </label>
+            <input type="number" class="form-control" id="inputQuantidade"
+                   min="1" style="border-radius:8px;">
+            <div class="form-text" id="qtdHint" style="font-size:0.75rem;"></div>
+          </div>
+          <div class="col-6">
+            <label class="form-label fw-semibold" style="font-size:0.8rem;">
+              Lote <span class="text-muted fw-normal">(opcional)</span>
+            </label>
+            <input type="text" class="form-control" id="inputLote"
+                   placeholder="Ex: 2510550016" style="border-radius:8px;">
+          </div>
+        </div>
 
         <!-- Hiddens -->
         <input type="hidden" id="hiddenData">
@@ -344,10 +356,12 @@ function abrirVincular(btn) {
   document.getElementById("hiddenModelo").value   = d.modelo;
   document.getElementById("hiddenLinha").value    = d.linha;
   document.getElementById("hiddenSetor").value    = _setorAtivo;
-  document.getElementById("hiddenProducao").value = d.producao;
-  document.getElementById("inputLote").value      = "";
-  document.getElementById("infoOP").style.display = "none";
-  document.getElementById("buscaOP").value        = "";
+  document.getElementById("hiddenProducao").value   = d.producao;
+  document.getElementById("inputQuantidade").value  = d.producao;
+  document.getElementById("qtdHint").textContent    = "Total coletado: " + Number(d.producao).toLocaleString("pt-BR");
+  document.getElementById("inputLote").value        = "";
+  document.getElementById("infoOP").style.display   = "none";
+  document.getElementById("buscaOP").value          = "";
 
   const rowFaseSelect = document.getElementById("rowFaseSelect");
   if (_setorAtivo === "SMD") {
@@ -399,6 +413,9 @@ function confirmarVincular() {
   const opId = document.getElementById("selectOP").value;
   if (!opId) { alert("Selecione uma OP."); return; }
 
+  const quantidade = parseInt(document.getElementById("inputQuantidade").value);
+  if (!quantidade || quantidade <= 0) { alert("Informe uma quantidade válida."); return; }
+
   let fase = null;
   if (_setorAtivo === "SMD") {
     const checkedFase = document.querySelector('input[name="modalFase"]:checked');
@@ -418,7 +435,7 @@ function confirmarVincular() {
       fase:       fase,
       lote:       document.getElementById("inputLote").value.trim() || null,
       op_id:      parseInt(opId),
-      quantidade: parseInt(document.getElementById("hiddenProducao").value),
+      quantidade: quantidade,
     }),
   })
   .then(r => r.json())
