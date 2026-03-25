@@ -40,3 +40,7 @@ def desvincular(apontamento_id: int) -> None:
     if not apontamento_id or apontamento_id <= 0:
         raise ValueError("Apontamento inválido.")
     repo.desvincular(apontamento_id)
+
+
+def fila_complemento_smd() -> list:
+    return repo.fila_complemento_smd()

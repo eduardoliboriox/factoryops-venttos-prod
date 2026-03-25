@@ -566,6 +566,7 @@ def pcp_planejamento():
     from flask import request
     from app.services import planejamento_service as svc
     from app.services import producao_coletada_service as pc_svc
+    from app.services import apontamento_service as ap_svc
     from datetime import date
 
     data_str = request.args.get("data",  str(date.today()))
@@ -577,12 +578,14 @@ def pcp_planejamento():
     ops      = []
     filtros  = {"setores": [], "linhas": []}
     opcoes   = {}
+    fila_smd = []
 
     try:
-        planos  = svc.listar(data_str, turno, setor, linha)
-        ops     = svc.ops_disponiveis()
-        filtros = pc_svc.filtros_disponiveis(setor)
-        opcoes  = svc.opcoes_linha()
+        planos   = svc.listar(data_str, turno, setor, linha)
+        ops      = svc.ops_disponiveis()
+        filtros  = pc_svc.filtros_disponiveis(setor)
+        opcoes   = svc.opcoes_linha()
+        fila_smd = ap_svc.fila_complemento_smd()
     except Exception as e:
         erro = str(e)
 
@@ -597,6 +600,7 @@ def pcp_planejamento():
         ops=ops,
         filtros=filtros,
         opcoes=opcoes,
+        fila_smd=fila_smd,
         erro=erro,
     )
 

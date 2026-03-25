@@ -114,9 +114,23 @@ def vincular(data: str, turno: str, modelo: str, linha: str, op_id: int, quantid
                 INSERT INTO apontamento (op_id, data, turno, modelo, linha, quantidade, fase, lote)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
             """, (op_id, data, turno, modelo, linha, quantidade, fase or None, lote or None))
-            cur.execute("""
-                UPDATE controle_ops SET produzido = produzido + %s WHERE id = %s
-            """, (quantidade, op_id))
+            cur.execute("SELECT fase_modelo FROM controle_ops WHERE id = %s", (op_id,))
+            op_row = cur.fetchone()
+            fase_modelo = op_row[0] if op_row else None
+            if fase_modelo == "AMBAS":
+                cur.execute("""
+                    UPDATE controle_ops SET produzido = (
+                        SELECT LEAST(
+                            COALESCE(SUM(CASE WHEN fase = 'TOP'    THEN quantidade ELSE 0 END), 0),
+                            COALESCE(SUM(CASE WHEN fase = 'BOTTOM' THEN quantidade ELSE 0 END), 0)
+                        )
+                        FROM apontamento WHERE op_id = %s
+                    ) WHERE id = %s
+                """, (op_id, op_id))
+            else:
+                cur.execute("""
+                    UPDATE controle_ops SET produzido = produzido + %s WHERE id = %s
+                """, (quantidade, op_id))
 
 
 def desvincular(apontamento_id: int) -> None:
@@ -126,7 +140,54 @@ def desvincular(apontamento_id: int) -> None:
             row = cur.fetchone()
             if not row:
                 return
-            cur.execute("""
-                UPDATE controle_ops SET produzido = GREATEST(0, produzido - %s) WHERE id = %s
-            """, (row["quantidade"], row["op_id"]))
+            cur.execute("SELECT fase_modelo FROM controle_ops WHERE id = %s", (row["op_id"],))
+            op_row = cur.fetchone()
+            fase_modelo = op_row["fase_modelo"] if op_row else None
             cur.execute("DELETE FROM apontamento WHERE id = %s", (apontamento_id,))
+            if fase_modelo == "AMBAS":
+                cur.execute("""
+                    UPDATE controle_ops SET produzido = (
+                        SELECT LEAST(
+                            COALESCE(SUM(CASE WHEN fase = 'TOP'    THEN quantidade ELSE 0 END), 0),
+                            COALESCE(SUM(CASE WHEN fase = 'BOTTOM' THEN quantidade ELSE 0 END), 0)
+                        )
+                        FROM apontamento WHERE op_id = %s
+                    ) WHERE id = %s
+                """, (row["op_id"], row["op_id"]))
+            else:
+                cur.execute("""
+                    UPDATE controle_ops SET produzido = GREATEST(0, produzido - %s) WHERE id = %s
+                """, (row["quantidade"], row["op_id"]))
+
+
+def fila_complemento_smd() -> list:
+    with get_db() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute("""
+                SELECT
+                    co.id,
+                    co.numero_op,
+                    co.produto,
+                    co.descricao,
+                    co.quantidade,
+                    co.produzido,
+                    (co.quantidade - co.produzido) AS saldo,
+                    COALESCE(SUM(CASE WHEN a.fase = 'TOP'    THEN a.quantidade ELSE 0 END), 0) AS top_feito,
+                    COALESCE(SUM(CASE WHEN a.fase = 'BOTTOM' THEN a.quantidade ELSE 0 END), 0) AS bottom_feito,
+                    GREATEST(0,
+                        COALESCE(SUM(CASE WHEN a.fase = 'TOP'    THEN a.quantidade ELSE 0 END), 0) -
+                        COALESCE(SUM(CASE WHEN a.fase = 'BOTTOM' THEN a.quantidade ELSE 0 END), 0)
+                    ) AS aguardando_bottom,
+                    GREATEST(0,
+                        COALESCE(SUM(CASE WHEN a.fase = 'BOTTOM' THEN a.quantidade ELSE 0 END), 0) -
+                        COALESCE(SUM(CASE WHEN a.fase = 'TOP'    THEN a.quantidade ELSE 0 END), 0)
+                    ) AS aguardando_top
+                FROM controle_ops co
+                LEFT JOIN apontamento a ON a.op_id = co.id
+                WHERE co.fase_modelo = 'AMBAS'
+                GROUP BY co.id, co.numero_op, co.produto, co.descricao, co.quantidade, co.produzido
+                HAVING co.quantidade > co.produzido
+                    OR COALESCE(SUM(a.quantidade), 0) > 0
+                ORDER BY co.numero_op
+            """)
+            return cur.fetchall()
