@@ -78,7 +78,7 @@
     </div>
   </div>
 
-  <!-- Tabela de apontamentos -->
+  <!-- Tabela -->
   <div class="card" style="border-radius:12px;border-color:var(--border);">
     <div class="card-body p-0">
       {% if apontamentos %}
@@ -93,68 +93,134 @@
               <th>Modelo</th>
               <th>Família</th>
               <th class="text-end">Produção</th>
-              <th>OP Vinculada</th>
-              <th class="text-end">Saldo OP</th>
+              <th>Vínculo / OP</th>
               <th class="text-end pe-3">Ação</th>
             </tr>
           </thead>
           <tbody>
             {% for ap in apontamentos %}
-            <tr id="row-{{ loop.index }}">
+            {% set is_smd = ap.setor == 'SMD' %}
+            {% set tcores = {'1º Turno': 'warning', '2º Turno': 'primary', '3º Turno': 'secondary'} %}
+            {% set scores = {'PTH':'primary','IM':'warning','SMD':'success','PA':'danger','VTT':'info'} %}
+            <tr>
               <td class="ps-3 text-nowrap">{{ ap.data }}</td>
               <td>
-                {% set tcores = {'1º Turno': 'warning', '2º Turno': 'primary', '3º Turno': 'secondary'} %}
                 <span class="badge bg-{{ tcores.get(ap.turno, 'secondary') }} {% if ap.turno == '1º Turno' %}text-dark{% endif %}"
                       style="font-size:0.7rem;">{{ ap.turno }}</span>
               </td>
-              <td><span class="badge bg-secondary" style="font-size:0.7rem;">{{ ap.setor }}</span></td>
+              <td>
+                <span class="badge bg-{{ scores.get(ap.setor, 'secondary') }} {% if ap.setor == 'IM' %}text-dark{% endif %}"
+                      style="font-size:0.7rem;">{{ ap.setor }}</span>
+              </td>
               <td class="fw-semibold">{{ ap.linha }}</td>
               <td class="text-nowrap">{{ ap.modelo }}</td>
               <td class="text-muted small">{{ ap.familia or '—' }}</td>
-              <td class="text-end fw-bold text-success">{{ "{:,.0f}".format(ap.producao_total or 0).replace(',', '.') }}</td>
+              <td class="text-end fw-bold text-success">
+                {{ "{:,.0f}".format(ap.producao_total or 0).replace(',', '.') }}
+              </td>
+
+              {% if is_smd %}
+              {# SMD: duas linhas de vínculo — TOP e BOTTOM #}
               <td>
-                {% if ap.apontamento_id %}
-                <div class="d-flex flex-column" style="line-height:1.3;">
-                  <span class="fw-semibold">{{ ap.numero_op }}</span>
-                  <span class="text-muted small">{{ ap.produto }}</span>
+                <div class="d-flex flex-column gap-1">
+                  {# TOP #}
+                  <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-primary" style="font-size:0.65rem;min-width:52px;">TOP</span>
+                    {% if ap.top_id %}
+                    <span class="fw-semibold small">{{ ap.top_numero_op }}</span>
+                    {% if ap.top_lote %}<span class="badge bg-light text-muted border" style="font-size:0.65rem;">{{ ap.top_lote }}</span>{% endif %}
+                    <span class="text-muted small">saldo: {{ "{:,.0f}".format(ap.top_saldo or 0).replace(',','.') }}</span>
+                    {% else %}
+                    <span class="text-muted small">—</span>
+                    {% endif %}
+                  </div>
+                  {# BOTTOM #}
+                  <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-secondary" style="font-size:0.65rem;min-width:52px;">BOTTOM</span>
+                    {% if ap.bot_id %}
+                    <span class="fw-semibold small">{{ ap.bot_numero_op }}</span>
+                    {% if ap.bot_lote %}<span class="badge bg-light text-muted border" style="font-size:0.65rem;">{{ ap.bot_lote }}</span>{% endif %}
+                    <span class="text-muted small">saldo: {{ "{:,.0f}".format(ap.bot_saldo or 0).replace(',','.') }}</span>
+                    {% else %}
+                    <span class="text-muted small">—</span>
+                    {% endif %}
+                  </div>
+                </div>
+              </td>
+              <td class="text-end pe-3">
+                <div class="d-flex flex-column gap-1 align-items-end">
+                  {# Ação TOP #}
+                  {% if ap.top_id %}
+                  <button class="btn btn-outline-danger btn-sm" style="border-radius:6px;font-size:0.75rem;"
+                          onclick="desvincular({{ ap.top_id }}, 'TOP')" title="Desvincular TOP">
+                    <i class="bi bi-x-lg"></i> TOP
+                  </button>
+                  {% else %}
+                  <button class="btn btn-outline-primary btn-sm" style="border-radius:6px;font-size:0.75rem;"
+                          onclick="abrirVincular(this)"
+                          data-data="{{ ap.data }}" data-turno="{{ ap.turno }}"
+                          data-modelo="{{ ap.modelo }}" data-linha="{{ ap.linha }}"
+                          data-setor="{{ ap.setor }}" data-fase="TOP"
+                          data-producao="{{ ap.producao_total | int }}">
+                    <i class="bi bi-link-45deg"></i> TOP
+                  </button>
+                  {% endif %}
+                  {# Ação BOTTOM #}
+                  {% if ap.bot_id %}
+                  <button class="btn btn-outline-danger btn-sm" style="border-radius:6px;font-size:0.75rem;"
+                          onclick="desvincular({{ ap.bot_id }}, 'BOTTOM')" title="Desvincular BOTTOM">
+                    <i class="bi bi-x-lg"></i> BOTTOM
+                  </button>
+                  {% else %}
+                  <button class="btn btn-outline-secondary btn-sm" style="border-radius:6px;font-size:0.75rem;"
+                          onclick="abrirVincular(this)"
+                          data-data="{{ ap.data }}" data-turno="{{ ap.turno }}"
+                          data-modelo="{{ ap.modelo }}" data-linha="{{ ap.linha }}"
+                          data-setor="{{ ap.setor }}" data-fase="BOTTOM"
+                          data-producao="{{ ap.producao_total | int }}">
+                    <i class="bi bi-link-45deg"></i> BOTTOM
+                  </button>
+                  {% endif %}
+                </div>
+              </td>
+
+              {% else %}
+              {# Não-SMD: vínculo único, sem fase #}
+              <td>
+                {% if ap.ap_id %}
+                <div class="d-flex align-items-center gap-2">
+                  <div class="d-flex flex-column" style="line-height:1.3;">
+                    <span class="fw-semibold">{{ ap.ap_numero_op }}</span>
+                    <span class="text-muted small">{{ ap.ap_produto }}</span>
+                  </div>
+                  {% if ap.ap_lote %}
+                  <span class="badge bg-light text-muted border" style="font-size:0.68rem;">{{ ap.ap_lote }}</span>
+                  {% endif %}
+                  <span class="text-muted small">saldo: {{ "{:,.0f}".format(ap.ap_saldo or 0).replace(',','.') }}</span>
                 </div>
                 {% else %}
                 <span class="text-muted small">—</span>
                 {% endif %}
               </td>
-              <td class="text-end">
-                {% if ap.apontamento_id %}
-                  {% if ap.op_saldo <= 0 %}
-                  <span class="badge text-bg-success" style="font-size:0.7rem;">Concluída</span>
-                  {% else %}
-                  <span class="fw-semibold">{{ "{:,.0f}".format(ap.op_saldo).replace(',', '.') }}</span>
-                  {% endif %}
-                {% else %}
-                <span class="text-muted">—</span>
-                {% endif %}
-              </td>
               <td class="text-end pe-3">
-                {% if ap.apontamento_id %}
-                <button class="btn btn-outline-danger btn-sm"
-                        style="border-radius:6px;"
-                        onclick="desvincular({{ ap.apontamento_id }}, this)"
-                        title="Desvincular OP">
+                {% if ap.ap_id %}
+                <button class="btn btn-outline-danger btn-sm" style="border-radius:6px;"
+                        onclick="desvincular({{ ap.ap_id }}, '')" title="Desvincular OP">
                   <i class="bi bi-x-lg"></i>
                 </button>
                 {% else %}
-                <button class="btn btn-outline-primary btn-sm"
-                        style="border-radius:6px;"
+                <button class="btn btn-outline-primary btn-sm" style="border-radius:6px;"
                         onclick="abrirVincular(this)"
-                        data-data="{{ ap.data }}"
-                        data-turno="{{ ap.turno }}"
-                        data-modelo="{{ ap.modelo }}"
-                        data-linha="{{ ap.linha }}"
-                        data-producao="{{ ap.producao_total | int }}"
-                        title="Vincular OP">
+                        data-data="{{ ap.data }}" data-turno="{{ ap.turno }}"
+                        data-modelo="{{ ap.modelo }}" data-linha="{{ ap.linha }}"
+                        data-setor="{{ ap.setor }}" data-fase=""
+                        data-producao="{{ ap.producao_total | int }}">
                   <i class="bi bi-link-45deg me-1"></i>Vincular
                 </button>
                 {% endif %}
               </td>
+              {% endif %}
+
             </tr>
             {% endfor %}
           </tbody>
@@ -172,8 +238,6 @@
     <div class="card-footer text-muted small px-3 py-2 d-flex gap-3"
          style="border-color:var(--border);border-radius:0 0 12px 12px;">
       <span>{{ apontamentos | length }} registros</span>
-      <span>{{ apontamentos | selectattr('apontamento_id') | list | length }} vinculados</span>
-      <span>{{ apontamentos | rejectattr('apontamento_id') | list | length }} pendentes</span>
     </div>
     {% endif %}
   </div>
@@ -185,48 +249,56 @@
   <div class="modal-dialog">
     <div class="modal-content" style="border-radius:12px;border-color:var(--border);">
       <div class="modal-header border-bottom" style="border-color:var(--border) !important;">
-        <h6 class="modal-title fw-semibold">
+        <h6 class="modal-title fw-semibold" id="tituloModalVincular">
           <i class="bi bi-link-45deg me-2 text-primary"></i>Vincular OP
         </h6>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
+
+        <!-- Resumo da produção -->
         <div class="p-2 mb-3 rounded" style="background:var(--bg);font-size:0.82rem;">
           <div class="row g-1">
             <div class="col-6"><span class="text-muted">Data:</span> <strong id="infoData"></strong></div>
             <div class="col-6"><span class="text-muted">Turno:</span> <strong id="infoTurno"></strong></div>
             <div class="col-6"><span class="text-muted">Modelo:</span> <strong id="infoModelo"></strong></div>
             <div class="col-6"><span class="text-muted">Linha:</span> <strong id="infoLinha"></strong></div>
-            <div class="col-12 mt-1"><span class="text-muted">Produção total:</span>
+            <div class="col-6 mt-1" id="rowFase" style="display:none;">
+              <span class="text-muted">Fase:</span>
+              <span class="badge bg-primary ms-1" id="infoFase"></span>
+            </div>
+            <div class="col-6 mt-1">
+              <span class="text-muted">Produção:</span>
               <strong class="text-success" id="infoProducao"></strong>
             </div>
           </div>
         </div>
 
-        <label class="form-label fw-semibold" style="font-size:0.8rem;">Selecione a OP <span class="text-danger">*</span></label>
-        <select class="form-select" id="selectOP" style="border-radius:8px;">
+        <!-- Seleção de OP -->
+        <label class="form-label fw-semibold" style="font-size:0.8rem;">OP <span class="text-danger">*</span></label>
+        <select class="form-select mb-2" id="selectOP" style="border-radius:8px;">
           <option value="">— Selecione —</option>
-          {% for op in ops %}
-          <option value="{{ op.id }}"
-                  data-numero="{{ op.numero_op }}"
-                  data-produto="{{ op.produto }}"
-                  data-saldo="{{ op.saldo }}">
-            {{ op.numero_op }} · {{ op.produto }} · Saldo: {{ op.saldo }}
-          </option>
-          {% endfor %}
         </select>
-
-        <div id="infoOP" class="mt-2 p-2 rounded" style="display:none;background:var(--bg);font-size:0.82rem;">
+        <div id="infoOP" class="p-2 rounded mb-3" style="display:none;background:var(--bg);font-size:0.82rem;">
           <div><span class="text-muted">Produto:</span> <strong id="opProduto"></strong></div>
           <div><span class="text-muted">Saldo disponível:</span> <strong id="opSaldo"></strong></div>
         </div>
 
+        <!-- Lote (opcional) -->
+        <label class="form-label fw-semibold" style="font-size:0.8rem;">
+          Lote <span class="text-muted fw-normal">(opcional — para rastreabilidade)</span>
+        </label>
+        <input type="text" class="form-control" id="inputLote"
+               placeholder="Ex: L2026-001" style="border-radius:8px;">
+
+        <!-- Hiddens -->
         <input type="hidden" id="hiddenData">
         <input type="hidden" id="hiddenTurno">
         <input type="hidden" id="hiddenModelo">
         <input type="hidden" id="hiddenLinha">
+        <input type="hidden" id="hiddenSetor">
+        <input type="hidden" id="hiddenFase">
         <input type="hidden" id="hiddenProducao">
-        <input type="hidden" id="hiddenBtnRef">
       </div>
       <div class="modal-footer border-top" style="border-color:var(--border) !important;">
         <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
@@ -242,24 +314,57 @@
 const URL_VINCULAR    = "{{ url_for('pages.pcp_apontamento_vincular') }}";
 const URL_DESVINCULAR = "{{ url_for('pages.pcp_apontamento_desvincular') }}";
 
-let btnAtual = null;
+const OPS_JSON = {{ ops | tojson }};
 
 function abrirVincular(btn) {
-  btnAtual = btn;
   const d = btn.dataset;
+  const fase  = d.fase  || "";
+  const setor = d.setor || "";
+
   document.getElementById("infoData").textContent    = d.data;
   document.getElementById("infoTurno").textContent   = d.turno;
   document.getElementById("infoModelo").textContent  = d.modelo;
   document.getElementById("infoLinha").textContent   = d.linha;
   document.getElementById("infoProducao").textContent = Number(d.producao).toLocaleString("pt-BR");
+
+  const rowFase = document.getElementById("rowFase");
+  if (fase) {
+    document.getElementById("infoFase").textContent = fase;
+    rowFase.style.display = "";
+    document.getElementById("tituloModalVincular").innerHTML =
+      '<i class="bi bi-link-45deg me-2 text-primary"></i>Vincular OP — ' + fase;
+  } else {
+    rowFase.style.display = "none";
+    document.getElementById("tituloModalVincular").innerHTML =
+      '<i class="bi bi-link-45deg me-2 text-primary"></i>Vincular OP';
+  }
+
   document.getElementById("hiddenData").value    = d.data;
   document.getElementById("hiddenTurno").value   = d.turno;
   document.getElementById("hiddenModelo").value  = d.modelo;
   document.getElementById("hiddenLinha").value   = d.linha;
+  document.getElementById("hiddenSetor").value   = setor;
+  document.getElementById("hiddenFase").value    = fase;
   document.getElementById("hiddenProducao").value = d.producao;
-  document.getElementById("selectOP").value = "";
+  document.getElementById("inputLote").value     = "";
   document.getElementById("infoOP").style.display = "none";
+
+  preencherSelectOP(setor);
   new bootstrap.Modal(document.getElementById("modalVincular")).show();
+}
+
+function preencherSelectOP(setor) {
+  const sel = document.getElementById("selectOP");
+  sel.innerHTML = '<option value="">— Selecione —</option>';
+  OPS_JSON.forEach(function(op) {
+    if (setor && op.setor && op.setor !== setor) return;
+    const opt = document.createElement("option");
+    opt.value = op.id;
+    opt.dataset.produto = op.produto;
+    opt.dataset.saldo   = op.saldo;
+    opt.textContent = op.numero_op + " · " + op.produto + " · Saldo: " + Number(op.saldo).toLocaleString("pt-BR");
+    sel.appendChild(opt);
+  });
 }
 
 document.getElementById("selectOP").addEventListener("change", function () {
@@ -275,19 +380,20 @@ function confirmarVincular() {
   const opId = document.getElementById("selectOP").value;
   if (!opId) { alert("Selecione uma OP."); return; }
 
-  const payload = {
-    data:       document.getElementById("hiddenData").value,
-    turno:      document.getElementById("hiddenTurno").value,
-    modelo:     document.getElementById("hiddenModelo").value,
-    linha:      document.getElementById("hiddenLinha").value,
-    op_id:      parseInt(opId),
-    quantidade: parseInt(document.getElementById("hiddenProducao").value),
-  };
-
   fetch(URL_VINCULAR, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
+    body: JSON.stringify({
+      data:       document.getElementById("hiddenData").value,
+      turno:      document.getElementById("hiddenTurno").value,
+      modelo:     document.getElementById("hiddenModelo").value,
+      linha:      document.getElementById("hiddenLinha").value,
+      setor:      document.getElementById("hiddenSetor").value,
+      fase:       document.getElementById("hiddenFase").value || null,
+      lote:       document.getElementById("inputLote").value.trim() || null,
+      op_id:      parseInt(opId),
+      quantidade: parseInt(document.getElementById("hiddenProducao").value),
+    }),
   })
   .then(r => r.json())
   .then(data => {
@@ -302,9 +408,9 @@ function confirmarVincular() {
   .catch(() => mostrarAlerta("danger", "Erro de conexão."));
 }
 
-function desvincular(apontamentoId, btn) {
-  if (!confirm("Desvincular esta OP? A quantidade será estornada.")) return;
-
+function desvincular(apontamentoId, label) {
+  const msg = label ? "Desvincular " + label + "? A quantidade será estornada." : "Desvincular esta OP? A quantidade será estornada.";
+  if (!confirm(msg)) return;
   fetch(URL_DESVINCULAR, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -313,7 +419,7 @@ function desvincular(apontamentoId, btn) {
   .then(r => r.json())
   .then(data => {
     if (data.ok) {
-      mostrarAlerta("success", "OP desvinculada. Produção estornada.");
+      mostrarAlerta("success", "Desvinculado. Produção estornada.");
       setTimeout(() => location.reload(), 800);
     } else {
       mostrarAlerta("danger", data.erro || "Erro ao desvincular.");
