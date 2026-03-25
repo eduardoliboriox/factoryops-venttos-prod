@@ -8,11 +8,6 @@
     <h1 class="page-header-name">Controle de OPs</h1>
   </div>
   <div class="page-header-actions">
-    <button class="btn btn-primary btn-sm fw-semibold"
-            style="border-radius:6px;"
-            data-bs-toggle="modal" data-bs-target="#modalNovaOP">
-      <i class="bi bi-plus-lg me-1"></i>Nova OP
-    </button>
     <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
       <i class="bi bi-arrows-fullscreen"></i>
     </button>
@@ -35,6 +30,13 @@
 
   <!-- Filtros -->
   <form method="GET" class="row g-2 mb-4 align-items-end">
+    <div class="col-12 d-flex justify-content-end mb-1">
+      <button type="button" class="btn btn-primary btn-sm fw-semibold"
+              style="border-radius:6px;"
+              data-bs-toggle="modal" data-bs-target="#modalNovaOP">
+        <i class="bi bi-plus-lg me-1"></i>Nova OP
+      </button>
+    </div>
     <div class="col-12 col-sm-6 col-md-3">
       <label class="form-label fw-semibold" style="font-size:0.8rem;">Filial</label>
       <select name="filial" class="form-select form-select-sm" style="border-radius:8px;">
