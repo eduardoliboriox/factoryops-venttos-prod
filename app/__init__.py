@@ -87,6 +87,9 @@ def create_app():
     from app.cli.employees_code_generator import generate_employee_codes
     app.cli.add_command(generate_employee_codes)
 
+    from app.cli.set_user_password import set_user_password
+    app.cli.add_command(set_user_password)
+
     from app.services.backup_service import start_backup_scheduler
     start_backup_scheduler(app)
 
