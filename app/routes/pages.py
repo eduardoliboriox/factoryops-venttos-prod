@@ -407,6 +407,36 @@ def pcp_controle_ops():
     )
 
 
+@bp.route("/pcp/controle-ops/<int:op_id>/editar", methods=["POST"])
+@login_required
+def pcp_controle_ops_editar(op_id):
+    from flask import request, flash, redirect, url_for
+    from app.services import controle_ops_service as svc
+
+    try:
+        svc.atualizar(op_id, request.form)
+        flash("OP atualizada com sucesso.", "success")
+    except ValueError as e:
+        flash(str(e), "danger")
+    except Exception:
+        flash("Erro ao atualizar a OP.", "danger")
+    return redirect(url_for("pages.pcp_controle_ops"))
+
+
+@bp.route("/pcp/controle-ops/<int:op_id>/excluir", methods=["POST"])
+@login_required
+def pcp_controle_ops_excluir(op_id):
+    from flask import flash, redirect, url_for
+    from app.services import controle_ops_service as svc
+
+    try:
+        svc.excluir(op_id)
+        flash("OP excluída.", "success")
+    except Exception:
+        flash("Erro ao excluir a OP.", "danger")
+    return redirect(url_for("pages.pcp_controle_ops"))
+
+
 @bp.route("/pcp/apontamento")
 @login_required
 def pcp_apontamento():
