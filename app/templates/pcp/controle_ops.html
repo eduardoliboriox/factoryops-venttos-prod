@@ -143,7 +143,7 @@
                 <div class="d-flex justify-content-end gap-1">
                   <button class="btn btn-outline-secondary btn-sm" style="border-radius:6px;"
                           title="Editar"
-                          onclick="abrirEditar({{ op | tojson }})">
+                          onclick="abrirEditar({{ op.id }})">
                     <i class="bi bi-pencil"></i>
                   </button>
                   <form method="POST"
@@ -351,21 +351,24 @@
 </div>
 
 <script>
-function abrirEditar(op) {
-  document.getElementById("tituloEditarOP").textContent = op.numero_op;
-  document.getElementById("formEditarOP").action =
-    "/pcp/controle-ops/" + op.id + "/editar";
+const OPS_DATA = {{ ops | tojson }};
 
-  document.getElementById("edit_numero_op").value        = op.numero_op      || "";
-  document.getElementById("edit_filial").value           = op.filial         || "";
-  document.getElementById("edit_produto").value          = op.produto        || "";
-  document.getElementById("edit_armazem").value          = op.armazem        || "";
-  document.getElementById("edit_descricao").value        = op.descricao      || "";
-  document.getElementById("edit_quantidade").value       = op.quantidade     || "";
-  document.getElementById("edit_setor").value            = op.setor          || "";
-  document.getElementById("edit_fase_modelo").value      = op.fase_modelo    || "";
-  document.getElementById("edit_pedido_venda").value     = op.pedido_venda   || "";
-  document.getElementById("edit_item_pedido_venda").value = op.item_pedido_venda || "";
+function abrirEditar(id) {
+  const op = OPS_DATA.find(o => o.id === id);
+  if (!op) return;
+
+  document.getElementById("tituloEditarOP").textContent   = op.numero_op;
+  document.getElementById("formEditarOP").action          = "/pcp/controle-ops/" + op.id + "/editar";
+  document.getElementById("edit_numero_op").value         = op.numero_op           || "";
+  document.getElementById("edit_filial").value            = op.filial              || "";
+  document.getElementById("edit_produto").value           = op.produto             || "";
+  document.getElementById("edit_armazem").value           = op.armazem             || "";
+  document.getElementById("edit_descricao").value         = op.descricao           || "";
+  document.getElementById("edit_quantidade").value        = op.quantidade          || "";
+  document.getElementById("edit_setor").value             = op.setor               || "";
+  document.getElementById("edit_fase_modelo").value       = op.fase_modelo         || "";
+  document.getElementById("edit_pedido_venda").value      = op.pedido_venda        || "";
+  document.getElementById("edit_item_pedido_venda").value = op.item_pedido_venda   || "";
 
   new bootstrap.Modal(document.getElementById("modalEditarOP")).show();
 }
