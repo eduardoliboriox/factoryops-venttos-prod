@@ -17,10 +17,10 @@ def totais(data_inicial: str, data_final: str, setor: str = "", linha: str = "",
     return repo.totais(data_inicial, data_final, setor, linha, turno)
 
 
-def filtros_disponiveis() -> dict:
+def filtros_disponiveis(setor: str = "") -> dict:
     return {
         "setores": repo.setores_disponiveis(),
-        "linhas":  repo.linhas_disponiveis(),
+        "linhas":  repo.linhas_disponiveis(setor),
     }
 
 
