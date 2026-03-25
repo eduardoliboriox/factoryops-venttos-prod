@@ -528,6 +528,7 @@ function confirmarVincular() {
   })
   .then(r => r.json())
   .then(data => {
+    console.log("[vincular] resposta:", data);
     if (data.ok) {
       bootstrap.Modal.getInstance(document.getElementById("modalVincular")).hide();
       mostrarAlerta("success", "OP vinculada com sucesso.");
