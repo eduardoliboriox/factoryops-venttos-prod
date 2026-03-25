@@ -213,8 +213,5 @@ def plano_de_voo(data: str) -> dict:
 
 
 def opcoes_linha() -> dict:
-    registros = lc_repo.listar()
-    setores: dict = {}
-    for r in registros:
-        setores.setdefault(r["setor"], []).append(r["linha"])
-    return setores
+    agrupado = lc_repo.listar_por_setor()
+    return {setor: [r["linha"] for r in rows] for setor, rows in agrupado.items()}
