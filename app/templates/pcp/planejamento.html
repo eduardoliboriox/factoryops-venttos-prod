@@ -137,10 +137,13 @@
     <li class="nav-item">
       <button class="nav-link" id="tab-smd" data-bs-toggle="tab"
               data-bs-target="#pane-smd" type="button">
-        <i class="bi bi-layers me-1"></i>Fila SMD
-        {% set pendentes = fila_smd | selectattr('aguardando_bottom', 'gt', 0) | list | length %}
-        {% if pendentes > 0 %}
-        <span class="badge bg-warning text-dark ms-1" style="font-size:0.65rem;">{{ pendentes }}</span>
+        <i class="bi bi-layers me-1"></i>Fila de Produção
+        {% if fila_smd %}
+        {% set ns = namespace(total=0) %}
+        {% for ops in fila_smd.values() %}{% set ns.total = ns.total + ops | length %}{% endfor %}
+        {% if ns.total > 0 %}
+        <span class="badge bg-primary ms-1" style="font-size:0.65rem;">{{ ns.total }}</span>
+        {% endif %}
         {% endif %}
       </button>
     </li>
@@ -268,88 +271,116 @@
       </div>
     </div>
 
-    <!-- Fila SMD -->
+    <!-- Fila de Produção -->
     <div class="tab-pane fade" id="pane-smd">
-      <div class="card" style="border-radius:12px;border-color:var(--border);">
-        <div class="card-body p-0">
-          {% if fila_smd %}
-          <div class="table-responsive">
-            <table class="table table-hover mb-0" style="font-size:0.83rem;">
-              <thead style="font-size:0.72rem;text-transform:uppercase;letter-spacing:.5px;background:var(--bg);">
-                <tr>
-                  <th class="ps-3 py-2">Nº OP</th>
-                  <th>Produto</th>
-                  <th>Descrição</th>
-                  <th class="text-end">Qtd OP</th>
-                  <th class="text-end">TOP feito</th>
-                  <th class="text-end">BOTTOM feito</th>
-                  <th class="text-end">Ag. BOTTOM</th>
-                  <th class="text-end">Ag. TOP</th>
-                  <th class="text-end">Completo</th>
-                  <th class="text-end pe-3">Saldo</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for op in fila_smd %}
-                {% set completo = [op.top_feito, op.bottom_feito] | min %}
-                <tr>
-                  <td class="ps-3 fw-semibold">{{ op.numero_op }}</td>
-                  <td class="fw-semibold">{{ op.produto }}</td>
-                  <td class="text-muted small">{{ op.descricao or '—' }}</td>
-                  <td class="text-end">{{ op.quantidade }}</td>
-                  <td class="text-end">
-                    {% if op.top_feito > 0 %}
-                    <span class="badge bg-primary" style="font-size:0.72rem;">{{ op.top_feito }}</span>
-                    {% else %}
-                    <span class="text-muted">—</span>
-                    {% endif %}
-                  </td>
-                  <td class="text-end">
-                    {% if op.bottom_feito > 0 %}
-                    <span class="badge bg-secondary" style="font-size:0.72rem;">{{ op.bottom_feito }}</span>
-                    {% else %}
-                    <span class="text-muted">—</span>
-                    {% endif %}
-                  </td>
-                  <td class="text-end">
-                    {% if op.aguardando_bottom > 0 %}
-                    <span class="badge bg-warning text-dark fw-semibold" style="font-size:0.72rem;">{{ op.aguardando_bottom }}</span>
-                    {% else %}
-                    <span class="text-muted">—</span>
-                    {% endif %}
-                  </td>
-                  <td class="text-end">
-                    {% if op.aguardando_top > 0 %}
-                    <span class="badge bg-warning text-dark fw-semibold" style="font-size:0.72rem;">{{ op.aguardando_top }}</span>
-                    {% else %}
-                    <span class="text-muted">—</span>
-                    {% endif %}
-                  </td>
-                  <td class="text-end fw-semibold text-success">{{ completo }}</td>
-                  <td class="text-end fw-semibold pe-3 {% if op.saldo <= 0 %}text-success{% endif %}">
-                    {{ op.saldo }}
-                  </td>
-                </tr>
-                {% endfor %}
-              </tbody>
-            </table>
+      {% set scor = {'PTH':'primary','IM':'warning','SMD':'success','PA':'danger','VTT':'info'} %}
+      {% set scor_txt = {'IM':'text-dark'} %}
+      {% if fila_smd %}
+        {% for setor, ops in fila_smd.items() %}
+        {% set total_saldo = ops | sum(attribute='saldo') %}
+        {% set is_smd = setor == 'SMD' %}
+        <div class="card mb-3" style="border-radius:12px;border-color:var(--border);">
+          <div class="card-header d-flex align-items-center gap-2 py-2 px-3"
+               style="border-radius:12px 12px 0 0;border-color:var(--border);background:var(--bg);">
+            <span class="badge bg-{{ scor.get(setor,'secondary') }} {{ scor_txt.get(setor,'') }}"
+                  style="font-size:0.75rem;">{{ setor }}</span>
+            <span class="fw-semibold" style="font-size:0.85rem;">{{ ops | length }} OP{{ 's' if ops | length != 1 }}</span>
+            <span class="text-muted small ms-1">·</span>
+            <span class="text-muted small">{{ total_saldo }} unid. a produzir</span>
+            {% if is_smd %}
+            {% set ag_bot = ops | selectattr('aguardando_bottom','gt',0) | list | length %}
+            {% if ag_bot > 0 %}
+            <span class="badge bg-warning text-dark ms-auto" style="font-size:0.7rem;">
+              <i class="bi bi-exclamation-triangle-fill me-1"></i>{{ ag_bot }} aguardando BOTTOM
+            </span>
+            {% endif %}
+            {% endif %}
           </div>
-          {% else %}
-          <div class="p-5 text-center text-muted">
-            <i class="bi bi-layers d-block fs-1 mb-3 opacity-25"></i>
-            <p class="mb-0 fw-semibold">Nenhuma OP SMD com fase AMBAS em andamento</p>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table table-hover mb-0" style="font-size:0.82rem;">
+                <thead style="font-size:0.7rem;text-transform:uppercase;letter-spacing:.5px;background:var(--bg);">
+                  <tr>
+                    <th class="ps-3 py-2">Nº OP</th>
+                    <th>Produto</th>
+                    <th>Descrição</th>
+                    {% if is_smd %}<th>Fase</th>{% endif %}
+                    <th class="text-end">Qtd</th>
+                    <th class="text-end">Produzido</th>
+                    {% if is_smd %}
+                    <th class="text-end">TOP feito</th>
+                    <th class="text-end">BOTTOM feito</th>
+                    <th class="text-end">Ag. BOTTOM</th>
+                    <th class="text-end">Ag. TOP</th>
+                    {% endif %}
+                    <th class="text-end pe-3">Saldo</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for op in ops %}
+                  {% set pct = ((op.produzido / op.quantidade) * 100) | int if op.quantidade > 0 else 0 %}
+                  <tr>
+                    <td class="ps-3 fw-semibold">{{ op.numero_op }}</td>
+                    <td class="fw-semibold">{{ op.produto }}</td>
+                    <td class="text-muted" style="font-size:0.78rem;">{{ op.descricao or '—' }}</td>
+                    {% if is_smd %}
+                    <td>
+                      {% if op.fase_modelo %}
+                      <span class="badge bg-{{ 'success' if op.fase_modelo == 'AMBAS' else 'primary' if op.fase_modelo == 'TOP' else 'secondary' }}"
+                            style="font-size:0.68rem;">{{ op.fase_modelo }}</span>
+                      {% else %}<span class="text-muted">—</span>{% endif %}
+                    </td>
+                    {% endif %}
+                    <td class="text-end">{{ op.quantidade }}</td>
+                    <td class="text-end">
+                      <div class="d-flex align-items-center justify-content-end gap-2">
+                        <div style="width:50px;height:6px;border-radius:3px;background:var(--border);overflow:hidden;">
+                          <div style="width:{{ pct }}%;height:100%;background:var(--success-color);border-radius:3px;"></div>
+                        </div>
+                        <span>{{ op.produzido }}</span>
+                      </div>
+                    </td>
+                    {% if is_smd %}
+                    <td class="text-end">
+                      {% if op.top_feito > 0 %}
+                      <span class="badge bg-primary" style="font-size:0.7rem;">{{ op.top_feito }}</span>
+                      {% else %}<span class="text-muted">—</span>{% endif %}
+                    </td>
+                    <td class="text-end">
+                      {% if op.bottom_feito > 0 %}
+                      <span class="badge bg-secondary" style="font-size:0.7rem;">{{ op.bottom_feito }}</span>
+                      {% else %}<span class="text-muted">—</span>{% endif %}
+                    </td>
+                    <td class="text-end">
+                      {% if op.aguardando_bottom > 0 %}
+                      <span class="badge bg-warning text-dark fw-semibold" style="font-size:0.7rem;">{{ op.aguardando_bottom }}</span>
+                      {% else %}<span class="text-muted">—</span>{% endif %}
+                    </td>
+                    <td class="text-end">
+                      {% if op.aguardando_top > 0 %}
+                      <span class="badge bg-warning text-dark fw-semibold" style="font-size:0.7rem;">{{ op.aguardando_top }}</span>
+                      {% else %}<span class="text-muted">—</span>{% endif %}
+                    </td>
+                    {% endif %}
+                    <td class="text-end fw-semibold pe-3
+                               {% if op.saldo <= 0 %}text-success
+                               {% elif op.saldo < op.quantidade * 0.2 %}text-warning{% endif %}">
+                      {{ op.saldo }}
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
           </div>
-          {% endif %}
         </div>
-        {% if fila_smd %}
-        <div class="card-footer text-muted small px-3 py-2 d-flex gap-3"
-             style="border-color:var(--border);border-radius:0 0 12px 12px;">
-          <span>{{ fila_smd | length }} OPs</span>
-          <span>{{ fila_smd | selectattr('aguardando_bottom', 'gt', 0) | list | length }} aguardando BOTTOM</span>
-          <span>{{ fila_smd | selectattr('aguardando_top', 'gt', 0) | list | length }} aguardando TOP</span>
-        </div>
-        {% endif %}
+        {% endfor %}
+      {% else %}
+      <div class="card p-5 text-center text-muted" style="border-radius:12px;border-color:var(--border);">
+        <i class="bi bi-layers d-block fs-1 mb-3 opacity-25"></i>
+        <p class="mb-0 fw-semibold">Nenhuma OP aberta em nenhum setor</p>
       </div>
+      {% endif %}
     </div>
 
   </div>

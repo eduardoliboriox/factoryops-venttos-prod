@@ -42,5 +42,20 @@ def desvincular(apontamento_id: int) -> None:
     repo.desvincular(apontamento_id)
 
 
-def fila_complemento_smd() -> list:
-    return repo.fila_complemento_smd()
+_ORDEM_SETORES = ["PTH", "IM", "SMD", "PA", "VTT"]
+
+
+def fila_producao() -> dict:
+    rows = repo.fila_producao()
+    agrupado: dict = {}
+    for row in rows:
+        setor = row["setor"] or "Sem setor"
+        agrupado.setdefault(setor, []).append(dict(row))
+    resultado: dict = {}
+    for s in _ORDEM_SETORES:
+        if s in agrupado:
+            resultado[s] = agrupado[s]
+    for s in agrupado:
+        if s not in resultado:
+            resultado[s] = agrupado[s]
+    return resultado

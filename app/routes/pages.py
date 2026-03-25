@@ -585,7 +585,7 @@ def pcp_planejamento():
         ops      = svc.ops_disponiveis()
         filtros  = pc_svc.filtros_disponiveis(setor)
         opcoes   = svc.opcoes_linha()
-        fila_smd = ap_svc.fila_complemento_smd()
+        fila_smd = ap_svc.fila_producao()
     except Exception as e:
         erro = str(e)
 
