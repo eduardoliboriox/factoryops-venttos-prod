@@ -1,5 +1,10 @@
 ### Objetivo - (tarefas para você executar, aplicando com CLAUDE.md)
 
-### 1. Melhoria na pagina producao coletada em conjunto com apontamento
-*  na pagina de controle de ops, eu quero poder editar ou excluir cada item de op, porque pode acontecer de criar errado, ai vai ficar la na pagina, eu quero poder editar e tbm excluir. e na parte de op, eu preciso marcar se a op que está ligada a um modelo, precisa marcar se modelo é TOP, BOTTOM, OU AS DUAS FASES.
-*  
+### 1. Melhoria interligação com a pagina de Planejamento.
+* A pagina de planejamento é uma forma de adicionar um planejamento bem inteligente e lista eles, poder editar, excluir, mas a parte de dificil, é pegar os dados apos o apontamento e vinculo, por exemplo, eu coloquei dados de hoje, o time pcp estava cadastrando as ops, depois que dados chegaram, eles fizeram corretamente os vinculos de producao e op e etc, com isto, eu vou planejar a producao do dia seguinte com base nos dados que eu tenho agora, por exemplo, eu tenho que produzir 240117, mas eu tenho que produzir em qual setor, qual turno, sabendo o saldo, e quanto eu tenho que produzir, eu vou ver se eu tenho placas desse modelo, porque pode acontecer de eu querer produzir 500 na im, mas nao tem isto tudo, tem apenas 250, que se começar a fazer o planejamento e plano de voo de produção, vou dizer que na linha x, do setor, no turno vou produzir o modelo, com base no turno, e sabendo cada horario, eu posso planejar em horario horario aquela producao vai ser concluida. e já começar a plenjamento outro model com o tempo que sobrou, depois que eu fechar um turno, vou puxar os dados de novo, e ver como vou planejar para o outro turno no mesmo dia ainda. e seguir esse padrao. 
+
+### 2. erro ao tentar adicionar um horario na pagina de turnos,
+* deu Erro ao salvar. Verifique se a tabela foi criada. ao tentar "adicionar". 
+
+### 3. Padrao de paradas de linhas de acordo com as linhas /setores
+* mesmo que eu saiba o horario dos turnos, eu preciso considerar que as linhas na empresa, setores, tem direito a intervalo, tem dia que tem ginastica laboral, dds de segurança com o sesmt, e parada para almoço, e tem um padrão de tempo de setup de acordo com o setor, na im um setup é marcada como 00:30:00, no smt é 01:00:00 e pode acontecer de eu dar mais tempo de setup quando é uns casos especiais, no PTH, quando é linha de ROU-01, ROU-02 ETC, que significa ROUTER o setup de la é 00:20:00. entao, preciso considerar alguns pontos, para isto, eu tenho que ter uma pagina de configuração de PARADA DE LINHA, eu vou cadastrar como as paradas e em qual horario de cada linha que já temos as linhas e setores.
