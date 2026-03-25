@@ -28,15 +28,8 @@
     {% endfor %}
   {% endwith %}
 
-  <!-- Filtros -->
+  <!-- Filtros + botão Nova OP -->
   <form method="GET" class="row g-2 mb-4 align-items-end">
-    <div class="col-12 d-flex justify-content-end mb-1">
-      <button type="button" class="btn btn-primary btn-sm fw-semibold"
-              style="border-radius:6px;"
-              data-bs-toggle="modal" data-bs-target="#modalNovaOP">
-        <i class="bi bi-plus-lg me-1"></i>Nova OP
-      </button>
-    </div>
     <div class="col-12 col-sm-6 col-md-3">
       <label class="form-label fw-semibold" style="font-size:0.8rem;">Filial</label>
       <select name="filial" class="form-select form-select-sm" style="border-radius:8px;">
@@ -75,6 +68,13 @@
       </a>
     </div>
     {% endif %}
+    <div class="col ms-auto text-end">
+      <button type="button" class="btn btn-primary btn-sm fw-semibold"
+              style="border-radius:6px;"
+              data-bs-toggle="modal" data-bs-target="#modalNovaOP">
+        <i class="bi bi-plus-lg me-1"></i>Nova OP
+      </button>
+    </div>
   </form>
 
   <!-- Tabela de OPs -->
@@ -82,12 +82,13 @@
     <div class="card-body p-0">
       {% if ops %}
       <div class="table-responsive">
-        <table class="table table-hover mb-0" style="font-size:0.85rem;">
+        <table class="table table-hover mb-0" style="font-size:0.84rem;">
           <thead style="font-size:0.72rem;text-transform:uppercase;letter-spacing:.5px;background:var(--bg);">
             <tr>
               <th class="ps-3 py-2">Nº OP</th>
               <th>Filial</th>
               <th>Setor</th>
+              <th>Fase</th>
               <th>Produto</th>
               <th>Descrição</th>
               <th>Armazém</th>
@@ -95,26 +96,29 @@
               <th class="text-end">Produzido</th>
               <th class="text-end">Saldo</th>
               <th>Pedido / Item</th>
-              <th>Criado em</th>
-              <th></th>
+              <th>Status</th>
+              <th class="pe-3"></th>
             </tr>
           </thead>
           <tbody>
+            {% set scor = {'PTH':'primary','IM':'warning','SMD':'success','PA':'danger','VTT':'info'} %}
+            {% set fcor = {'TOP':'primary','BOTTOM':'secondary','AMBAS':'success'} %}
             {% for op in ops %}
             {% set concluida = op.saldo <= 0 %}
-            <tr class="{% if concluida %}table-success{% endif %}">
+            <tr>
               <td class="ps-3 fw-semibold">{{ op.numero_op }}</td>
-              <td>
-                <span class="badge bg-secondary" style="font-size:0.7rem;">{{ op.filial }}</span>
-              </td>
+              <td><span class="badge bg-secondary" style="font-size:0.7rem;">{{ op.filial }}</span></td>
               <td>
                 {% if op.setor %}
-                {% set scor = {'PTH':'primary','IM':'warning','SMD':'success','PA':'danger','VTT':'info'} %}
-                <span class="badge bg-{{ scor.get(op.setor, 'secondary') }} {% if op.setor in ['IM'] %}text-dark{% endif %}"
+                <span class="badge bg-{{ scor.get(op.setor, 'secondary') }} {% if op.setor == 'IM' %}text-dark{% endif %}"
                       style="font-size:0.7rem;">{{ op.setor }}</span>
-                {% else %}
-                <span class="text-muted">—</span>
-                {% endif %}
+                {% else %}<span class="text-muted">—</span>{% endif %}
+              </td>
+              <td>
+                {% if op.fase_modelo %}
+                <span class="badge bg-{{ fcor.get(op.fase_modelo, 'secondary') }}"
+                      style="font-size:0.7rem;">{{ op.fase_modelo }}</span>
+                {% else %}<span class="text-muted">—</span>{% endif %}
               </td>
               <td class="fw-semibold">{{ op.produto }}</td>
               <td class="text-muted">{{ op.descricao or '—' }}</td>
@@ -127,18 +131,29 @@
               <td class="text-muted" style="font-size:0.78rem;">
                 {% if op.pedido_venda %}
                   {{ op.pedido_venda }}{% if op.item_pedido_venda %} / {{ op.item_pedido_venda }}{% endif %}
-                {% else %}
-                  —
-                {% endif %}
+                {% else %}—{% endif %}
               </td>
-              <td class="text-muted" style="font-size:0.78rem;">
-                {{ op.criado_em.strftime('%d/%m/%Y') if op.criado_em else '—' }}
-              </td>
-              <td class="text-end pe-2">
+              <td>
                 <span class="badge {% if concluida %}text-bg-success{% else %}text-bg-warning text-dark{% endif %}"
                       style="font-size:0.68rem;">
                   {% if concluida %}Concluída{% else %}Aberta{% endif %}
                 </span>
+              </td>
+              <td class="text-end pe-3">
+                <div class="d-flex justify-content-end gap-1">
+                  <button class="btn btn-outline-secondary btn-sm" style="border-radius:6px;"
+                          title="Editar"
+                          onclick="abrirEditar({{ op | tojson }})">
+                    <i class="bi bi-pencil"></i>
+                  </button>
+                  <form method="POST"
+                        action="{{ url_for('pages.pcp_controle_ops_excluir', op_id=op.id) }}"
+                        onsubmit="return confirm('Excluir a OP {{ op.numero_op }}? Esta ação não pode ser desfeita.')">
+                    <button type="submit" class="btn btn-outline-danger btn-sm" style="border-radius:6px;" title="Excluir">
+                      <i class="bi bi-trash3"></i>
+                    </button>
+                  </form>
+                </div>
               </td>
             </tr>
             {% endfor %}
@@ -181,46 +196,32 @@
       <form method="POST">
         <div class="modal-body">
           <div class="row g-3">
-
             <div class="col-12 col-sm-6">
-              <label class="form-label fw-semibold" style="font-size:0.8rem;">
-                Número da OP <span class="text-danger">*</span>
-              </label>
+              <label class="form-label fw-semibold" style="font-size:0.8rem;">Número da OP <span class="text-danger">*</span></label>
               <input type="text" class="form-control" name="numero_op" id="inputNumeroOP" required
                      placeholder="Ex: EBRTME0200" style="border-radius:8px;">
               <div id="previewSufixo" class="mt-1" style="display:none;font-size:0.78rem;color:var(--text-muted);"></div>
             </div>
-
             <div class="col-12 col-sm-6">
               <label class="form-label fw-semibold" style="font-size:0.8rem;">Filial <span class="text-danger">*</span></label>
-              <input type="text" class="form-control" name="filial" required
-                     placeholder="Ex: Matriz" style="border-radius:8px;">
+              <input type="text" class="form-control" name="filial" required placeholder="Ex: Matriz" style="border-radius:8px;">
             </div>
-
             <div class="col-12 col-sm-6">
               <label class="form-label fw-semibold" style="font-size:0.8rem;">Produto <span class="text-danger">*</span></label>
-              <input type="text" class="form-control" name="produto" required
-                     placeholder="Ex: PCBA-001" style="border-radius:8px;">
+              <input type="text" class="form-control" name="produto" required placeholder="Ex: PCBA-001" style="border-radius:8px;">
             </div>
-
             <div class="col-12 col-sm-6">
               <label class="form-label fw-semibold" style="font-size:0.8rem;">Armazém</label>
-              <input type="text" class="form-control" name="armazem"
-                     placeholder="Ex: 01" style="border-radius:8px;">
+              <input type="text" class="form-control" name="armazem" placeholder="Ex: 01" style="border-radius:8px;">
             </div>
-
             <div class="col-12">
               <label class="form-label fw-semibold" style="font-size:0.8rem;">Descrição</label>
-              <input type="text" class="form-control" name="descricao"
-                     placeholder="Descrição do produto" style="border-radius:8px;">
+              <input type="text" class="form-control" name="descricao" placeholder="Descrição do produto" style="border-radius:8px;">
             </div>
-
             <div class="col-12 col-sm-4">
               <label class="form-label fw-semibold" style="font-size:0.8rem;">Quantidade <span class="text-danger">*</span></label>
-              <input type="number" class="form-control" name="quantidade" required
-                     min="1" placeholder="0" style="border-radius:8px;">
+              <input type="number" class="form-control" name="quantidade" required min="1" placeholder="0" style="border-radius:8px;">
             </div>
-
             <div class="col-12 col-sm-4">
               <label class="form-label fw-semibold" style="font-size:0.8rem;">Setor</label>
               <select class="form-select" name="setor" id="selectSetor" style="border-radius:8px;">
@@ -232,7 +233,15 @@
                 <option value="VTT">VTT</option>
               </select>
             </div>
-
+            <div class="col-12 col-sm-4">
+              <label class="form-label fw-semibold" style="font-size:0.8rem;">Fase do modelo</label>
+              <select class="form-select" name="fase_modelo" style="border-radius:8px;">
+                <option value="">—</option>
+                <option value="TOP">TOP</option>
+                <option value="BOTTOM">BOTTOM</option>
+                <option value="AMBAS">AMBAS (TOP + BOTTOM)</option>
+              </select>
+            </div>
             <div class="col-12 col-sm-4 d-flex align-items-end pb-1">
               <div class="form-check">
                 <input class="form-check-input" type="checkbox" name="roteiro_padrao" value="1"
@@ -242,18 +251,14 @@
                 </label>
               </div>
             </div>
-
-            <div class="col-12 col-sm-6">
+            <div class="col-12 col-sm-4">
               <label class="form-label fw-semibold" style="font-size:0.8rem;">Pedido de Venda</label>
-              <input type="text" class="form-control" name="pedido_venda"
-                     placeholder="Opcional" style="border-radius:8px;">
+              <input type="text" class="form-control" name="pedido_venda" placeholder="Opcional" style="border-radius:8px;">
             </div>
-            <div class="col-12 col-sm-6">
+            <div class="col-12 col-sm-4">
               <label class="form-label fw-semibold" style="font-size:0.8rem;">Item Pedido de Venda</label>
-              <input type="text" class="form-control" name="item_pedido_venda"
-                     placeholder="Opcional" style="border-radius:8px;">
+              <input type="text" class="form-control" name="item_pedido_venda" placeholder="Opcional" style="border-radius:8px;">
             </div>
-
           </div>
         </div>
         <div class="modal-footer border-top" style="border-color:var(--border) !important;">
@@ -267,28 +272,128 @@
   </div>
 </div>
 
+<!-- Modal: Editar OP -->
+<div class="modal fade" id="modalEditarOP" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content" style="border-radius:12px;border-color:var(--border);">
+      <div class="modal-header border-bottom" style="border-color:var(--border) !important;">
+        <h6 class="modal-title fw-semibold">
+          <i class="bi bi-pencil me-2 text-primary"></i>Editar OP — <span id="tituloEditarOP"></span>
+        </h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST" id="formEditarOP">
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-12 col-sm-6">
+              <label class="form-label fw-semibold" style="font-size:0.8rem;">Número da OP <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" name="numero_op" id="edit_numero_op" required style="border-radius:8px;">
+            </div>
+            <div class="col-12 col-sm-6">
+              <label class="form-label fw-semibold" style="font-size:0.8rem;">Filial <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" name="filial" id="edit_filial" required style="border-radius:8px;">
+            </div>
+            <div class="col-12 col-sm-6">
+              <label class="form-label fw-semibold" style="font-size:0.8rem;">Produto <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" name="produto" id="edit_produto" required style="border-radius:8px;">
+            </div>
+            <div class="col-12 col-sm-6">
+              <label class="form-label fw-semibold" style="font-size:0.8rem;">Armazém</label>
+              <input type="text" class="form-control" name="armazem" id="edit_armazem" style="border-radius:8px;">
+            </div>
+            <div class="col-12">
+              <label class="form-label fw-semibold" style="font-size:0.8rem;">Descrição</label>
+              <input type="text" class="form-control" name="descricao" id="edit_descricao" style="border-radius:8px;">
+            </div>
+            <div class="col-12 col-sm-4">
+              <label class="form-label fw-semibold" style="font-size:0.8rem;">Quantidade <span class="text-danger">*</span></label>
+              <input type="number" class="form-control" name="quantidade" id="edit_quantidade" required min="1" style="border-radius:8px;">
+            </div>
+            <div class="col-12 col-sm-4">
+              <label class="form-label fw-semibold" style="font-size:0.8rem;">Setor</label>
+              <select class="form-select" name="setor" id="edit_setor" style="border-radius:8px;">
+                <option value="">Selecione</option>
+                <option value="PTH">PTH</option>
+                <option value="IM">IM</option>
+                <option value="SMD">SMD</option>
+                <option value="PA">PA</option>
+                <option value="VTT">VTT</option>
+              </select>
+            </div>
+            <div class="col-12 col-sm-4">
+              <label class="form-label fw-semibold" style="font-size:0.8rem;">Fase do modelo</label>
+              <select class="form-select" name="fase_modelo" id="edit_fase_modelo" style="border-radius:8px;">
+                <option value="">—</option>
+                <option value="TOP">TOP</option>
+                <option value="BOTTOM">BOTTOM</option>
+                <option value="AMBAS">AMBAS (TOP + BOTTOM)</option>
+              </select>
+            </div>
+            <div class="col-12 col-sm-6">
+              <label class="form-label fw-semibold" style="font-size:0.8rem;">Pedido de Venda</label>
+              <input type="text" class="form-control" name="pedido_venda" id="edit_pedido_venda" style="border-radius:8px;">
+            </div>
+            <div class="col-12 col-sm-6">
+              <label class="form-label fw-semibold" style="font-size:0.8rem;">Item Pedido de Venda</label>
+              <input type="text" class="form-control" name="item_pedido_venda" id="edit_item_pedido_venda" style="border-radius:8px;">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer border-top" style="border-color:var(--border) !important;">
+          <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary btn-sm fw-semibold">
+            <i class="bi bi-check-lg me-1"></i>Salvar alterações
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
 <script>
+function abrirEditar(op) {
+  document.getElementById("tituloEditarOP").textContent = op.numero_op;
+  document.getElementById("formEditarOP").action =
+    "/pcp/controle-ops/" + op.id + "/editar";
+
+  document.getElementById("edit_numero_op").value        = op.numero_op      || "";
+  document.getElementById("edit_filial").value           = op.filial         || "";
+  document.getElementById("edit_produto").value          = op.produto        || "";
+  document.getElementById("edit_armazem").value          = op.armazem        || "";
+  document.getElementById("edit_descricao").value        = op.descricao      || "";
+  document.getElementById("edit_quantidade").value       = op.quantidade     || "";
+  document.getElementById("edit_setor").value            = op.setor          || "";
+  document.getElementById("edit_fase_modelo").value      = op.fase_modelo    || "";
+  document.getElementById("edit_pedido_venda").value     = op.pedido_venda   || "";
+  document.getElementById("edit_item_pedido_venda").value = op.item_pedido_venda || "";
+
+  new bootstrap.Modal(document.getElementById("modalEditarOP")).show();
+}
+
 function toggleRoteiro(cb) {
   const selectSetor = document.getElementById("selectSetor");
   const inputNumero = document.getElementById("inputNumeroOP");
   const preview     = document.getElementById("previewSufixo");
 
   if (cb.checked) {
-    selectSetor.disabled = true;
-    selectSetor.value    = "";
+    selectSetor.disabled  = true;
+    selectSetor.value     = "";
     preview.style.display = "";
     atualizarPreview(inputNumero.value);
   } else {
-    selectSetor.disabled = false;
+    selectSetor.disabled  = false;
     preview.style.display = "none";
   }
 }
 
-document.getElementById("inputNumeroOP").addEventListener("input", function () {
-  if (document.getElementById("checkRoteiro").checked) {
-    atualizarPreview(this.value);
-  }
-});
+const inputNumeroOP = document.getElementById("inputNumeroOP");
+if (inputNumeroOP) {
+  inputNumeroOP.addEventListener("input", function () {
+    if (document.getElementById("checkRoteiro").checked) {
+      atualizarPreview(this.value);
+    }
+  });
+}
 
 function atualizarPreview(base) {
   const preview = document.getElementById("previewSufixo");
