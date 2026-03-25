@@ -1,42 +1,8 @@
 ### Objetivo - (tarefas para você executar, aplicando com CLAUDE.md)
 
-### 1. Como usar os dados de produção coletados
-* existem 3 turnos, 1º Turno, 2º Turno e 3º Turno, eu precisa informar os horarios de cada turno, para organizar como usar os dados de cada linha em cada turno, pra depois filtrar por modelo e usar isto em uma forma melhor de pcp usa pra organizar a produção.
-1º Turno:
-07:00 às 08:00
-08:00 às 09:00
-09:00 às 10:00
-10:00 às 11:00
-11:00 às 12:00
-12:00 às 13:00
-13:00 às 14:00
-14:00 às 15:00
-15:00 às 16:00
-16:00 às 16:48
+### 1. Melhoria na pagina producao coletada
+* Preciso ajustar o setor com turno, mas não quero perder a lista de linhas que veio quando foi realizada a importanção, para ajustar de forma inteligente, eu quero que faça uma pagina onde eu vou configurar qual linha pertence a x setor, os setores sao PTH, SMD, IM, PA, VTT, EU QUE QUE SEJA UM menu colapse, cada setor, ai vou adicionar as linhas que sao de cada setor, eu quero um botao para adicionar uma nova linha naquele setor, mas tbm quero que a lista inteira de linhas fique na esquerda temporariamente, para que arraste a linha existente para o setor correspondente.
+* a configuracao de turno e configuração de linhas, e setor não é uma coisa especifica de PCP, isto serve para o sistema inteiro, muitas paginas usavam as linhas e setores, mas eu não tinha antes as linhas completas listadas para atualizar, agora que eu tenho deve ser adicionar ao menu desktop e mobile a opcao Configurações do sistema, no desktop por exemplo vai ser um menu colapse, onde vai ter configuracao de turno e configuração de linhas , assim, o campo de pcp e outras partes vao poder usar a informação das linhas existente de la.
 
-2º Turno:
-16:48 às 17:00
-17:00 às 18:00
-18:00 às 19:00
-19:00 às 20:00
-20:00 às 21:00
-21:00 às 22:00
-22:00 às 23:00
-23:00 às 00:00
-00:00 às 01:00
-01:00 às 02:00
-02:00 às 02:35
-
-3º Turno:
-02:35 às 03:00
-03:00 às 04:00
-04:00 às 05:00
-05:00 às 06:00
-06:00 às 07:00
-
-### 2. meLHORIA NA IMPORTAÇÃO, 
-* na pagina pcp/producao-coletada, coloque o passo a passo, para eu coletar o dados json por data, sem direitinho, porque eu sei que abri o cmd no pc, coloque cd "C:\Users\eduardo.liborio\Desktop\Programação", depois eu abri o cd smt-manager-venttos-prod e depois python coletor.py --de 2026-03-01 --ate 2026-03-24 --json dados.json, ao baixar ficou o dados json na raiz do meu repo, quanto mais eu vou importanto, vai ficar uma bagunça, com muitos dados json, seria bom ter uma pasta dentro do repo, somente pra isto.
-* no sistma, que quero selecinar, eu quero baixar de x data até x outra data, ai apertar confirmar e o sistema me resulta python coletor.py --de 2026-03-01 --ate 2026-03-24 --json dados.json com um botao de copiar, pra eu ir direto no cmd e colar.
-, 
-
-
+### 2. Na pagina pcp/controle-ops
+* eu precisa poder consultar op e adicionar as ops, tudo na mesma pagina, organizado de forma inteligente, o que precisa para cadastro de op é filial, Número da OP, Produto, descrição, Armazem, Quantidade, Produzido (vai diminuindo de acordo com a que produzido na op, mostrando o saldo da quantidade - o produzido (vamos criar o vinculo ainda), Pedido de venda (opcional), Item Pedido de venda (opcional)
