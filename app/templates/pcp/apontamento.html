@@ -1,0 +1,337 @@
+{% extends "layouts/app.html" %}
+{% block title %}PCP · Apontamento{% endblock %}
+
+{% block page_title %}
+<div class="page-header">
+  <div class="page-header-title">
+    <span class="page-header-section">PCP</span>
+    <h1 class="page-header-name">Apontamento</h1>
+  </div>
+  <div class="page-header-actions">
+    <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
+      <i class="bi bi-arrows-fullscreen"></i>
+    </button>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+  <div id="alertArea"></div>
+
+  {% if erro %}
+  <div class="alert alert-warning d-flex align-items-center gap-2 mb-4">
+    <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+    <div><strong>Erro ao carregar dados:</strong> {{ erro }}</div>
+  </div>
+  {% endif %}
+
+  <!-- Filtros -->
+  <div class="card mb-4" style="border-radius:12px;border-color:var(--border);">
+    <div class="card-body p-3">
+      <form method="GET" class="row g-2 align-items-end">
+        <div class="col-6 col-md-2">
+          <label class="form-label fw-semibold" style="font-size:0.8rem;">Data inicial</label>
+          <input type="date" class="form-control form-control-sm" name="dataInicial" value="{{ data_inicial }}" style="border-radius:8px;">
+        </div>
+        <div class="col-6 col-md-2">
+          <label class="form-label fw-semibold" style="font-size:0.8rem;">Data final</label>
+          <input type="date" class="form-control form-control-sm" name="dataFinal" value="{{ data_final }}" style="border-radius:8px;">
+        </div>
+        <div class="col-6 col-md-2">
+          <label class="form-label fw-semibold" style="font-size:0.8rem;">Setor</label>
+          <select class="form-select form-select-sm" name="setor" onchange="this.form.submit()" style="border-radius:8px;">
+            <option value="">Todos</option>
+            {% for s in filtros.setores %}
+            <option value="{{ s }}" {% if s == setor %}selected{% endif %}>{{ s }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-6 col-md-2">
+          <label class="form-label fw-semibold" style="font-size:0.8rem;">Linha</label>
+          <select class="form-select form-select-sm" name="linha" style="border-radius:8px;">
+            <option value="">Todas</option>
+            {% for l in filtros.linhas %}
+            <option value="{{ l }}" {% if l == linha %}selected{% endif %}>{{ l }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-6 col-md-2">
+          <label class="form-label fw-semibold" style="font-size:0.8rem;">Turno</label>
+          <select class="form-select form-select-sm" name="turno" style="border-radius:8px;">
+            <option value="">Todos</option>
+            <option value="1º Turno" {% if turno == '1º Turno' %}selected{% endif %}>1º Turno</option>
+            <option value="2º Turno" {% if turno == '2º Turno' %}selected{% endif %}>2º Turno</option>
+            <option value="3º Turno" {% if turno == '3º Turno' %}selected{% endif %}>3º Turno</option>
+          </select>
+        </div>
+        <div class="col-6 col-md-2 d-flex gap-2">
+          <button type="submit" class="btn btn-primary btn-sm flex-fill fw-semibold" style="border-radius:8px;">
+            <i class="bi bi-search me-1"></i>Filtrar
+          </button>
+          <a href="{{ url_for('pages.pcp_apontamento') }}" class="btn btn-outline-secondary btn-sm" style="border-radius:8px;" title="Limpar">
+            <i class="bi bi-x-lg"></i>
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Tabela de apontamentos -->
+  <div class="card" style="border-radius:12px;border-color:var(--border);">
+    <div class="card-body p-0">
+      {% if apontamentos %}
+      <div class="table-responsive">
+        <table class="table table-hover mb-0" style="font-size:0.84rem;">
+          <thead style="font-size:0.72rem;text-transform:uppercase;letter-spacing:.5px;background:var(--bg);">
+            <tr>
+              <th class="ps-3 py-2">Data</th>
+              <th>Turno</th>
+              <th>Setor</th>
+              <th>Linha</th>
+              <th>Modelo</th>
+              <th>Família</th>
+              <th class="text-end">Produção</th>
+              <th>OP Vinculada</th>
+              <th class="text-end">Saldo OP</th>
+              <th class="text-end pe-3">Ação</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for ap in apontamentos %}
+            <tr id="row-{{ loop.index }}">
+              <td class="ps-3 text-nowrap">{{ ap.data }}</td>
+              <td>
+                {% set tcores = {'1º Turno': 'warning', '2º Turno': 'primary', '3º Turno': 'secondary'} %}
+                <span class="badge bg-{{ tcores.get(ap.turno, 'secondary') }} {% if ap.turno == '1º Turno' %}text-dark{% endif %}"
+                      style="font-size:0.7rem;">{{ ap.turno }}</span>
+              </td>
+              <td><span class="badge bg-secondary" style="font-size:0.7rem;">{{ ap.setor }}</span></td>
+              <td class="fw-semibold">{{ ap.linha }}</td>
+              <td class="text-nowrap">{{ ap.modelo }}</td>
+              <td class="text-muted small">{{ ap.familia or '—' }}</td>
+              <td class="text-end fw-bold text-success">{{ "{:,.0f}".format(ap.producao_total or 0).replace(',', '.') }}</td>
+              <td>
+                {% if ap.apontamento_id %}
+                <div class="d-flex flex-column" style="line-height:1.3;">
+                  <span class="fw-semibold">{{ ap.numero_op }}</span>
+                  <span class="text-muted small">{{ ap.produto }}</span>
+                </div>
+                {% else %}
+                <span class="text-muted small">—</span>
+                {% endif %}
+              </td>
+              <td class="text-end">
+                {% if ap.apontamento_id %}
+                  {% if ap.op_saldo <= 0 %}
+                  <span class="badge text-bg-success" style="font-size:0.7rem;">Concluída</span>
+                  {% else %}
+                  <span class="fw-semibold">{{ "{:,.0f}".format(ap.op_saldo).replace(',', '.') }}</span>
+                  {% endif %}
+                {% else %}
+                <span class="text-muted">—</span>
+                {% endif %}
+              </td>
+              <td class="text-end pe-3">
+                {% if ap.apontamento_id %}
+                <button class="btn btn-outline-danger btn-sm"
+                        style="border-radius:6px;"
+                        onclick="desvincular({{ ap.apontamento_id }}, this)"
+                        title="Desvincular OP">
+                  <i class="bi bi-x-lg"></i>
+                </button>
+                {% else %}
+                <button class="btn btn-outline-primary btn-sm"
+                        style="border-radius:6px;"
+                        onclick="abrirVincular(this)"
+                        data-data="{{ ap.data }}"
+                        data-turno="{{ ap.turno }}"
+                        data-modelo="{{ ap.modelo }}"
+                        data-linha="{{ ap.linha }}"
+                        data-producao="{{ ap.producao_total | int }}"
+                        title="Vincular OP">
+                  <i class="bi bi-link-45deg me-1"></i>Vincular
+                </button>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="p-5 text-center text-muted">
+        <i class="bi bi-clipboard-data d-block fs-1 mb-3 opacity-25"></i>
+        <p class="mb-0 fw-semibold">Nenhum apontamento encontrado</p>
+        <p class="small mt-1">Selecione um período com dados em Produção Coletada.</p>
+      </div>
+      {% endif %}
+    </div>
+    {% if apontamentos %}
+    <div class="card-footer text-muted small px-3 py-2 d-flex gap-3"
+         style="border-color:var(--border);border-radius:0 0 12px 12px;">
+      <span>{{ apontamentos | length }} registros</span>
+      <span>{{ apontamentos | selectattr('apontamento_id') | list | length }} vinculados</span>
+      <span>{{ apontamentos | rejectattr('apontamento_id') | list | length }} pendentes</span>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+
+<!-- Modal: Vincular OP -->
+<div class="modal fade" id="modalVincular" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content" style="border-radius:12px;border-color:var(--border);">
+      <div class="modal-header border-bottom" style="border-color:var(--border) !important;">
+        <h6 class="modal-title fw-semibold">
+          <i class="bi bi-link-45deg me-2 text-primary"></i>Vincular OP
+        </h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="p-2 mb-3 rounded" style="background:var(--bg);font-size:0.82rem;">
+          <div class="row g-1">
+            <div class="col-6"><span class="text-muted">Data:</span> <strong id="infoData"></strong></div>
+            <div class="col-6"><span class="text-muted">Turno:</span> <strong id="infoTurno"></strong></div>
+            <div class="col-6"><span class="text-muted">Modelo:</span> <strong id="infoModelo"></strong></div>
+            <div class="col-6"><span class="text-muted">Linha:</span> <strong id="infoLinha"></strong></div>
+            <div class="col-12 mt-1"><span class="text-muted">Produção total:</span>
+              <strong class="text-success" id="infoProducao"></strong>
+            </div>
+          </div>
+        </div>
+
+        <label class="form-label fw-semibold" style="font-size:0.8rem;">Selecione a OP <span class="text-danger">*</span></label>
+        <select class="form-select" id="selectOP" style="border-radius:8px;">
+          <option value="">— Selecione —</option>
+          {% for op in ops %}
+          <option value="{{ op.id }}"
+                  data-numero="{{ op.numero_op }}"
+                  data-produto="{{ op.produto }}"
+                  data-saldo="{{ op.saldo }}">
+            {{ op.numero_op }} · {{ op.produto }} · Saldo: {{ op.saldo }}
+          </option>
+          {% endfor %}
+        </select>
+
+        <div id="infoOP" class="mt-2 p-2 rounded" style="display:none;background:var(--bg);font-size:0.82rem;">
+          <div><span class="text-muted">Produto:</span> <strong id="opProduto"></strong></div>
+          <div><span class="text-muted">Saldo disponível:</span> <strong id="opSaldo"></strong></div>
+        </div>
+
+        <input type="hidden" id="hiddenData">
+        <input type="hidden" id="hiddenTurno">
+        <input type="hidden" id="hiddenModelo">
+        <input type="hidden" id="hiddenLinha">
+        <input type="hidden" id="hiddenProducao">
+        <input type="hidden" id="hiddenBtnRef">
+      </div>
+      <div class="modal-footer border-top" style="border-color:var(--border) !important;">
+        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary btn-sm fw-semibold" onclick="confirmarVincular()">
+          <i class="bi bi-link-45deg me-1"></i>Vincular
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const URL_VINCULAR    = "{{ url_for('pages.pcp_apontamento_vincular') }}";
+const URL_DESVINCULAR = "{{ url_for('pages.pcp_apontamento_desvincular') }}";
+
+let btnAtual = null;
+
+function abrirVincular(btn) {
+  btnAtual = btn;
+  const d = btn.dataset;
+  document.getElementById("infoData").textContent    = d.data;
+  document.getElementById("infoTurno").textContent   = d.turno;
+  document.getElementById("infoModelo").textContent  = d.modelo;
+  document.getElementById("infoLinha").textContent   = d.linha;
+  document.getElementById("infoProducao").textContent = Number(d.producao).toLocaleString("pt-BR");
+  document.getElementById("hiddenData").value    = d.data;
+  document.getElementById("hiddenTurno").value   = d.turno;
+  document.getElementById("hiddenModelo").value  = d.modelo;
+  document.getElementById("hiddenLinha").value   = d.linha;
+  document.getElementById("hiddenProducao").value = d.producao;
+  document.getElementById("selectOP").value = "";
+  document.getElementById("infoOP").style.display = "none";
+  new bootstrap.Modal(document.getElementById("modalVincular")).show();
+}
+
+document.getElementById("selectOP").addEventListener("change", function () {
+  const opt = this.options[this.selectedIndex];
+  const box = document.getElementById("infoOP");
+  if (!this.value) { box.style.display = "none"; return; }
+  document.getElementById("opProduto").textContent = opt.dataset.produto;
+  document.getElementById("opSaldo").textContent   = Number(opt.dataset.saldo).toLocaleString("pt-BR");
+  box.style.display = "";
+});
+
+function confirmarVincular() {
+  const opId = document.getElementById("selectOP").value;
+  if (!opId) { alert("Selecione uma OP."); return; }
+
+  const payload = {
+    data:       document.getElementById("hiddenData").value,
+    turno:      document.getElementById("hiddenTurno").value,
+    modelo:     document.getElementById("hiddenModelo").value,
+    linha:      document.getElementById("hiddenLinha").value,
+    op_id:      parseInt(opId),
+    quantidade: parseInt(document.getElementById("hiddenProducao").value),
+  };
+
+  fetch(URL_VINCULAR, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  })
+  .then(r => r.json())
+  .then(data => {
+    bootstrap.Modal.getInstance(document.getElementById("modalVincular")).hide();
+    if (data.ok) {
+      mostrarAlerta("success", "OP vinculada com sucesso.");
+      setTimeout(() => location.reload(), 800);
+    } else {
+      mostrarAlerta("danger", data.erro || "Erro ao vincular.");
+    }
+  })
+  .catch(() => mostrarAlerta("danger", "Erro de conexão."));
+}
+
+function desvincular(apontamentoId, btn) {
+  if (!confirm("Desvincular esta OP? A quantidade será estornada.")) return;
+
+  fetch(URL_DESVINCULAR, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ apontamento_id: apontamentoId }),
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.ok) {
+      mostrarAlerta("success", "OP desvinculada. Produção estornada.");
+      setTimeout(() => location.reload(), 800);
+    } else {
+      mostrarAlerta("danger", data.erro || "Erro ao desvincular.");
+    }
+  })
+  .catch(() => mostrarAlerta("danger", "Erro de conexão."));
+}
+
+function mostrarAlerta(tipo, msg) {
+  const area = document.getElementById("alertArea");
+  const div  = document.createElement("div");
+  div.className = `alert alert-${tipo} alert-dismissible d-flex align-items-center gap-2 mb-3`;
+  div.role = "alert";
+  div.innerHTML = `<i class="bi bi-${tipo === "success" ? "check-circle-fill" : "x-circle-fill"} fs-5 flex-shrink-0"></i>
+    <div>${msg}</div>
+    <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>`;
+  area.prepend(div);
+  setTimeout(() => div.remove(), 4000);
+}
+</script>
+{% endblock %}

@@ -404,6 +404,81 @@ def pcp_controle_ops():
     )
 
 
+@bp.route("/pcp/apontamento")
+@login_required
+def pcp_apontamento():
+    from flask import request
+    from app.services import apontamento_service as svc
+    from app.services import producao_coletada_service as pc_svc
+
+    data_inicial_pad, data_final_pad = svc.data_padrao()
+    data_inicial = request.args.get("dataInicial", data_inicial_pad)
+    data_final   = request.args.get("dataFinal",   data_final_pad)
+    setor        = request.args.get("setor",  "")
+    linha        = request.args.get("linha",  "")
+    turno        = request.args.get("turno",  "")
+
+    try:
+        apontamentos = svc.listar_agrupado(data_inicial, data_final, setor, linha, turno)
+        ops          = svc.ops_abertas()
+        filtros      = pc_svc.filtros_disponiveis(setor)
+        erro         = None
+    except Exception as e:
+        apontamentos = []
+        ops          = []
+        filtros      = {"setores": [], "linhas": []}
+        erro         = str(e)
+
+    return render_template(
+        "pcp/apontamento.html",
+        active_menu="pcp_apontamento",
+        data_inicial=data_inicial,
+        data_final=data_final,
+        setor=setor,
+        linha=linha,
+        turno=turno,
+        apontamentos=apontamentos,
+        ops=ops,
+        filtros=filtros,
+        erro=erro,
+    )
+
+
+@bp.route("/pcp/apontamento/vincular", methods=["POST"])
+@login_required
+def pcp_apontamento_vincular():
+    from flask import request, jsonify
+    from app.services import apontamento_service as svc
+
+    data     = request.get_json(silent=True) or {}
+    try:
+        svc.vincular(
+            data.get("data", ""),
+            data.get("turno", ""),
+            data.get("modelo", ""),
+            data.get("linha", ""),
+            int(data.get("op_id", 0)),
+            int(data.get("quantidade", 0)),
+        )
+        return jsonify({"ok": True})
+    except (ValueError, Exception) as e:
+        return jsonify({"erro": str(e)}), 400
+
+
+@bp.route("/pcp/apontamento/desvincular", methods=["POST"])
+@login_required
+def pcp_apontamento_desvincular():
+    from flask import request, jsonify
+    from app.services import apontamento_service as svc
+
+    data = request.get_json(silent=True) or {}
+    try:
+        svc.desvincular(int(data.get("apontamento_id", 0)))
+        return jsonify({"ok": True})
+    except (ValueError, Exception) as e:
+        return jsonify({"erro": str(e)}), 400
+
+
 @bp.route("/pcp/planejamento")
 @login_required
 def pcp_planejamento():

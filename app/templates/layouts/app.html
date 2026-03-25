@@ -44,7 +44,7 @@
   'smt_estudo_tempo','engenharia_folha_crono'
 ] %}
 {% set _pcp_menus = [
-  'pcp_controle_ops','pcp_planejamento','pcp_entregas','pcp_producao_coletada'
+  'pcp_controle_ops','pcp_apontamento','pcp_planejamento','pcp_entregas','pcp_producao_coletada'
 ] %}
 {% set _config_menus = [
   'config_turnos','config_linhas'
@@ -83,6 +83,7 @@
       "producao_limpeza_stencil": "Limpeza Stencil",
       "engenharia_folha_crono": "Folha de Cronometragem",
       "pcp_controle_ops": "Controle de OPs",
+      "pcp_apontamento": "Apontamento",
       "pcp_planejamento": "Planejamento",
       "pcp_entregas": "Entregas",
       "pcp_producao_coletada": "Produção Coletada",
@@ -235,6 +236,10 @@
             <a href="{{ url_for('pages.pcp_controle_ops') }}"
                class="{% if active_menu == 'pcp_controle_ops' %}active{% endif %}">
               <i class="bi bi-file-earmark-text"></i> Controle de OPs
+            </a>
+            <a href="{{ url_for('pages.pcp_apontamento') }}"
+               class="{% if active_menu == 'pcp_apontamento' %}active{% endif %}">
+              <i class="bi bi-clipboard-check"></i> Apontamento
             </a>
             <a href="{{ url_for('pages.pcp_planejamento') }}"
                class="{% if active_menu == 'pcp_planejamento' %}active{% endif %}">
