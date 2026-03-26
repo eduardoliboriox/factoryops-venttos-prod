@@ -7,10 +7,10 @@ def listar_agrupado(data_inicial: str, data_final: str, setor: str = "", linha: 
     if hora_inicio_turno is not None and hora_fim_turno is not None:
         filtros = [
             "pc.turno = %s AND ("
-            "(pc.data BETWEEN %s AND %s AND pc.hora_inicio::time >= %s)"
+            "(pc.data BETWEEN %s AND %s AND NULLIF(pc.hora_inicio, '')::time >= %s)"
             " OR "
             "(pc.data BETWEEN %s::date + INTERVAL '1 day' AND %s::date + INTERVAL '1 day'"
-            " AND pc.hora_inicio::time <= %s)"
+            " AND NULLIF(pc.hora_inicio, '')::time <= %s)"
             ")"
         ]
         params = [turno, data_inicial, data_final, hora_inicio_turno,

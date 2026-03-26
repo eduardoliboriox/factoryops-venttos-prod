@@ -1,7 +1,7 @@
 import json
 import threading
 import uuid
-from datetime import date
+from datetime import date, time
 from flask import current_app
 from app.repositories import producao_coletada_repository as repo
 from app.repositories import turno_config_repository as tc_repo
@@ -9,20 +9,19 @@ from app.repositories import turno_config_repository as tc_repo
 
 _jobs: dict = {}
 
-
-def _config_turno(turno: str) -> dict | None:
-    for c in tc_repo.listar():
-        if c["turno"] == turno:
-            return c
-    return None
+_TURNOS_NOTURNOS_FALLBACK: dict[str, tuple[time, time]] = {
+    "2º Turno": (time(16, 48), time(2, 35)),
+}
 
 
 def _hora_params_turno_noturno(turno: str) -> tuple:
     if not turno:
         return None, None
-    config = _config_turno(turno)
-    if config and config["hora_fim"] < config["hora_inicio"]:
-        return config["hora_inicio"], config["hora_fim"]
+    for c in tc_repo.listar():
+        if c["turno"] == turno and c["hora_fim"] < c["hora_inicio"]:
+            return c["hora_inicio"], c["hora_fim"]
+    if turno in _TURNOS_NOTURNOS_FALLBACK:
+        return _TURNOS_NOTURNOS_FALLBACK[turno]
     return None, None
 
 
