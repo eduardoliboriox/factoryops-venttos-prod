@@ -1,14 +1,17 @@
 ### Objetivo - (tarefas para você executar, aplicando com CLAUDE.md)
 
-### 1. Ajuste Tipos de Paradas de linha
-* o item "almoço" deve ser substituido por "refeição" porque fica mais padrão entre os turnos.
-* Remova o campo "Nome", o sistema já pede o tipo, não preciso dar um nome. Alias, o que está faltando e muito importante é o turno com select dos 3 turnos, Substitua o "nome" para "Turno". Vai ser util para as linhas que tem nos 3 turnos, isto é bem normal, e o intervalo em cada turno é em outra horário. 
-* Os intervalos toda linha tem direito a dois intervalos todo dia, então coloque o item como "Intervalo 1" e "Intevalo 2"
-* Preciso de uma campo para Frequencia, porque tem items que são todo dia, mas tem outros que são em certos dias da semana, como o DDS que custuma ser Terça e quinta, e ginastica segunda, quarta, sexta. entao, tenho que ter os dias da semana como frequencia.
+### 1. Como funciona o planejamento.
+* na pagina, eu vou ver "Fila de produção" o que tem produzido e como está a quantidade, de acordo com o setor para onde eu for planejar vai fazer diferença. Por exemplo: tem 500 placas prontas em uma op de um modelo como o 79037313, o que eu preciso pegar é eu tenho que eu so tenho 500, se eu for planejar no 1 turno, desde qual horario ? digamos que seja 07:00 às 08:00 que é a primeira hora de produção, que vou rodar na linha IM-01 que percente a setor IM, e um ponto importante é saber a meta hora do modelo em questão, normalmente eu buscaria a informação na pagina em FUNCIONALIDADES/ e pagina IM/PA, porque é onde ficam os modelos cadastrados, lá teria a meta por hora, contudo, caso la não tem cadastro de modelo onde mostraria a meta hora, eu estando la na pagina planejamento eu tenho que prosseguir com o planejamento assim mesmo, ou seja, eu vou dizer qual a meta hora, que vamos dizer que é 80 por hora desse modelo.
+* Eu digito que quero produzir os 500, agora isto vai ser distribuido no plnao de voo, de acordo com a hora e paradas de linhas, por exemplo. 
 
-### 2. Paradas de linhas (complemento)
-* Setup no PTH, em maquinas ROUTER, que  estão listadas como ROU-01 (router 1), ROU-02 (router 2) e etc, os setups desses items são 20 minutos
-* Setup na IM ou PA, constumam ser 30 minutos
-* Setup no SMD/SMT, constuma ser 1 hora, mas pode ser mais quando tem que desalimentar a maquina inteira e depois alimentar os componentes do outro modelo.
-* Setup na VTT, eu não sei o tempo.
+07:00 às 08:00 
+08:00 às 09:00
+09:00 às 10:00
+10:00 às 11:00
+11:00 às 12:00
+12:00 às 13:00
+13:00 às 14:00
+14:00 às 15:00
+15:00 às 16:00
+16:00 às 16:48
 
