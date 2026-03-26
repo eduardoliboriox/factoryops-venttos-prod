@@ -4,17 +4,38 @@ import uuid
 from datetime import date
 from flask import current_app
 from app.repositories import producao_coletada_repository as repo
+from app.repositories import turno_config_repository as tc_repo
 
 
 _jobs: dict = {}
 
 
+def _config_turno(turno: str) -> dict | None:
+    for c in tc_repo.listar():
+        if c["turno"] == turno:
+            return c
+    return None
+
+
+def _hora_params_turno_noturno(turno: str) -> tuple:
+    if not turno:
+        return None, None
+    config = _config_turno(turno)
+    if config and config["hora_fim"] < config["hora_inicio"]:
+        return config["hora_inicio"], config["hora_fim"]
+    return None, None
+
+
 def listar(data_inicial: str, data_final: str, setor: str = "", linha: str = "", turno: str = "") -> list:
-    return repo.listar(data_inicial, data_final, setor, linha, turno)
+    hora_ini, hora_fim = _hora_params_turno_noturno(turno)
+    return repo.listar(data_inicial, data_final, setor, linha, turno,
+                       hora_inicio_turno=hora_ini, hora_fim_turno=hora_fim)
 
 
 def totais(data_inicial: str, data_final: str, setor: str = "", linha: str = "", turno: str = "") -> dict:
-    return repo.totais(data_inicial, data_final, setor, linha, turno)
+    hora_ini, hora_fim = _hora_params_turno_noturno(turno)
+    return repo.totais(data_inicial, data_final, setor, linha, turno,
+                       hora_inicio_turno=hora_ini, hora_fim_turno=hora_fim)
 
 
 def filtros_disponiveis(setor: str = "") -> dict:
