@@ -2,9 +2,25 @@ from app.extensions import get_db
 from psycopg.rows import dict_row
 
 
-def listar_agrupado(data_inicial: str, data_final: str, setor: str = "", linha: str = "", turno: str = "") -> list:
-    filtros = ["pc.data BETWEEN %s AND %s"]
-    params  = [data_inicial, data_final]
+def listar_agrupado(data_inicial: str, data_final: str, setor: str = "", linha: str = "", turno: str = "",
+                    hora_inicio_turno=None, hora_fim_turno=None) -> list:
+    if hora_inicio_turno is not None and hora_fim_turno is not None:
+        filtros = [
+            "pc.turno = %s AND ("
+            "(pc.data BETWEEN %s AND %s AND pc.hora_inicio::time >= %s)"
+            " OR "
+            "(pc.data BETWEEN %s::date + INTERVAL '1 day' AND %s::date + INTERVAL '1 day'"
+            " AND pc.hora_inicio::time <= %s)"
+            ")"
+        ]
+        params = [turno, data_inicial, data_final, hora_inicio_turno,
+                  data_inicial, data_final, hora_fim_turno]
+    else:
+        filtros = ["pc.data BETWEEN %s AND %s"]
+        params  = [data_inicial, data_final]
+        if turno:
+            filtros.append("pc.turno = %s")
+            params.append(turno)
 
     if setor:
         filtros.append("pc.setor = %s")
@@ -12,9 +28,6 @@ def listar_agrupado(data_inicial: str, data_final: str, setor: str = "", linha: 
     if linha:
         filtros.append("pc.linha = %s")
         params.append(linha)
-    if turno:
-        filtros.append("pc.turno = %s")
-        params.append(turno)
 
     where = " AND ".join(filtros)
 
