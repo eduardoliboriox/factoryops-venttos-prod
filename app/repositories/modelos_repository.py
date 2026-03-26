@@ -218,6 +218,27 @@ def buscar_meta_padrao(codigo: str, fase: str, linha: Optional[str]) -> Optional
             return float(row["meta_padrao"]) if row and row["meta_padrao"] is not None else None
 
 
+def buscar_meta_por_codigo(codigo: str, setor: str = "") -> Optional[float]:
+    with get_db() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            if setor:
+                cur.execute("""
+                    SELECT meta_padrao FROM modelos
+                    WHERE codigo = %s AND setor = %s
+                      AND meta_padrao IS NOT NULL AND meta_padrao > 0
+                    ORDER BY id LIMIT 1
+                """, (codigo, setor))
+            else:
+                cur.execute("""
+                    SELECT meta_padrao FROM modelos
+                    WHERE codigo = %s
+                      AND meta_padrao IS NOT NULL AND meta_padrao > 0
+                    ORDER BY id LIMIT 1
+                """, (codigo,))
+            row = cur.fetchone()
+            return float(row["meta_padrao"]) if row else None
+
+
 def inserir(dados, *, audit_user_id: Optional[int] = None, audit_username: Optional[str] = None):
     """
     Compatível com banco com/sem coluna de linha.

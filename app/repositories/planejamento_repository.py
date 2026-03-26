@@ -23,6 +23,7 @@ def listar(data: str, turno: str = "", setor: str = "", linha: str = "") -> list
                 SELECT
                     p.id, p.data, p.turno, p.setor, p.linha,
                     p.op_id, p.modelo, p.quantidade_planejada, p.taxa_horaria,
+                    p.setup_min,
                     p.hora_inicio_prevista, p.hora_fim_prevista,
                     p.status, p.observacao, p.criado_por, p.criado_em,
                     co.numero_op,
@@ -54,10 +55,10 @@ def inserir(data: dict) -> int:
             cur.execute("""
                 INSERT INTO planejamento (
                     data, turno, setor, linha, op_id, modelo,
-                    quantidade_planejada, taxa_horaria,
+                    quantidade_planejada, taxa_horaria, setup_min,
                     hora_inicio_prevista, hora_fim_prevista,
                     status, observacao, criado_por
-                ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,'PLANEJADO',%s,%s)
+                ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,'PLANEJADO',%s,%s)
                 RETURNING id
             """, (
                 data["data"],
@@ -68,6 +69,7 @@ def inserir(data: dict) -> int:
                 data["modelo"],
                 data["quantidade_planejada"],
                 data["taxa_horaria"],
+                data.get("setup_min", 0),
                 data["hora_inicio_prevista"],
                 data.get("hora_fim_prevista") or None,
                 data.get("observacao") or None,
@@ -85,6 +87,7 @@ def atualizar(planejamento_id: int, data: dict) -> None:
                     modelo               = %s,
                     quantidade_planejada = %s,
                     taxa_horaria         = %s,
+                    setup_min            = %s,
                     hora_inicio_prevista = %s,
                     hora_fim_prevista    = %s,
                     observacao           = %s
@@ -94,6 +97,7 @@ def atualizar(planejamento_id: int, data: dict) -> None:
                 data["modelo"],
                 data["quantidade_planejada"],
                 data["taxa_horaria"],
+                data.get("setup_min", 0),
                 data["hora_inicio_prevista"],
                 data.get("hora_fim_prevista") or None,
                 data.get("observacao") or None,
@@ -116,17 +120,32 @@ def excluir(planejamento_id: int) -> None:
             cur.execute("DELETE FROM planejamento WHERE id = %s", (planejamento_id,))
 
 
-def listar_plano_de_voo(data: str) -> list:
+def listar_plano_de_voo(data: str, turno: str = "", setor: str = "", linha: str = "") -> list:
+    filtros = ["p.data = %s"]
+    params  = [data]
+    if turno:
+        filtros.append("p.turno = %s")
+        params.append(turno)
+    if setor:
+        filtros.append("p.setor = %s")
+        params.append(setor)
+    if linha:
+        filtros.append("p.linha = %s")
+        params.append(linha)
+
+    where = " AND ".join(filtros)
     with get_db() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
-            cur.execute("""
-                SELECT id, linha, setor, modelo, op_id,
-                       quantidade_planejada, taxa_horaria,
-                       hora_inicio_prevista, hora_fim_prevista, status
-                FROM planejamento
-                WHERE data = %s
-                ORDER BY linha, hora_inicio_prevista
-            """, (data,))
+            cur.execute(f"""
+                SELECT p.id, p.linha, p.setor, p.turno, p.modelo, p.op_id,
+                       co.numero_op,
+                       p.quantidade_planejada, p.taxa_horaria, p.setup_min,
+                       p.hora_inicio_prevista, p.hora_fim_prevista, p.status
+                FROM planejamento p
+                LEFT JOIN controle_ops co ON co.id = p.op_id
+                WHERE {where}
+                ORDER BY p.linha, p.hora_inicio_prevista
+            """, params)
             return cur.fetchall()
 
 
@@ -171,7 +190,7 @@ def paradas_da_linha(setor: str, linha: str) -> list:
     with get_db() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
             cur.execute("""
-                SELECT hora_inicio, duracao_min
+                SELECT hora_inicio, duracao_min, tipo, frequencia_dias
                 FROM parada_config
                 WHERE hora_inicio IS NOT NULL
                   AND (setor = %s OR setor IS NULL)
