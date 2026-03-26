@@ -42,7 +42,8 @@ function onSetorChange(setor, selectLinhaId) {
 
 function onSetorModalChange(setor) {
   const sel    = document.getElementById("modalLinha");
-  const linhas = setor ? (LINHAS_POR_SETOR[setor] || []) : [];
+  const opcoes = OPCOES_LINHA();
+  const linhas = setor ? (opcoes[setor] || []) : [];
 
   sel.innerHTML = '<option value="">Selecione a linha</option>';
   linhas.slice().sort().forEach(function(l) {
