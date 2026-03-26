@@ -103,7 +103,7 @@
             {% set tcores = {'1º Turno': 'warning', '2º Turno': 'primary', '3º Turno': 'secondary'} %}
             {% set scores = {'PTH':'primary','IM':'warning','SMD':'success','PA':'danger','VTT':'info'} %}
             <tr>
-              <td class="ps-3 text-nowrap">{{ ap.data }}</td>
+              <td class="ps-3 text-nowrap">{{ ap.data.strftime('%d-%m-%Y') if ap.data else '' }}</td>
               <td>
                 <span class="badge bg-{{ tcores.get(ap.turno, 'secondary') }} {% if ap.turno == '1º Turno' %}text-dark{% endif %}"
                       style="font-size:0.7rem;">{{ ap.turno }}</span>

@@ -1,5 +1,6 @@
 from datetime import date
 from app.repositories import apontamento_repository as repo
+from app.repositories import turno_config_repository as tc_repo
 
 SETORES_SMD = {"SMD"}
 
@@ -9,8 +10,19 @@ def data_padrao() -> tuple[str, str]:
     return hoje, hoje
 
 
+def _hora_params_turno_noturno(turno: str) -> tuple:
+    if not turno:
+        return None, None
+    for c in tc_repo.listar():
+        if c["turno"] == turno and c["hora_fim"] < c["hora_inicio"]:
+            return c["hora_inicio"], c["hora_fim"]
+    return None, None
+
+
 def listar_agrupado(data_inicial: str, data_final: str, setor: str = "", linha: str = "", turno: str = "") -> list:
-    return repo.listar_agrupado(data_inicial, data_final, setor, linha, turno)
+    hora_ini, hora_fim = _hora_params_turno_noturno(turno)
+    return repo.listar_agrupado(data_inicial, data_final, setor, linha, turno,
+                                hora_inicio_turno=hora_ini, hora_fim_turno=hora_fim)
 
 
 def ops_abertas(setor: str = "") -> list:
