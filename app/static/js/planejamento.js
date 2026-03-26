@@ -41,20 +41,8 @@ function onSetorChange(setor, selectLinhaId) {
 }
 
 function onSetorModalChange(setor) {
-  const linhaEl = document.getElementById("modalLinha");
-  const opcoes  = OPCOES_LINHA();
-  const linhas  = setor ? (opcoes[setor] || []) : [];
-
-  linhaEl.innerHTML = '<option value="">Selecione a linha</option>';
-  linhas.sort().forEach(function(l) {
-    const opt = document.createElement("option");
-    opt.value = l;
-    opt.textContent = l;
-    linhaEl.appendChild(opt);
-  });
-
-  const setup = calcularSetupSugerido(setor, "");
-  document.getElementById("modalSetup").value = setup;
+  onSetorChange(setor, "modalLinha");
+  document.getElementById("modalSetup").value = calcularSetupSugerido(setor, "");
 }
 
 function onLinhaModalChange() {
