@@ -41,11 +41,17 @@ function onSetorChange(setor, selectLinhaId) {
 }
 
 function onSetorModalChange(setor) {
-  const sel  = document.getElementById("modalLinha");
-  sel.value  = "";
-  sel.querySelectorAll("option[data-setor]").forEach(function(opt) {
-    opt.style.display = (!setor || opt.dataset.setor === setor) ? "" : "none";
+  const sel    = document.getElementById("modalLinha");
+  const linhas = setor ? (LINHAS_POR_SETOR[setor] || []) : [];
+
+  sel.innerHTML = '<option value="">Selecione a linha</option>';
+  linhas.slice().sort().forEach(function(l) {
+    const opt = document.createElement("option");
+    opt.value = l;
+    opt.textContent = l;
+    sel.appendChild(opt);
   });
+
   document.getElementById("modalSetup").value = calcularSetupSugerido(setor, "");
 }
 
