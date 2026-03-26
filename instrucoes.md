@@ -1,11 +1,14 @@
 ### Objetivo - (tarefas para você executar, aplicando com CLAUDE.md)
 
-### 1. Saldo Considerando fases no smt
-* na pagina controle de ops, eu tenho somente uma op cadastrado, roteiro padrão:
-EBRTP602003	1	SMD	AMBAS	CONJUNTO 9 - PB320	PLACA DE CIRCUITO IMPRESSO MONTADA DE USO EM INFORMÁTICA	5	5000	0	5000	—	Aberta	
-EBRTP602002	1	IM	AMBAS	CONJUNTO 9 - PB320	PLACA DE CIRCUITO IMPRESSO MONTADA DE USO EM INFORMÁTICA	5	5000	0	5000	—	Aberta	
-EBRTP602001	1	PTH	AMBAS	CONJUNTO 9 - PB320	PLACA DE CIRCUITO IMPRESSO MONTADA DE USO EM INFORMÁTICA	5	5000	0	5000	—	Aberta
-* Agora vou na pagina de apontamento e busco uma produção do mesmo modelo:
-  2026-03-25	1º Turno	SMD	SMD-05	CONJUNTO 9 - PB 320	HARMAN DA AMAZONIA INDUSTRIA ELETRONICA E PARTICIPACOES LTDA	348	btn vincular
-  contudo, apesar de ter vindo como 348, o sistema de onde eu pego a informação não separa fase, então eu sei porque mandaram o quadro de produção que é 200 da fase top e 148 da fase bottom.
-eu vou abrir com o botão "vincular" e vou lançar o vinculo de 200 na fase top, como a parte do SMD é especial em relação aos demais roteiros de setor, a op que é de 5000, considerando que nesse caso o modelo é top e bottom, como mostra la na pagina controle de ops, eu vou abrir o vincular, vou marcar top, vou escolher a op, e vou vincular, o saldo para top deve ser 4.800, mas quando eu abrir o vincular e selecionar BOTTOM, deve está com 5000 porque eu ainda não gastei nenhum saldo bottom. depois que eu vincular top, vou vincular bottom. mas não está pegando. 
+### 1. Ajuste Tipos de Paradas de linha
+* o item "almoço" deve ser substituido por "refeição" porque fica mais padrão entre os turnos.
+* Remova o campo "Nome", o sistema já pede o tipo, não preciso dar um nome. Alias, o que está faltando e muito importante é o turno com select dos 3 turnos, Substitua o "nome" para "Turno". Vai ser util para as linhas que tem nos 3 turnos, isto é bem normal, e o intervalo em cada turno é em outra horário. 
+* Os intervalos toda linha tem direito a dois intervalos todo dia, então coloque o item como "Intervalo 1" e "Intevalo 2"
+* Preciso de uma campo para Frequencia, porque tem items que são todo dia, mas tem outros que são em certos dias da semana, como o DDS que custuma ser Terça e quinta, e ginastica segunda, quarta, sexta. entao, tenho que ter os dias da semana como frequencia.
+
+### 2. Paradas de linhas (complemento)
+* Setup no PTH, em maquinas ROUTER, que  estão listadas como ROU-01 (router 1), ROU-02 (router 2) e etc, os setups desses items são 20 minutos
+* Setup na IM ou PA, constumam ser 30 minutos
+* Setup no SMD/SMT, constuma ser 1 hora, mas pode ser mais quando tem que desalimentar a maquina inteira e depois alimentar os componentes do outro modelo.
+* Setup na VTT, eu não sei o tempo.
+
