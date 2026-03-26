@@ -403,7 +403,7 @@ def config_paradas():
         active_menu="config_paradas",
         paradas=paradas,
         opcoes=opcoes,
-        tipos=["INTERVALO", "GINASTICA", "DDS", "ALMOCO", "SETUP", "OUTROS"],
+        tipos=["INTERVALO_1", "INTERVALO_2", "GINASTICA", "DDS", "REFEICAO", "SETUP", "OUTROS"],
         erro=erro,
     )
 

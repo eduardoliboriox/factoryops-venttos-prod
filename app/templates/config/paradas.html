@@ -59,15 +59,17 @@
               <label class="form-label fw-semibold" style="font-size:0.8rem;">
                 Tipo <span class="text-danger">*</span>
               </label>
-              <select class="form-select form-select-sm" name="tipo" required style="border-radius:8px;">
+              <select class="form-select form-select-sm" name="tipo" id="selectTipo" required
+                      style="border-radius:8px;" onchange="onTipoChange()">
                 <option value="">Selecione</option>
                 {% set tipo_labels = {
-                  'INTERVALO': 'Intervalo',
-                  'GINASTICA': 'Ginástica Laboral',
-                  'DDS':       'DDS / Segurança',
-                  'ALMOCO':    'Almoço',
-                  'SETUP':     'Setup',
-                  'OUTROS':    'Outros'
+                  'INTERVALO_1': 'Intervalo 1',
+                  'INTERVALO_2': 'Intervalo 2',
+                  'GINASTICA':   'Ginástica Laboral',
+                  'DDS':         'DDS / Segurança',
+                  'REFEICAO':    'Refeição',
+                  'SETUP':       'Setup',
+                  'OUTROS':      'Outros'
                 } %}
                 {% for t in tipos %}
                 <option value="{{ t }}">{{ tipo_labels[t] }}</option>
@@ -76,11 +78,30 @@
             </div>
 
             <div class="mb-3">
+              <label class="form-label fw-semibold" style="font-size:0.8rem;">Turno</label>
+              <select class="form-select form-select-sm" name="turno" style="border-radius:8px;">
+                <option value="">Todos os turnos</option>
+                <option value="1º Turno">1º Turno</option>
+                <option value="2º Turno">2º Turno</option>
+                <option value="3º Turno">3º Turno</option>
+              </select>
+            </div>
+
+            <div class="mb-3">
               <label class="form-label fw-semibold" style="font-size:0.8rem;">
-                Nome <span class="text-danger">*</span>
+                Frequência
+                <span class="text-muted fw-normal">(deixe vazio para todo dia)</span>
               </label>
-              <input type="text" class="form-control form-control-sm" name="nome"
-                     placeholder="Ex: Intervalo Manhã, Setup SMD" required style="border-radius:8px;">
+              <div class="d-flex flex-wrap gap-2 mt-1">
+                {% for dia, label in [('SEG','Seg'),('TER','Ter'),('QUA','Qua'),('QUI','Qui'),('SEX','Sex'),('SAB','Sáb'),('DOM','Dom')] %}
+                <div class="form-check form-check-inline m-0">
+                  <input class="form-check-input" type="checkbox" name="frequencia_dias"
+                         value="{{ dia }}" id="dia_{{ dia }}">
+                  <label class="form-check-label" for="dia_{{ dia }}"
+                         style="font-size:0.8rem;">{{ label }}</label>
+                </div>
+                {% endfor %}
+              </div>
             </div>
 
             <div class="row g-2 mb-3">
@@ -96,7 +117,8 @@
               </div>
               <div class="col-6">
                 <label class="form-label fw-semibold" style="font-size:0.8rem;">Linha</label>
-                <select class="form-select form-select-sm" name="linha" id="selectLinha" style="border-radius:8px;">
+                <select class="form-select form-select-sm" name="linha" id="selectLinha"
+                        style="border-radius:8px;" onchange="sugerirDuracao()">
                   <option value="">Todas as linhas</option>
                   {% for setor, linhas in opcoes.items() %}
                     {% for l in linhas | sort %}
@@ -119,9 +141,14 @@
                 <label class="form-label fw-semibold" style="font-size:0.8rem;">
                   Duração (min) <span class="text-danger">*</span>
                 </label>
-                <input type="number" class="form-control form-control-sm" name="duracao_min"
+                <input type="number" class="form-control form-control-sm" name="duracao_min" id="inputDuracao"
                        min="0" value="0" required style="border-radius:8px;">
               </div>
+            </div>
+
+            <div id="dicaSetup" class="alert alert-info py-2 px-3 mb-3 small" style="display:none;border-radius:8px;">
+              <i class="bi bi-info-circle me-1"></i>
+              <span id="dicaSetupTexto"></span>
             </div>
 
             <button type="submit" class="btn btn-primary btn-sm w-100 fw-semibold" style="border-radius:8px;">
@@ -136,20 +163,26 @@
     <div class="col-12 col-lg-8">
       {% if paradas %}
         {% set tipo_badge = {
-          'INTERVALO': 'info',
-          'GINASTICA': 'success',
-          'DDS':       'warning',
-          'ALMOCO':    'primary',
-          'SETUP':     'secondary',
-          'OUTROS':    'light'
+          'INTERVALO_1': 'info',
+          'INTERVALO_2': 'info',
+          'GINASTICA':   'success',
+          'DDS':         'warning',
+          'REFEICAO':    'primary',
+          'SETUP':       'secondary',
+          'OUTROS':      'light'
         } %}
         {% set tipo_label = {
-          'INTERVALO': 'Intervalo',
-          'GINASTICA': 'Ginástica',
-          'DDS':       'DDS',
-          'ALMOCO':    'Almoço',
-          'SETUP':     'Setup',
-          'OUTROS':    'Outros'
+          'INTERVALO_1': 'Intervalo 1',
+          'INTERVALO_2': 'Intervalo 2',
+          'GINASTICA':   'Ginástica',
+          'DDS':         'DDS',
+          'REFEICAO':    'Refeição',
+          'SETUP':       'Setup',
+          'OUTROS':      'Outros'
+        } %}
+        {% set dias_label = {
+          'SEG': 'Seg', 'TER': 'Ter', 'QUA': 'Qua',
+          'QUI': 'Qui', 'SEX': 'Sex', 'SAB': 'Sáb', 'DOM': 'Dom'
         } %}
         {% for setor_nome, itens in paradas.items() %}
         <div class="card mb-3" style="border-radius:12px;border-color:var(--border);">
@@ -166,9 +199,10 @@
               <thead style="font-size:0.72rem;text-transform:uppercase;letter-spacing:.4px;background:var(--bg);">
                 <tr>
                   <th class="ps-3 py-2">Tipo</th>
-                  <th>Nome</th>
+                  <th>Turno</th>
                   <th>Linha</th>
                   <th>Início</th>
+                  <th>Frequência</th>
                   <th class="text-end">Duração</th>
                   <th class="pe-3"></th>
                 </tr>
@@ -183,10 +217,21 @@
                       {{ tipo_label.get(p.tipo, p.tipo) }}
                     </span>
                   </td>
-                  <td class="fw-semibold">{{ p.nome }}</td>
+                  <td class="text-muted small">{{ p.turno or '—' }}</td>
                   <td class="text-muted small">{{ p.linha or '—' }}</td>
                   <td class="text-muted small">
                     {% if p.hora_inicio %}{{ p.hora_inicio }}{% else %}—{% endif %}
+                  </td>
+                  <td class="text-muted small">
+                    {% if p.frequencia_dias %}
+                      {% for d in p.frequencia_dias.split(',') %}
+                        <span class="badge bg-light text-dark border" style="font-size:0.65rem;">
+                          {{ dias_label.get(d, d) }}
+                        </span>
+                      {% endfor %}
+                    {% else %}
+                      <span class="text-muted">Diário</span>
+                    {% endif %}
                   </td>
                   <td class="text-end fw-semibold">{{ p.duracao_min }} min</td>
                   <td class="text-end pe-3">
@@ -225,17 +270,66 @@
 </div>
 
 <script>
-const OPCOES_LINHAS = {{ opcoes | tojson }};
+const SETUP_DURACOES = {
+  PTH:  function(linha) { return /^ROU/i.test(linha) ? 20 : null; },
+  IM:   function()       { return 30; },
+  PA:   function()       { return 30; },
+  SMD:  function()       { return 60; },
+  SMT:  function()       { return 60; },
+  VTT:  function()       { return null; }
+};
+
+const SETUP_DICAS = {
+  PTH:  function(linha) { return /^ROU/i.test(linha) ? 'Setup padrão Router (PTH): 20 min.' : null; },
+  IM:   function()       { return 'Setup padrão IM: 30 min.'; },
+  PA:   function()       { return 'Setup padrão PA: 30 min.'; },
+  SMD:  function()       { return 'Setup padrão SMD: 60 min (pode ser maior quando há troca completa de alimentadores).'; },
+  SMT:  function()       { return 'Setup padrão SMT: 60 min.'; },
+  VTT:  function()       { return null; }
+};
+
+function onTipoChange() {
+  sugerirDuracao();
+}
+
+function sugerirDuracao() {
+  const tipo   = document.getElementById('selectTipo').value;
+  const setor  = document.getElementById('selectSetor').value;
+  const linhaEl = document.getElementById('selectLinha');
+  const linha  = linhaEl.value;
+  const dica   = document.getElementById('dicaSetup');
+  const dicaTxt = document.getElementById('dicaSetupTexto');
+
+  dica.style.display = 'none';
+
+  if (tipo !== 'SETUP' || !setor) return;
+
+  const fnDuracao = SETUP_DURACOES[setor];
+  const fnDica    = SETUP_DICAS[setor];
+  if (!fnDuracao) return;
+
+  const duracao = fnDuracao(linha);
+  const texto   = fnDica ? fnDica(linha) : null;
+
+  if (duracao !== null) {
+    document.getElementById('inputDuracao').value = duracao;
+    if (texto) {
+      dicaTxt.textContent = texto;
+      dica.style.display = 'block';
+    }
+  }
+}
 
 function filtrarLinhas(setor) {
-  const sel = document.getElementById("selectLinha");
-  const opts = sel.querySelectorAll("option[data-setor]");
+  const sel = document.getElementById('selectLinha');
+  const opts = sel.querySelectorAll('option[data-setor]');
   opts.forEach(function(opt) {
-    opt.style.display = (!setor || opt.dataset.setor === setor) ? "" : "none";
+    opt.style.display = (!setor || opt.dataset.setor === setor) ? '' : 'none';
   });
   if (sel.value && sel.options[sel.selectedIndex].dataset.setor !== setor) {
-    sel.value = "";
+    sel.value = '';
   }
+  sugerirDuracao();
 }
 </script>
 {% endblock %}
