@@ -85,3 +85,21 @@ def list_all_subscriptions() -> list[dict]:
                 """
             )
             return cur.fetchall() or []
+
+
+def list_subscriptions_by_user_ids(user_ids: list[int]) -> list[dict]:
+    if not user_ids:
+        return []
+    _ensure_schema()
+    with get_db() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                """
+                SELECT id, user_id, endpoint, p256dh, auth
+                FROM push_subscriptions
+                WHERE user_id = ANY(%s)
+                ORDER BY id ASC
+                """,
+                (user_ids,),
+            )
+            return cur.fetchall() or []

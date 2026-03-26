@@ -24,6 +24,8 @@ from app.auth.repository import (
     list_all_users,
     get_user_by_id,
     get_owner_user_id,
+    set_approval_notification,
+    get_and_clear_notification,
 )
 
 bp = Blueprint("auth", __name__)
@@ -219,8 +221,33 @@ def login_local():
         flash("Sua senha expirou (180 dias). Altere-a para continuar.", "warning")
         return redirect(url_for("auth.my_profile"))
 
-    login_user(User(result))
+    user_obj = User(result)
+    login_user(user_obj)
+    try:
+        notificacao = get_and_clear_notification(result["id"])
+        if notificacao:
+            flash(notificacao, "success")
+    except Exception:
+        pass
     return redirect(url_for("pages.inicio"))
+
+def _notificar_admins_novo_usuario(app, nome: str, setor: str) -> None:
+    import threading
+    from app.services.notification_service import notify_admins
+
+    def _enviar():
+        with app.app_context():
+            try:
+                notify_admins(
+                    title="Novo usuário aguardando aprovação",
+                    body=f"{nome} ({setor}) solicitou acesso ao sistema.",
+                    url="/admin/users",
+                )
+            except Exception:
+                pass
+
+    threading.Thread(target=_enviar, daemon=True).start()
+
 
 @bp.route("/register", methods=["POST"])
 def register():
@@ -230,6 +257,11 @@ def register():
         flash(
             f"Usuário {user['username']} criado. Aguardando aprovação",
             "success"
+        )
+        _notificar_admins_novo_usuario(
+            current_app._get_current_object(),
+            user.get("full_name") or user["username"],
+            user.get("setor", ""),
         )
     except ValueError as e:
         flash(str(e), "danger")
@@ -251,6 +283,10 @@ def approve_user_route(user_id):
         return redirect(url_for("pages.dashboard"))
 
     approve_user(user_id)
+    set_approval_notification(
+        user_id,
+        "Seu acesso ao sistema foi aprovado! Bem-vindo."
+    )
     flash("Usuário aprovado com sucesso", "success")
     return redirect(url_for("auth.admin_users"))
 
