@@ -42,7 +42,8 @@ function onSetorChange(setor, selectLinhaId) {
 
 function onSetorModalChange(setor) {
   const sel    = document.getElementById("modalLinha");
-  const linhas = setor ? (LINHAS_POR_SETOR[setor] || []) : [];
+  const opcoes = OPCOES_LINHA();
+  const linhas = setor ? (opcoes[setor] || []) : [];
 
   sel.innerHTML = '<option value="">Selecione a linha</option>';
   linhas.slice().sort().forEach(function(l) {
@@ -355,7 +356,8 @@ function renderPlanoDeVoo(data) {
 
 // ─── Detalhamento hora a hora ─────────────────────────────────────────────────
 function gerarDetalhe() {
-  const data  = _root().dataset.dataSelecionada || document.querySelector("input[name=data]")?.value || "";
+  var _dataInput = document.querySelector("input[name=data]");
+  const data  = _root().dataset.dataSelecionada || (_dataInput ? _dataInput.value : "") || "";
   const turno = document.getElementById("detalhe-turno").value;
   const setor = document.getElementById("detalhe-setor").value;
   const linha = document.getElementById("detalhe-linha").value;
