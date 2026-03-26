@@ -365,3 +365,40 @@ def get_user_by_email(email: str):
                 (email,)
             )
             return cur.fetchone()
+
+
+def list_admin_user_ids() -> list[int]:
+    with get_db() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                "SELECT id FROM users WHERE is_admin = TRUE AND is_active = TRUE"
+            )
+            return [r["id"] for r in cur.fetchall()]
+
+
+def set_approval_notification(user_id: int, mensagem: str) -> None:
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "UPDATE users SET notificacao = %s WHERE id = %s",
+                (mensagem, user_id),
+            )
+        conn.commit()
+
+
+def get_and_clear_notification(user_id: int) -> str | None:
+    with get_db() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                "SELECT notificacao FROM users WHERE id = %s",
+                (user_id,),
+            )
+            row = cur.fetchone()
+            if not row or not row["notificacao"]:
+                return None
+            cur.execute(
+                "UPDATE users SET notificacao = NULL WHERE id = %s",
+                (user_id,),
+            )
+        conn.commit()
+        return row["notificacao"]
