@@ -689,6 +689,52 @@ def pcp_planejamento_plano_de_voo():
         return jsonify({"erro": str(e)}), 500
 
 
+@bp.route("/pcp/planejamento/buscar-meta")
+@login_required
+def pcp_planejamento_buscar_meta():
+    from flask import request, jsonify
+    from app.repositories import modelos_repository as mr
+    from app.services import planejamento_service as svc
+
+    codigo = request.args.get("codigo", "").strip().upper()
+    setor  = request.args.get("setor",  "").strip().upper()
+    linha  = request.args.get("linha",  "").strip().upper()
+
+    meta  = mr.buscar_meta_por_codigo(codigo, setor) if codigo else None
+    setup = svc.setup_sugerido(setor, linha)
+    return jsonify({"meta": meta, "setup_sugerido": setup})
+
+
+@bp.route("/pcp/planejamento/plano-detalhado")
+@login_required
+def pcp_planejamento_plano_detalhado():
+    from flask import request, jsonify
+    from app.services import planejamento_service as svc
+    from app.repositories import planejamento_repository as repo_plan
+
+    data_str = request.args.get("data",  "")
+    turno    = request.args.get("turno", "")
+    setor    = request.args.get("setor", "")
+    linha    = request.args.get("linha", "")
+
+    if not data_str or not turno or not linha:
+        return jsonify({"erro": "data, turno e linha são obrigatórios"}), 400
+
+    try:
+        planos     = repo_plan.listar_plano_de_voo(data_str, turno=turno, setor=setor, linha=linha)
+        intervalos = repo_plan.turno_intervalos(turno)
+        paradas    = repo_plan.paradas_da_linha(setor, linha)
+        slots      = svc.gerar_plano_hora_a_hora(
+            [dict(p) for p in planos],
+            [dict(i) for i in intervalos],
+            [dict(p) for p in paradas],
+            data_str,
+        )
+        return jsonify({"slots": slots})
+    except Exception as e:
+        return jsonify({"erro": str(e)}), 500
+
+
 @bp.route("/pcp/entregas")
 @login_required
 def pcp_entregas():
