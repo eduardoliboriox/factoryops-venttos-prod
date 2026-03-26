@@ -4,6 +4,7 @@ from psycopg.rows import dict_row
 
 def listar_agrupado(data_inicial: str, data_final: str, setor: str = "", linha: str = "", turno: str = "",
                     hora_inicio_turno=None, hora_fim_turno=None) -> list:
+    cte_extra_params = []
     if hora_inicio_turno is not None and hora_fim_turno is not None:
         filtros = [
             "pc.turno = %s AND ("
@@ -15,12 +16,19 @@ def listar_agrupado(data_inicial: str, data_final: str, setor: str = "", linha: 
         ]
         params = [turno, data_inicial, data_final, hora_inicio_turno,
                   data_inicial, data_final, hora_fim_turno]
+        data_col = (
+            "CASE WHEN NULLIF(pc.hora_inicio, '')::time < %s "
+            "THEN (pc.data - INTERVAL '1 day')::date "
+            "ELSE pc.data END"
+        )
+        cte_extra_params = [hora_fim_turno]
     else:
         filtros = ["pc.data BETWEEN %s AND %s"]
         params  = [data_inicial, data_final]
         if turno:
             filtros.append("pc.turno = %s")
             params.append(turno)
+        data_col = "pc.data"
 
     if setor:
         filtros.append("pc.setor = %s")
@@ -30,18 +38,20 @@ def listar_agrupado(data_inicial: str, data_final: str, setor: str = "", linha: 
         params.append(linha)
 
     where = " AND ".join(filtros)
+    all_params = cte_extra_params + params
 
     with get_db() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
             cur.execute(f"""
                 WITH agrupado AS (
                     SELECT
-                        pc.data, pc.turno, pc.setor, pc.linha, pc.modelo,
+                        {data_col} AS data,
+                        pc.turno, pc.setor, pc.linha, pc.modelo,
                         MAX(pc.familia)       AS familia,
                         SUM(pc.producao_real) AS producao_total
                     FROM producao_coletada pc
                     WHERE {where}
-                    GROUP BY pc.data, pc.turno, pc.setor, pc.linha, pc.modelo
+                    GROUP BY 1, pc.turno, pc.setor, pc.linha, pc.modelo
                 )
                 SELECT
                     g.data, g.turno, g.setor, g.linha, g.modelo,
@@ -92,7 +102,7 @@ def listar_agrupado(data_inicial: str, data_final: str, setor: str = "", linha: 
                 )
                 LEFT JOIN controle_ops co_bot ON co_bot.id = a_bot.op_id
                 ORDER BY g.data DESC, g.turno, g.setor, g.linha, g.modelo
-            """, params)
+            """, all_params)
             return cur.fetchall()
 
 

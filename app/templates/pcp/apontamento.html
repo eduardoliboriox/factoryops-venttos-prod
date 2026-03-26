@@ -78,6 +78,17 @@
     </div>
   </div>
 
+  <!-- Total produção -->
+  <div class="stat-card mb-4" style="max-width:260px;">
+    <div class="d-flex align-items-center gap-3">
+      <div class="stat-icon-success"><i class="bi bi-bar-chart-fill"></i></div>
+      <div>
+        <div class="stat-value">{{ "{:,.0f}".format(producao_total).replace(',', '.') }}</div>
+        <div class="stat-label">Total produzido</div>
+      </div>
+    </div>
+  </div>
+
   <!-- Tabela -->
   <div class="card" style="border-radius:12px;border-color:var(--border);">
     <div class="card-body p-0">

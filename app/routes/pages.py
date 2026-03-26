@@ -497,15 +497,17 @@ def pcp_apontamento():
     turno        = request.args.get("turno",  "")
 
     try:
-        apontamentos = svc.listar_agrupado(data_inicial, data_final, setor, linha, turno)
-        ops          = svc.ops_abertas("")
-        filtros      = pc_svc.filtros_disponiveis(setor)
-        erro         = None
+        apontamentos   = svc.listar_agrupado(data_inicial, data_final, setor, linha, turno)
+        ops            = svc.ops_abertas("")
+        filtros        = pc_svc.filtros_disponiveis(setor)
+        producao_total = sum(ap["producao_total"] or 0 for ap in apontamentos)
+        erro           = None
     except Exception as e:
-        apontamentos = []
-        ops          = []
-        filtros      = {"setores": [], "linhas": []}
-        erro         = str(e)
+        apontamentos   = []
+        ops            = []
+        filtros        = {"setores": [], "linhas": []}
+        producao_total = 0
+        erro           = str(e)
 
     return render_template(
         "pcp/apontamento.html",
@@ -518,6 +520,7 @@ def pcp_apontamento():
         apontamentos=apontamentos,
         ops=ops,
         filtros=filtros,
+        producao_total=producao_total,
         erro=erro,
     )
 
