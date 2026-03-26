@@ -26,8 +26,8 @@
      data-url-status-tpl="{{ url_for('pages.pcp_planejamento_status', plan_id=0) }}"
      data-url-excluir-tpl="{{ url_for('pages.pcp_planejamento_excluir', plan_id=0) }}"
      data-data-selecionada="{{ data_selecionada }}"
-     data-ops="{{ ops | tojson | e }}"
-     data-opcoes="{{ opcoes | tojson | e }}">
+     data-ops='{{ ops | tojson }}'
+     data-opcoes='{{ opcoes | tojson }}'>
 
   <div id="alertArea"></div>
 
