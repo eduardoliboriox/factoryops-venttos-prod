@@ -8,10 +8,10 @@ def _where_turno_noturno(
 ) -> tuple[str, list]:
     filtro = (
         "turno = %s AND ("
-        "(data BETWEEN %s AND %s AND hora_inicio::time >= %s)"
+        "(data BETWEEN %s AND %s AND NULLIF(hora_inicio, '')::time >= %s)"
         " OR "
         "(data BETWEEN %s::date + INTERVAL '1 day' AND %s::date + INTERVAL '1 day'"
-        " AND hora_inicio::time <= %s)"
+        " AND NULLIF(hora_inicio, '')::time <= %s)"
         ")"
     )
     params = [turno, data_inicial, data_final, hora_inicio_turno,

@@ -1,8 +1,12 @@
-from datetime import date
+from datetime import date, time
 from app.repositories import apontamento_repository as repo
 from app.repositories import turno_config_repository as tc_repo
 
 SETORES_SMD = {"SMD"}
+
+_TURNOS_NOTURNOS_FALLBACK: dict[str, tuple[time, time]] = {
+    "2º Turno": (time(16, 48), time(2, 35)),
+}
 
 
 def data_padrao() -> tuple[str, str]:
@@ -16,6 +20,8 @@ def _hora_params_turno_noturno(turno: str) -> tuple:
     for c in tc_repo.listar():
         if c["turno"] == turno and c["hora_fim"] < c["hora_inicio"]:
             return c["hora_inicio"], c["hora_fim"]
+    if turno in _TURNOS_NOTURNOS_FALLBACK:
+        return _TURNOS_NOTURNOS_FALLBACK[turno]
     return None, None
 
 
