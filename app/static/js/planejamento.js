@@ -41,7 +41,11 @@ function onSetorChange(setor, selectLinhaId) {
 }
 
 function onSetorModalChange(setor) {
-  onSetorChange(setor, "modalLinha");
+  const sel  = document.getElementById("modalLinha");
+  sel.value  = "";
+  sel.querySelectorAll("option[data-setor]").forEach(function(opt) {
+    opt.style.display = (!setor || opt.dataset.setor === setor) ? "" : "none";
+  });
   document.getElementById("modalSetup").value = calcularSetupSugerido(setor, "");
 }
 
