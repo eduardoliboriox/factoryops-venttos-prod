@@ -2,9 +2,36 @@ from app.extensions import get_db
 from psycopg.rows import dict_row
 
 
-def listar(data_inicial: str, data_final: str, setor: str = "", linha: str = "", turno: str = "") -> list:
-    filtros = ["data BETWEEN %s AND %s"]
-    params  = [data_inicial, data_final]
+def _where_turno_noturno(
+    data_inicial: str, data_final: str, turno: str,
+    hora_inicio_turno, hora_fim_turno
+) -> tuple[str, list]:
+    filtro = (
+        "turno = %s AND ("
+        "(data BETWEEN %s AND %s AND hora_inicio::time >= %s)"
+        " OR "
+        "(data BETWEEN %s::date + INTERVAL '1 day' AND %s::date + INTERVAL '1 day'"
+        " AND hora_inicio::time <= %s)"
+        ")"
+    )
+    params = [turno, data_inicial, data_final, hora_inicio_turno,
+              data_inicial, data_final, hora_fim_turno]
+    return filtro, params
+
+
+def listar(data_inicial: str, data_final: str, setor: str = "", linha: str = "", turno: str = "",
+           hora_inicio_turno=None, hora_fim_turno=None) -> list:
+    if hora_inicio_turno is not None and hora_fim_turno is not None:
+        where_base, params = _where_turno_noturno(
+            data_inicial, data_final, turno, hora_inicio_turno, hora_fim_turno
+        )
+        filtros = [where_base]
+    else:
+        filtros = ["data BETWEEN %s AND %s"]
+        params  = [data_inicial, data_final]
+        if turno:
+            filtros.append("turno = %s")
+            params.append(turno)
 
     if setor:
         filtros.append("setor = %s")
@@ -12,9 +39,6 @@ def listar(data_inicial: str, data_final: str, setor: str = "", linha: str = "",
     if linha:
         filtros.append("linha = %s")
         params.append(linha)
-    if turno:
-        filtros.append("turno = %s")
-        params.append(turno)
 
     where = " AND ".join(filtros)
 
@@ -34,9 +58,19 @@ def listar(data_inicial: str, data_final: str, setor: str = "", linha: str = "",
             return cur.fetchall()
 
 
-def totais(data_inicial: str, data_final: str, setor: str = "", linha: str = "", turno: str = "") -> dict:
-    filtros = ["data BETWEEN %s AND %s"]
-    params  = [data_inicial, data_final]
+def totais(data_inicial: str, data_final: str, setor: str = "", linha: str = "", turno: str = "",
+           hora_inicio_turno=None, hora_fim_turno=None) -> dict:
+    if hora_inicio_turno is not None and hora_fim_turno is not None:
+        where_base, params = _where_turno_noturno(
+            data_inicial, data_final, turno, hora_inicio_turno, hora_fim_turno
+        )
+        filtros = [where_base]
+    else:
+        filtros = ["data BETWEEN %s AND %s"]
+        params  = [data_inicial, data_final]
+        if turno:
+            filtros.append("turno = %s")
+            params.append(turno)
 
     if setor:
         filtros.append("setor = %s")
@@ -44,9 +78,6 @@ def totais(data_inicial: str, data_final: str, setor: str = "", linha: str = "",
     if linha:
         filtros.append("linha = %s")
         params.append(linha)
-    if turno:
-        filtros.append("turno = %s")
-        params.append(turno)
 
     where = " AND ".join(filtros)
 
