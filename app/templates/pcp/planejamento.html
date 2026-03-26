@@ -499,12 +499,7 @@
             <label class="form-label fw-semibold" style="font-size:0.8rem;">Linha <span class="text-danger">*</span></label>
             <select class="form-select form-select-sm" id="modalLinha"
                     onchange="onLinhaModalChange()" style="border-radius:8px;">
-              <option value="">Selecione o setor</option>
-              {% for setor_key, linhas in opcoes.items() %}
-                {% for l in linhas | sort %}
-                <option value="{{ l }}" data-setor="{{ setor_key }}" style="display:none;">{{ l }}</option>
-                {% endfor %}
-              {% endfor %}
+              <option value="">Selecione o setor primeiro</option>
             </select>
           </div>
         </div>
@@ -653,5 +648,8 @@
   </div>
 </div>
 
+<script>
+const LINHAS_POR_SETOR = {{ opcoes | tojson }};
+</script>
 <script src="{{ url_for('static', filename='js/planejamento.js') }}"></script>
 {% endblock %}
