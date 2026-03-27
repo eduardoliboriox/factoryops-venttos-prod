@@ -1,9 +1,3 @@
 ### Objetivo - (tarefas para você executar, aplicando com CLAUDE.md)
 
-### 1. Conteudo pagina https://web-production-457281.up.railway.app/pcp/entregas
-* Está pagina vai ser dividida de forma inteligente na propria tela, como se fosse outra pagina igual como é feito na pagina https://web-production-457281.up.railway.app/producao/medicao-pasta-solda. Na pagina entregas vai ter "Pedido" que vai ser onde o time pcp vai visualizar os pedidos de produção dos clientes, com data, com data de entrega, e de acordo com o modelo vamos puxar a informação o mateirial que está pronta, e o que já foi entregue, na outra pagina vai ser "Logistica de Entrega" onde vai ser um acompanhamento do que foi estava pronto, foi mando pra logistica colocar no caminhao e ir fazer a entrega para o cliente. todo o procedimento foi ser acompanhado, e minha ideia que de acordo com a localização do celular do motorista responsavel pela entrega, vamos poder seguir uma barra de processo e clicar para abrir a localização, se está perto de entregar.
-
-### 2. Pagina de logistica - menu desktop e mobile
-* eu percebi que na pratica, depois que os pcps fazem o apontamento de produção, eles mandar uma tela com "resumo do apontamento" por dia pro time de logistica, para que uma parte deles façam as notas fiscais, depois que as notas tiverem prontas, a parte de logistica responsavel por entrega, os motoristas pegam as notas e as caixas e colocam no caminhão e vão entregar. temos que ter um acompanhamento de tudo isto, tanto da pagina de apontamento dos pcps, onde eles vao ficar modelo, cliente/*familia, quantidade, e horario , ai o pessoal começa a fazer as notas. que cada etapa, seja acompanhado, e temos que ter uma parte para selecionar quem vai ser o repsonsabvel por ser equipe de apoio/carga e descarga e quem vai ser o motorista, pq o motorista eu quero que ele mande a localização para que possamos acompanhar.
-
-  
+### 1. 
