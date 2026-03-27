@@ -1,5 +1,5 @@
 {% extends "layouts/app.html" %}
-{% block title %}Entregas{% endblock %}
+{% block title %}PCP · Entregas{% endblock %}
 
 {% block page_title %}
 <div class="page-header">
@@ -8,9 +8,6 @@
     <h1 class="page-header-name">Entregas</h1>
   </div>
   <div class="page-header-actions">
-    <a href="{{ url_for('pages.inicio') }}" class="btn-header-icon" title="Voltar">
-      <i class="bi bi-arrow-left"></i>
-    </a>
     <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
       <i class="bi bi-arrows-fullscreen"></i>
     </button>
@@ -19,13 +16,538 @@
 {% endblock %}
 
 {% block content %}
-<div class="under-construction-wrapper">
-  <div class="under-construction-card">
-    <div class="uc-icon">
-      <i class="bi bi-tools"></i>
+<div class="container-fluid">
+
+  <div id="alertArea"></div>
+
+  {% if erro %}
+  <div class="alert alert-warning d-flex align-items-center gap-2 mb-4">
+    <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+    <div><strong>Erro:</strong> {{ erro }}</div>
+  </div>
+  {% endif %}
+
+  <!-- Abas -->
+  <ul class="nav nav-tabs mb-4" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link {% if tab != 'logistica' %}active{% endif %}"
+              data-bs-toggle="tab" data-bs-target="#tab-pedido" type="button" role="tab">
+        <i class="bi bi-file-earmark-text me-1"></i> Pedidos
+        {% if pedidos %}
+        <span class="badge bg-primary ms-1" style="font-size:0.65rem;">{{ pedidos | length }}</span>
+        {% endif %}
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link {% if tab == 'logistica' %}active{% endif %}"
+              data-bs-toggle="tab" data-bs-target="#tab-logistica" type="button" role="tab">
+        <i class="bi bi-truck me-1"></i> Logística de Entrega
+        {% if entregas %}
+        <span class="badge bg-warning text-dark ms-1" style="font-size:0.65rem;">{{ entregas | length }}</span>
+        {% endif %}
+      </button>
+    </li>
+  </ul>
+
+  <div class="tab-content">
+
+    <!-- ── ABA PEDIDOS ── -->
+    <div class="tab-pane fade {% if tab != 'logistica' %}show active{% endif %}" id="tab-pedido" role="tabpanel">
+
+      <!-- Filtros -->
+      <div class="card mb-4" style="border-radius:12px;border-color:var(--border);">
+        <div class="card-body p-3">
+          <form method="GET" class="row g-2 align-items-end">
+            <input type="hidden" name="tab" value="pedido">
+            <div class="col-6 col-md-2">
+              <label class="form-label fw-semibold" style="font-size:0.8rem;">Entrega de</label>
+              <input type="date" class="form-control form-control-sm" name="dataInicial"
+                     value="{{ data_inicial }}" style="border-radius:8px;">
+            </div>
+            <div class="col-6 col-md-2">
+              <label class="form-label fw-semibold" style="font-size:0.8rem;">Entrega até</label>
+              <input type="date" class="form-control form-control-sm" name="dataFinal"
+                     value="{{ data_final }}" style="border-radius:8px;">
+            </div>
+            <div class="col-6 col-md-2">
+              <label class="form-label fw-semibold" style="font-size:0.8rem;">Status</label>
+              <select class="form-select form-select-sm" name="status" style="border-radius:8px;">
+                <option value="">Todos</option>
+                <option value="aberto"      {% if status_filter == 'aberto' %}selected{% endif %}>Aberto</option>
+                <option value="em_producao" {% if status_filter == 'em_producao' %}selected{% endif %}>Em Produção</option>
+                <option value="pronto"      {% if status_filter == 'pronto' %}selected{% endif %}>Pronto</option>
+                <option value="entregue"    {% if status_filter == 'entregue' %}selected{% endif %}>Entregue</option>
+              </select>
+            </div>
+            <div class="col-6 col-md-2 d-flex gap-2">
+              <button type="submit" class="btn btn-primary btn-sm flex-fill fw-semibold" style="border-radius:8px;">
+                <i class="bi bi-search me-1"></i>Filtrar
+              </button>
+              <a href="{{ url_for('pages.pcp_entregas') }}" class="btn btn-outline-secondary btn-sm"
+                 style="border-radius:8px;" title="Limpar">
+                <i class="bi bi-x-lg"></i>
+              </a>
+            </div>
+            <div class="col-12 col-md-4 d-flex justify-content-end">
+              <button type="button" class="btn btn-success btn-sm fw-semibold" style="border-radius:8px;"
+                      onclick="abrirModalPedido()">
+                <i class="bi bi-plus-lg me-1"></i>Novo Pedido
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Tabela de Pedidos -->
+      <div class="card" style="border-radius:12px;border-color:var(--border);">
+        <div class="card-body p-0">
+          {% if pedidos %}
+          <div class="table-responsive">
+            <table class="table table-hover mb-0" style="font-size:0.84rem;">
+              <thead style="font-size:0.72rem;text-transform:uppercase;letter-spacing:.5px;background:var(--bg);">
+                <tr>
+                  <th class="ps-3 py-2">Pedido</th>
+                  <th>Cliente</th>
+                  <th>Modelo / Família</th>
+                  <th class="text-end">Qtd. Pedida</th>
+                  <th class="text-end">Produzido</th>
+                  <th>Data Pedido</th>
+                  <th>Data Entrega</th>
+                  <th>Status</th>
+                  <th class="text-end pe-3">Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for p in pedidos %}
+                {% set pct = [(p.produzido / p.quantidade * 100) | int, 100] | min if p.quantidade > 0 else 0 %}
+                <tr>
+                  <td class="ps-3 fw-semibold">{{ p.numero_pedido }}</td>
+                  <td>{{ p.cliente }}</td>
+                  <td>
+                    <div class="fw-semibold">{{ p.modelo }}</div>
+                    {% if p.familia %}<div class="text-muted small">{{ p.familia }}</div>{% endif %}
+                  </td>
+                  <td class="text-end fw-bold">{{ "{:,.0f}".format(p.quantidade).replace(',','.') }}</td>
+                  <td class="text-end">
+                    <div>{{ "{:,.0f}".format(p.produzido).replace(',','.') }}</div>
+                    <div class="progress mt-1" style="height:4px;width:60px;margin-left:auto;">
+                      <div class="progress-bar bg-{{ 'success' if pct == 100 else 'primary' }}"
+                           style="width:{{ pct }}%"></div>
+                    </div>
+                  </td>
+                  <td class="text-muted small">{{ p.data_pedido.strftime('%d/%m/%Y') if p.data_pedido else '—' }}</td>
+                  <td class="small fw-semibold">{{ p.data_entrega.strftime('%d/%m/%Y') if p.data_entrega else '—' }}</td>
+                  <td>
+                    <span class="badge bg-{{ status_cor.get(p.status, 'secondary') }} {% if p.status in ('em_producao',) %}text-dark{% endif %}"
+                          style="font-size:0.7rem;">
+                      {{ status_label.get(p.status, p.status) }}
+                    </span>
+                  </td>
+                  <td class="text-end pe-3">
+                    <div class="d-flex gap-1 justify-content-end">
+                      {% if not p.entrega_id and p.status != 'entregue' %}
+                      <button class="btn btn-outline-success btn-sm" style="border-radius:6px;font-size:0.75rem;"
+                              onclick="iniciarEntrega({{ p.id }}, '{{ p.numero_pedido | e }}')"
+                              title="Iniciar entrega">
+                        <i class="bi bi-truck"></i>
+                      </button>
+                      {% endif %}
+                      <button class="btn btn-outline-primary btn-sm" style="border-radius:6px;font-size:0.75rem;"
+                              onclick='editarPedido({{ p | tojson }})'
+                              title="Editar">
+                        <i class="bi bi-pencil"></i>
+                      </button>
+                      <button class="btn btn-outline-danger btn-sm" style="border-radius:6px;font-size:0.75rem;"
+                              onclick="excluirPedido({{ p.id }}, '{{ p.numero_pedido | e }}')"
+                              title="Excluir">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="p-5 text-center text-muted">
+            <i class="bi bi-file-earmark-text d-block fs-1 mb-3 opacity-25"></i>
+            <p class="mb-0 fw-semibold">Nenhum pedido encontrado</p>
+            <p class="small mt-1">Clique em "Novo Pedido" para cadastrar o primeiro.</p>
+          </div>
+          {% endif %}
+        </div>
+        {% if pedidos %}
+        <div class="card-footer text-muted small px-3 py-2" style="border-color:var(--border);border-radius:0 0 12px 12px;">
+          {{ pedidos | length }} pedido{{ 's' if pedidos | length != 1 }}
+        </div>
+        {% endif %}
+      </div>
     </div>
-    <h2 class="uc-title">Entregas</h2>
-    <p class="uc-subtitle">Esta funcionalidade está em desenvolvimento e estará disponível em breve.</p>
+
+    <!-- ── ABA LOGÍSTICA ── -->
+    <div class="tab-pane fade {% if tab == 'logistica' %}show active{% endif %}" id="tab-logistica" role="tabpanel">
+
+      {% if entregas %}
+      <div class="row g-3">
+        {% for e in entregas %}
+        {% set cor   = status_cor.get(e.status, 'secondary') %}
+        {% set label = status_label.get(e.status, e.status) %}
+        <div class="col-12 col-lg-6">
+          <div class="card h-100" style="border-radius:12px;border-color:var(--border);">
+            <div class="card-body">
+
+              <div class="d-flex justify-content-between align-items-start mb-3">
+                <div>
+                  <div class="fw-bold fs-6">{{ e.numero_pedido }}</div>
+                  <div class="text-muted small">{{ e.cliente }}</div>
+                </div>
+                <span class="badge bg-{{ cor }} {% if e.status == 'em_carregamento' %}text-dark{% endif %}"
+                      style="font-size:0.7rem;">{{ label }}</span>
+              </div>
+
+              <div class="row g-2 mb-3" style="font-size:0.82rem;">
+                <div class="col-6">
+                  <span class="text-muted">Modelo:</span>
+                  <span class="fw-semibold ms-1">{{ e.modelo }}</span>
+                </div>
+                <div class="col-6">
+                  <span class="text-muted">Qtd.:</span>
+                  <span class="fw-semibold ms-1">{{ "{:,.0f}".format(e.quantidade).replace(',','.') }}</span>
+                </div>
+                {% if e.nota_fiscal %}
+                <div class="col-6">
+                  <span class="text-muted">NF:</span>
+                  <span class="ms-1">{{ e.nota_fiscal }}</span>
+                </div>
+                {% endif %}
+                {% if e.motorista_nome %}
+                <div class="col-6">
+                  <span class="text-muted">Motorista:</span>
+                  <span class="ms-1">{{ e.motorista_nome }}</span>
+                </div>
+                {% endif %}
+                <div class="col-6">
+                  <span class="text-muted">Entrega prevista:</span>
+                  <span class="ms-1">{{ e.data_entrega_prevista.strftime('%d/%m/%Y') if e.data_entrega_prevista else '—' }}</span>
+                </div>
+              </div>
+
+              <!-- Barra de progresso por etapas -->
+              <div class="mb-3">
+                <div class="d-flex justify-content-between mb-1" style="font-size:0.72rem;color:var(--text-muted);">
+                  <span>Progresso</span>
+                  <span>{{ e.progresso }}%</span>
+                </div>
+                <div class="progress" style="height:6px;border-radius:4px;">
+                  <div class="progress-bar bg-{{ 'success' if e.status == 'entregue' else cor }}"
+                       style="width:{{ e.progresso }}%;transition:width .4s ease;"></div>
+                </div>
+                <div class="d-flex justify-content-between mt-1" style="font-size:0.65rem;color:var(--text-muted);">
+                  <span>Ag. NF</span><span>NF</span><span>Carga</span><span>Trânsito</span><span>Entregue</span>
+                </div>
+              </div>
+
+              <div class="d-flex gap-2 flex-wrap">
+                {% if e.status == 'em_transito' %}
+                <a href="{{ url_for('pages.logistica_rastrear', entrega_id=e.id) }}"
+                   class="btn btn-outline-primary btn-sm" style="border-radius:6px;font-size:0.78rem;" target="_blank">
+                  <i class="bi bi-geo-alt-fill me-1"></i>Rastrear
+                </a>
+                {% endif %}
+                {% if e.proximo_status %}
+                <button class="btn btn-primary btn-sm fw-semibold" style="border-radius:6px;font-size:0.78rem;"
+                        onclick='avancarStatus({{ e.id }}, "{{ e.proximo_status }}", "{{ e.proximo_label | e }}", {{ equipe | tojson }})'>
+                  <i class="bi bi-arrow-right-circle me-1"></i>{{ e.proximo_label }}
+                </button>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="card" style="border-radius:12px;border-color:var(--border);">
+        <div class="p-5 text-center text-muted">
+          <i class="bi bi-truck d-block fs-1 mb-3 opacity-25"></i>
+          <p class="mb-0 fw-semibold">Nenhuma entrega em andamento</p>
+          <p class="small mt-1">Inicie uma entrega a partir de um pedido na aba "Pedidos".</p>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+  </div><!-- tab-content -->
+</div>
+
+<!-- Modal: Pedido -->
+<div class="modal fade" id="modalPedido" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content" style="border-radius:12px;border-color:var(--border);">
+      <div class="modal-header border-bottom" style="border-color:var(--border) !important;">
+        <h6 class="modal-title fw-semibold" id="tituloModalPedido">
+          <i class="bi bi-file-earmark-plus me-2 text-primary"></i>Novo Pedido
+        </h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label fw-semibold" style="font-size:0.8rem;">N° do Pedido <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="inputNumeroPedido" placeholder="Ex: PED-2026-001" style="border-radius:8px;">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold" style="font-size:0.8rem;">Cliente <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="inputCliente" placeholder="Nome do cliente" style="border-radius:8px;">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold" style="font-size:0.8rem;">Quantidade <span class="text-danger">*</span></label>
+            <input type="number" class="form-control" id="inputQuantidade" min="1" style="border-radius:8px;">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold" style="font-size:0.8rem;">Modelo <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="inputModelo" placeholder="Ex: 240170" style="border-radius:8px;">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold" style="font-size:0.8rem;">Família</label>
+            <input type="text" class="form-control" id="inputFamilia" placeholder="Ex: VENTTOS" style="border-radius:8px;">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold" style="font-size:0.8rem;">Data do Pedido <span class="text-danger">*</span></label>
+            <input type="date" class="form-control" id="inputDataPedido" style="border-radius:8px;">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold" style="font-size:0.8rem;">Data de Entrega <span class="text-danger">*</span></label>
+            <input type="date" class="form-control" id="inputDataEntrega" style="border-radius:8px;">
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-semibold" style="font-size:0.8rem;">Observação</label>
+            <textarea class="form-control" id="inputObservacao" rows="2" style="border-radius:8px;"></textarea>
+          </div>
+        </div>
+        <div id="erroPedidoModal" class="alert alert-danger py-2 px-3 mt-3 mb-0" style="display:none;font-size:0.82rem;border-radius:8px;"></div>
+      </div>
+      <div class="modal-footer border-top" style="border-color:var(--border) !important;">
+        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary btn-sm fw-semibold" id="btnSalvarPedido" onclick="salvarPedido()">
+          <i class="bi bi-check-lg me-1"></i>Salvar
+        </button>
+      </div>
+    </div>
   </div>
 </div>
+
+<!-- Modal: Avançar Status -->
+<div class="modal fade" id="modalStatus" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content" style="border-radius:12px;border-color:var(--border);">
+      <div class="modal-header border-bottom" style="border-color:var(--border) !important;">
+        <h6 class="modal-title fw-semibold">
+          <i class="bi bi-arrow-right-circle me-2 text-primary"></i>Avançar Status
+        </h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-3" style="font-size:0.85rem;">
+          Confirmar avanço para: <strong id="labelNovoStatus"></strong>
+        </p>
+        <div id="rowNF" style="display:none;" class="mb-3">
+          <label class="form-label fw-semibold" style="font-size:0.8rem;">Número da NF <span class="text-danger">*</span></label>
+          <input type="text" class="form-control" id="inputNF" placeholder="Ex: NF-001234" style="border-radius:8px;">
+        </div>
+        <div id="rowMotorista" style="display:none;" class="mb-3">
+          <label class="form-label fw-semibold" style="font-size:0.8rem;">Motorista <span class="text-danger">*</span></label>
+          <select class="form-select" id="selectMotorista" style="border-radius:8px;">
+            <option value="">— Selecione —</option>
+          </select>
+        </div>
+        <div id="rowEquipe" style="display:none;" class="mb-3">
+          <label class="form-label fw-semibold d-block mb-2" style="font-size:0.8rem;">Equipe de Apoio</label>
+          <div id="listaEquipeApoio" class="d-flex flex-wrap gap-3"></div>
+        </div>
+        <div id="erroStatusModal" class="alert alert-danger py-2 px-3 mb-0" style="display:none;font-size:0.82rem;border-radius:8px;"></div>
+      </div>
+      <div class="modal-footer border-top" style="border-color:var(--border) !important;">
+        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary btn-sm fw-semibold" onclick="confirmarStatus()">
+          <i class="bi bi-check-lg me-1"></i>Confirmar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const URL_PEDIDO_NOVO    = "{{ url_for('pages.pcp_entregas_pedido_novo') }}";
+const URL_PEDIDO_EDITAR  = (id) => `/pcp/entregas/pedido/${id}/editar`;
+const URL_PEDIDO_EXCLUIR = (id) => `/pcp/entregas/pedido/${id}/excluir`;
+const URL_ENTREGA_NOVA   = "{{ url_for('pages.pcp_entregas_entrega_nova') }}";
+const URL_ENTREGA_STATUS = (id) => `/pcp/entregas/entrega/${id}/status`;
+
+let _pedidoIdEditando = null;
+let _entregaIdAtual   = null;
+let _novoStatusAtual  = null;
+
+function abrirModalPedido() {
+  _pedidoIdEditando = null;
+  document.getElementById("tituloModalPedido").innerHTML =
+    '<i class="bi bi-file-earmark-plus me-2 text-primary"></i>Novo Pedido';
+  ["NumeroPedido","Cliente","Modelo","Familia","Observacao"].forEach(f =>
+    document.getElementById("input" + f).value = "");
+  document.getElementById("inputQuantidade").value  = "";
+  document.getElementById("inputDataPedido").value  = "";
+  document.getElementById("inputDataEntrega").value = "";
+  document.getElementById("erroPedidoModal").style.display = "none";
+  new bootstrap.Modal(document.getElementById("modalPedido")).show();
+}
+
+function editarPedido(p) {
+  _pedidoIdEditando = p.id;
+  document.getElementById("tituloModalPedido").innerHTML =
+    '<i class="bi bi-pencil me-2 text-primary"></i>Editar Pedido';
+  document.getElementById("inputNumeroPedido").value = p.numero_pedido || "";
+  document.getElementById("inputCliente").value      = p.cliente || "";
+  document.getElementById("inputModelo").value       = p.modelo || "";
+  document.getElementById("inputFamilia").value      = p.familia || "";
+  document.getElementById("inputQuantidade").value   = p.quantidade || "";
+  document.getElementById("inputDataPedido").value   = p.data_pedido || "";
+  document.getElementById("inputDataEntrega").value  = p.data_entrega || "";
+  document.getElementById("inputObservacao").value   = p.observacao || "";
+  document.getElementById("erroPedidoModal").style.display = "none";
+  new bootstrap.Modal(document.getElementById("modalPedido")).show();
+}
+
+function salvarPedido() {
+  const body = {
+    numero_pedido: document.getElementById("inputNumeroPedido").value.trim(),
+    cliente:       document.getElementById("inputCliente").value.trim(),
+    modelo:        document.getElementById("inputModelo").value.trim(),
+    familia:       document.getElementById("inputFamilia").value.trim(),
+    quantidade:    parseInt(document.getElementById("inputQuantidade").value) || 0,
+    data_pedido:   document.getElementById("inputDataPedido").value,
+    data_entrega:  document.getElementById("inputDataEntrega").value,
+    observacao:    document.getElementById("inputObservacao").value.trim(),
+  };
+  const erroBox = document.getElementById("erroPedidoModal");
+  const btn     = document.getElementById("btnSalvarPedido");
+  erroBox.style.display = "none";
+  btn.disabled = true;
+  const url = _pedidoIdEditando ? URL_PEDIDO_EDITAR(_pedidoIdEditando) : URL_PEDIDO_NOVO;
+  fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
+    .then(r => r.json())
+    .then(data => {
+      if (data.ok) {
+        bootstrap.Modal.getInstance(document.getElementById("modalPedido")).hide();
+        mostrarAlerta("success", _pedidoIdEditando ? "Pedido atualizado." : "Pedido criado.");
+        setTimeout(() => location.reload(), 800);
+      } else {
+        erroBox.textContent = data.erro || "Erro ao salvar.";
+        erroBox.style.display = "";
+        btn.disabled = false;
+      }
+    })
+    .catch(() => { erroBox.textContent = "Erro de conexão."; erroBox.style.display = ""; btn.disabled = false; });
+}
+
+function excluirPedido(id, numero) {
+  if (!confirm(`Excluir o pedido "${numero}"? Esta ação não pode ser desfeita.`)) return;
+  fetch(URL_PEDIDO_EXCLUIR(id), { method: "POST" })
+    .then(r => r.json())
+    .then(data => {
+      if (data.ok) { mostrarAlerta("success", "Pedido excluído."); setTimeout(() => location.reload(), 800); }
+      else mostrarAlerta("danger", data.erro || "Erro ao excluir.");
+    })
+    .catch(() => mostrarAlerta("danger", "Erro de conexão."));
+}
+
+function iniciarEntrega(pedidoId, numero) {
+  if (!confirm(`Iniciar processo de entrega para o pedido "${numero}"?`)) return;
+  fetch(URL_ENTREGA_NOVA, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ pedido_id: pedidoId, nota_fiscal: "" }),
+  })
+    .then(r => r.json())
+    .then(data => {
+      if (data.ok) {
+        mostrarAlerta("success", "Entrega iniciada. Acesse a aba Logística.");
+        setTimeout(() => location.href = "?tab=logistica", 800);
+      } else {
+        mostrarAlerta("danger", data.erro || "Erro ao iniciar entrega.");
+      }
+    })
+    .catch(() => mostrarAlerta("danger", "Erro de conexão."));
+}
+
+function avancarStatus(entregaId, novoStatus, label, equipe) {
+  _entregaIdAtual  = entregaId;
+  _novoStatusAtual = novoStatus;
+  document.getElementById("labelNovoStatus").textContent = label;
+  document.getElementById("rowNF").style.display        = novoStatus === "nf_emitida" ? "" : "none";
+  document.getElementById("rowMotorista").style.display = novoStatus === "em_transito" ? "" : "none";
+  document.getElementById("rowEquipe").style.display    = novoStatus === "em_transito" ? "" : "none";
+  document.getElementById("erroStatusModal").style.display = "none";
+  document.getElementById("inputNF").value = "";
+
+  if (novoStatus === "em_transito") {
+    const selMot = document.getElementById("selectMotorista");
+    selMot.innerHTML = '<option value="">— Selecione —</option>';
+    (equipe || []).filter(m => m.tipo === "motorista").forEach(m => {
+      selMot.innerHTML += `<option value="${m.id}">${m.nome}</option>`;
+    });
+    const listaApoio = document.getElementById("listaEquipeApoio");
+    listaApoio.innerHTML = "";
+    (equipe || []).filter(m => m.tipo === "apoio").forEach(m => {
+      listaApoio.innerHTML += `
+        <div class="form-check">
+          <input class="form-check-input membro-check" type="checkbox" value="${m.id}" id="membro_${m.id}">
+          <label class="form-check-label small" for="membro_${m.id}">${m.nome}</label>
+        </div>`;
+    });
+  }
+  new bootstrap.Modal(document.getElementById("modalStatus")).show();
+}
+
+function confirmarStatus() {
+  const erroBox = document.getElementById("erroStatusModal");
+  erroBox.style.display = "none";
+  const body = { status: _novoStatusAtual };
+  if (_novoStatusAtual === "nf_emitida") {
+    body.nota_fiscal = document.getElementById("inputNF").value.trim();
+  }
+  if (_novoStatusAtual === "em_transito") {
+    body.motorista_id = document.getElementById("selectMotorista").value || null;
+    body.membro_ids = [...document.querySelectorAll(".membro-check:checked")].map(c => parseInt(c.value));
+  }
+  fetch(URL_ENTREGA_STATUS(_entregaIdAtual), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  })
+    .then(r => r.json())
+    .then(data => {
+      if (data.ok) {
+        bootstrap.Modal.getInstance(document.getElementById("modalStatus")).hide();
+        mostrarAlerta("success", "Status atualizado.");
+        setTimeout(() => location.reload(), 800);
+      } else {
+        erroBox.textContent = data.erro || "Erro.";
+        erroBox.style.display = "";
+      }
+    })
+    .catch(() => { erroBox.textContent = "Erro de conexão."; erroBox.style.display = ""; });
+}
+
+function mostrarAlerta(tipo, msg) {
+  const area = document.getElementById("alertArea");
+  const div  = document.createElement("div");
+  div.className = `alert alert-${tipo} alert-dismissible d-flex align-items-center gap-2 mb-3`;
+  div.role = "alert";
+  div.innerHTML = `<i class="bi bi-${tipo === "success" ? "check-circle-fill" : "x-circle-fill"} fs-5 flex-shrink-0"></i>
+    <div>${msg}</div><button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>`;
+  area.prepend(div);
+  setTimeout(() => div.remove(), 4000);
+}
+</script>
 {% endblock %}
