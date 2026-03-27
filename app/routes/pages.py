@@ -738,6 +738,26 @@ def pcp_planejamento_plano_detalhado():
         return jsonify({"erro": str(e)}), 500
 
 
+@bp.route("/pcp/planejamento/plano-de-voo/imprimir")
+@login_required
+def pcp_planejamento_plano_voo_imprimir():
+    from flask import request
+    from app.services import planejamento_service as svc
+    from datetime import date
+
+    data_str = request.args.get("data",  str(date.today()))
+    turno    = request.args.get("turno", "")
+    setor    = request.args.get("setor", "")
+    linha    = request.args.get("linha", "")
+
+    try:
+        dados = svc.dados_impressao_plano_voo(data_str, turno, setor, linha)
+    except Exception as e:
+        dados = {"slots": [], "data": data_str, "info": {}, "erro": str(e)}
+
+    return render_template("pcp/plano_voo_print.html", **dados)
+
+
 @bp.route("/pcp/entregas")
 @login_required
 def pcp_entregas():

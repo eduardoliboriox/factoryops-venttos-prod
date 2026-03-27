@@ -25,6 +25,7 @@
      data-url-editar-tpl="{{ url_for('pages.pcp_planejamento_editar', plan_id=0) }}"
      data-url-status-tpl="{{ url_for('pages.pcp_planejamento_status', plan_id=0) }}"
      data-url-excluir-tpl="{{ url_for('pages.pcp_planejamento_excluir', plan_id=0) }}"
+     data-url-imprimir="{{ url_for('pages.pcp_planejamento_plano_voo_imprimir') }}"
      data-data-selecionada="{{ data_selecionada }}"
      data-ops='{{ ops | tojson }}'
      data-opcoes='{{ opcoes | tojson }}'>
@@ -324,10 +325,14 @@
                 {% endfor %}
               </select>
             </div>
-            <div class="col-6 col-md-3 d-flex align-items-end">
-              <button class="btn btn-primary btn-sm w-100 fw-semibold"
+            <div class="col-6 col-md-3 d-flex align-items-end gap-2">
+              <button class="btn btn-primary btn-sm fw-semibold flex-grow-1"
                       style="border-radius:8px;" onclick="gerarDetalhe()">
                 <i class="bi bi-list-ol me-1"></i>Detalhar
+              </button>
+              <button class="btn btn-outline-secondary btn-sm" style="border-radius:8px;"
+                      title="Imprimir Plano de Voo" onclick="imprimirPlanoVoo()">
+                <i class="bi bi-printer"></i>
               </button>
             </div>
           </div>
