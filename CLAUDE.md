@@ -179,6 +179,146 @@ If a conflict exists between:
 
 ---
 
+## UI Layout Design System
+
+This system uses a **fixed sidebar + fixed header + mobile bottom navigation** layout pattern. Every page must implement this structure. If any part of the project does not follow this pattern, Claude Code must refactor it to comply.
+
+### Layout Structure
+
+**Desktop (≥768px):**
+- Fixed dark sidebar (`240px` wide, full height, `--sidebar-bg: #0f172a`)
+- Fixed white top header (`56px`)
+- Main content with `margin-left: 240px` and `padding-top: calc(56px + 24px)`
+
+**Mobile (<768px):**
+- Fixed dark top header (`56px`) with logo avatar, page title, username, and logout button (`btn-outline-light`)
+- Sidebar hidden (`d-none d-md-flex`)
+- Fixed bottom navigation bar (`64px`) with 5 primary shortcuts
+- Main content padded between header and bottom nav: `padding-bottom: calc(64px + 16px)`
+
+### CSS Tokens (complete set — always define in `:root`, never hardcode)
+
+```css
+:root {
+  --sidebar-width: 240px;
+  --header-height: 56px;
+  --bottom-nav-height: 64px;
+
+  --bg: #f1f5f9;
+  --card: #ffffff;
+  --text: #1e293b;
+  --text-muted: #64748b;
+  --border: rgba(15, 23, 42, 0.09);
+  --primary: #0d6efd;
+  --success-color: #198754;
+
+  --sidebar-bg: #0f172a;
+  --sidebar-border: rgba(255, 255, 255, 0.07);
+  --sidebar-text: rgba(255, 255, 255, 0.55);
+  --sidebar-text-hover: rgba(255, 255, 255, 0.90);
+  --sidebar-text-active: #ffffff;
+  --sidebar-hover-bg: rgba(255, 255, 255, 0.07);
+  --sidebar-active-bg: rgba(59, 130, 246, 0.16);
+  --sidebar-active-accent: #3b82f6;
+}
+```
+
+### Sidebar Rules
+
+- Background: `--sidebar-bg` (`#0f172a`)
+- Nav items organized in **collapsible groups** (Bootstrap collapse plugin)
+- Each group: toggle button with icon, label, and chevron rotating 180° when expanded
+- Active item: **3px left accent bar** (`#3b82f6`), blue-tinted background (`rgba(59,130,246,0.16)`), white text, `fw-600`
+- Hover: `rgba(255,255,255,0.07)` background, text brightens to `rgba(255,255,255,0.90)`
+- All transitions: `0.12s ease`
+- Logo area at the top with border separator below
+- Footer area at the bottom for admin-only links
+- Sidebar content is scrollable
+
+### Typography
+
+Font stack: `Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial`
+
+| Element | Size | Weight |
+|---|---|---|
+| Page header name | 1.05rem | 700 |
+| Page header section label | 0.65rem, uppercase, letter-spacing 1px | 700 |
+| Card title | 0.875–1.05rem | 600–700 |
+| Body text | 0.875rem | 500 |
+| Form labels | 0.8rem | 600 |
+| Table headers | 0.72rem, uppercase, letter-spacing 0.5px | 700 |
+| Muted/secondary | 0.8rem | 500, `--text-muted` |
+
+### Card Rules
+
+| Component | Border Radius | Notes |
+|---|---|---|
+| `.card` | 12px | General content |
+| `.stat-card` | 14px | KPI/metrics, hover shadow `0 4px 16px rgba(15,23,42,0.08)` |
+| `.shortcut-card` | 14px | Quick-access groups |
+| `.section-card` | 12px | Info/summary banners |
+
+All cards: `border: 1px solid var(--border)`, `background: var(--card)`. No static `box-shadow` — hover-only via transition.
+
+Stat card icon: 40×40px, `border-radius: 10px`, color-coded backgrounds:
+- Blue: `rgba(13, 110, 253, 0.10)`
+- Green: `rgba(25, 135, 84, 0.10)`
+- Slate: `rgba(15, 23, 42, 0.07)`
+
+### Form Rules
+
+- Input `border-radius: 8px`
+- Focus: blue border + soft glow (`box-shadow: 0 0 0 3px rgba(13,110,253,0.12)`)
+- Labels: `0.8rem`, `fw-600`, color `--text`
+
+### Table Rules
+
+- Headers: `0.72rem`, uppercase, `letter-spacing: 0.5px`, `fw-700`, muted tinted background
+- Body rows: `0.875rem`, padding `10px`
+- Borders: `var(--border)`
+
+### Fullscreen Mode
+
+Every page must include a fullscreen toggle button in `.page-header-actions`.
+
+`main.js` must contain:
+
+```javascript
+function toggleFullscreen() {
+  const active = document.body.classList.toggle("fullscreen-mode");
+  localStorage.setItem("fullscreen", active ? "1" : "");
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  if (localStorage.getItem("fullscreen") === "1") {
+    document.body.classList.add("fullscreen-mode");
+  }
+});
+```
+
+CSS:
+
+```css
+body.fullscreen-mode .sidebar { display: none !important; }
+body.fullscreen-mode .main { margin-left: 0 !important; }
+body.fullscreen-mode .desktop-header { left: 0 !important; }
+```
+
+### Layout Compliance Rule
+
+If a project does not implement this layout pattern, Claude Code is **explicitly authorized to refactor** templates, CSS, and JS to restore compliance. This includes:
+
+- Adding the sidebar with collapsible groups and active left accent
+- Adding the mobile header and bottom navigation
+- Implementing the `page-header` pattern on all pages
+- Adding all tokens to `:root`
+- Adding `toggleFullscreen()` and the fullscreen button to all page headers
+- Replacing hardcoded colors with CSS variables
+
+Existing functionality must not be removed during this refactoring.
+
+---
+
 ## Architectural Change Policy
 Changes to Services, Controllers, Models, Repositories, or APIs are allowed when necessary for the task objective or to restore compliance with CLAUDE.md rules, in a controlled manner with explicit technical justification. System integrity is non-negotiable.
 
