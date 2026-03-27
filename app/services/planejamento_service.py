@@ -373,3 +373,37 @@ def plano_de_voo(data: str) -> dict:
 def opcoes_linha() -> dict:
     agrupado = lc_repo.listar_por_setor()
     return {setor: [r["linha"] for r in rows] for setor, rows in agrupado.items()}
+
+
+def dados_impressao_plano_voo(data_str: str, turno: str, setor: str, linha: str) -> dict:
+    planos     = repo.listar_plano_de_voo(data_str, turno=turno, setor=setor, linha=linha)
+    intervalos = repo.turno_intervalos(turno)
+    paradas    = repo.paradas_da_linha(setor, linha)
+
+    slots = gerar_plano_hora_a_hora(
+        [dict(p) for p in planos],
+        [dict(i) for i in intervalos],
+        [dict(p) for p in paradas],
+        data_str,
+    ) if planos else []
+
+    primeiro     = dict(planos[0]) if planos else {}
+    modelo       = primeiro.get("modelo", "")
+    familia      = repo.familia_por_modelo(modelo) if modelo else None
+    cliente      = familia.strip().split()[0] if familia else "—"
+    meta_diaria  = sum(p.get("quantidade_planejada", 0) for p in planos)
+    responsavel  = primeiro.get("criado_por", "") or "—"
+
+    return {
+        "slots":  slots,
+        "data":   data_str,
+        "info": {
+            "cliente":     cliente,
+            "setor":       setor or primeiro.get("setor", ""),
+            "linha":       linha or primeiro.get("linha", ""),
+            "produto":     modelo,
+            "meta_diaria": meta_diaria,
+            "turno":       turno,
+            "responsavel": responsavel,
+        },
+    }

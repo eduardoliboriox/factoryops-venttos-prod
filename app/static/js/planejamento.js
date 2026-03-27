@@ -461,6 +461,28 @@ function gerarDetalhe() {
     });
 }
 
+// ─── Imprimir Plano de Voo ─────────────────────────────────────────────────────
+function imprimirPlanoVoo() {
+  var _dataInput = document.querySelector("input[name=data]");
+  const data  = _root().dataset.dataSelecionada || (_dataInput ? _dataInput.value : "") || "";
+  const turno = document.getElementById("detalhe-turno").value;
+  const setor = document.getElementById("detalhe-setor").value;
+  const linha = document.getElementById("detalhe-linha").value;
+
+  if (!turno || !linha) {
+    alert("Selecione turno e linha antes de imprimir.");
+    return;
+  }
+
+  const url = _root().dataset.urlImprimir
+    + "?data="  + encodeURIComponent(data)
+    + "&turno=" + encodeURIComponent(turno)
+    + "&setor=" + encodeURIComponent(setor)
+    + "&linha=" + encodeURIComponent(linha);
+
+  window.open(url, "_blank");
+}
+
 // ─── Alertas ──────────────────────────────────────────────────────────────────
 function mostrarAlerta(tipo, msg) {
   const area = document.getElementById("alertArea");

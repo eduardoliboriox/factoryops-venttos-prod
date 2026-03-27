@@ -149,6 +149,17 @@ def listar_plano_de_voo(data: str, turno: str = "", setor: str = "", linha: str 
             return cur.fetchall()
 
 
+def familia_por_modelo(modelo: str) -> str | None:
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT familia FROM producao_coletada WHERE modelo = %s AND familia IS NOT NULL AND familia <> '' LIMIT 1",
+                (modelo,)
+            )
+            row = cur.fetchone()
+            return row[0] if row else None
+
+
 def ops_abertas(setor: str = "") -> list:
     with get_db() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
