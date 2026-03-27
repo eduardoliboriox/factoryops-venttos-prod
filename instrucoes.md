@@ -6,6 +6,9 @@
 * rodar cd "C:\Users\eduardo.liborio\Desktop\Programação\smt-manager-venttos-prod"
 * se hoje é 26/03/20026, entao vai rodar python coletor.py --de 2026-03-26 --ate 2026-03-27 --json coletas/dados_2026-03-26_2026-03-27.json
 * os horario para execução é às 17:30:00 e às 03:30:00
-* depois vai ficar faltando somente eu importar usando a pagina que tem la no sistema. 
+* depois vai ficar faltando somente eu importar usando a pagina que tem la no sistema.
+
+### 2. Webscryping para buscar os modelos 
+* http://192.168.1.35:3000/produtos quero usar o webscryping para pegar os modelos que já estao cadastraos no sistema da empresa, mesmo layout de producao coletada, mas sem atrapalhar aquela pagina
 
 
