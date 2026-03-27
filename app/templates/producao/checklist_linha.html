@@ -1,0 +1,1243 @@
+{% extends "layouts/app.html" %}
+{% block title %}Checklist de Verificação de Linha{% endblock %}
+
+{% block page_title %}
+<div class="page-header">
+  <div class="page-header-title">
+    <span class="page-header-section">Produção</span>
+    <h1 class="page-header-name">Checklist de Verificação de Linha</h1>
+  </div>
+  <div class="page-header-actions">
+    <a href="{{ url_for('pages.inicio') }}" class="btn-header-icon" title="Voltar">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
+      <i class="bi bi-arrows-fullscreen"></i>
+    </button>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<style>
+  /* ── Layout ── */
+  .cl-card {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--card);
+    margin-bottom: 16px;
+    overflow: hidden;
+  }
+  .cl-card-body { padding: 16px; }
+
+  /* ── Toolbar ── */
+  .doc-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding: 10px 14px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 14px;
+  }
+  .doc-id-badge {
+    font-size: .78rem; font-weight: 700; color: var(--text-muted);
+    background: rgba(15,23,42,.05); border-radius: 6px;
+    padding: 4px 10px; border: 1px solid var(--border);
+  }
+  .doc-id-badge.saved { color: #198754; background: rgba(25,135,84,.08); border-color: rgba(25,135,84,.25); }
+
+  /* ── Meta form ── */
+  .meta-label { font-size: .8rem; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; }
+  #clModelo { text-transform: uppercase; }
+
+  /* ── Grid table ── */
+  .cl-grid-wrap { overflow-x: auto; }
+  #clTable {
+    border-collapse: collapse;
+    font-size: 11px;
+    width: 100%;
+    min-width: 600px;
+  }
+  #clTable th {
+    background: rgba(15,23,42,.05);
+    font-size: 10px; font-weight: 700; text-transform: uppercase;
+    padding: 6px 4px; text-align: center;
+    border: 1px solid rgba(15,23,42,.12);
+    white-space: nowrap;
+  }
+  #clTable th.th-item { text-align: left; padding-left: 8px; min-width: 280px; }
+  #clTable th.th-num  { min-width: 32px; }
+  #clTable td {
+    border: 1px solid rgba(15,23,42,.09);
+    padding: 0;
+    vertical-align: middle;
+  }
+  #clTable td.td-num {
+    text-align: center; font-weight: 700; font-size: 10px;
+    color: var(--text-muted); padding: 4px;
+    background: rgba(15,23,42,.02);
+  }
+  #clTable td.td-item {
+    padding: 5px 8px; font-size: 11px; color: var(--text);
+    min-width: 280px;
+  }
+  #clTable td.td-item:nth-child(odd) { background: rgba(15,23,42,.01); }
+
+  /* ── Cells ── */
+  .cl-cell {
+    cursor: pointer;
+    text-align: center;
+    font-size: 9px;
+    font-weight: 800;
+    min-width: 30px;
+    height: 30px;
+    user-select: none;
+    transition: background .1s;
+    letter-spacing: .5px;
+  }
+  .cl-cell:hover { filter: brightness(.93); }
+  .cl-cell[data-status=""]    { background: #fff; color: rgba(15,23,42,.2); }
+  .cl-cell[data-status="OK"]  { background: #d1fae5; color: #065f46; }
+  .cl-cell[data-status="NOK"] { background: #fee2e2; color: #991b1b; }
+  .cl-cell[data-status="NA"]  { background: #f1f5f9; color: #64748b; }
+
+  /* ── Signature row ── */
+  .cl-sign-cell {
+    text-align: center; vertical-align: middle;
+    min-width: 30px; height: 100px; padding: 2px !important;
+    background: rgba(13,110,253,.03);
+  }
+  .sign-btn-dia {
+    background: none; border: none; padding: 0; cursor: pointer;
+    color: rgba(15,23,42,.40); font-size: 14px; line-height: 1; transition: color .15s;
+  }
+  .sign-btn-dia:hover { color: #0d6efd; }
+  .sign-name-dia {
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    font-size: 8px; font-weight: 700; color: #0f172a;
+    white-space: nowrap; display: inline-block;
+    max-height: 96px; overflow: hidden; line-height: 1.1;
+  }
+  .td-sign-label {
+    padding: 4px 8px !important; font-size: 9px; font-weight: 700;
+    color: var(--text-muted); text-transform: uppercase; letter-spacing: .3px;
+    background: rgba(13,110,253,.04); min-width: 280px; line-height: 1.3;
+  }
+
+  /* ── Plano de ação ── */
+  .plano-row-cl { padding: 12px 0; border-bottom: 1px solid rgba(15,23,42,.07); }
+  .plano-row-cl:last-child { border-bottom: none; }
+  .plano-item-label { font-size: 11px; font-weight: 700; color: rgba(15,23,42,.50); margin-bottom: 4px; }
+  .plano-print-table { display: none; width: 100%; border-collapse: collapse; font-size: 9px; }
+  .plano-print-table th, .plano-print-table td { border: 1px solid #bbb; padding: 3px 5px; vertical-align: top; min-height: 14px; }
+  .plano-print-table tbody tr { height: 14px; }
+  .plano-print-table th {
+    background: rgba(15,23,42,.07); font-size: 8px; font-weight: 700;
+    text-transform: uppercase; text-align: center;
+  }
+
+  /* ── Legend ── */
+  .cl-legend {
+    display: flex; gap: 20px; flex-wrap: wrap;
+    padding: 10px 16px; border-top: 1px solid var(--border);
+    font-size: 11px;
+  }
+  .cl-legend-item { display: flex; align-items: center; gap: 6px; }
+  .cl-legend-dot {
+    width: 28px; height: 18px; border-radius: 4px;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 9px; font-weight: 800;
+  }
+  .cl-legend-dot.ok  { background: #d1fae5; color: #065f46; }
+  .cl-legend-dot.nok { background: #fee2e2; color: #991b1b; }
+  .cl-legend-dot.na  { background: #f1f5f9; color: #64748b; }
+
+  /* ── Consultar ── */
+  .result-row { cursor: pointer; }
+  .result-row:hover { background: rgba(13,110,253,.04); }
+
+  /* ══════════════════ PRINT ══════════════════ */
+  @media print {
+    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+    @page { size: A4 landscape; margin: 5mm; }
+
+    html, body { margin: 0 !important; padding: 0 !important; }
+
+    .sidebar,
+    .mobile-header,
+    .desktop-header,
+    .bottom-nav,
+    .page-header,
+    .doc-toolbar,
+    .nav-tabs,
+    #tab-consultar,
+    .d-print-none { display: none !important; }
+
+    .main { margin-left: 0 !important; padding-top: 0 !important; }
+    .app  { display: block !important; }
+    .container-fluid { padding: 0 !important; background: #fff !important; }
+    section.content { padding: 0 !important; }
+
+    body { background: #fff !important; }
+
+    .print-header { display: flex !important; }
+    .tab-pane { display: block !important; opacity: 1 !important; }
+
+    #clTable { font-size: 6.5px; min-width: unset; width: 100%; }
+    #clTable th { font-size: 6.5px; padding: 2px 1px; }
+    #clTable th.th-item { min-width: unset; }
+    #clTable td.td-item { min-width: unset; font-size: 6.5px; padding: 1px 4px; }
+    #clTable td.td-num { font-size: 6.5px; padding: 1px; }
+    .cl-cell { font-size: 6.5px; height: 15px; min-width: 14px; }
+    .cl-sign-cell { height: 60px; min-width: 14px; }
+    .sign-name-dia { font-size: 5.5px; max-height: 56px; }
+    .sign-btn-dia { display: none !important; }
+    .td-sign-label { font-size: 6.5px; min-width: unset; padding: 1px 3px !important; }
+    .cl-grid-wrap { overflow: visible; }
+    .cl-card { border-radius: 0; margin-bottom: 4px; }
+    .cl-card-body { padding: 4px; }
+    .print-meta { display: flex !important; }
+    .cl-legend { padding: 3px 6px; font-size: 6.5px; }
+    .cl-legend-dot { width: 18px; height: 12px; font-size: 6.5px; }
+
+    #tab-plano { page-break-before: always; }
+    .print-header-verso { display: flex !important; }
+    .plano-print-table { display: table !important; }
+    .plano-print-table th { font-size: 6.5px !important; padding: 1px 2px !important; }
+    .plano-print-table td { font-size: 7px !important; padding: 1px 3px !important; height: 13px !important; }
+    #clPlanoForm { display: none !important; }
+  }
+
+  .print-header-verso {
+    display: none; align-items: center; gap: 16px;
+    padding: 10px 14px; border: 1px solid #ccc; border-bottom: none; background: #fff;
+  }
+  .print-header-verso img { height: 36px; }
+  .print-header-verso-title { font-size: 13px; font-weight: 800; color: #0f172a; line-height: 1.2; }
+  .print-header-verso-sub { font-size: 9px; color: #64748b; margin-top: 2px; }
+  .print-header-verso-doc { margin-left: auto; text-align: right; }
+  .print-header-verso-doc .doc-num { font-size: 13px; font-weight: 800; color: #0d6efd; }
+
+  .print-header {
+    display: none;
+    align-items: center;
+    gap: 16px;
+    padding: 10px 14px;
+    border: 1px solid #ccc;
+    border-bottom: none;
+    background: #fff;
+  }
+  .print-header img { height: 36px; }
+  .print-header-title { font-size: 13px; font-weight: 800; color: #0f172a; line-height: 1.2; }
+  .print-header-sub { font-size: 9px; color: #64748b; margin-top: 2px; }
+  .print-header-doc { margin-left: auto; text-align: right; }
+  .print-header-doc .doc-num { font-size: 13px; font-weight: 800; color: #0d6efd; }
+  .print-header-doc .doc-code { font-size: 8px; color: #64748b; }
+
+  .print-meta {
+    display: none;
+    flex-wrap: wrap;
+    gap: 16px;
+    padding: 8px 14px;
+    border: 1px solid #ccc;
+    border-bottom: none;
+    background: #f8fafc;
+    font-size: 9px;
+  }
+  .print-meta-item strong { font-size: 8px; color: #64748b; display: block; }
+  .print-meta-item span   { font-size: 10px; font-weight: 700; color: #0f172a; }
+</style>
+
+<!-- Load doc modal -->
+<div class="modal fade" id="modalCarregar" tabindex="-1">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header py-2">
+        <h6 class="modal-title" style="font-size:.9rem;">Carregar Documento</h6>
+        <button type="button" class="btn-close btn-sm" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <label class="meta-label mb-1">ID do Documento</label>
+        <div class="input-group input-group-sm">
+          <span class="input-group-text fw-bold">CL-</span>
+          <input type="number" class="form-control" id="loadDocIdInput" placeholder="N°" min="1" style="border-radius:0;">
+          <span class="input-group-text fw-bold" id="loadDocYearSuffix">-2026</span>
+        </div>
+        <div class="text-danger mt-2 d-none" id="loadDocErr" style="font-size:.8rem;"></div>
+      </div>
+      <div class="modal-footer py-2">
+        <button type="button" class="btn btn-primary btn-sm" id="btnCarregarDoc">Carregar</button>
+        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Signature modal -->
+<div class="modal fade" id="signModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-sm modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header py-2">
+        <h6 class="modal-title mb-0" id="signModalTitle">Assinar</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body py-3">
+        <div class="mb-2">
+          <label class="form-label" style="font-size:.78rem;font-weight:600;">Usuário / Matrícula</label>
+          <input type="text" class="form-control form-control-sm" id="signModalUser" autocomplete="off" placeholder="Ex: 12345">
+        </div>
+        <div class="mb-2">
+          <label class="form-label" style="font-size:.78rem;font-weight:600;">Senha</label>
+          <input type="password" class="form-control form-control-sm" id="signModalPass" autocomplete="new-password">
+        </div>
+        <div class="text-danger d-none" id="signModalErr" style="font-size:11px;"></div>
+      </div>
+      <div class="modal-footer py-2">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-success btn-sm" id="signModalConfirmBtn">Confirmar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="container-fluid">
+
+  <ul class="nav nav-tabs mb-3 d-print-none" id="clTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-doc" type="button" role="tab">
+        <i class="bi bi-file-earmark-check me-1"></i> Documento
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-plano" type="button" role="tab">
+        <i class="bi bi-exclamation-triangle me-1"></i> Plano de Ação
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-consultar" type="button" role="tab">
+        <i class="bi bi-search me-1"></i> Consultar
+      </button>
+    </li>
+  </ul>
+
+  <div class="tab-content">
+
+    <!-- ══════════════ TAB DOCUMENTO ══════════════ -->
+    <div class="tab-pane fade show active" id="tab-doc" role="tabpanel">
+
+      <!-- Print header -->
+      <div class="print-header">
+        <img src="{{ url_for('static', filename='images/logos/logo.png') }}" alt="Venttos">
+        <div style="flex:1;text-align:center;">
+          <div class="print-header-title">CHECKLIST DE VERIFICAÇÃO DA LINHA</div>
+          <div class="print-header-sub">(Line's Checklist Verification) · PRO011</div>
+        </div>
+        <div class="print-header-doc">
+          <div class="doc-num">Nº <span id="printDocId">Novo Documento</span></div>
+        </div>
+      </div>
+
+      <!-- Print meta row -->
+      <div class="print-meta" id="printMeta">
+        <div class="print-meta-item"><strong>MÊS / ANO <span style="font-weight:400;font-size:7px;">(Month / Year)</span></strong><span id="printMesAno">-</span></div>
+        <div class="print-meta-item"><strong>SETOR <span style="font-weight:400;font-size:7px;">(Sector)</span></strong><span id="printSetor">-</span></div>
+        <div class="print-meta-item"><strong>LINHA <span style="font-weight:400;font-size:7px;">(Line)</span></strong><span id="printLinha">-</span></div>
+        <div class="print-meta-item"><strong>TURNO <span style="font-weight:400;font-size:7px;">(Shift)</span></strong><span id="printTurno">-</span></div>
+        <div class="print-meta-item"><strong>MODELO <span style="font-weight:400;font-size:7px;">(Model)</span></strong><span id="printModelo">-</span></div>
+      </div>
+
+      <!-- Toolbar -->
+      <div class="doc-toolbar d-print-none">
+        <button class="btn btn-outline-secondary btn-sm" id="btnNovo" title="Novo documento">
+          <i class="bi bi-file-earmark-plus"></i> Novo
+        </button>
+        <button class="btn btn-outline-primary btn-sm" id="btnAbrirCarregar" data-bs-toggle="modal" data-bs-target="#modalCarregar">
+          <i class="bi bi-folder2-open"></i> Carregar CL-
+        </button>
+        <span class="doc-id-badge" id="docIdBadge">Novo Documento</span>
+        <div class="ms-auto d-flex gap-2">
+          <button class="btn btn-success btn-sm fw-bold" id="btnSalvar">
+            <i class="bi bi-floppy"></i> Salvar
+          </button>
+          <button class="btn btn-outline-secondary btn-sm" onclick="window.print()">
+            <i class="bi bi-printer"></i> Imprimir
+          </button>
+        </div>
+      </div>
+
+      <div id="msgDoc" class="d-print-none"></div>
+
+      <!-- Meta card -->
+      <div class="cl-card d-print-none">
+        <div class="cl-card-body">
+          <div class="row g-3">
+            <div class="col-6 col-md-2">
+              <div class="meta-label">Mês <span style="font-weight:400;color:var(--text-muted);font-size:.75rem;">(Month)</span></div>
+              <select class="form-select form-select-sm" id="clMes" style="border-radius:8px;">
+                <option value="1">Janeiro</option>
+                <option value="2">Fevereiro</option>
+                <option value="3">Março</option>
+                <option value="4">Abril</option>
+                <option value="5">Maio</option>
+                <option value="6">Junho</option>
+                <option value="7">Julho</option>
+                <option value="8">Agosto</option>
+                <option value="9">Setembro</option>
+                <option value="10">Outubro</option>
+                <option value="11">Novembro</option>
+                <option value="12">Dezembro</option>
+              </select>
+            </div>
+            <div class="col-6 col-md-1">
+              <div class="meta-label">Ano <span style="font-weight:400;color:var(--text-muted);font-size:.75rem;">(Year)</span></div>
+              <input type="number" class="form-control form-control-sm" id="clAno" min="2024" max="2040" style="border-radius:8px;">
+            </div>
+            <div class="col-6 col-md-2">
+              <div class="meta-label">Setor <span style="font-weight:400;color:var(--text-muted);font-size:.75rem;">(Sector)</span></div>
+              <select class="form-select form-select-sm" id="clSetor" style="border-radius:8px;">
+                <option value="SMT">SMT</option>
+                <option value="PTH">PTH</option>
+                <option value="IM">IM</option>
+                <option value="PA">PA</option>
+                <option value="VTT">VTT</option>
+              </select>
+            </div>
+            <div class="col-6 col-md-2">
+              <div class="meta-label">Linha <span style="font-weight:400;color:var(--text-muted);font-size:.75rem;">(Line)</span></div>
+              <select class="form-select form-select-sm" id="clLinha" style="border-radius:8px;"></select>
+            </div>
+            <div class="col-6 col-md-2">
+              <div class="meta-label">Turno <span style="font-weight:400;color:var(--text-muted);font-size:.75rem;">(Shift)</span></div>
+              <select class="form-select form-select-sm" id="clTurno" style="border-radius:8px;">
+                <option value="">-</option>
+                <option value="1">1° Turno</option>
+                <option value="2">2° Turno</option>
+                <option value="3">3° Turno</option>
+              </select>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="meta-label">Modelo (Model)</div>
+              <input type="text" class="form-control form-control-sm" id="clModelo" placeholder="Ex: ABC-123" style="border-radius:8px;">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Grid card -->
+      <div class="cl-card">
+        <div class="cl-card-body p-0">
+          <div class="cl-grid-wrap">
+            <table id="clTable">
+              <thead id="clThead"></thead>
+              <tbody id="clTbody"></tbody>
+            </table>
+          </div>
+
+          <!-- Legend -->
+          <div class="cl-legend">
+            <span style="font-size:10px;font-weight:700;color:var(--text-muted);">Legenda (Subtitle):</span>
+            <span class="cl-legend-item">
+              <span class="cl-legend-dot ok">OK</span>
+              <span>Nenhum problema detectado (No problem detected)</span>
+            </span>
+            <span class="cl-legend-item">
+              <span class="cl-legend-dot nok">NOK</span>
+              <span>Problema detectado (Problem detected)</span>
+            </span>
+            <span class="cl-legend-item">
+              <span class="cl-legend-dot na">NA</span>
+              <span>Não aplicável (Not applicable)</span>
+            </span>
+            <span class="cl-legend-item d-print-none" style="margin-left:auto;font-size:10px;color:var(--text-muted);">
+              Clique na célula para alternar OK/NOK/NA · Clique em <i class="bi bi-pen"></i> para assinar o dia
+            </span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ══════════════ TAB PLANO DE AÇÃO (VERSO) ══════════════ -->
+    <div class="tab-pane fade" id="tab-plano" role="tabpanel">
+
+      <div class="print-header-verso">
+        <img src="{{ url_for('static', filename='images/logos/logo.png') }}" alt="Venttos">
+        <div style="flex:1;text-align:center;">
+          <div class="print-header-verso-title">Plano de Ação / Action Plan</div>
+          <div class="print-header-verso-sub">(Line's Checklist Verification) · PRO011</div>
+        </div>
+        <div class="print-header-verso-doc">
+          <div class="doc-num">Nº <span id="printDocIdVerso">—</span></div>
+        </div>
+      </div>
+
+      <div class="print-meta" id="printMetaVerso">
+        <div class="print-meta-item"><strong>MÊS / ANO <span style="font-weight:400;font-size:7px;">(Month / Year)</span></strong><span id="printMesAnoV">-</span></div>
+        <div class="print-meta-item"><strong>SETOR <span style="font-weight:400;font-size:7px;">(Sector)</span></strong><span id="printSetorV">-</span></div>
+        <div class="print-meta-item"><strong>LINHA <span style="font-weight:400;font-size:7px;">(Line)</span></strong><span id="printLinhaV">-</span></div>
+        <div class="print-meta-item"><strong>TURNO <span style="font-weight:400;font-size:7px;">(Shift)</span></strong><span id="printTurnoV">-</span></div>
+        <div class="print-meta-item"><strong>MODELO <span style="font-weight:400;font-size:7px;">(Model)</span></strong><span id="printModeloV">-</span></div>
+      </div>
+
+      <table class="plano-print-table" id="clPlanoPrintTable">
+        <thead>
+          <tr>
+            <th style="width:28px;">DIA<br><span style="font-weight:400;font-size:7px;">(Day)</span></th>
+            <th style="width:32px;">ITEM N°</th>
+            <th>PROBLEMA<br><span style="font-weight:400;font-size:7px;">(Issue)</span></th>
+            <th>CAUSA<br><span style="font-weight:400;font-size:7px;">(Root Cause)</span></th>
+            <th>AÇÃO<br><span style="font-weight:400;font-size:7px;">(Action Plan)</span></th>
+            <th style="width:46px;">QUANDO?<br><span style="font-weight:400;font-size:7px;">(When?)</span></th>
+            <th style="width:64px;">RESPONSÁVEL<br><span style="font-weight:400;font-size:7px;">(PIC)</span></th>
+            <th style="width:58px;">ASSINATURA<br><span style="font-weight:400;font-size:7px;">(Signature)</span></th>
+            <th style="width:40px;">STATUS</th>
+          </tr>
+        </thead>
+        <tbody id="clPlanoPrintBody"></tbody>
+      </table>
+
+      <div id="clPlanoForm">
+        <div id="msgPlano" class="d-print-none"></div>
+        <div class="cl-card">
+          <div class="cl-card-body">
+            <div class="d-flex align-items-center gap-2 mb-3 flex-wrap">
+              <div style="width:36px;height:36px;border-radius:10px;background:rgba(220,53,69,.10);color:#dc3545;display:grid;place-items:center;font-size:16px;">
+                <i class="bi bi-exclamation-triangle"></i>
+              </div>
+              <div>
+                <div class="fw-bold">Plano de Ação</div>
+                <div style="font-size:12px;color:var(--text-muted);">Registre ações corretivas para itens NOK. <span id="planoDocInfo"></span></div>
+              </div>
+              <div class="ms-auto d-flex gap-2 d-print-none">
+                <button class="btn btn-outline-secondary btn-sm" id="btnAddPlanoRow">
+                  <i class="bi bi-plus"></i> Adicionar linha
+                </button>
+                <button class="btn btn-warning btn-sm fw-bold" id="btnSalvarPlano">
+                  <i class="bi bi-save"></i> Salvar Plano
+                </button>
+              </div>
+            </div>
+            <div id="planoRowsContainer"></div>
+            <div class="text-muted d-print-none" style="font-size:11px;margin-top:8px;">
+              Linhas sem Problema preenchido são ignoradas ao salvar.
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ══════════════ TAB CONSULTAR ══════════════ -->
+    <div class="tab-pane fade" id="tab-consultar" role="tabpanel">
+
+      <div class="cl-card">
+        <div class="cl-card-body">
+          <div class="row g-3 align-items-end">
+            <div class="col-6 col-md-2">
+              <div class="meta-label">Mês</div>
+              <select class="form-select form-select-sm" id="filtroMes" style="border-radius:8px;">
+                <option value="">Todos</option>
+                <option value="1">Janeiro</option>
+                <option value="2">Fevereiro</option>
+                <option value="3">Março</option>
+                <option value="4">Abril</option>
+                <option value="5">Maio</option>
+                <option value="6">Junho</option>
+                <option value="7">Julho</option>
+                <option value="8">Agosto</option>
+                <option value="9">Setembro</option>
+                <option value="10">Outubro</option>
+                <option value="11">Novembro</option>
+                <option value="12">Dezembro</option>
+              </select>
+            </div>
+            <div class="col-6 col-md-1">
+              <div class="meta-label">Ano</div>
+              <input type="number" class="form-control form-control-sm" id="filtroAno" style="border-radius:8px;">
+            </div>
+            <div class="col-6 col-md-2">
+              <div class="meta-label">Setor</div>
+              <select class="form-select form-select-sm" id="filtroSetor" style="border-radius:8px;">
+                <option value="">Todos</option>
+                <option value="SMT">SMT</option>
+                <option value="PTH">PTH</option>
+                <option value="IM">IM</option>
+                <option value="PA">PA</option>
+                <option value="VTT">VTT</option>
+              </select>
+            </div>
+            <div class="col-6 col-md-2">
+              <div class="meta-label">Linha</div>
+              <select class="form-select form-select-sm" id="filtroLinha" style="border-radius:8px;">
+                <option value="">Todas</option>
+              </select>
+            </div>
+            <div class="col-md-2">
+              <button class="btn btn-primary btn-sm w-100" id="btnConsultar">
+                <i class="bi bi-search"></i> Buscar
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="msgConsultar"></div>
+
+      <div class="cl-card" id="cardResultados" style="display:none;">
+        <div class="cl-card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-sm table-hover mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>ID</th>
+                  <th>Mês/Ano</th>
+                  <th>Setor</th>
+                  <th>Linha</th>
+                  <th>Turno</th>
+                  <th>Modelo</th>
+                  <th>Criado por</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="resultadosBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  "use strict";
+
+  const MESES = ["","Janeiro","Fevereiro","Março","Abril","Maio","Junho",
+                 "Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+
+  const LINHAS = {
+    SMT: ["SMT-01","SMT-02","SMT-03","SMT-04","SMT-05","SMT-06","SMT-07","SMT-08","SMT-09"],
+    PTH: ["ADE-01","AXI-01","AXI-02","AXI-03","JUM-01","JUM-02","RAD-01","RAD-02","RAD-03","ROU-01","ROU-02","ROU-03","ROU-04"],
+    IM:  ["IM-01","IM-02","IM-03","IM-04","IM-05","IM-06","IM-07"],
+    PA:  ["IP-COM","PA-01","PA-03","PA-04","PA-07","PA-08","PA-09","PA-13","WIFI"],
+    VTT: ["VTT-01","VTT-02","VTT-03"],
+  };
+
+  const ITEMS = [
+    { num: 1,  desc: "Todas as IDTS/formulário estão disponíveis nos postos de trabalho e atualizados conforme o sistema ?" },
+    { num: 2,  desc: "Todos os equipamentos da linha estão funcionando corretamente ?" },
+    { num: 3,  desc: "Os checklists de verificação dos equipamentos estão disponíveis ?" },
+    { num: 4,  desc: "Exaustor do forno está ligado ?" },
+    { num: 5,  desc: "A pasta de solda foi retirada da geladeira e está pronta para uso ?" },
+    { num: 6,  desc: "Material de limpeza manual do stencil está disponível ?" },
+    { num: 7,  desc: "Todo material de consumo está disponível ?" },
+    { num: 8,  desc: "Verificado se pasta de solda / adesivo estão devidamente etiquetados ?" },
+    { num: 9,  desc: "Existe papel de limpeza da printer carregado na máquina ?" },
+    { num: 10, desc: "Máquinas tem comunicação com o computador de linha ?" },
+    { num: 11, desc: "O modelo possui máscara de pinos ?" },
+    { num: 12, desc: "A pinagem está distribuída de forma adequada na printer referente ao modelo ?" },
+    { num: 13, desc: "A base da máquina está livre de componentes de precipitação (rejeitos) ?" },
+    { num: 14, desc: "Folhas de alimentação estão no processo ?" },
+    { num: 15, desc: "Foi realizada a manutenção diária de limpeza ?" },
+    { num: 16, desc: "Todo pessoal da linha está treinado e há registro na IDT ?" },
+    { num: 17, desc: "A caixa de rejeitos foi esvaziada com os respectivos relatórios ?" },
+    { num: 18, desc: "Confirmado se o nome do programa do perfil confere ?" },
+    { num: 19, desc: "Foi realizada a medição do perfil diário e confirmado os parâmetros ?" },
+    { num: 20, desc: "Placa de referência está presente no posto de inspeção ?" },
+    { num: 21, desc: "O material de reparo está disponível na bancada ?" },
+    { num: 22, desc: "Os magazines estão ajustados para a placa em produção ?" },
+    { num: 23, desc: "As etiquetas de controle da produção e formulários estão disponíveis ?" },
+    { num: 24, desc: "Todos da linha estão utilizando o material ESD ? Há registro de verificação ?" },
+    { num: 25, desc: "Cordões de aterramento e mantas estão integras ?" },
+    { num: 26, desc: "Os magazines estão organizados e os postos de trabalho arrumados ?" },
+    { num: 27, desc: "Lixeiras estão esvaziadas e prontas para uso ?" },
+    { num: 28, desc: "Os equipamentos estão devidamente identificados e calibrados ?" },
+    { num: 29, desc: "Verificado se solda em fio, pasta e fluxo estão com a etiqueta RoHS/Lead Free ?" },
+    { num: 30, desc: "Verificada a marcação de alimentação dos tapes ?" },
+    { num: 31, desc: "O 5S está sendo realizado (utilização, organização, limpeza, saúde e higiene, autodisciplina) ?" },
+    { num: 32, desc: "Verificação correta da fixação do stencil na printer ?" },
+  ];
+
+  const STATUS_CYCLE = ['', 'OK', 'NOK', 'NA'];
+
+  let registroId     = null;
+  let docId          = null;
+  let gridState      = {};
+  let signState      = {};
+  let currentSignDia = null;
+
+  function esc(s) {
+    return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function showMsg(elId, tipo, texto) {
+    const el = document.getElementById(elId);
+    el.innerHTML = `<div class="alert alert-${tipo} alert-dismissible fade show mb-3">
+      ${esc(texto)}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>`;
+    if (tipo !== 'danger') setTimeout(() => {
+      try { bootstrap.Alert.getOrCreateInstance(el.querySelector('.alert'))?.close(); } catch {}
+    }, 4000);
+  }
+
+  function daysInMonth(mes, ano) {
+    return new Date(ano, mes, 0).getDate();
+  }
+
+  function renderLinhas(setor, sel, selected) {
+    const linhas = LINHAS[setor] || [];
+    sel.innerHTML = '';
+    for (const l of linhas) {
+      const o = document.createElement('option');
+      o.value = l; o.textContent = l;
+      if (selected && l === selected) o.selected = true;
+      sel.appendChild(o);
+    }
+  }
+
+  function cellKey(itemNum, dia) { return `${itemNum}:${dia}`; }
+
+  function renderSignCell(dia) {
+    const cell = document.querySelector(`.cl-sign-cell[data-dia="${dia}"]`);
+    if (!cell) return;
+    const username = signState[dia];
+    if (username) {
+      cell.innerHTML = `<span class="sign-name-dia" title="${esc(username)}">${esc(username)}</span>`;
+    } else {
+      cell.innerHTML = `<button class="sign-btn-dia" data-dia="${dia}" title="Assinar dia ${dia}"><i class="bi bi-pen"></i></button>`;
+      cell.querySelector('.sign-btn-dia').addEventListener('click', () => openSignModal(dia));
+    }
+  }
+
+  function buildGrid() {
+    const mes  = parseInt(document.getElementById('clMes').value);
+    const ano  = parseInt(document.getElementById('clAno').value);
+    const days = daysInMonth(mes, ano);
+
+    const thead = document.getElementById('clThead');
+    const tbody = document.getElementById('clTbody');
+
+    let headHtml = '<tr><th class="th-num">N°</th><th class="th-item">Ponto a Verificar (Verification Point)</th>';
+    for (let d = 1; d <= days; d++) headHtml += `<th>${d}</th>`;
+    headHtml += '</tr>';
+    thead.innerHTML = headHtml;
+
+    let bodyHtml = '';
+    for (const item of ITEMS) {
+      bodyHtml += `<tr>
+        <td class="td-num">${item.num}</td>
+        <td class="td-item">${esc(item.desc)}</td>`;
+      for (let d = 1; d <= days; d++) {
+        const key    = cellKey(item.num, d);
+        const status = gridState[key] || '';
+        bodyHtml += `<td class="cl-cell" data-item="${item.num}" data-dia="${d}" data-status="${status}">${status}</td>`;
+      }
+      bodyHtml += '</tr>';
+    }
+
+    bodyHtml += '<tr>';
+    bodyHtml += '<td class="td-num" style="vertical-align:middle;"></td>';
+    bodyHtml += '<td class="td-sign-label">REALIZADOR DO CHECKLIST<br><span style="font-weight:400;">(Checklist Maker)</span></td>';
+    for (let d = 1; d <= days; d++) {
+      bodyHtml += `<td class="cl-sign-cell" data-dia="${d}"></td>`;
+    }
+    bodyHtml += '</tr>';
+
+    tbody.innerHTML = bodyHtml;
+
+    tbody.querySelectorAll('.cl-cell').forEach(cell => {
+      cell.addEventListener('click', () => {
+        const cur  = cell.dataset.status;
+        const next = STATUS_CYCLE[(STATUS_CYCLE.indexOf(cur) + 1) % STATUS_CYCLE.length];
+        cell.dataset.status = next;
+        cell.textContent    = next;
+        gridState[cellKey(Number(cell.dataset.item), Number(cell.dataset.dia))] = next;
+      });
+    });
+
+    for (let d = 1; d <= days; d++) renderSignCell(d);
+
+    updatePrintMeta();
+  }
+
+  function openSignModal(dia) {
+    currentSignDia = dia;
+    document.getElementById('signModalTitle').textContent = `Assinar — Dia ${dia}`;
+    document.getElementById('signModalUser').value = '';
+    document.getElementById('signModalPass').value = '';
+    document.getElementById('signModalErr').classList.add('d-none');
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('signModal')).show();
+    setTimeout(() => document.getElementById('signModalUser').focus(), 300);
+  }
+
+  async function confirmSign() {
+    const username = document.getElementById('signModalUser').value.trim();
+    const password = document.getElementById('signModalPass').value;
+    const errEl    = document.getElementById('signModalErr');
+    const btn      = document.getElementById('signModalConfirmBtn');
+
+    if (!username || !password) {
+      errEl.textContent = 'Preencha usuário e senha.';
+      errEl.classList.remove('d-none');
+      return;
+    }
+
+    btn.disabled  = true;
+    const orig    = btn.innerHTML;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+    errEl.classList.add('d-none');
+
+    try {
+      const r    = await fetch('/api/auth/confirm-extra', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+        body: JSON.stringify({ matricula: username, password }),
+      });
+      const data = await r.json();
+
+      if (!r.ok || !data.success) {
+        errEl.textContent = data.error || 'Credenciais inválidas.';
+        errEl.classList.remove('d-none');
+        return;
+      }
+
+      signState[currentSignDia] = data.username;
+      renderSignCell(currentSignDia);
+      bootstrap.Modal.getInstance(document.getElementById('signModal')).hide();
+    } catch {
+      errEl.textContent = 'Erro de comunicação.';
+      errEl.classList.remove('d-none');
+    } finally {
+      btn.disabled  = false;
+      btn.innerHTML = orig;
+    }
+  }
+
+  function collectEntradas() {
+    return Object.entries(gridState)
+      .filter(([, status]) => status !== '')
+      .map(([key, status]) => {
+        const [item_num, dia] = key.split(':').map(Number);
+        return { item_num, dia, status };
+      });
+  }
+
+  function collectAssinaturas() {
+    return Object.entries(signState).map(([dia, username]) => ({
+      dia: Number(dia),
+      username,
+      timestamp: new Date().toISOString(),
+    }));
+  }
+
+  function updateDocBadge() {
+    const badge    = document.getElementById('docIdBadge');
+    const printDoc = document.getElementById('printDocId');
+    const label    = docId || 'Novo Documento';
+    badge.textContent    = label;
+    printDoc.textContent = label;
+    badge.classList.toggle('saved', !!docId);
+
+    const versoDoc = document.getElementById('printDocIdVerso');
+    if (versoDoc) versoDoc.textContent = label;
+
+    const planoInfo = document.getElementById('planoDocInfo');
+    if (planoInfo) planoInfo.textContent = docId ? `Documento: ${docId}` : '';
+  }
+
+  function updatePrintMeta() {
+    const mes     = parseInt(document.getElementById('clMes').value);
+    const ano     = parseInt(document.getElementById('clAno').value);
+    const setor   = document.getElementById('clSetor').value;
+    const linha   = document.getElementById('clLinha').value;
+    const turnoVal = document.getElementById('clTurno').value;
+    const turno   = turnoVal ? `${turnoVal}° Turno` : '-';
+    const modelo  = document.getElementById('clModelo').value.trim() || '-';
+    const mesAno  = `${MESES[mes]}/${ano}`;
+
+    document.getElementById('printMesAno').textContent  = mesAno;
+    document.getElementById('printSetor').textContent   = setor;
+    document.getElementById('printLinha').textContent   = linha;
+    document.getElementById('printTurno').textContent   = turno;
+    document.getElementById('printModelo').textContent  = modelo;
+
+    document.getElementById('printMesAnoV').textContent = mesAno;
+    document.getElementById('printSetorV').textContent  = setor;
+    document.getElementById('printLinhaV').textContent  = linha;
+    document.getElementById('printTurnoV').textContent  = turno;
+    document.getElementById('printModeloV').textContent = modelo;
+  }
+
+  function limpar() {
+    registroId = null;
+    docId      = null;
+    gridState  = {};
+    signState  = {};
+    updateDocBadge();
+
+    const now = new Date();
+    document.getElementById('clMes').value   = String(now.getMonth() + 1);
+    document.getElementById('clAno').value   = String(now.getFullYear());
+    document.getElementById('clTurno').value = '';
+    document.getElementById('clModelo').value = '';
+
+    const setor = document.getElementById('clSetor').value;
+    renderLinhas(setor, document.getElementById('clLinha'));
+    buildGrid();
+    limparPlano();
+    document.getElementById('msgDoc').innerHTML = '';
+  }
+
+  function carregarDocumento(id) {
+    const btn   = document.getElementById('btnCarregarDoc');
+    const errEl = document.getElementById('loadDocErr');
+    errEl.classList.add('d-none');
+    btn.disabled  = true;
+    const orig    = btn.innerHTML;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+
+    fetch(`/api/checklist-linha/registros/${id}`, {
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.erro) { errEl.textContent = data.erro; errEl.classList.remove('d-none'); return; }
+
+      registroId = data.id;
+      docId      = data.doc_id;
+      updateDocBadge();
+
+      document.getElementById('clMes').value   = String(data.mes);
+      document.getElementById('clAno').value   = String(data.ano);
+      document.getElementById('clSetor').value = data.setor || 'SMT';
+      renderLinhas(data.setor || 'SMT', document.getElementById('clLinha'), data.linha);
+      document.getElementById('clTurno').value  = data.turno ? String(data.turno) : '';
+      document.getElementById('clModelo').value = data.modelo || '';
+
+      gridState = {};
+      for (const e of (data.entradas || [])) {
+        gridState[cellKey(e.item_num, e.dia)] = e.status;
+      }
+
+      signState = {};
+      for (const a of (data.assinaturas || [])) {
+        signState[a.dia] = a.username;
+      }
+
+      buildGrid();
+      carregarPlano(registroId);
+
+      bootstrap.Modal.getInstance(document.getElementById('modalCarregar'))?.hide();
+      showMsg('msgDoc', 'success', `Documento ${docId} carregado.`);
+    })
+    .catch(() => { errEl.textContent = 'Erro ao carregar documento.'; errEl.classList.remove('d-none'); })
+    .finally(() => { btn.disabled = false; btn.innerHTML = orig; });
+  }
+
+  async function salvar() {
+    updatePrintMeta();
+
+    const mes   = parseInt(document.getElementById('clMes').value);
+    const ano   = parseInt(document.getElementById('clAno').value);
+    const setor = document.getElementById('clSetor').value;
+    const linha = document.getElementById('clLinha').value;
+
+    if (!setor || !linha) { showMsg('msgDoc', 'warning', 'Setor e linha são obrigatórios.'); return; }
+
+    const payload = {
+      mes,
+      ano,
+      setor,
+      linha,
+      turno:       document.getElementById('clTurno').value || null,
+      modelo:      document.getElementById('clModelo').value.trim().toUpperCase() || null,
+      entradas:    collectEntradas(),
+      assinaturas: collectAssinaturas(),
+    };
+
+    const btn  = document.getElementById('btnSalvar');
+    btn.disabled  = true;
+    const orig    = btn.innerHTML;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Salvando...';
+
+    try {
+      let url    = '/api/checklist-linha/registros';
+      let method = 'POST';
+      if (registroId) { url = `${url}/${registroId}`; method = 'PATCH'; }
+
+      const r    = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+        body: JSON.stringify(payload),
+      });
+      const data = await r.json();
+
+      if (!r.ok || !data.sucesso) {
+        showMsg('msgDoc', 'danger', data.erro || 'Erro ao salvar.');
+        return;
+      }
+
+      registroId = data.registro.id;
+      docId      = data.registro.doc_id;
+      updateDocBadge();
+      showMsg('msgDoc', 'success', `Documento ${docId} salvo com sucesso.`);
+    } catch { showMsg('msgDoc', 'danger', 'Erro de comunicação com o servidor.'); }
+    finally  { btn.disabled = false; btn.innerHTML = orig; }
+  }
+
+  function makePlanoRow(data) {
+    data = data || {};
+    const div = document.createElement('div');
+    div.className = 'plano-row-cl';
+    div.innerHTML = `
+      <div class="row g-2 align-items-start">
+        <div class="col-6 col-md-1">
+          <div class="plano-item-label">Dia</div>
+          <input type="number" class="form-control form-control-sm plano-dia" min="1" max="31" placeholder="—" value="${esc(data.dia || '')}">
+        </div>
+        <div class="col-6 col-md-1">
+          <div class="plano-item-label">Item N°</div>
+          <input type="number" class="form-control form-control-sm plano-item-num" min="1" max="32" placeholder="—" value="${esc(data.item_num || '')}">
+        </div>
+        <div class="col-12 col-md-2">
+          <div class="plano-item-label">Problema <span style="color:#dc3545;">*</span></div>
+          <input type="text" class="form-control form-control-sm plano-problema" placeholder="Descreva o problema" value="${esc(data.problema || '')}">
+        </div>
+        <div class="col-12 col-md-2">
+          <div class="plano-item-label">Causa</div>
+          <input type="text" class="form-control form-control-sm plano-causa" placeholder="Causa raiz" value="${esc(data.causa || '')}">
+        </div>
+        <div class="col-12 col-md-2">
+          <div class="plano-item-label">Ação</div>
+          <input type="text" class="form-control form-control-sm plano-acao" placeholder="Ação corretiva" value="${esc(data.acao || '')}">
+        </div>
+        <div class="col-6 col-md-1">
+          <div class="plano-item-label">Quando?</div>
+          <input type="date" class="form-control form-control-sm plano-quando" value="${esc(data.quando || '')}">
+        </div>
+        <div class="col-6 col-md-2">
+          <div class="plano-item-label">Responsável</div>
+          <input type="text" class="form-control form-control-sm plano-responsavel" placeholder="Nome" value="${esc(data.responsavel || '')}">
+        </div>
+        <div class="col-md-1 d-flex align-items-end">
+          <button type="button" class="btn btn-outline-danger btn-sm w-100 btn-remove-plano" title="Remover linha">
+            <i class="bi bi-trash"></i>
+          </button>
+        </div>
+      </div>`;
+    div.querySelector('.btn-remove-plano').addEventListener('click', () => div.remove());
+    return div;
+  }
+
+  function limparPlano() {
+    document.getElementById('planoRowsContainer').innerHTML = '';
+    if (document.getElementById('msgPlano')) {
+      document.getElementById('msgPlano').innerHTML = '';
+    }
+    renderPlanoPrintTable([]);
+  }
+
+  function collectPlanoItens() {
+    return Array.from(document.querySelectorAll('#planoRowsContainer .plano-row-cl')).map(row => ({
+      dia:         row.querySelector('.plano-dia').value || null,
+      item_num:    row.querySelector('.plano-item-num').value || null,
+      problema:    row.querySelector('.plano-problema').value,
+      causa:       row.querySelector('.plano-causa').value,
+      acao:        row.querySelector('.plano-acao').value,
+      quando:      row.querySelector('.plano-quando').value || null,
+      responsavel: row.querySelector('.plano-responsavel').value,
+    }));
+  }
+
+  function renderPlanoPrintTable(itens) {
+    const PRINT_MIN_ROWS = 12;
+    const tbody = document.getElementById('clPlanoPrintBody');
+    const dataRows = itens.map(it => `<tr>
+      <td style="text-align:center;">${esc(it.dia || '')}</td>
+      <td style="text-align:center;">${esc(it.item_num || '')}</td>
+      <td>${esc(it.problema || '')}</td>
+      <td>${esc(it.causa || '')}</td>
+      <td>${esc(it.acao || '')}</td>
+      <td>${esc(it.quando || '')}</td>
+      <td>${esc(it.responsavel || '')}</td>
+      <td></td>
+      <td></td>
+    </tr>`).join('');
+    const emptyCount = Math.max(0, PRINT_MIN_ROWS - itens.length);
+    const emptyRow   = `<tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>`;
+    const emptyRows  = emptyRow.repeat(emptyCount);
+    tbody.innerHTML  = dataRows + emptyRows;
+  }
+
+  function carregarPlano(id) {
+    fetch(`/api/checklist-linha/registros/${id}/plano-acao`, {
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(r => r.json())
+    .then(itens => {
+      limparPlano();
+      const container = document.getElementById('planoRowsContainer');
+      itens.forEach(it => container.appendChild(makePlanoRow(it)));
+      renderPlanoPrintTable(itens);
+    })
+    .catch(() => {});
+  }
+
+  async function salvarPlano() {
+    if (!registroId) {
+      showMsg('msgPlano', 'warning', 'Salve o documento principal antes do plano de ação.');
+      return;
+    }
+    const itens = collectPlanoItens();
+    const btn   = document.getElementById('btnSalvarPlano');
+    btn.disabled  = true;
+    const orig    = btn.innerHTML;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Salvando...';
+
+    try {
+      const r = await fetch(`/api/checklist-linha/registros/${registroId}/plano-acao`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+        body: JSON.stringify({ itens }),
+      });
+      const data = await r.json();
+
+      if (!r.ok || !data.sucesso) {
+        showMsg('msgPlano', 'danger', data.erro || 'Erro ao salvar plano.');
+        return;
+      }
+      renderPlanoPrintTable(itens.filter(it => (it.problema || '').trim()));
+      showMsg('msgPlano', 'success', 'Plano de ação salvo com sucesso.');
+    } catch { showMsg('msgPlano', 'danger', 'Erro de comunicação com o servidor.'); }
+    finally  { btn.disabled = false; btn.innerHTML = orig; }
+  }
+
+  async function consultar() {
+    const btn  = document.getElementById('btnConsultar');
+    btn.disabled  = true;
+    const orig    = btn.innerHTML;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+
+    const params = new URLSearchParams();
+    const mes   = document.getElementById('filtroMes').value;
+    const ano   = document.getElementById('filtroAno').value;
+    const setor = document.getElementById('filtroSetor').value;
+    const linha = document.getElementById('filtroLinha').value;
+    if (mes)   params.set('mes',   mes);
+    if (ano)   params.set('ano',   ano);
+    if (setor) params.set('setor', setor);
+    if (linha) params.set('linha', linha);
+
+    try {
+      const r    = await fetch(`/api/checklist-linha/registros?${params}`, {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+      });
+      const list = await r.json();
+
+      const tbody = document.getElementById('resultadosBody');
+      if (!list.length) {
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center py-3" style="color:rgba(15,23,42,.40);">Nenhum registro encontrado.</td></tr>';
+      } else {
+        tbody.innerHTML = list.map(rec => `
+          <tr class="result-row" onclick="abrirRegistro(${rec.id})" title="Clique para editar">
+            <td><strong>${esc(rec.doc_id)}</strong></td>
+            <td>${esc(MESES[rec.mes] || rec.mes)}/${esc(rec.ano)}</td>
+            <td>${esc(rec.setor)}</td>
+            <td>${esc(rec.linha)}</td>
+            <td>${rec.turno ? rec.turno + '° Turno' : '—'}</td>
+            <td>${esc(rec.modelo || '—')}</td>
+            <td>${esc(rec.username || '—')}</td>
+            <td>
+              <button class="btn btn-sm btn-outline-primary" onclick="event.stopPropagation(); abrirRegistro(${rec.id})">
+                <i class="bi bi-pencil"></i>
+              </button>
+            </td>
+          </tr>`).join('');
+      }
+      document.getElementById('cardResultados').style.display = '';
+    } catch { showMsg('msgConsultar', 'danger', 'Erro ao buscar registros.'); }
+    finally  { btn.disabled = false; btn.innerHTML = orig; }
+  }
+
+  window.abrirRegistro = function (id) {
+    bootstrap.Tab.getOrCreateInstance(document.querySelector('[data-bs-target="#tab-doc"]')).show();
+    carregarDocumento(id);
+  };
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const now = new Date();
+    document.getElementById('clMes').value     = String(now.getMonth() + 1);
+    document.getElementById('clAno').value     = String(now.getFullYear());
+    document.getElementById('filtroAno').value = String(now.getFullYear());
+    document.getElementById('loadDocYearSuffix').textContent = `-${now.getFullYear()}`;
+
+    const clSetor = document.getElementById('clSetor');
+    const clLinha = document.getElementById('clLinha');
+    renderLinhas(clSetor.value, clLinha);
+    clSetor.addEventListener('change', () => renderLinhas(clSetor.value, clLinha));
+
+    const filtroSetor = document.getElementById('filtroSetor');
+    const filtroLinha = document.getElementById('filtroLinha');
+    function renderFiltroLinhas() {
+      const setor  = filtroSetor.value;
+      const linhas = setor ? (LINHAS[setor] || []) : [];
+      filtroLinha.innerHTML = '<option value="">Todas</option>';
+      linhas.forEach(l => {
+        const o = document.createElement('option');
+        o.value = l; o.textContent = l;
+        filtroLinha.appendChild(o);
+      });
+    }
+    filtroSetor.addEventListener('change', renderFiltroLinhas);
+
+    document.getElementById('clMes').addEventListener('change', buildGrid);
+    document.getElementById('clAno').addEventListener('change', buildGrid);
+    document.getElementById('clModelo').addEventListener('input', function () {
+      const pos = this.selectionStart;
+      this.value = this.value.toUpperCase();
+      this.setSelectionRange(pos, pos);
+    });
+
+    buildGrid();
+
+    document.getElementById('btnNovo').addEventListener('click', limpar);
+    document.getElementById('btnSalvar').addEventListener('click', salvar);
+    document.getElementById('btnConsultar').addEventListener('click', consultar);
+
+    document.getElementById('signModalConfirmBtn').addEventListener('click', confirmSign);
+    document.getElementById('signModalPass').addEventListener('keydown', e => {
+      if (e.key === 'Enter') confirmSign();
+    });
+
+    document.getElementById('btnAddPlanoRow').addEventListener('click', () => {
+      document.getElementById('planoRowsContainer').appendChild(makePlanoRow());
+    });
+    document.getElementById('btnSalvarPlano').addEventListener('click', salvarPlano);
+
+    document.getElementById('btnCarregarDoc').addEventListener('click', () => {
+      const rawId = parseInt(document.getElementById('loadDocIdInput').value);
+      const errEl = document.getElementById('loadDocErr');
+      if (!rawId || rawId < 1) {
+        errEl.textContent = 'Informe um ID válido.';
+        errEl.classList.remove('d-none');
+        return;
+      }
+      carregarDocumento(rawId);
+    });
+
+    document.getElementById('loadDocIdInput').addEventListener('keydown', e => {
+      if (e.key === 'Enter') document.getElementById('btnCarregarDoc').click();
+    });
+  });
+
+})();
+</script>
+{% endblock %}

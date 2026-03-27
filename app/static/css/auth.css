@@ -1,0 +1,266 @@
+/* ==================================================
+   AUTH BODY – FUNDO GLOBAL
+================================================== */
+
+.auth-body {
+  min-height: 100vh;
+  background-color: #0f172a; 
+  background-image: url("../images/banners/bg-login-desktop.webp");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+/* ==================================================
+   HEADER AUTH (DESKTOP)
+================================================== */
+
+.auth-header {
+  height: 64px;
+  background: #ffffff;
+  border-bottom: 1px solid rgba(0,0,0,.08);
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+}
+
+.auth-header .brand img {
+  height: 42px;
+}
+
+.auth-header .actions {
+  margin-left: auto;
+  display: flex;
+  gap: 10px;
+}
+
+.auth-header .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+/* ==================================================
+   CONTAINER PRINCIPAL (DESKTOP)
+================================================== */
+
+.auth-container {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  min-height: calc(100vh - 64px);
+}
+
+/* ==================================================
+   VISUAL ESQUERDO
+================================================== */
+
+.auth-visual {
+  background-image: url("../images/banners/desktop-ilustraction.png");
+  background-repeat: no-repeat;
+  background-size: contain;
+  background-position: center left;
+  padding: 40px;
+}
+
+/* ==================================================
+   CARD LOGIN
+================================================== */
+
+.auth-card-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 560px;
+
+  background: rgba(255, 255, 255, 0.94);
+
+  border-radius: 14px;
+  padding: 28px;
+  box-shadow: 0 20px 40px rgba(0,0,0,.08);
+
+  /* opcional elegante e moderno */
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+/* ==================================================
+   BOTÃO OUTLINE ROXO
+================================================== */
+
+.btn-outline-purple {
+  color: #6f42c1;
+  border-color: #6f42c1;
+}
+
+.btn-outline-purple:hover,
+.btn-outline-purple:focus {
+  background-color: #6f42c1;
+  color: #fff;
+}
+
+.btn-outline-purple:active {
+  background-color: #5a32a3;
+  border-color: #5a32a3;
+  color: #fff;
+}
+
+/* ==================================================
+   MOBILE – LOGIN CHOICE / FORM
+================================================== */
+
+.mobile-screen {
+  position: relative;
+  min-height: 100vh;
+  background-size: cover;
+  background-position: center;
+  display: flex;
+  align-items: flex-end;
+  padding: 24px;
+}
+
+.mobile-actions,
+.mobile-form {
+  width: 100%;
+  transform: translateY(-48px);
+}
+
+.mobile-form {
+  max-width: 420px;
+  margin: 0 auto;
+  background: rgba(255,255,255,.92);
+  padding: 24px;
+  border-radius: 14px;
+}
+
+/* ==================================================
+   RESPONSIVO – MOBILE
+================================================== */
+
+@media (max-width: 991px) {
+
+  .auth-header {
+    display: none;
+  }
+
+  .auth-body {
+    background-image: none;
+    background-color: #f8f9fa;
+  }
+
+   .auth-container {
+     display: flex;
+     align-items: center;
+     justify-content: center;
+     min-height: calc(100vh - 64px);
+     padding: 64px;
+   }
+
+  .auth-visual {
+    display: none;
+  }
+
+  .auth-card-wrapper {
+    padding: 0;
+  }
+
+  .auth-card {
+    max-width: 380px;
+    padding: 24px;
+  }
+}
+
+/* ==================================================
+   LOGIN – INPUTS COM ÍCONE
+================================================== */
+
+.auth-input .input-group-text {
+  background-color: #fff;
+  border-right: none;
+  color: #6c757d;
+}
+
+.auth-input .form-control {
+  border-left: none;
+}
+
+.auth-input .form-control:focus {
+  box-shadow: none;
+  border-color: #ced4da;
+}
+
+/* ==================================================
+   LOGIN DESKTOP – CENTRALIZAÇÃO REAL
+================================================== */
+
+.auth-container-centered {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - 64px);
+}
+
+.auth-container-centered .auth-card {
+  max-width: 560px;
+}
+
+.auth-container-centered .auth-card-wrapper {
+  width: 100%;
+  max-width: 560px;  
+  padding: 32px;
+}
+
+.auth-container-centered .auth-card {
+  width: 100%;
+  max-width: none;   
+}
+
+/* ==================================================
+   MOBILE – LOGIN CHOICE / FORM (ANTI WHITE FLASH)
+================================================== */
+
+.mobile-screen {
+  position: relative;
+  min-height: 100vh;
+
+  background-color: #0f172a;
+
+  background-image: url("../images/banners/bg-cad-log.webp");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+
+  display: flex;
+  align-items: flex-end;
+  padding: 24px;
+}
+
+/* PÁGINAS ESPECÍFICAS */
+.login-choice {
+  background-image: url("../images/banners/bg-cad-log.webp");
+}
+
+.login-form {
+  background-image: url("../images/banners/bg-log-pass.webp");
+}
+
+.register-form {
+  background-image: url("../images/banners/bg-cad-form.webp");
+}
+
+/* =========================================
+   FIX REGISTER MOBILE OVERLAP
+   ========================================= */
+
+@media (max-width: 991px) {
+
+  .mobile-screen.register-form .mobile-form {
+    transform: none;
+  }
+
+}

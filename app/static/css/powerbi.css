@@ -1,0 +1,226 @@
+.powerbi-container {
+  background: #0e2538;
+  color: #fff;
+  padding: 20px;
+  border-radius: 12px;
+}
+
+.powerbi-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.powerbi-logo {
+    max-width: 120px; 
+    height: auto;     
+    display: block;
+}
+
+.powerbi-filters {
+  display: flex;
+  gap: 12px;
+}
+
+.powerbi-filters label {
+  font-size: 11px;
+  opacity: .8;
+}
+
+.powerbi-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin: 20px 0;
+}
+
+.kpi {
+  background: #132c44;
+  padding: 12px;
+  border-radius: 10px;
+  text-align: center;
+}
+
+.kpi span {
+  font-size: 12px;
+  opacity: .8;
+}
+
+.kpi strong {
+  font-size: 22px;
+}
+
+.powerbi-section {
+  background: #132c44;
+  padding: 15px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+}
+
+.bar-chart-horizontal {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bar-row {
+  display: grid;
+  grid-template-columns: 80px 1fr 50px;
+  align-items: center;
+  gap: 8px;
+}
+
+.bar {
+  background: #1f3a56;
+  border-radius: 6px;
+  overflow: hidden;
+  height: 10px;
+}
+
+.bar .fill {
+  background: #ff5c5c;
+  height: 100%;
+}
+
+.bar .fill.warning {
+  background: #ffc107;
+}
+
+/* ================= POWER BI – BAR RANKING ================= */
+
+.bar-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  height: 220px;
+  padding: 12px;
+}
+
+.bar-item {
+  flex: 1;
+  text-align: center;
+  position: relative;
+}
+
+.bar {
+  width: 100%;
+  border-radius: 6px 6px 0 0;
+  transition: height .3s ease;
+}
+
+.bar.red {
+  background-color: #dc3545;
+}
+
+.bar.green {
+  background-color: #198754;
+}
+
+.bar-value {
+  position: absolute;
+  top: -22px;
+  width: 100%;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #dc3545;
+}
+
+.bar-label {
+  margin-top: 6px;
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+/* ===============================
+   POWER BI PAGE – EXECUTIVE VIEW
+   =============================== */
+
+.powerbi-wrapper {
+  background-color: #0e2538;
+  padding: 1.5rem;
+  border-radius: 14px;
+  border: 6px solid transparent;
+}
+
+.powerbi-wrapper.powerbi-danger {
+  border-color: #dc3545;
+}
+
+.powerbi-wrapper.powerbi-success {
+  border-color: #198754;
+}
+
+.powerbi-wrapper h1,
+.powerbi-wrapper h2,
+.powerbi-wrapper h3,
+.powerbi-wrapper h5,
+.powerbi-wrapper h6,
+.powerbi-wrapper p,
+.powerbi-wrapper small,
+.powerbi-wrapper label,
+.powerbi-wrapper span {
+  color: #ffffff;
+}
+
+.powerbi-wrapper .card {
+  background-color: #ffffff;
+  color: #212529;
+}
+
+.powerbi-wrapper .list-group-item {
+  background-color: #ffffff;
+  color: #212529;
+}
+
+@media (max-width: 768px) {
+  .powerbi-wrapper {
+    padding: 1rem;
+    border-width: 2px;
+  }
+}
+
+.powerbi-wrapper .card small {
+  color: #212529 !important;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.powerbi-wrapper .card h4 {
+  color: #212529;
+  font-size: 2.1rem;   
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+.powerbi-wrapper .card h4.text-danger {
+  color: #dc3545;
+}
+ 
+#modalLinhaPowerBI,
+#modalLinhaPowerBI h6,
+#modalLinhaPowerBI span,
+#modalLinhaPowerBI .list-group-item {
+    color: #212529 !important; 
+}
+
+/* ===============================
+   POWER BI — EXECUTIVE ADDITIONS
+   =============================== */
+
+#exec-summary-text strong {
+  font-weight: 700;
+}
+
+#topLinhasList .list-group-item:hover {
+  background: rgba(0,0,0,0.03);
+}
+
+.powerbi-wrapper .progress {
+  background-color: rgba(0,0,0,0.08);
+}
+
+#topClientesList .list-group-item .fw-semibold {
+  color: #212529 !important;
+}

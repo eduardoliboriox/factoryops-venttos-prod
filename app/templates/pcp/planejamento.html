@@ -1,0 +1,657 @@
+{% extends "layouts/app.html" %}
+{% block title %}PCP · Planejamento{% endblock %}
+
+{% block page_title %}
+<div class="page-header">
+  <div class="page-header-title">
+    <span class="page-header-section">PCP</span>
+    <h1 class="page-header-name">Planejamento</h1>
+  </div>
+  <div class="page-header-actions">
+    <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
+      <i class="bi bi-arrows-fullscreen"></i>
+    </button>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid"
+     id="planejamento-root"
+     data-url-criar="{{ url_for('pages.pcp_planejamento_criar') }}"
+     data-url-plano="{{ url_for('pages.pcp_planejamento_plano_de_voo') }}"
+     data-url-detalhe="{{ url_for('pages.pcp_planejamento_plano_detalhado') }}"
+     data-url-meta="{{ url_for('pages.pcp_planejamento_buscar_meta') }}"
+     data-url-editar-tpl="{{ url_for('pages.pcp_planejamento_editar', plan_id=0) }}"
+     data-url-status-tpl="{{ url_for('pages.pcp_planejamento_status', plan_id=0) }}"
+     data-url-excluir-tpl="{{ url_for('pages.pcp_planejamento_excluir', plan_id=0) }}"
+     data-url-imprimir="{{ url_for('pages.pcp_planejamento_plano_voo_imprimir') }}"
+     data-data-selecionada="{{ data_selecionada }}"
+     data-ops='{{ ops | tojson }}'
+     data-opcoes='{{ opcoes | tojson }}'>
+
+  <div id="alertArea"></div>
+
+  {% if erro %}
+  <div class="alert alert-warning d-flex align-items-center gap-2 mb-4">
+    <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+    <div><strong>Erro ao carregar:</strong> {{ erro }}</div>
+  </div>
+  {% endif %}
+
+  <!-- Filtros -->
+  <div class="card mb-4" style="border-radius:12px;border-color:var(--border);">
+    <div class="card-body p-3">
+      <form method="GET" class="row g-2 align-items-end">
+        <div class="col-6 col-md-2">
+          <label class="form-label fw-semibold" style="font-size:0.8rem;">Data</label>
+          <input type="date" class="form-control form-control-sm" name="data"
+                 value="{{ data_selecionada }}" style="border-radius:8px;">
+        </div>
+        <div class="col-6 col-md-2">
+          <label class="form-label fw-semibold" style="font-size:0.8rem;">Turno</label>
+          <select class="form-select form-select-sm" name="turno" style="border-radius:8px;">
+            <option value="">Todos</option>
+            <option value="1º Turno" {% if turno == '1º Turno' %}selected{% endif %}>1º Turno</option>
+            <option value="2º Turno" {% if turno == '2º Turno' %}selected{% endif %}>2º Turno</option>
+            <option value="3º Turno" {% if turno == '3º Turno' %}selected{% endif %}>3º Turno</option>
+          </select>
+        </div>
+        <div class="col-6 col-md-2">
+          <label class="form-label fw-semibold" style="font-size:0.8rem;">Setor</label>
+          <select class="form-select form-select-sm" name="setor"
+                  onchange="onSetorChange(this.value,'filtroLinha'); this.form.submit()"
+                  style="border-radius:8px;">
+            <option value="">Todos</option>
+            {% for s in filtros.setores %}
+            <option value="{{ s }}" {% if s == setor %}selected{% endif %}>{{ s }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-6 col-md-2">
+          <label class="form-label fw-semibold" style="font-size:0.8rem;">Linha</label>
+          <select class="form-select form-select-sm" name="linha" id="filtroLinha" style="border-radius:8px;">
+            <option value="">Todas</option>
+            {% for l in filtros.linhas %}
+            <option value="{{ l }}" {% if l == linha %}selected{% endif %}>{{ l }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-12 col-md-4 d-flex gap-2 align-items-end">
+          <button type="submit" class="btn btn-primary btn-sm fw-semibold flex-fill" style="border-radius:8px;">
+            <i class="bi bi-search me-1"></i>Filtrar
+          </button>
+          <a href="{{ url_for('pages.pcp_planejamento') }}" class="btn btn-outline-secondary btn-sm"
+             style="border-radius:8px;" title="Limpar">
+            <i class="bi bi-x-lg"></i>
+          </a>
+          <button type="button" class="btn btn-success btn-sm fw-semibold"
+                  style="border-radius:8px;white-space:nowrap;"
+                  data-bs-toggle="modal" data-bs-target="#modalNovo">
+            <i class="bi bi-plus-lg me-1"></i>Novo
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- KPIs -->
+  {% set total     = planos | length %}
+  {% set em_exec   = planos | selectattr('status','eq','EM_EXECUCAO') | list | length %}
+  {% set concluido = planos | selectattr('status','eq','CONCLUIDO')   | list | length %}
+  <div class="row g-3 mb-4">
+    <div class="col-4">
+      <div class="stat-card">
+        <div class="stat-icon-primary"><i class="bi bi-calendar-check"></i></div>
+        <div class="stat-value">{{ total }}</div>
+        <div class="stat-label">Planejados</div>
+      </div>
+    </div>
+    <div class="col-4">
+      <div class="stat-card">
+        <div class="stat-icon-warning"><i class="bi bi-play-circle"></i></div>
+        <div class="stat-value">{{ em_exec }}</div>
+        <div class="stat-label">Em execução</div>
+      </div>
+    </div>
+    <div class="col-4">
+      <div class="stat-card">
+        <div class="stat-icon-success"><i class="bi bi-check-circle"></i></div>
+        <div class="stat-value">{{ concluido }}</div>
+        <div class="stat-label">Concluídos</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <ul class="nav nav-tabs mb-3" style="border-color:var(--border);">
+    <li class="nav-item">
+      <button class="nav-link active" id="tab-tabela" data-bs-toggle="tab"
+              data-bs-target="#pane-tabela" type="button">
+        <i class="bi bi-table me-1"></i>Tabela
+      </button>
+    </li>
+    <li class="nav-item">
+      <button class="nav-link" id="tab-voo" data-bs-toggle="tab"
+              data-bs-target="#pane-voo" type="button"
+              onclick="renderPlanoDeVoo('{{ data_selecionada }}')">
+        <i class="bi bi-bar-chart-steps me-1"></i>Plano de Voo
+      </button>
+    </li>
+    <li class="nav-item">
+      <button class="nav-link" id="tab-smd" data-bs-toggle="tab"
+              data-bs-target="#pane-smd" type="button">
+        <i class="bi bi-layers me-1"></i>Fila de Produção
+        {% if fila_smd %}
+        {% set ns = namespace(total=0) %}
+        {% for ops in fila_smd.values() %}{% set ns.total = ns.total + ops | length %}{% endfor %}
+        {% if ns.total > 0 %}
+        <span class="badge bg-primary ms-1" style="font-size:0.65rem;">{{ ns.total }}</span>
+        {% endif %}
+        {% endif %}
+      </button>
+    </li>
+  </ul>
+
+  <div class="tab-content">
+
+    <!-- Tabela -->
+    <div class="tab-pane fade show active" id="pane-tabela">
+      <div class="card" style="border-radius:12px;border-color:var(--border);">
+        <div class="card-body p-0">
+          {% if planos %}
+          <div class="table-responsive">
+            <table class="table table-hover mb-0" style="font-size:0.83rem;">
+              <thead style="font-size:0.72rem;text-transform:uppercase;letter-spacing:.5px;background:var(--bg);">
+                <tr>
+                  <th class="ps-3 py-2">Data</th>
+                  <th>Turno</th>
+                  <th>Linha</th>
+                  <th>Modelo</th>
+                  <th>OP</th>
+                  <th class="text-end">Qtd</th>
+                  <th class="text-end">Meta/h</th>
+                  <th class="text-end">Setup</th>
+                  <th>Início</th>
+                  <th>Fim prev.</th>
+                  <th>Status</th>
+                  <th class="text-end pe-3">Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% set st_bg = {'PLANEJADO':'secondary','EM_EXECUCAO':'primary','CONCLUIDO':'success','CANCELADO':'danger'} %}
+                {% set st_lb = {'PLANEJADO':'Planejado','EM_EXECUCAO':'Em execução','CONCLUIDO':'Concluído','CANCELADO':'Cancelado'} %}
+                {% for p in planos %}
+                <tr data-plan-id="{{ p.id }}"
+                    data-linha="{{ p.linha }}"
+                    data-turno="{{ p.turno }}"
+                    data-data="{{ p.data }}"
+                    data-op-id="{{ p.op_id or '' }}"
+                    data-modelo="{{ p.modelo }}"
+                    data-qtd="{{ p.quantidade_planejada }}"
+                    data-taxa="{{ p.taxa_horaria }}"
+                    data-setup="{{ p.setup_min or 0 }}"
+                    data-hora-inicio="{{ p.hora_inicio_prevista }}"
+                    data-obs="{{ p.observacao or '' }}">
+                  <td class="ps-3 text-nowrap">{{ p.data }}</td>
+                  <td class="text-muted small">{{ p.turno }}</td>
+                  <td class="fw-semibold">{{ p.linha }}</td>
+                  <td class="text-nowrap">{{ p.modelo }}</td>
+                  <td class="text-muted small">{{ p.numero_op or '—' }}</td>
+                  <td class="text-end fw-bold">{{ "{:,.0f}".format(p.quantidade_planejada).replace(',','.') }}</td>
+                  <td class="text-end text-muted small">
+                    {% if p.taxa_horaria %}{{ p.taxa_horaria }}{% else %}—{% endif %}
+                  </td>
+                  <td class="text-end text-muted small">
+                    {% if p.setup_min %}{{ p.setup_min }} min{% else %}—{% endif %}
+                  </td>
+                  <td class="text-nowrap">{{ p.hora_inicio_prevista }}</td>
+                  <td class="text-nowrap">
+                    {% if p.hora_fim_prevista %}
+                    <span class="fw-semibold text-primary">{{ p.hora_fim_prevista }}</span>
+                    {% else %}
+                    <span class="text-muted">—</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    <span class="badge bg-{{ st_bg.get(p.status,'secondary') }}" style="font-size:0.68rem;">
+                      {{ st_lb.get(p.status, p.status) }}
+                    </span>
+                  </td>
+                  <td class="text-end pe-3">
+                    <div class="d-flex gap-1 justify-content-end">
+                      <div class="dropdown">
+                        <button class="btn btn-outline-secondary btn-sm dropdown-toggle"
+                                style="border-radius:6px;font-size:0.72rem;padding:2px 6px;"
+                                data-bs-toggle="dropdown" title="Status">
+                          <i class="bi bi-arrow-repeat"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end" style="min-width:140px;font-size:0.82rem;">
+                          <li><a class="dropdown-item" href="#" onclick="atualizarStatus({{ p.id }},'PLANEJADO')">Planejado</a></li>
+                          <li><a class="dropdown-item" href="#" onclick="atualizarStatus({{ p.id }},'EM_EXECUCAO')">Em execução</a></li>
+                          <li><a class="dropdown-item" href="#" onclick="atualizarStatus({{ p.id }},'CONCLUIDO')">Concluído</a></li>
+                          <li><a class="dropdown-item text-danger" href="#" onclick="atualizarStatus({{ p.id }},'CANCELADO')">Cancelado</a></li>
+                        </ul>
+                      </div>
+                      <button class="btn btn-outline-primary btn-sm" style="border-radius:6px;font-size:0.72rem;padding:2px 6px;"
+                              onclick="abrirEditar({{ p.id }})" title="Editar">
+                        <i class="bi bi-pencil"></i>
+                      </button>
+                      <button class="btn btn-outline-danger btn-sm" style="border-radius:6px;font-size:0.72rem;padding:2px 6px;"
+                              onclick="excluirPlanejamento({{ p.id }})" title="Excluir">
+                        <i class="bi bi-trash3"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="p-5 text-center text-muted">
+            <i class="bi bi-calendar-x d-block fs-1 mb-3 opacity-25"></i>
+            <p class="mb-0 fw-semibold">Nenhum planejamento para esta data</p>
+            <p class="small mt-1">Clique em <strong>+ Novo</strong> para adicionar.</p>
+          </div>
+          {% endif %}
+        </div>
+        {% if planos %}
+        <div class="card-footer text-muted small px-3 py-2"
+             style="border-color:var(--border);border-radius:0 0 12px 12px;">
+          {{ planos | length }} registros
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Plano de Voo -->
+    <div class="tab-pane fade" id="pane-voo">
+      <!-- Gantt de visão geral -->
+      <div class="card mb-4" style="border-radius:12px;border-color:var(--border);">
+        <div class="card-header py-2 px-3 d-flex align-items-center gap-2"
+             style="border-radius:12px 12px 0 0;border-color:var(--border);background:var(--bg);">
+          <i class="bi bi-bar-chart-steps text-muted"></i>
+          <span class="fw-semibold" style="font-size:0.85rem;">Visão geral — linha do tempo</span>
+        </div>
+        <div class="card-body p-3">
+          <div id="planoDeVooContainer">
+            <div class="p-4 text-center text-muted small">
+              <i class="bi bi-bar-chart-steps d-block fs-2 mb-2 opacity-25"></i>
+              Clique na aba para carregar o plano de voo.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Detalhamento hora a hora -->
+      <div class="card" style="border-radius:12px;border-color:var(--border);">
+        <div class="card-header py-2 px-3 d-flex align-items-center justify-content-between"
+             style="border-radius:12px 12px 0 0;border-color:var(--border);background:var(--bg);">
+          <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-clock-history text-muted"></i>
+            <span class="fw-semibold" style="font-size:0.85rem;">Detalhamento hora a hora</span>
+          </div>
+        </div>
+        <div class="card-body p-3">
+          <div class="row g-2 mb-3">
+            <div class="col-6 col-md-3">
+              <label class="form-label fw-semibold" style="font-size:0.8rem;">Turno</label>
+              <select class="form-select form-select-sm" id="detalhe-turno" style="border-radius:8px;">
+                <option value="">Selecione</option>
+                <option value="1º Turno">1º Turno</option>
+                <option value="2º Turno">2º Turno</option>
+                <option value="3º Turno">3º Turno</option>
+              </select>
+            </div>
+            <div class="col-6 col-md-3">
+              <label class="form-label fw-semibold" style="font-size:0.8rem;">Setor</label>
+              <select class="form-select form-select-sm" id="detalhe-setor"
+                      onchange="onSetorChange(this.value,'detalhe-linha')" style="border-radius:8px;">
+                <option value="">Todos</option>
+                {% for s in opcoes.keys() | sort %}
+                <option value="{{ s }}">{{ s }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-6 col-md-3">
+              <label class="form-label fw-semibold" style="font-size:0.8rem;">Linha</label>
+              <select class="form-select form-select-sm" id="detalhe-linha" style="border-radius:8px;">
+                <option value="">Selecione o setor</option>
+                {% for setor, linhas in opcoes.items() %}
+                  {% for l in linhas | sort %}
+                  <option value="{{ l }}" data-setor="{{ setor }}">{{ l }}</option>
+                  {% endfor %}
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-6 col-md-3 d-flex align-items-end gap-2">
+              <button class="btn btn-primary btn-sm fw-semibold flex-grow-1"
+                      style="border-radius:8px;" onclick="gerarDetalhe()">
+                <i class="bi bi-list-ol me-1"></i>Detalhar
+              </button>
+              <button class="btn btn-outline-secondary btn-sm" style="border-radius:8px;"
+                      title="Imprimir Plano de Voo" onclick="imprimirPlanoVoo()">
+                <i class="bi bi-printer"></i>
+              </button>
+            </div>
+          </div>
+          <div id="detalheContainer">
+            <div class="p-3 text-center text-muted small">
+              Selecione turno e linha para ver o detalhamento hora a hora.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Fila de Produção -->
+    <div class="tab-pane fade" id="pane-smd">
+      {% set scor = {'PTH':'primary','IM':'warning','SMD':'success','PA':'danger','VTT':'info'} %}
+      {% set scor_txt = {'IM':'text-dark'} %}
+      {% if fila_smd %}
+        {% for setor, ops in fila_smd.items() %}
+        {% set total_saldo = ops | sum(attribute='saldo') %}
+        {% set is_smd = setor == 'SMD' %}
+        <div class="card mb-3" style="border-radius:12px;border-color:var(--border);">
+          <div class="card-header d-flex align-items-center gap-2 py-2 px-3"
+               style="border-radius:12px 12px 0 0;border-color:var(--border);background:var(--bg);">
+            <span class="badge bg-{{ scor.get(setor,'secondary') }} {{ scor_txt.get(setor,'') }}"
+                  style="font-size:0.75rem;">{{ setor }}</span>
+            <span class="fw-semibold" style="font-size:0.85rem;">{{ ops | length }} OP{{ 's' if ops | length != 1 }}</span>
+            <span class="text-muted small ms-1">·</span>
+            <span class="text-muted small">{{ total_saldo }} unid. a produzir</span>
+            {% if is_smd %}
+            {% set ag_bot = ops | selectattr('aguardando_bottom','gt',0) | list | length %}
+            {% if ag_bot > 0 %}
+            <span class="badge bg-warning text-dark ms-auto" style="font-size:0.7rem;">
+              <i class="bi bi-exclamation-triangle-fill me-1"></i>{{ ag_bot }} aguardando BOTTOM
+            </span>
+            {% endif %}
+            {% endif %}
+          </div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table table-hover mb-0" style="font-size:0.82rem;">
+                <thead style="font-size:0.7rem;text-transform:uppercase;letter-spacing:.5px;background:var(--bg);">
+                  <tr>
+                    <th class="ps-3 py-2">Nº OP</th>
+                    <th>Produto</th>
+                    <th>Descrição</th>
+                    {% if is_smd %}<th>Fase</th>{% endif %}
+                    <th class="text-end">Qtd</th>
+                    <th class="text-end">Produzido</th>
+                    {% if is_smd %}
+                    <th class="text-end">TOP feito</th>
+                    <th class="text-end">BOTTOM feito</th>
+                    <th class="text-end">Ag. BOTTOM</th>
+                    <th class="text-end">Ag. TOP</th>
+                    {% endif %}
+                    <th class="text-end pe-3">Saldo</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for op in ops %}
+                  {% set pct = ((op.produzido / op.quantidade) * 100) | int if op.quantidade > 0 else 0 %}
+                  <tr>
+                    <td class="ps-3 fw-semibold">{{ op.numero_op }}</td>
+                    <td class="fw-semibold">{{ op.produto }}</td>
+                    <td class="text-muted" style="font-size:0.78rem;">{{ op.descricao or '—' }}</td>
+                    {% if is_smd %}
+                    <td>
+                      {% if op.fase_modelo %}
+                      <span class="badge bg-{{ 'success' if op.fase_modelo == 'AMBAS' else 'primary' if op.fase_modelo == 'TOP' else 'secondary' }}"
+                            style="font-size:0.68rem;">{{ op.fase_modelo }}</span>
+                      {% else %}<span class="text-muted">—</span>{% endif %}
+                    </td>
+                    {% endif %}
+                    <td class="text-end">{{ op.quantidade }}</td>
+                    <td class="text-end">
+                      <div class="d-flex align-items-center justify-content-end gap-2">
+                        <div style="width:50px;height:6px;border-radius:3px;background:var(--border);overflow:hidden;">
+                          <div style="width:{{ pct }}%;height:100%;background:var(--success-color);border-radius:3px;"></div>
+                        </div>
+                        <span>{{ op.produzido }}</span>
+                      </div>
+                    </td>
+                    {% if is_smd %}
+                    <td class="text-end">
+                      {% if op.top_feito > 0 %}
+                      <span class="badge bg-primary" style="font-size:0.7rem;">{{ op.top_feito }}</span>
+                      {% else %}<span class="text-muted">—</span>{% endif %}
+                    </td>
+                    <td class="text-end">
+                      {% if op.bottom_feito > 0 %}
+                      <span class="badge bg-secondary" style="font-size:0.7rem;">{{ op.bottom_feito }}</span>
+                      {% else %}<span class="text-muted">—</span>{% endif %}
+                    </td>
+                    <td class="text-end">
+                      {% if op.aguardando_bottom > 0 %}
+                      <span class="badge bg-warning text-dark fw-semibold" style="font-size:0.7rem;">{{ op.aguardando_bottom }}</span>
+                      {% else %}<span class="text-muted">—</span>{% endif %}
+                    </td>
+                    <td class="text-end">
+                      {% if op.aguardando_top > 0 %}
+                      <span class="badge bg-warning text-dark fw-semibold" style="font-size:0.7rem;">{{ op.aguardando_top }}</span>
+                      {% else %}<span class="text-muted">—</span>{% endif %}
+                    </td>
+                    {% endif %}
+                    <td class="text-end fw-semibold pe-3
+                               {% if op.saldo <= 0 %}text-success
+                               {% elif op.saldo < op.quantidade * 0.2 %}text-warning{% endif %}">
+                      {{ op.saldo }}
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+      <div class="card p-5 text-center text-muted" style="border-radius:12px;border-color:var(--border);">
+        <i class="bi bi-layers d-block fs-1 mb-3 opacity-25"></i>
+        <p class="mb-0 fw-semibold">Nenhuma OP aberta em nenhum setor</p>
+      </div>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+
+<!-- Modal: Novo Planejamento -->
+<div class="modal fade" id="modalNovo" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content" style="border-radius:12px;border-color:var(--border);">
+      <div class="modal-header border-bottom" style="border-color:var(--border) !important;">
+        <h6 class="modal-title fw-semibold">
+          <i class="bi bi-calendar-plus me-2 text-primary"></i>Novo Planejamento
+        </h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+
+        <div class="row g-2 mb-3">
+          <div class="col-6">
+            <label class="form-label fw-semibold" style="font-size:0.8rem;">Data <span class="text-danger">*</span></label>
+            <input type="date" class="form-control form-control-sm" id="modalData"
+                   value="{{ data_selecionada }}" style="border-radius:8px;">
+          </div>
+          <div class="col-6">
+            <label class="form-label fw-semibold" style="font-size:0.8rem;">Turno <span class="text-danger">*</span></label>
+            <select class="form-select form-select-sm" id="modalTurno" style="border-radius:8px;">
+              <option value="">Selecione</option>
+              <option value="1º Turno">1º Turno</option>
+              <option value="2º Turno">2º Turno</option>
+              <option value="3º Turno">3º Turno</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row g-2 mb-3">
+          <div class="col-6">
+            <label class="form-label fw-semibold" style="font-size:0.8rem;">Setor <span class="text-danger">*</span></label>
+            <select class="form-select form-select-sm" id="modalSetor"
+                    onchange="onSetorModalChange(this.value)" style="border-radius:8px;">
+              <option value="">Selecione</option>
+              {% for s in opcoes.keys() | sort %}
+              <option value="{{ s }}">{{ s }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-6">
+            <label class="form-label fw-semibold" style="font-size:0.8rem;">Linha <span class="text-danger">*</span></label>
+            <select class="form-select form-select-sm" id="modalLinha"
+                    onchange="onLinhaModalChange()" style="border-radius:8px;">
+              <option value="">Selecione o setor primeiro</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold" style="font-size:0.8rem;">OP <span class="text-muted fw-normal">(opcional)</span></label>
+          <select class="form-select form-select-sm" id="modalOp"
+                  onchange="onOpChange(this,'modalModelo','modalSaldo')" style="border-radius:8px;">
+            <option value="">— Nenhuma OP —</option>
+            {% for op in ops %}
+            <option value="{{ op.id }}">{{ op.numero_op }} · {{ op.produto }} · Saldo: {{ "{:,.0f}".format(op.saldo).replace(',','.') }}</option>
+            {% endfor %}
+          </select>
+          <div id="modalSaldo" class="form-text text-primary" style="display:none;font-size:0.75rem;"></div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold" style="font-size:0.8rem;">Modelo <span class="text-danger">*</span></label>
+          <div class="input-group input-group-sm">
+            <input type="text" class="form-control" id="modalModelo"
+                   placeholder="Ex: 79037313" style="border-radius:8px 0 0 8px;"
+                   oninput="agendarBuscarMeta()">
+            <button class="btn btn-outline-secondary" type="button"
+                    style="border-radius:0 8px 8px 0;font-size:0.75rem;"
+                    onclick="buscarMeta()" title="Buscar meta hora cadastrada">
+              <i class="bi bi-search"></i> Meta
+            </button>
+          </div>
+          <div id="modalMetaInfo" class="form-text" style="font-size:0.75rem;display:none;"></div>
+        </div>
+
+        <div class="row g-2 mb-3">
+          <div class="col-4">
+            <label class="form-label fw-semibold" style="font-size:0.8rem;">Quantidade <span class="text-danger">*</span></label>
+            <input type="number" class="form-control form-control-sm" id="modalQtd"
+                   min="1" style="border-radius:8px;">
+          </div>
+          <div class="col-4">
+            <label class="form-label fw-semibold" style="font-size:0.8rem;">
+              Meta/hora
+              <span class="text-muted fw-normal" style="font-size:0.72rem;" title="Unidades por hora">(?)</span>
+            </label>
+            <input type="number" class="form-control form-control-sm" id="modalTaxa"
+                   min="0" placeholder="pç/h" style="border-radius:8px;">
+          </div>
+          <div class="col-4">
+            <label class="form-label fw-semibold" style="font-size:0.8rem;">Início previsto <span class="text-danger">*</span></label>
+            <input type="time" class="form-control form-control-sm" id="modalHoraInicio" style="border-radius:8px;">
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold" style="font-size:0.8rem;">
+            Setup (min)
+            <span class="text-muted fw-normal" style="font-size:0.72rem;">(preenchido automaticamente pelo setor)</span>
+          </label>
+          <input type="number" class="form-control form-control-sm" id="modalSetup"
+                 min="0" value="0" style="border-radius:8px;">
+        </div>
+
+        <div class="mb-0">
+          <label class="form-label fw-semibold" style="font-size:0.8rem;">Observação <span class="text-muted fw-normal">(opcional)</span></label>
+          <textarea class="form-control form-control-sm" id="modalObs" rows="2"
+                    placeholder="Ex: prioridade alta, aguardar componente..." style="border-radius:8px;"></textarea>
+        </div>
+
+      </div>
+      <div class="modal-footer border-top" style="border-color:var(--border) !important;">
+        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary btn-sm fw-semibold" onclick="salvarPlanejamento()">
+          <i class="bi bi-calendar-plus me-1"></i>Salvar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Editar Planejamento -->
+<div class="modal fade" id="modalEditar" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content" style="border-radius:12px;border-color:var(--border);">
+      <div class="modal-header border-bottom" style="border-color:var(--border) !important;">
+        <h6 class="modal-title fw-semibold">
+          <i class="bi bi-pencil me-2 text-primary"></i>Editar Planejamento
+        </h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="editId">
+
+        <div class="p-2 mb-3 rounded d-flex gap-3" style="background:var(--bg);font-size:0.82rem;">
+          <span><span class="text-muted">Linha:</span> <strong id="editInfoLinha"></strong></span>
+          <span><span class="text-muted">Turno:</span> <strong id="editInfoTurno"></strong></span>
+          <span><span class="text-muted">Data:</span> <strong id="editInfoData"></strong></span>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold" style="font-size:0.8rem;">OP <span class="text-muted fw-normal">(opcional)</span></label>
+          <select class="form-select form-select-sm" id="editOp"
+                  onchange="onOpChange(this,'editModelo','editSaldo')" style="border-radius:8px;">
+            <option value="">— Nenhuma OP —</option>
+            {% for op in ops %}
+            <option value="{{ op.id }}">{{ op.numero_op }} · {{ op.produto }} · Saldo: {{ "{:,.0f}".format(op.saldo).replace(',','.') }}</option>
+            {% endfor %}
+          </select>
+          <div id="editSaldo" class="form-text text-primary" style="display:none;font-size:0.75rem;"></div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold" style="font-size:0.8rem;">Modelo <span class="text-danger">*</span></label>
+          <input type="text" class="form-control form-control-sm" id="editModelo" style="border-radius:8px;">
+        </div>
+
+        <div class="row g-2 mb-3">
+          <div class="col-4">
+            <label class="form-label fw-semibold" style="font-size:0.8rem;">Quantidade <span class="text-danger">*</span></label>
+            <input type="number" class="form-control form-control-sm" id="editQtd" min="1" style="border-radius:8px;">
+          </div>
+          <div class="col-4">
+            <label class="form-label fw-semibold" style="font-size:0.8rem;">Meta/hora</label>
+            <input type="number" class="form-control form-control-sm" id="editTaxa" min="0" style="border-radius:8px;">
+          </div>
+          <div class="col-4">
+            <label class="form-label fw-semibold" style="font-size:0.8rem;">Setup (min)</label>
+            <input type="number" class="form-control form-control-sm" id="editSetup" min="0" style="border-radius:8px;">
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold" style="font-size:0.8rem;">Início previsto <span class="text-danger">*</span></label>
+          <input type="time" class="form-control form-control-sm" id="editHoraInicio" style="border-radius:8px;">
+        </div>
+
+        <div class="mb-0">
+          <label class="form-label fw-semibold" style="font-size:0.8rem;">Observação</label>
+          <textarea class="form-control form-control-sm" id="editObs" rows="2" style="border-radius:8px;"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer border-top" style="border-color:var(--border) !important;">
+        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary btn-sm fw-semibold" onclick="salvarEdicao()">
+          <i class="bi bi-check-lg me-1"></i>Salvar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/planejamento.js') }}"></script>
+{% endblock %}

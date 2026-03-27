@@ -1,0 +1,309 @@
+{% extends "layouts/app.html" %}
+{% block title %}Power BI{% endblock %}
+
+{% block page_title %}
+<div class="d-flex align-items-center w-100 ">
+  <span class="me-auto">Venttos - WorkCost → Power BI</span>
+
+  <div class="btn-group gap-2" role="group">
+    <a href="{{ url_for('pages.dashboard') }}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left"></i> Voltar
+    </a>
+    <a href="{{ url_for('pages.relatorios') }}" class="btn btn-outline-info ">
+      <i class="bi bi-file-earmark-text"></i> Relatórios
+    </a>
+    <a href="{{ url_for('pages.powerbi') }}" class="btn btn-outline-primary active">
+      <i class="bi bi-bar-chart"></i> Power BI
+    </a>
+
+    <button class="btn btn-outline-purple"
+            type="button"
+            onclick="toggleFullscreen()">
+      <i class="bi bi-arrows-fullscreen"></i>
+    </button>
+
+    {% if current_user.is_authenticated %}
+    <a href="{{ url_for('auth.logout') }}"
+       class="btn btn-outline-danger">
+      <i class="bi bi-box-arrow-right"></i> Sair
+    </a>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+
+<div class="powerbi-wrapper
+     {% if kpis.absenteismo > 0 %}
+       powerbi-danger
+     {% else %}
+       powerbi-success
+     {% endif %}">
+
+<div class="container-fluid">
+
+<form method="get" id="filtrosForm" class="mb-4">
+
+  <div class="d-flex align-items-center gap-4 flex-wrap">
+    <img src="{{ url_for('static', filename='images/logos/powerbi-logo.png') }}"
+     alt="Venttos Power BI"
+     class="powerbi-logo">
+
+    <div class="row g-2 flex-grow-1">
+
+      <div class="col-md">
+        <label>Filial</label>
+        <select name="filial" class="form-select auto-submit">
+          <option value="">Todas</option>
+          <option value="VAC" {% if filtros.filial=='VAC' %}selected{% endif %}>VAC</option>
+          <option value="VTE" {% if filtros.filial=='VTE' %}selected{% endif %}>VTE</option>
+          <option value="VTT" {% if filtros.filial=='VTT' %}selected{% endif %}>VTT</option>
+        </select>
+      </div>
+
+      <div class="col-md">
+        <label>Turno</label>
+        <select name="turno" class="form-select auto-submit">
+          <option value="">Todos</option>
+          <option value="1T" {% if filtros.turno=='1T' %}selected{% endif %}>1º</option>
+          <option value="2T" {% if filtros.turno=='2T' %}selected{% endif %}>2º</option>
+          <option value="3T" {% if filtros.turno=='3T' %}selected{% endif %}>3º</option>
+        </select>
+      </div>
+
+      <div class="col-md">
+        <label>Data Inicial</label>
+        <input type="date"
+               name="data_inicial"
+               class="form-control auto-submit"
+               value="{{ filtros.data_inicial }}">
+      </div>
+
+      <div class="col-md">
+        <label>Data Final</label>
+        <input type="date"
+               name="data_final"
+               class="form-control auto-submit"
+               value="{{ filtros.data_final }}">
+      </div>
+
+      <input type="hidden" name="setor" value="{{ filtros.setor or '' }}">
+      <input type="hidden" name="linha" value="{{ filtros.linha or '' }}">
+
+    </div>
+  </div>
+</form>
+
+<div class="row g-3 mb-4 text-center">
+  <div class="col-md-2">
+    <div class="card shadow-sm p-3">
+      <small>Solicitações Abertas</small>
+      <h4 id="kpi-solicitacoes-abertas">{{ kpis.solicitacoes_abertas }}</h4>
+    </div>
+  </div>
+
+  <div class="col-md-2">
+    <div class="card shadow-sm p-3">
+      <small>Solicitações Realizadas</small>
+      <h4 id="kpi-solicitacoes-realizadas">{{ kpis.solicitacoes_realizadas }}</h4>
+    </div>
+  </div>
+
+  <div class="col-md-2">
+    <div class="card shadow-sm p-3">
+      <small>Total Gasto</small>
+      <h4 id="kpi-total-gasto" class="text-success">R$ 0,00</h4>
+    </div>
+  </div>
+
+  <div class="col-md-2">
+    <div class="card shadow-sm p-3">
+      <small>Extras Provisionadas</small>
+      <h4 id="kpi-extras-provisionado" class="text-warning">R$ 0,00</h4>
+    </div>
+  </div>
+
+  <div class="col-md-2">
+    <div class="card shadow-sm p-3">
+      <small>Extras Realizadas</small>
+      <h4 id="kpi-extras-realizado" class="text-success">R$ 0,00</h4>
+    </div>
+  </div>
+
+  <div class="col-md-2">
+    <div class="card shadow-sm p-3">
+      <small>Absenteísmo Geral</small>
+      <h4 id="kpi-abs">{{ kpis.absenteismo }}%</h4>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-lg-8">
+    <div class="card shadow-sm p-3 h-100">
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <h6 class="fw-bold mb-0">
+          <i class="bi bi-graph-up-arrow"></i>
+          Resumo Executivo (Solicitações)
+        </h6>
+
+        <div class="d-flex gap-2 flex-wrap">
+          <span class="badge bg-secondary-subtle text-secondary-emphasis">
+            Clientes ativos: <span id="kpi-linhas">{{ kpis.linhas }}</span>
+          </span>
+          <span class="badge bg-danger-subtle text-danger-emphasis">
+            Absenteísmo: <span id="kpi-abs-chip">{{ kpis.absenteismo }}%</span>
+          </span>
+        </div>
+      </div>
+
+      <p class="mt-2 mb-3 text-muted" id="exec-summary-text">
+        Carregando visão executiva...
+      </p>
+
+      <div class="row g-3">
+        <div class="col-md-6">
+          <div class="small fw-semibold mb-1">Gasto (Realizado vs Provisionado)</div>
+          <div class="progress" style="height: 14px;">
+            <div class="progress-bar" id="bar-gasto" role="progressbar" style="width:0%"></div>
+          </div>
+          <div class="d-flex justify-content-between small text-muted mt-1">
+            <span id="bar-gasto-left">R$ 0,00</span>
+            <span id="bar-gasto-label">R$ 0,00 / R$ 0,00</span>
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <div class="small fw-semibold mb-1">Volume de solicitações</div>
+          <div class="progress" style="height: 14px;">
+            <div class="progress-bar bg-info" id="bar-solicitacoes" role="progressbar" style="width:0%"></div>
+          </div>
+          <div class="d-flex justify-content-between small text-muted mt-1">
+            <span>Abertas</span>
+            <span id="bar-solicitacoes-label">0 / 0</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card shadow-sm p-3 h-100">
+      <h6 class="fw-bold text-warning mb-3">
+        <i class="bi bi-trophy"></i>
+        Top clientes (solicitações)
+      </h6>
+
+      <ul class="list-group list-group-flush" id="topClientesList">
+        {% if rankings and rankings.clientes %}
+          {% for c in rankings.clientes[:5] %}
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            <span class="fw-semibold">{{ c.cliente }}</span>
+            <span class="badge bg-warning">{{ c.percentual }}%</span>
+          </li>
+          {% endfor %}
+        {% else %}
+          <li class="list-group-item text-muted">Sem dados para exibir.</li>
+        {% endif %}
+      </ul>
+
+      <div class="small text-muted mt-2">
+        * Percentual relativo ao período filtrado.
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card shadow-sm p-3 mt-4">
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <h6 class="fw-bold text-primary mb-0">
+      <i class="bi bi-geo-alt"></i>
+      Ranking por unidade (extras)
+    </h6>
+
+    <span class="badge bg-light text-dark">
+      Atualiza automaticamente
+    </span>
+  </div>
+
+  <div id="rankingPowerBI" class="d-flex align-items-end gap-3" style="height:220px">
+    {% if rankings and rankings.extras %}
+      {% set maxp = (rankings.extras | map(attribute='percentual') | max) %}
+      {% for e in rankings.extras %}
+        <div class="text-center" style="width:70px; cursor:pointer;"
+             onclick="abrirModalUnidadePowerBI('{{ e.filial }}')">
+
+          <div class="fw-bold small mb-1">
+            {{ e.percentual }}%
+          </div>
+
+          <div
+            style="
+              height: {{ (e.percentual * 180 / (maxp if maxp else 1)) }}px;
+              background-color: #0d6efd;
+              border-radius: 6px;
+            ">
+          </div>
+
+          <small class="d-block mt-1">{{ e.filial }}</small>
+        </div>
+      {% endfor %}
+    {% else %}
+      <div class="text-muted small mt-3">Sem dados para exibir com os filtros atuais.</div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="modal fade" id="modalLinhaPowerBI" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content shadow">
+
+      <div class="modal-header">
+        <h6 class="modal-title" id="modalLinhaPowerBITitulo"></h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body p-2">
+        <ul class="list-group list-group-flush mb-3" id="modalListaPowerBI"></ul>
+
+        <div class="text-end fw-bold mb-3">
+          Total: <span id="modalTotalPowerBI">0</span>
+        </div>
+
+        <h6 class="fw-bold text-info">Ranking por tipo (período)</h6>
+        <ul class="list-group list-group-flush" id="rankingTiposPowerBIList">
+          {% if rankings and rankings.tipos %}
+            {% for t in rankings.tipos[:8] %}
+            <li class="list-group-item d-flex justify-content-between">
+              <span>{{ t.tipo }}</span>
+              <span class="badge bg-info px-2 py-1">{{ t.percentual }}%</span>
+            </li>
+            {% endfor %}
+          {% else %}
+            <li class="list-group-item text-muted">Sem dados para exibir.</li>
+          {% endif %}
+        </ul>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  
+document.querySelectorAll(".auto-submit").forEach(el => {
+  el.addEventListener("change", () => {
+    document.getElementById("filtrosForm").submit();
+  });
+});
+</script>
+
+<script src="{{ url_for('static', filename='js/powerbi-live.js') }}"></script>
+{% endblock %}

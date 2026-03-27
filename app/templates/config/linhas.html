@@ -1,0 +1,340 @@
+{% extends "layouts/app.html" %}
+{% block title %}Configurações · Linhas e Setores{% endblock %}
+
+{% block page_title %}
+<div class="page-header">
+  <div class="page-header-title">
+    <span class="page-header-section">Configurações do Sistema</span>
+    <h1 class="page-header-name">Linhas e Setores</h1>
+  </div>
+  <div class="page-header-actions">
+    <span class="badge text-bg-danger me-1" style="font-size:0.7rem;padding:5px 8px;">
+      <i class="bi bi-shield-lock"></i> Admin
+    </span>
+    <a href="{{ url_for('pages.inicio') }}" class="btn-header-icon" title="Voltar">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
+      <i class="bi bi-arrows-fullscreen"></i>
+    </button>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+  <div id="alertArea"></div>
+
+  {% set cor_setor = {'PTH': 'primary', 'SMD': 'success', 'IM': 'warning', 'PA': 'danger', 'VTT': 'info'} %}
+
+  <div class="row g-4">
+
+    <!-- Painel esquerdo: todas as linhas -->
+    <div class="col-12 col-lg-4">
+      <div class="card h-100" style="border-radius:12px;border-color:var(--border);">
+        <div class="card-header d-flex align-items-center justify-content-between py-2 px-3"
+             style="border-radius:12px 12px 0 0;border-color:var(--border);background:var(--card);">
+          <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-list-ul text-primary"></i>
+            <span class="fw-semibold">Todas as Linhas</span>
+            <span class="badge bg-secondary" style="font-size:0.7rem;">{{ linhas | length }}</span>
+          </div>
+          <input type="text" id="buscaLinha" class="form-control form-control-sm"
+                 placeholder="Buscar..." style="width:140px;border-radius:6px;"
+                 oninput="filtrarLinhas(this.value)">
+        </div>
+        <div class="card-body p-2" style="max-height:70vh;overflow-y:auto;" id="painelLinhas">
+          {% for linha in linhas %}
+          <div class="linha-item d-flex align-items-center justify-content-between px-2 py-2 mb-1"
+               draggable="true"
+               data-linha="{{ linha.linha }}"
+               id="linha-{{ loop.index }}"
+               ondragstart="onDragStart(event, '{{ linha.linha }}')"
+               style="border-radius:8px;border:1px solid var(--border);background:var(--card);cursor:grab;font-size:0.85rem;">
+            <div class="d-flex align-items-center gap-2">
+              <i class="bi bi-grip-vertical text-muted" style="font-size:0.75rem;"></i>
+              <span class="fw-semibold">{{ linha.linha }}</span>
+            </div>
+            {% if linha.setor %}
+            <span class="badge bg-{{ cor_setor.get(linha.setor, 'secondary') }}" style="font-size:0.68rem;">
+              {{ linha.setor }}
+            </span>
+            {% else %}
+            <span class="badge bg-light text-muted border" style="font-size:0.68rem;">Sem setor</span>
+            {% endif %}
+          </div>
+          {% else %}
+          <div class="p-4 text-center text-muted small">
+            <i class="bi bi-inbox d-block fs-3 mb-2 opacity-25"></i>
+            Nenhuma linha encontrada em produção coletada
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Painel direito: setores (collapsible) -->
+    <div class="col-12 col-lg-8">
+      <div class="d-flex flex-column gap-3" id="painelSetores">
+
+        {% for setor in setores %}
+        {% set cor = cor_setor.get(setor, 'secondary') %}
+        <div class="card" style="border-radius:12px;border-color:var(--border);">
+          <div class="card-header d-flex align-items-center justify-content-between py-2 px-3"
+               style="border-radius:12px 12px 0 0;border-color:var(--border);background:var(--card);cursor:pointer;"
+               data-bs-toggle="collapse"
+               data-bs-target="#setor-{{ setor }}"
+               aria-expanded="true">
+            <div class="d-flex align-items-center gap-2">
+              <span class="badge bg-{{ cor }}" style="font-size:0.75rem;min-width:42px;">{{ setor }}</span>
+              <span class="fw-semibold">{{ setor }}</span>
+              <span class="badge bg-light text-muted border setor-count" data-setor="{{ setor }}"
+                    style="font-size:0.7rem;">
+                {{ setores.get(setor, []) | length }} linhas
+              </span>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+              <button class="btn btn-outline-primary btn-sm" style="border-radius:6px;"
+                      onclick="event.stopPropagation(); abrirModalAdicionar('{{ setor }}')">
+                <i class="bi bi-plus-lg"></i>
+              </button>
+              <i class="bi bi-chevron-down" style="font-size:0.75rem;color:var(--text-muted);"></i>
+            </div>
+          </div>
+          <div class="collapse show" id="setor-{{ setor }}">
+            <div class="card-body p-2 drop-zone"
+                 data-setor="{{ setor }}"
+                 ondragover="event.preventDefault(); onDragOver(this)"
+                 ondragleave="onDragLeave(this)"
+                 ondrop="onDrop(event, '{{ setor }}')"
+                 style="min-height:60px;border-radius:0 0 12px 12px;">
+              <div class="linhas-setor d-flex flex-wrap gap-2 p-1" id="linhas-{{ setor }}">
+                {% for item in setores.get(setor, []) %}
+                <span class="badge-linha d-flex align-items-center gap-1 px-2 py-1"
+                      data-id="{{ item.id }}"
+                      data-linha="{{ item.linha }}"
+                      style="background:rgba(var(--bs-{{ cor }}-rgb),0.1);border:1px solid rgba(var(--bs-{{ cor }}-rgb),0.3);border-radius:6px;font-size:0.82rem;">
+                  <span>{{ item.linha }}</span>
+                  <button type="button" class="btn btn-link p-0 text-danger"
+                          style="line-height:1;font-size:0.75rem;"
+                          onclick="removerLinha({{ item.id }}, '{{ item.linha }}', '{{ setor }}')"
+                          title="Remover">
+                    <i class="bi bi-x-lg"></i>
+                  </button>
+                </span>
+                {% else %}
+                <div class="drop-hint w-100 text-center text-muted py-2"
+                     style="font-size:0.8rem;border:2px dashed var(--border);border-radius:8px;">
+                  <i class="bi bi-arrows-move me-1"></i>Arraste uma linha aqui
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- Modal: adicionar linha manualmente -->
+<div class="modal fade" id="modalAdicionar" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content" style="border-radius:12px;border-color:var(--border);">
+      <div class="modal-header border-bottom" style="border-color:var(--border) !important;">
+        <h6 class="modal-title fw-semibold" id="tituloModalAdicionar">
+          <i class="bi bi-plus-circle me-2 text-primary"></i>Adicionar linha
+        </h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <label class="form-label fw-semibold" style="font-size:0.8rem;">Nome da linha</label>
+        <input type="text" class="form-control" id="inputNovaLinha"
+               placeholder="Ex: Linha A1" style="border-radius:8px;">
+        <input type="hidden" id="inputSetorModal">
+      </div>
+      <div class="modal-footer border-top" style="border-color:var(--border) !important;">
+        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary btn-sm fw-semibold" onclick="confirmarAdicionar()">Adicionar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let linhaDragging = null;
+
+function onDragStart(event, linha) {
+  linhaDragging = linha;
+  event.dataTransfer.setData("text/plain", linha);
+  event.target.style.opacity = "0.5";
+  event.target.addEventListener("dragend", () => {
+    event.target.style.opacity = "1";
+    linhaDragging = null;
+  }, { once: true });
+}
+
+function onDragOver(zone) {
+  zone.style.background = "rgba(13,110,253,0.05)";
+  zone.style.borderRadius = "0 0 12px 12px";
+}
+
+function onDragLeave(zone) {
+  zone.style.background = "";
+}
+
+function onDrop(event, setor) {
+  event.preventDefault();
+  const zona = event.currentTarget;
+  zona.style.background = "";
+  const linha = event.dataTransfer.getData("text/plain") || linhaDragging;
+  if (!linha) return;
+  atribuirLinha(linha, setor);
+}
+
+function atribuirLinha(linha, setor) {
+  fetch("{{ url_for('pages.config_linhas_atribuir') }}", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ linha, setor })
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.ok) {
+      mostrarAlerta("success", `Linha <strong>${linha}</strong> atribuída ao setor <strong>${setor}</strong>.`);
+      atualizarBadgeNaLista(linha, setor);
+      adicionarLinhaNaZona(setor, linha, data.id);
+    } else {
+      mostrarAlerta("danger", data.erro || "Erro ao atribuir linha.");
+    }
+  })
+  .catch(() => mostrarAlerta("danger", "Erro de conexão."));
+}
+
+function removerLinha(id, linha, setor) {
+  fetch("{{ url_for('pages.config_linhas_remover') }}", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id })
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.ok) {
+      const badge = document.querySelector(`.badge-linha[data-id="${id}"]`);
+      if (badge) badge.remove();
+      atualizarBadgeNaLista(linha, "");
+      atualizarContador(setor);
+      verificarDropHint(setor);
+      mostrarAlerta("success", `Linha <strong>${linha}</strong> removida do setor <strong>${setor}</strong>.`);
+    } else {
+      mostrarAlerta("danger", data.erro || "Erro ao remover linha.");
+    }
+  })
+  .catch(() => mostrarAlerta("danger", "Erro de conexão."));
+}
+
+function atualizarBadgeNaLista(linha, setor) {
+  const items = document.querySelectorAll(`.linha-item[data-linha="${linha}"]`);
+  const cor_setor = { PTH: "primary", SMD: "success", IM: "warning", PA: "danger", VTT: "info" };
+  items.forEach(item => {
+    const badge = item.querySelector(".badge");
+    if (badge) badge.remove();
+    const cor = cor_setor[setor];
+    const newBadge = document.createElement("span");
+    if (setor) {
+      newBadge.className = `badge bg-${cor}`;
+      newBadge.style.fontSize = "0.68rem";
+      newBadge.textContent = setor;
+    } else {
+      newBadge.className = "badge bg-light text-muted border";
+      newBadge.style.fontSize = "0.68rem";
+      newBadge.textContent = "Sem setor";
+    }
+    item.appendChild(newBadge);
+  });
+}
+
+function adicionarLinhaNaZona(setor, linha, id) {
+  const zona = document.getElementById(`linhas-${setor}`);
+  const hint = zona.querySelector(".drop-hint");
+  if (hint) hint.remove();
+
+  const cor_setor = { PTH: "primary", SMD: "success", IM: "warning", PA: "danger", VTT: "info" };
+  const cor = cor_setor[setor] || "secondary";
+
+  const badge = document.createElement("span");
+  badge.className = "badge-linha d-flex align-items-center gap-1 px-2 py-1";
+  badge.setAttribute("data-id", id);
+  badge.setAttribute("data-linha", linha);
+  badge.style.cssText = `background:rgba(var(--bs-${cor}-rgb),0.1);border:1px solid rgba(var(--bs-${cor}-rgb),0.3);border-radius:6px;font-size:0.82rem;`;
+  badge.innerHTML = `<span>${linha}</span>
+    <button type="button" class="btn btn-link p-0 text-danger"
+            style="line-height:1;font-size:0.75rem;"
+            onclick="removerLinha(${id}, '${linha}', '${setor}')"
+            title="Remover">
+      <i class="bi bi-x-lg"></i>
+    </button>`;
+  zona.appendChild(badge);
+  atualizarContador(setor);
+}
+
+function atualizarContador(setor) {
+  const zona = document.getElementById(`linhas-${setor}`);
+  const count = zona.querySelectorAll(".badge-linha").length;
+  const el = document.querySelector(`.setor-count[data-setor="${setor}"]`);
+  if (el) el.textContent = `${count} ${count === 1 ? "linha" : "linhas"}`;
+}
+
+function verificarDropHint(setor) {
+  const zona = document.getElementById(`linhas-${setor}`);
+  if (zona.querySelectorAll(".badge-linha").length === 0) {
+    const hint = document.createElement("div");
+    hint.className = "drop-hint w-100 text-center text-muted py-2";
+    hint.style.cssText = "font-size:0.8rem;border:2px dashed var(--border);border-radius:8px;";
+    hint.innerHTML = '<i class="bi bi-arrows-move me-1"></i>Arraste uma linha aqui';
+    zona.appendChild(hint);
+  }
+}
+
+function filtrarLinhas(termo) {
+  const items = document.querySelectorAll(".linha-item");
+  items.forEach(item => {
+    const nome = item.getAttribute("data-linha").toLowerCase();
+    item.style.display = nome.includes(termo.toLowerCase()) ? "" : "none";
+  });
+}
+
+function abrirModalAdicionar(setor) {
+  document.getElementById("inputNovaLinha").value = "";
+  document.getElementById("inputSetorModal").value = setor;
+  document.getElementById("tituloModalAdicionar").innerHTML =
+    `<i class="bi bi-plus-circle me-2 text-primary"></i>Adicionar linha — ${setor}`;
+  new bootstrap.Modal(document.getElementById("modalAdicionar")).show();
+}
+
+function confirmarAdicionar() {
+  const linha = document.getElementById("inputNovaLinha").value.trim();
+  const setor = document.getElementById("inputSetorModal").value;
+  if (!linha) return;
+  bootstrap.Modal.getInstance(document.getElementById("modalAdicionar")).hide();
+  atribuirLinha(linha, setor);
+}
+
+function mostrarAlerta(tipo, msg) {
+  const area = document.getElementById("alertArea");
+  const div = document.createElement("div");
+  div.className = `alert alert-${tipo} alert-dismissible d-flex align-items-center gap-2 mb-3`;
+  div.role = "alert";
+  div.innerHTML = `<i class="bi bi-${tipo === "success" ? "check-circle-fill" : "x-circle-fill"} fs-5 flex-shrink-0"></i>
+    <div>${msg}</div>
+    <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>`;
+  area.prepend(div);
+  setTimeout(() => div.remove(), 5000);
+}
+</script>
+{% endblock %}

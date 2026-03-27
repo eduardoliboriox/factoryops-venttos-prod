@@ -1,0 +1,410 @@
+{% extends "layouts/app.html" %}
+{% block title %}PCP · Controle de OPs{% endblock %}
+
+{% block page_title %}
+<div class="page-header">
+  <div class="page-header-title">
+    <span class="page-header-section">PCP</span>
+    <h1 class="page-header-name">Controle de OPs</h1>
+  </div>
+  <div class="page-header-actions">
+    <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
+      <i class="bi bi-arrows-fullscreen"></i>
+    </button>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+    <div class="alert alert-{{ category }} alert-dismissible d-flex align-items-center gap-2 mb-4" role="alert">
+      <i class="bi bi-{% if category == 'success' %}check-circle-fill{% else %}x-circle-fill{% endif %} fs-5 flex-shrink-0"></i>
+      <div>{{ message }}</div>
+      <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+  {% endwith %}
+
+  <!-- Filtros + botão Nova OP -->
+  <form method="GET" class="row g-2 mb-4 align-items-end">
+    <div class="col-12 col-sm-6 col-md-3">
+      <label class="form-label fw-semibold" style="font-size:0.8rem;">Filial</label>
+      <select name="filial" class="form-select form-select-sm" style="border-radius:8px;">
+        <option value="">Todas</option>
+        {% for f in filiais %}
+        <option value="{{ f }}" {% if filial == f %}selected{% endif %}>{{ f }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-12 col-sm-6 col-md-2">
+      <label class="form-label fw-semibold" style="font-size:0.8rem;">Setor</label>
+      <select name="setor" class="form-select form-select-sm" style="border-radius:8px;">
+        <option value="">Todos</option>
+        {% for s in ['PTH','IM','SMD','PA','VTT'] %}
+        <option value="{{ s }}" {% if setor == s %}selected{% endif %}>{{ s }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-12 col-sm-6 col-md-2">
+      <label class="form-label fw-semibold" style="font-size:0.8rem;">Status</label>
+      <select name="status" class="form-select form-select-sm" style="border-radius:8px;">
+        <option value="">Todos</option>
+        <option value="aberta" {% if status == 'aberta' %}selected{% endif %}>Abertas</option>
+        <option value="concluida" {% if status == 'concluida' %}selected{% endif %}>Concluídas</option>
+      </select>
+    </div>
+    <div class="col-auto">
+      <button type="submit" class="btn btn-outline-primary btn-sm" style="border-radius:6px;">
+        <i class="bi bi-funnel me-1"></i>Filtrar
+      </button>
+    </div>
+    {% if filial or status or setor %}
+    <div class="col-auto">
+      <a href="{{ url_for('pages.pcp_controle_ops') }}" class="btn btn-outline-secondary btn-sm" style="border-radius:6px;">
+        <i class="bi bi-x-lg me-1"></i>Limpar
+      </a>
+    </div>
+    {% endif %}
+    <div class="col ms-auto text-end">
+      <button type="button" class="btn btn-primary btn-sm fw-semibold"
+              style="border-radius:6px;"
+              data-bs-toggle="modal" data-bs-target="#modalNovaOP">
+        <i class="bi bi-plus-lg me-1"></i>Nova OP
+      </button>
+    </div>
+  </form>
+
+  <!-- Tabela de OPs -->
+  <div class="card" style="border-radius:12px;border-color:var(--border);">
+    <div class="card-body p-0">
+      {% if ops %}
+      <div class="table-responsive">
+        <table class="table table-hover mb-0" style="font-size:0.84rem;">
+          <thead style="font-size:0.72rem;text-transform:uppercase;letter-spacing:.5px;background:var(--bg);">
+            <tr>
+              <th class="ps-3 py-2">Nº OP</th>
+              <th>Filial</th>
+              <th>Setor</th>
+              <th>Fase</th>
+              <th>Produto</th>
+              <th>Descrição</th>
+              <th>Armazém</th>
+              <th class="text-end">Qtd</th>
+              <th class="text-end">Produzido</th>
+              <th class="text-end">Saldo</th>
+              <th>Pedido / Item</th>
+              <th>Status</th>
+              <th class="pe-3"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% set scor = {'PTH':'primary','IM':'warning','SMD':'success','PA':'danger','VTT':'info'} %}
+            {% set fcor = {'TOP':'primary','BOTTOM':'secondary','AMBAS':'success'} %}
+            {% for op in ops %}
+            {% set concluida = op.saldo <= 0 %}
+            <tr>
+              <td class="ps-3 fw-semibold">{{ op.numero_op }}</td>
+              <td><span class="badge bg-secondary" style="font-size:0.7rem;">{{ op.filial }}</span></td>
+              <td>
+                {% if op.setor %}
+                <span class="badge bg-{{ scor.get(op.setor, 'secondary') }} {% if op.setor == 'IM' %}text-dark{% endif %}"
+                      style="font-size:0.7rem;">{{ op.setor }}</span>
+                {% else %}<span class="text-muted">—</span>{% endif %}
+              </td>
+              <td>
+                {% if op.fase_modelo %}
+                <span class="badge bg-{{ fcor.get(op.fase_modelo, 'secondary') }}"
+                      style="font-size:0.7rem;">{{ op.fase_modelo }}</span>
+                {% else %}<span class="text-muted">—</span>{% endif %}
+              </td>
+              <td class="fw-semibold">{{ op.produto }}</td>
+              <td class="text-muted">{{ op.descricao or '—' }}</td>
+              <td class="text-muted">{{ op.armazem or '—' }}</td>
+              <td class="text-end">{{ op.quantidade }}</td>
+              <td class="text-end">{{ op.produzido }}</td>
+              <td class="text-end fw-semibold {% if concluida %}text-success{% elif op.saldo < op.quantidade * 0.2 %}text-warning{% endif %}">
+                {{ op.saldo }}
+              </td>
+              <td class="text-muted" style="font-size:0.78rem;">
+                {% if op.pedido_venda %}
+                  {{ op.pedido_venda }}{% if op.item_pedido_venda %} / {{ op.item_pedido_venda }}{% endif %}
+                {% else %}—{% endif %}
+              </td>
+              <td>
+                <span class="badge {% if concluida %}text-bg-success{% else %}text-bg-warning text-dark{% endif %}"
+                      style="font-size:0.68rem;">
+                  {% if concluida %}Concluída{% else %}Aberta{% endif %}
+                </span>
+              </td>
+              <td class="text-end pe-3">
+                <div class="d-flex justify-content-end gap-1">
+                  <button class="btn btn-outline-secondary btn-sm" style="border-radius:6px;"
+                          title="Editar"
+                          onclick="abrirEditar({{ op.id }})">
+                    <i class="bi bi-pencil"></i>
+                  </button>
+                  <form method="POST"
+                        action="{{ url_for('pages.pcp_controle_ops_excluir', op_id=op.id) }}"
+                        onsubmit="return confirm('Excluir a OP {{ op.numero_op }}? Esta ação não pode ser desfeita.')">
+                    <button type="submit" class="btn btn-outline-danger btn-sm" style="border-radius:6px;" title="Excluir">
+                      <i class="bi bi-trash3"></i>
+                    </button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="p-5 text-center text-muted">
+        <i class="bi bi-file-earmark-text d-block fs-1 mb-3 opacity-25"></i>
+        <p class="mb-0">Nenhuma OP encontrada.</p>
+        <button class="btn btn-primary btn-sm mt-3 fw-semibold"
+                data-bs-toggle="modal" data-bs-target="#modalNovaOP">
+          <i class="bi bi-plus-lg me-1"></i>Cadastrar primeira OP
+        </button>
+      </div>
+      {% endif %}
+    </div>
+    {% if ops %}
+    <div class="card-footer text-muted small px-3 py-2 d-flex gap-3"
+         style="border-color:var(--border);border-radius:0 0 12px 12px;">
+      <span>{{ ops | length }} OPs</span>
+      <span>{{ ops | selectattr('saldo', 'gt', 0) | list | length }} abertas</span>
+      <span>{{ ops | selectattr('saldo', 'le', 0) | list | length }} concluídas</span>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+
+<!-- Modal: Nova OP -->
+<div class="modal fade" id="modalNovaOP" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content" style="border-radius:12px;border-color:var(--border);">
+      <div class="modal-header border-bottom" style="border-color:var(--border) !important;">
+        <h6 class="modal-title fw-semibold">
+          <i class="bi bi-file-earmark-plus me-2 text-primary"></i>Nova Ordem de Produção
+        </h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST">
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-12 col-sm-6">
+              <label class="form-label fw-semibold" style="font-size:0.8rem;">Número da OP <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" name="numero_op" id="inputNumeroOP" required
+                     placeholder="Ex: EBRTME0200" style="border-radius:8px;">
+              <div id="previewSufixo" class="mt-1" style="display:none;font-size:0.78rem;color:var(--text-muted);"></div>
+            </div>
+            <div class="col-12 col-sm-6">
+              <label class="form-label fw-semibold" style="font-size:0.8rem;">Filial <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" name="filial" required placeholder="Ex: Matriz" style="border-radius:8px;">
+            </div>
+            <div class="col-12 col-sm-6">
+              <label class="form-label fw-semibold" style="font-size:0.8rem;">Produto <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" name="produto" required placeholder="Ex: PCBA-001" style="border-radius:8px;">
+            </div>
+            <div class="col-12 col-sm-6">
+              <label class="form-label fw-semibold" style="font-size:0.8rem;">Armazém</label>
+              <input type="text" class="form-control" name="armazem" placeholder="Ex: 01" style="border-radius:8px;">
+            </div>
+            <div class="col-12">
+              <label class="form-label fw-semibold" style="font-size:0.8rem;">Descrição</label>
+              <input type="text" class="form-control" name="descricao" placeholder="Descrição do produto" style="border-radius:8px;">
+            </div>
+            <div class="col-12 col-sm-4">
+              <label class="form-label fw-semibold" style="font-size:0.8rem;">Quantidade <span class="text-danger">*</span></label>
+              <input type="number" class="form-control" name="quantidade" required min="1" placeholder="0" style="border-radius:8px;">
+            </div>
+            <div class="col-12 col-sm-4">
+              <label class="form-label fw-semibold" style="font-size:0.8rem;">Setor</label>
+              <select class="form-select" name="setor" id="selectSetor" style="border-radius:8px;">
+                <option value="">Selecione</option>
+                <option value="PTH">PTH</option>
+                <option value="IM">IM</option>
+                <option value="SMD">SMD</option>
+                <option value="PA">PA</option>
+                <option value="VTT">VTT</option>
+              </select>
+            </div>
+            <div class="col-12 col-sm-4">
+              <label class="form-label fw-semibold" style="font-size:0.8rem;">Fase do modelo</label>
+              <select class="form-select" name="fase_modelo" style="border-radius:8px;">
+                <option value="">—</option>
+                <option value="TOP">TOP</option>
+                <option value="BOTTOM">BOTTOM</option>
+                <option value="AMBAS">AMBAS (TOP + BOTTOM)</option>
+              </select>
+            </div>
+            <div class="col-12 col-sm-4 d-flex align-items-end pb-1">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="roteiro_padrao" value="1"
+                       id="checkRoteiro" onchange="toggleRoteiro(this)">
+                <label class="form-check-label fw-semibold" for="checkRoteiro" style="font-size:0.8rem;">
+                  Roteiro padrão <span class="text-muted">(PTH + IM + SMD)</span>
+                </label>
+              </div>
+            </div>
+            <div class="col-12 col-sm-4">
+              <label class="form-label fw-semibold" style="font-size:0.8rem;">Pedido de Venda</label>
+              <input type="text" class="form-control" name="pedido_venda" placeholder="Opcional" style="border-radius:8px;">
+            </div>
+            <div class="col-12 col-sm-4">
+              <label class="form-label fw-semibold" style="font-size:0.8rem;">Item Pedido de Venda</label>
+              <input type="text" class="form-control" name="item_pedido_venda" placeholder="Opcional" style="border-radius:8px;">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer border-top" style="border-color:var(--border) !important;">
+          <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary btn-sm fw-semibold">
+            <i class="bi bi-check-lg me-1"></i>Cadastrar OP
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Editar OP -->
+<div class="modal fade" id="modalEditarOP" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content" style="border-radius:12px;border-color:var(--border);">
+      <div class="modal-header border-bottom" style="border-color:var(--border) !important;">
+        <h6 class="modal-title fw-semibold">
+          <i class="bi bi-pencil me-2 text-primary"></i>Editar OP — <span id="tituloEditarOP"></span>
+        </h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST" id="formEditarOP">
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-12 col-sm-6">
+              <label class="form-label fw-semibold" style="font-size:0.8rem;">Número da OP <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" name="numero_op" id="edit_numero_op" required style="border-radius:8px;">
+            </div>
+            <div class="col-12 col-sm-6">
+              <label class="form-label fw-semibold" style="font-size:0.8rem;">Filial <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" name="filial" id="edit_filial" required style="border-radius:8px;">
+            </div>
+            <div class="col-12 col-sm-6">
+              <label class="form-label fw-semibold" style="font-size:0.8rem;">Produto <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" name="produto" id="edit_produto" required style="border-radius:8px;">
+            </div>
+            <div class="col-12 col-sm-6">
+              <label class="form-label fw-semibold" style="font-size:0.8rem;">Armazém</label>
+              <input type="text" class="form-control" name="armazem" id="edit_armazem" style="border-radius:8px;">
+            </div>
+            <div class="col-12">
+              <label class="form-label fw-semibold" style="font-size:0.8rem;">Descrição</label>
+              <input type="text" class="form-control" name="descricao" id="edit_descricao" style="border-radius:8px;">
+            </div>
+            <div class="col-12 col-sm-4">
+              <label class="form-label fw-semibold" style="font-size:0.8rem;">Quantidade <span class="text-danger">*</span></label>
+              <input type="number" class="form-control" name="quantidade" id="edit_quantidade" required min="1" style="border-radius:8px;">
+            </div>
+            <div class="col-12 col-sm-4">
+              <label class="form-label fw-semibold" style="font-size:0.8rem;">Setor</label>
+              <select class="form-select" name="setor" id="edit_setor" style="border-radius:8px;">
+                <option value="">Selecione</option>
+                <option value="PTH">PTH</option>
+                <option value="IM">IM</option>
+                <option value="SMD">SMD</option>
+                <option value="PA">PA</option>
+                <option value="VTT">VTT</option>
+              </select>
+            </div>
+            <div class="col-12 col-sm-4">
+              <label class="form-label fw-semibold" style="font-size:0.8rem;">Fase do modelo</label>
+              <select class="form-select" name="fase_modelo" id="edit_fase_modelo" style="border-radius:8px;">
+                <option value="">—</option>
+                <option value="TOP">TOP</option>
+                <option value="BOTTOM">BOTTOM</option>
+                <option value="AMBAS">AMBAS (TOP + BOTTOM)</option>
+              </select>
+            </div>
+            <div class="col-12 col-sm-6">
+              <label class="form-label fw-semibold" style="font-size:0.8rem;">Pedido de Venda</label>
+              <input type="text" class="form-control" name="pedido_venda" id="edit_pedido_venda" style="border-radius:8px;">
+            </div>
+            <div class="col-12 col-sm-6">
+              <label class="form-label fw-semibold" style="font-size:0.8rem;">Item Pedido de Venda</label>
+              <input type="text" class="form-control" name="item_pedido_venda" id="edit_item_pedido_venda" style="border-radius:8px;">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer border-top" style="border-color:var(--border) !important;">
+          <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary btn-sm fw-semibold">
+            <i class="bi bi-check-lg me-1"></i>Salvar alterações
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+const OPS_DATA = {{ ops | tojson }};
+
+function abrirEditar(id) {
+  const op = OPS_DATA.find(o => o.id === id);
+  if (!op) return;
+
+  document.getElementById("tituloEditarOP").textContent   = op.numero_op;
+  document.getElementById("formEditarOP").action          = "/pcp/controle-ops/" + op.id + "/editar";
+  document.getElementById("edit_numero_op").value         = op.numero_op           || "";
+  document.getElementById("edit_filial").value            = op.filial              || "";
+  document.getElementById("edit_produto").value           = op.produto             || "";
+  document.getElementById("edit_armazem").value           = op.armazem             || "";
+  document.getElementById("edit_descricao").value         = op.descricao           || "";
+  document.getElementById("edit_quantidade").value        = op.quantidade          || "";
+  document.getElementById("edit_setor").value             = op.setor               || "";
+  document.getElementById("edit_fase_modelo").value       = op.fase_modelo         || "";
+  document.getElementById("edit_pedido_venda").value      = op.pedido_venda        || "";
+  document.getElementById("edit_item_pedido_venda").value = op.item_pedido_venda   || "";
+
+  new bootstrap.Modal(document.getElementById("modalEditarOP")).show();
+}
+
+function toggleRoteiro(cb) {
+  const selectSetor = document.getElementById("selectSetor");
+  const inputNumero = document.getElementById("inputNumeroOP");
+  const preview     = document.getElementById("previewSufixo");
+
+  if (cb.checked) {
+    selectSetor.disabled  = true;
+    selectSetor.value     = "";
+    preview.style.display = "";
+    atualizarPreview(inputNumero.value);
+  } else {
+    selectSetor.disabled  = false;
+    preview.style.display = "none";
+  }
+}
+
+const inputNumeroOP = document.getElementById("inputNumeroOP");
+if (inputNumeroOP) {
+  inputNumeroOP.addEventListener("input", function () {
+    if (document.getElementById("checkRoteiro").checked) {
+      atualizarPreview(this.value);
+    }
+  });
+}
+
+function atualizarPreview(base) {
+  const preview = document.getElementById("previewSufixo");
+  if (!base) { preview.textContent = ""; return; }
+  preview.innerHTML =
+    "Serão criadas: <strong>" + base + "01</strong> (PTH) · " +
+    "<strong>" + base + "02</strong> (IM) · " +
+    "<strong>" + base + "03</strong> (SMD)";
+}
+</script>
+{% endblock %}

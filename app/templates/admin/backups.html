@@ -1,0 +1,206 @@
+{% extends "layouts/app.html" %}
+{% block title %}Backup do Banco de Dados{% endblock %}
+
+{% block page_title %}
+<div class="page-header">
+  <div class="page-header-title">
+    <span class="page-header-section">Admin</span>
+    <h1 class="page-header-name">Backup do Banco de Dados</h1>
+  </div>
+  <div class="page-header-actions">
+    <a href="{{ url_for('pages.inicio') }}" class="btn-header-icon" title="Voltar">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
+      <i class="bi bi-arrows-fullscreen"></i>
+    </button>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+      <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    {% endfor %}
+  {% endwith %}
+
+  <div class="row g-4">
+
+    <div class="col-lg-5">
+      <div class="card p-4 h-100" style="border-radius:12px;">
+        <h6 class="fw-bold mb-4">
+          <i class="bi bi-gear me-2 text-muted"></i>Configuração do Backup
+        </h6>
+
+        <form method="post" action="{{ url_for('pages.admin_backup') }}">
+          <input type="hidden" name="action" value="save_config">
+
+          <div class="mb-3">
+            <label class="form-label">URL de Conexão PostgreSQL</label>
+            <input type="password"
+                   name="database_url"
+                   class="form-control font-monospace"
+                   placeholder="postgresql://user:pass@host:port/database"
+                   value="{{ config.database_url if config else '' }}"
+                   required>
+            <div class="form-text">A URL é armazenada de forma segura e nunca exibida em logs.</div>
+          </div>
+
+          <div class="row g-3 mb-3">
+            <div class="col-sm-6">
+              <label class="form-label">Frequência</label>
+              <select name="frequency" class="form-select">
+                {% set freq = config.frequency if config else 'daily' %}
+                <option value="daily"    {% if freq == 'daily'     %}selected{% endif %}>Diário</option>
+                <option value="weekly"   {% if freq == 'weekly'    %}selected{% endif %}>Semanal</option>
+                <option value="monthly"  {% if freq == 'monthly'   %}selected{% endif %}>Mensal</option>
+                <option value="bimonthly"{% if freq == 'bimonthly' %}selected{% endif %}>Bimestral</option>
+                <option value="yearly"   {% if freq == 'yearly'    %}selected{% endif %}>Anual</option>
+              </select>
+            </div>
+            <div class="col-sm-3">
+              <label class="form-label">Hora</label>
+              <input type="number" name="execution_hour" class="form-control"
+                     min="0" max="23"
+                     value="{{ config.execution_hour if config else 2 }}">
+            </div>
+            <div class="col-sm-3">
+              <label class="form-label">Minuto</label>
+              <input type="number" name="execution_minute" class="form-control"
+                     min="0" max="59"
+                     value="{{ config.execution_minute if config else 0 }}">
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Retenção <span class="text-muted fw-normal">(dias)</span></label>
+            <input type="number" name="retention_days" class="form-control"
+                   min="1" max="3650"
+                   value="{{ config.retention_days if config else 30 }}">
+          </div>
+
+          <div class="mb-4">
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" name="is_active"
+                     id="isActive" value="1"
+                     {% if not config or config.is_active %}checked{% endif %}>
+              <label class="form-check-label" for="isActive">Agendamento ativo</label>
+            </div>
+          </div>
+
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary">
+              <i class="bi bi-save me-1"></i>Salvar configuração
+            </button>
+          </div>
+        </form>
+
+        {% if config and config.database_url %}
+        <hr class="my-4">
+        <form method="post" action="{{ url_for('pages.admin_backup') }}">
+          <input type="hidden" name="action" value="run_now">
+          <button type="submit" class="btn btn-outline-success w-100">
+            <i class="bi bi-play-circle me-2"></i>Executar backup agora
+          </button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="col-lg-7">
+      <div class="card p-4 h-100" style="border-radius:12px;">
+        <h6 class="fw-bold mb-4">
+          <i class="bi bi-clock-history me-2 text-muted"></i>Histórico de Backups
+        </h6>
+
+        {% if logs %}
+        <div class="table-responsive">
+          <table class="table table-sm align-middle">
+            <thead>
+              <tr>
+                <th>Data/Hora</th>
+                <th>Status</th>
+                <th>Tamanho</th>
+                <th>Duração</th>
+                <th>Checksum</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for log in logs %}
+              <tr>
+                <td class="text-nowrap">
+                  {{ log.timestamp.strftime('%d/%m/%Y %H:%M') if log.timestamp else '—' }}
+                </td>
+                <td>
+                  {% if log.status == 'success' %}
+                    <span class="badge bg-success">Sucesso</span>
+                  {% else %}
+                    <span class="badge bg-danger"
+                          title="{{ log.error_message or '' }}"
+                          style="cursor:help;">
+                      Falha
+                    </span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if log.size_bytes %}
+                    {% if log.size_bytes >= 1048576 %}
+                      {{ '%.1f MB'|format(log.size_bytes / 1048576) }}
+                    {% else %}
+                      {{ '%.1f KB'|format(log.size_bytes / 1024) }}
+                    {% endif %}
+                  {% else %}—{% endif %}
+                </td>
+                <td>
+                  {% if log.duration_ms %}{{ log.duration_ms // 1000 }}s{% else %}—{% endif %}
+                </td>
+                <td>
+                  {% if log.checksum %}
+                    <code class="small" title="{{ log.checksum }}">
+                      {{ log.checksum[:12] }}…
+                    </code>
+                  {% else %}—{% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+          <div class="text-center text-muted py-5">
+            <i class="bi bi-archive fs-2 d-block mb-2 opacity-25"></i>
+            <p class="small mb-0">Nenhum backup registrado ainda.</p>
+            <p class="small">Configure a conexão e execute o primeiro backup.</p>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+  </div>
+
+  <div class="section-card mt-4">
+    <div class="d-flex align-items-start gap-3">
+      <div class="shortcut-icon flex-shrink-0">
+        <i class="bi bi-info-circle"></i>
+      </div>
+      <div>
+        <div class="fw-semibold mb-1">Como funciona</div>
+        <ul class="text-muted small mb-0 ps-3">
+          <li>O backup usa <code>pg_dump</code> — operação somente leitura, sem alterar o banco.</li>
+          <li>O arquivo é comprimido (<code>.sql.gz</code>) e armazenado em <code>/backups/{frequência}/</code>.</li>
+          <li>Um checksum SHA-256 é calculado imediatamente após a geração.</li>
+          <li>A retenção automática remove backups antigos, preservando sempre o mais recente com sucesso.</li>
+          <li>Para restaurar: <code>gunzip -c backup.sql.gz | psql DATABASE_URL</code></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,173 @@
+{% extends "layouts/app.html" %}
+
+{% block title %}Início · {{ APP_NAME }}{% endblock %}
+
+{% block page_title %}
+<div class="page-header">
+  <div class="page-header-title">
+    <span class="page-header-section">FactoryOps</span>
+    <h1 class="page-header-name">Início</h1>
+  </div>
+  <div class="page-header-actions">
+    <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
+      <i class="bi bi-arrows-fullscreen"></i>
+    </button>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+
+<div class="container-fluid p-0">
+
+  <div class="section-card mb-3">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+      <div>
+        <div class="fw-bold">{{ APP_NAME }}</div>
+        <div class="text-muted small mt-1">
+          Bem-vindo{% if current_user.is_authenticated %}, {{ current_user.username }}{% endif %}.
+        </div>
+      </div>
+      <div class="d-flex gap-2 flex-wrap">
+        <a class="btn btn-sm btn-outline-secondary"
+           href="{{ url_for('auth.my_profile') }}">
+          <i class="bi bi-person-circle me-1"></i>Meu Perfil
+        </a>
+        {% if current_user.is_authenticated and current_user.is_admin %}
+        <a class="btn btn-sm btn-outline-dark"
+           href="{{ url_for('auth.admin_users') }}">
+          <i class="bi bi-person-check me-1"></i>Aprovar usuários
+        </a>
+        <a class="btn btn-sm btn-outline-dark"
+           href="{{ url_for('auth.admin_users_all') }}">
+          <i class="bi bi-people me-1"></i>Todos os usuários
+        </a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="section-card mb-3">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+      <div>
+        <div class="fw-semibold">Resumo do SMT</div>
+      </div>
+      <div class="text-muted small">
+        <i class="bi bi-clock-history me-1"></i>
+        Última atualização: <span id="homeLastUpdate">—</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-3">
+    <div class="col-md-4">
+      <div class="stat-card">
+        <div class="stat-icon stat-icon-blue">
+          <i class="bi bi-collection"></i>
+        </div>
+        <div id="cardModelos" class="stat-value">—</div>
+        <div class="stat-label">Modelos cadastrados</div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="stat-card">
+        <div class="stat-icon stat-icon-green">
+          <i class="bi bi-speedometer2"></i>
+        </div>
+        <div id="cardMediaMeta" class="stat-value">—</div>
+        <div class="stat-label">Média de meta/hora</div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="stat-card">
+        <div class="stat-icon stat-icon-slate">
+          <i class="bi bi-box-seam"></i>
+        </div>
+        <div id="cardUltimo" class="stat-value" style="font-size:1.4rem;">—</div>
+        <div class="stat-label">Último modelo</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-12 col-lg-8">
+      <div class="shortcut-card">
+        <div class="shortcut-card-header">
+          <div>
+            <div class="fw-bold mb-1">Atalhos SMT</div>
+            <div class="text-muted small">Acesso rápido às telas principais.</div>
+          </div>
+          <div class="shortcut-icon">
+            <i class="bi bi-lightning-charge"></i>
+          </div>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+          <a class="btn btn-primary btn-sm"
+             href="{{ url_for('pages.smt_modelos') }}">
+            <i class="bi bi-table me-1"></i>Modelos
+          </a>
+          <a class="btn btn-warning btn-sm text-white"
+             href="{{ url_for('pages.smt_cadastro') }}">
+            <i class="bi bi-plus-lg me-1"></i>Cadastro
+          </a>
+          <a class="btn btn-success btn-sm"
+             href="{{ url_for('pages.smt_calcular') }}">
+            <i class="bi bi-calculator me-1"></i>Cálculos
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function fetchStats() {
+  try {
+    const resp = await fetch('/api/modelos', { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+    if (!resp.ok) throw new Error('Falha ao buscar modelos');
+
+    const modelos = await resp.json();
+
+    const elModelos = document.getElementById('cardModelos');
+    const elMedia = document.getElementById('cardMediaMeta');
+    const elUltimo = document.getElementById('cardUltimo');
+    const elLast = document.getElementById('homeLastUpdate');
+
+    if (elModelos) elModelos.textContent = (modelos && modelos.length) ? modelos.length : 0;
+
+    if (modelos && modelos.length) {
+      const metas = modelos.map(d => Number(d.meta) || 0);
+      const soma = metas.reduce((a, b) => a + b, 0);
+
+      if (elMedia) elMedia.textContent = (soma / modelos.length).toFixed(0);
+      if (elUltimo) elUltimo.textContent = modelos[0].codigo || '—';
+    } else {
+      if (elMedia) elMedia.textContent = '—';
+      if (elUltimo) elUltimo.textContent = '—';
+    }
+
+    if (elLast) {
+      const now = new Date();
+      elLast.textContent = now.toLocaleString([], { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+    }
+  } catch (e) {
+    const elModelos = document.getElementById('cardModelos');
+    const elMedia = document.getElementById('cardMediaMeta');
+    const elUltimo = document.getElementById('cardUltimo');
+    const elLast = document.getElementById('homeLastUpdate');
+
+    if (elModelos) elModelos.textContent = '—';
+    if (elMedia) elMedia.textContent = '—';
+    if (elUltimo) elUltimo.textContent = '—';
+    if (elLast) elLast.textContent = '—';
+  }
+}
+
+fetchStats();
+</script>
+{% endblock %}

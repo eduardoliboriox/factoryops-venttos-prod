@@ -1,0 +1,481 @@
+<!doctype html>
+<html lang="{{ APP_LANG or 'pt-BR' }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{{ APP_NAME }}{% endblock %}</title>
+
+  <meta name="application-name" content="{{ APP_NAME }}">
+  <meta name="apple-mobile-web-app-title" content="{{ APP_NAME }}">
+
+  <link rel="manifest" href="/manifest.webmanifest?v={{ APP_VERSION }}">
+  <meta name="theme-color" content="{{ APP_THEME_COLOR }}">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/logos/pwa-192.png') }}?v={{ APP_VERSION }}">
+  <link rel="icon" type="image/png" sizes="192x192" href="{{ url_for('static', filename='images/logos/pwa-192.png') }}?v={{ APP_VERSION }}">
+  <link rel="icon" type="image/png" sizes="512x512" href="{{ url_for('static', filename='images/logos/pwa-512.png') }}?v={{ APP_VERSION }}">
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v={{ APP_VERSION }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/powerbi.css') }}?v={{ APP_VERSION }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/legal.css') }}?v={{ APP_VERSION }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/modelos.css') }}?v={{ APP_VERSION }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/document-fit.css') }}?v={{ APP_VERSION }}">
+
+  {% block styles %}{% endblock %}
+
+  <script>
+    window.APP_VERSION = "{{ APP_VERSION }}";
+  </script>
+</head>
+
+{% set _func_menus = [
+  'smt_cadastro','smt_calcular','smt_modelos',
+  'funcionalidades_im_pa','funcionalidades_pth','funcionalidades_vtt'
+] %}
+{% set _prod_menus = [
+  'producao_medicao_pasta','producao_checklist_linha','producao_limpeza_stencil'
+] %}
+{% set _eng_menus = [
+  'smt_estudo_tempo','engenharia_folha_crono'
+] %}
+{% set _pcp_menus = [
+  'pcp_controle_ops','pcp_apontamento','pcp_planejamento','pcp_entregas','pcp_producao_coletada'
+] %}
+{% set _log_menus = [
+  'logistica_resumo'
+] %}
+{% set _config_menus = [
+  'config_turnos','config_linhas','config_paradas'
+] %}
+{% set _sup_menus = [
+  'suporte_centro_conhecimento','suporte_ouvidoria','suporte_especializado'
+] %}
+
+<body>
+{% if ENVIRONMENT == "develop" %}
+<div style="background:#c0392b;color:white;text-align:center;padding:6px;font-weight:bold;position:sticky;top:0;z-index:9999;">
+🚧 AMBIENTE DE TESTE - SMT MANAGER (DEVELOP) 🚧
+</div>
+{% endif %}
+
+<header class="mobile-header d-md-none">
+  <div class="mobile-left">
+    <div class="avatar">
+      <img src="{{ url_for('static', filename='images/logos/logo.jpeg') }}">
+    </div>
+
+    {% set page_titles = {
+      "inicio": "Início",
+      "dashboard": "Dashboard",
+      "perfil": "Meu Perfil",
+      "smt_modelos": "SMT",
+      "smt_cadastro": "Cadastro",
+      "smt_calcular": "Cálculos",
+      "smt_estudo_tempo": "Estudo de Tempo",
+      "smt_more": "Mais",
+      "funcionalidades_im_pa": "IM/PA",
+      "funcionalidades_pth": "PTH",
+      "funcionalidades_vtt": "VTT",
+      "producao_medicao_pasta": "Medição Pasta",
+      "producao_checklist_linha": "Checklist Linha",
+      "producao_limpeza_stencil": "Limpeza Stencil",
+      "engenharia_folha_crono": "Folha de Cronometragem",
+      "pcp_controle_ops": "Controle de OPs",
+      "pcp_apontamento": "Apontamento",
+      "pcp_planejamento": "Planejamento",
+      "pcp_entregas": "Entregas",
+      "pcp_producao_coletada": "Produção Coletada",
+      "logistica_resumo": "Logística",
+      "config_turnos": "Turnos",
+      "config_linhas": "Linhas e Setores",
+      "config_paradas": "Paradas de Linha",
+      "suporte_centro_conhecimento": "Centro de Conhecimento",
+      "suporte_ouvidoria": "Ouvidoria",
+      "suporte_especializado": "Suporte Especializado",
+      "admin_backup": "Backup",
+      "admin_chamados": "Chamados de Suporte"
+    } %}
+
+    <span class="mobile-page-title">
+      {{ page_titles.get(active_menu, APP_NAME) }}
+    </span>
+  </div>
+
+  {% if current_user.is_authenticated %}
+  <div class="mobile-right d-flex align-items-center gap-2">
+    <span class="mobile-username">{{ current_user.username }}</span>
+    <a href="{{ url_for('auth.logout') }}"
+       class="btn btn-sm btn-outline-light">
+      <i class="bi bi-box-arrow-right"></i>
+    </a>
+  </div>
+  {% endif %}
+</header>
+
+<div class="app">
+
+  <aside class="sidebar d-none d-md-flex">
+    <div class="logo">
+      <img src="{{ url_for('static', filename='images/logos/VenttosElectronics.png') }}">
+    </div>
+
+    <nav>
+      <a href="{{ url_for('pages.inicio') }}"
+         class="{% if active_menu == 'inicio' %}active{% endif %}">
+        <i class="bi bi-house"></i> Início
+      </a>
+
+      <div class="sidebar-group">
+        <button class="sidebar-group-toggle {% if active_menu in _func_menus %}active{% endif %}"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#nav-funcionalidades"
+                aria-expanded="{{ 'true' if active_menu in _func_menus else 'false' }}">
+          <i class="bi bi-grid"></i>
+          <span>Funcionalidades</span>
+          <i class="bi bi-chevron-down sidebar-chevron ms-auto"></i>
+        </button>
+        <div class="collapse {% if active_menu in _func_menus %}show{% endif %}"
+             id="nav-funcionalidades">
+          <div class="sidebar-group-items">
+            <a href="{{ url_for('pages.smt_cadastro') }}"
+               class="{% if active_menu == 'smt_cadastro' %}active{% endif %}">
+              <i class="bi bi-plus-lg"></i> Cadastro
+            </a>
+            <a href="{{ url_for('pages.smt_calcular') }}"
+               class="{% if active_menu == 'smt_calcular' %}active{% endif %}">
+              <i class="bi bi-calculator"></i> Cálculos
+            </a>
+            <a href="{{ url_for('pages.funcionalidades_im_pa') }}"
+               class="{% if active_menu == 'funcionalidades_im_pa' %}active{% endif %}">
+              <i class="bi bi-cpu"></i> IM/PA
+            </a>
+            <a href="{{ url_for('pages.smt_modelos') }}"
+               class="{% if active_menu == 'smt_modelos' %}active{% endif %}">
+              <i class="bi bi-table"></i> SMT
+            </a>
+            <a href="{{ url_for('pages.funcionalidades_pth') }}"
+               class="{% if active_menu == 'funcionalidades_pth' %}active{% endif %}">
+              <i class="bi bi-diagram-3"></i> PTH
+            </a>
+            <a href="{{ url_for('pages.funcionalidades_vtt') }}"
+               class="{% if active_menu == 'funcionalidades_vtt' %}active{% endif %}">
+              <i class="bi bi-arrow-repeat"></i> VTT
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <div class="sidebar-group">
+        <button class="sidebar-group-toggle {% if active_menu in _prod_menus %}active{% endif %}"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#nav-producao"
+                aria-expanded="{{ 'true' if active_menu in _prod_menus else 'false' }}">
+          <i class="bi bi-gear-wide-connected"></i>
+          <span>Produção</span>
+          <i class="bi bi-chevron-down sidebar-chevron ms-auto"></i>
+        </button>
+        <div class="collapse {% if active_menu in _prod_menus %}show{% endif %}"
+             id="nav-producao">
+          <div class="sidebar-group-items">
+            <a href="{{ url_for('pages.producao_medicao_pasta') }}"
+               class="{% if active_menu == 'producao_medicao_pasta' %}active{% endif %}">
+              <i class="bi bi-rulers"></i> Medição Pasta de Solda
+            </a>
+            <a href="{{ url_for('pages.producao_checklist_linha') }}"
+               class="{% if active_menu == 'producao_checklist_linha' %}active{% endif %}">
+              <i class="bi bi-clipboard-check"></i> Checklist de Linha
+            </a>
+            <a href="{{ url_for('pages.producao_limpeza_stencil') }}"
+               class="{% if active_menu == 'producao_limpeza_stencil' %}active{% endif %}">
+              <i class="bi bi-eraser"></i> Limpeza do Stencil
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <div class="sidebar-group">
+        <button class="sidebar-group-toggle {% if active_menu in _eng_menus %}active{% endif %}"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#nav-engenharia"
+                aria-expanded="{{ 'true' if active_menu in _eng_menus else 'false' }}">
+          <i class="bi bi-stopwatch"></i>
+          <span>Engenharia</span>
+          <i class="bi bi-chevron-down sidebar-chevron ms-auto"></i>
+        </button>
+        <div class="collapse {% if active_menu in _eng_menus %}show{% endif %}"
+             id="nav-engenharia">
+          <div class="sidebar-group-items">
+            <a href="{{ url_for('pages.smt_estudo_tempo') }}"
+               class="{% if active_menu == 'smt_estudo_tempo' %}active{% endif %}">
+              <i class="bi bi-clock"></i> Estudo de Tempo
+            </a>
+            <a href="{{ url_for('pages.engenharia_folha_crono') }}"
+               class="{% if active_menu == 'engenharia_folha_crono' %}active{% endif %}">
+              <i class="bi bi-journal-text"></i> Folha de Cronometragem
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <div class="sidebar-group">
+        <button class="sidebar-group-toggle {% if active_menu in _pcp_menus %}active{% endif %}"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#nav-pcp"
+                aria-expanded="{{ 'true' if active_menu in _pcp_menus else 'false' }}">
+          <i class="bi bi-kanban"></i>
+          <span>PCP</span>
+          <i class="bi bi-chevron-down sidebar-chevron ms-auto"></i>
+        </button>
+        <div class="collapse {% if active_menu in _pcp_menus %}show{% endif %}"
+             id="nav-pcp">
+          <div class="sidebar-group-items">
+            <a href="{{ url_for('pages.pcp_controle_ops') }}"
+               class="{% if active_menu == 'pcp_controle_ops' %}active{% endif %}">
+              <i class="bi bi-file-earmark-text"></i> Controle de OPs
+            </a>
+            <a href="{{ url_for('pages.pcp_apontamento') }}"
+               class="{% if active_menu == 'pcp_apontamento' %}active{% endif %}">
+              <i class="bi bi-clipboard-check"></i> Apontamento
+            </a>
+            <a href="{{ url_for('pages.pcp_planejamento') }}"
+               class="{% if active_menu == 'pcp_planejamento' %}active{% endif %}">
+              <i class="bi bi-calendar3"></i> Planejamento
+            </a>
+            <a href="{{ url_for('pages.pcp_entregas') }}"
+               class="{% if active_menu == 'pcp_entregas' %}active{% endif %}">
+              <i class="bi bi-truck"></i> Entregas
+            </a>
+            {% if current_user.is_authenticated and current_user.is_admin %}
+            <a href="{{ url_for('pages.pcp_producao_coletada') }}"
+               class="{% if active_menu == 'pcp_producao_coletada' %}active{% endif %}">
+              <i class="bi bi-database-down"></i> Produção Coletada
+            </a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="sidebar-group">
+        <button class="sidebar-group-toggle {% if active_menu in _log_menus %}active{% endif %}"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#nav-logistica"
+                aria-expanded="{{ 'true' if active_menu in _log_menus else 'false' }}">
+          <i class="bi bi-box-seam"></i>
+          <span>Logística</span>
+          <i class="bi bi-chevron-down sidebar-chevron ms-auto"></i>
+        </button>
+        <div class="collapse {% if active_menu in _log_menus %}show{% endif %}"
+             id="nav-logistica">
+          <div class="sidebar-group-items">
+            <a href="{{ url_for('pages.logistica_resumo') }}"
+               class="{% if active_menu == 'logistica_resumo' %}active{% endif %}">
+              <i class="bi bi-clipboard-data"></i> Resumo do Dia
+            </a>
+            <a href="{{ url_for('pages.pcp_entregas') }}?tab=logistica"
+               class="{% if active_menu == 'pcp_entregas' %}active{% endif %}">
+              <i class="bi bi-truck"></i> Entregas
+            </a>
+          </div>
+        </div>
+      </div>
+
+      {% if current_user.is_authenticated and current_user.is_admin %}
+      <div class="sidebar-group">
+        <button class="sidebar-group-toggle {% if active_menu in _config_menus %}active{% endif %}"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#nav-config"
+                aria-expanded="{{ 'true' if active_menu in _config_menus else 'false' }}">
+          <i class="bi bi-sliders"></i>
+          <span>Configurações</span>
+          <i class="bi bi-chevron-down sidebar-chevron ms-auto"></i>
+        </button>
+        <div class="collapse {% if active_menu in _config_menus %}show{% endif %}"
+             id="nav-config">
+          <div class="sidebar-group-items">
+            <a href="{{ url_for('pages.config_turnos') }}"
+               class="{% if active_menu == 'config_turnos' %}active{% endif %}">
+              <i class="bi bi-clock-history"></i> Turnos
+            </a>
+            <a href="{{ url_for('pages.config_linhas') }}"
+               class="{% if active_menu == 'config_linhas' %}active{% endif %}">
+              <i class="bi bi-diagram-2"></i> Linhas e Setores
+            </a>
+            <a href="{{ url_for('pages.config_paradas') }}"
+               class="{% if active_menu == 'config_paradas' %}active{% endif %}">
+              <i class="bi bi-pause-circle"></i> Paradas de Linha
+            </a>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+    </nav>
+
+    <div class="sidebar-footer">
+      {% if current_user.is_authenticated and current_user.is_admin %}
+      <a href="{{ url_for('pages.admin_chamados') }}"
+         class="{% if active_menu == 'admin_chamados' %}active{% endif %}">
+        <i class="bi bi-headset"></i> Chamados
+      </a>
+      <a href="{{ url_for('pages.admin_backup') }}"
+         class="{% if active_menu == 'admin_backup' %}active{% endif %}">
+        <i class="bi bi-database"></i> Backup
+      </a>
+      <a href="{{ url_for('auth.admin_users_all') }}"
+         class="{% if active_menu in ['admin_users', 'admin_users_all'] %}active{% endif %}">
+        <i class="bi bi-people"></i> Usuários
+      </a>
+      {% endif %}
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="desktop-header d-none d-md-flex">
+      <div class="w-100 fs-4 fw-semibold">
+        {% block page_title %}{% endblock %}
+      </div>
+      {% if current_user.is_authenticated %}
+      <div class="desktop-user-area">
+
+        <div class="dropdown">
+          <button class="btn-header-icon dropdown-toggle-no-arrow"
+                  type="button"
+                  data-bs-toggle="dropdown"
+                  aria-expanded="false"
+                  title="Suporte">
+            <i class="bi bi-question-circle"></i>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li><h6 class="dropdown-header">Suporte</h6></li>
+            <li>
+              <a class="dropdown-item {% if active_menu == 'suporte_centro_conhecimento' %}active{% endif %}"
+                 href="{{ url_for('pages.suporte_centro_conhecimento') }}">
+                <i class="bi bi-journal-richtext me-2"></i>Centro de Conhecimento
+              </a>
+            </li>
+            <li>
+              <a class="dropdown-item {% if active_menu == 'suporte_ouvidoria' %}active{% endif %}"
+                 href="{{ url_for('pages.suporte_ouvidoria') }}">
+                <i class="bi bi-megaphone me-2"></i>Ouvidoria
+              </a>
+            </li>
+            <li>
+              <a class="dropdown-item {% if active_menu == 'suporte_especializado' %}active{% endif %}"
+                 href="{{ url_for('pages.suporte_especializado') }}">
+                <i class="bi bi-headset me-2"></i>Suporte Especializado
+              </a>
+            </li>
+          </ul>
+        </div>
+
+        <div class="dropdown">
+          <button class="btn-header-icon dropdown-toggle-no-arrow"
+                  type="button"
+                  data-bs-toggle="dropdown"
+                  aria-expanded="false"
+                  title="Minha Conta">
+            {% if current_user.profile_image %}
+              <img src="{{ current_user.profile_image }}"
+                   class="header-avatar-img"
+                   alt="">
+            {% else %}
+              <i class="bi bi-person-circle"></i>
+            {% endif %}
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li><h6 class="dropdown-header">{{ current_user.username }}</h6></li>
+            <li>
+              <a class="dropdown-item {% if active_menu == 'perfil' %}active{% endif %}"
+                 href="{{ url_for('auth.my_profile') }}">
+                <i class="bi bi-person me-2"></i>Meu Perfil
+              </a>
+            </li>
+            <li><hr class="dropdown-divider"></li>
+            <li>
+              <a class="dropdown-item text-danger"
+                 href="{{ url_for('auth.logout') }}">
+                <i class="bi bi-box-arrow-right me-2"></i>Sair
+              </a>
+            </li>
+          </ul>
+        </div>
+
+        <span class="desktop-username">{{ current_user.username }}</span>
+      </div>
+      {% endif %}
+    </header>
+
+    <section class="content">
+      {% block content %}{% endblock %}
+    </section>
+  </main>
+</div>
+
+<nav class="bottom-nav d-md-none">
+
+  <a href="{{ url_for('pages.inicio') }}"
+     class="bottom-item {% if active_menu == 'inicio' %}active{% endif %}">
+    <div class="bottom-icon">
+      <i class="bi bi-house"></i>
+    </div>
+    <small>Início</small>
+  </a>
+
+  <a href="{{ url_for('pages.smt_cadastro') }}"
+     class="bottom-item {% if active_menu == 'smt_cadastro' %}active{% endif %}">
+    <div class="bottom-icon">
+      <i class="bi bi-plus-lg"></i>
+    </div>
+    <small>Cadastro</small>
+  </a>
+
+  <a href="{{ url_for('pages.smt_estudo_tempo') }}"
+     class="bottom-item {% if active_menu == 'smt_estudo_tempo' %}active{% endif %}">
+    <div class="bottom-icon">
+      <i class="bi bi-stopwatch"></i>
+    </div>
+    <small>Tempo</small>
+  </a>
+
+  <a href="{{ url_for('auth.my_profile') }}"
+     class="bottom-item {% if active_menu == 'perfil' %}active{% endif %}">
+    <div class="bottom-icon">
+      {% if current_user.is_authenticated and current_user.profile_image %}
+      <img src="{{ current_user.profile_image }}"
+           class="bottom-nav-avatar"
+           alt="">
+      {% else %}
+      <i class="bi bi-person-circle"></i>
+      {% endif %}
+    </div>
+    <small>Perfil</small>
+  </a>
+
+  <a href="{{ url_for('pages.smt_mais') }}"
+     class="bottom-item {% if active_menu == 'smt_more' %}active{% endif %}">
+    <div class="bottom-icon">
+      <i class="bi bi-grid-3x3-gap"></i>
+    </div>
+    <small>Mais</small>
+  </a>
+
+</nav>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+<script src="{{ url_for('static', filename='js/cookie-consent.js') }}"></script>
+<script src="{{ url_for('static', filename='js/pwa.js') }}?v={{ APP_VERSION }}"></script>
+<script src="{{ url_for('static', filename='js/push-notifications.js') }}?v={{ APP_VERSION }}"></script>
+
+{% block scripts %}{% endblock %}
+</body>
+</html>

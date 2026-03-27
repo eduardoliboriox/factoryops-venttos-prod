@@ -1,0 +1,248 @@
+{% extends "layouts/app.html" %}
+{% block title %}Logística · Resumo{% endblock %}
+
+{% block page_title %}
+<div class="page-header">
+  <div class="page-header-title">
+    <span class="page-header-section">Logística</span>
+    <h1 class="page-header-name">Resumo do Dia</h1>
+  </div>
+  <div class="page-header-actions">
+    <a href="{{ url_for('pages.pcp_entregas') }}?tab=logistica" class="btn-header-icon" title="Ver Entregas">
+      <i class="bi bi-truck"></i>
+    </a>
+    <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
+      <i class="bi bi-arrows-fullscreen"></i>
+    </button>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+  <div id="alertArea"></div>
+
+  <!-- Filtro de data -->
+  <div class="card mb-4" style="border-radius:12px;border-color:var(--border);">
+    <div class="card-body p-3">
+      <form method="GET" class="row g-2 align-items-end">
+        <div class="col-6 col-md-3">
+          <label class="form-label fw-semibold" style="font-size:0.8rem;">Data</label>
+          <input type="date" class="form-control form-control-sm" name="data"
+                 value="{{ data }}" style="border-radius:8px;">
+        </div>
+        <div class="col-6 col-md-2">
+          <button type="submit" class="btn btn-primary btn-sm fw-semibold w-100" style="border-radius:8px;">
+            <i class="bi bi-search me-1"></i>Consultar
+          </button>
+        </div>
+        <div class="col-md-7 d-flex justify-content-end">
+          <button type="button" class="btn btn-outline-secondary btn-sm" style="border-radius:8px;"
+                  onclick="abrirModalEquipe()">
+            <i class="bi bi-people me-1"></i>Gerenciar Equipe
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Resumo de Apontamento -->
+  <div class="card mb-4" style="border-radius:12px;border-color:var(--border);">
+    <div class="card-header py-2 px-3" style="border-color:var(--border);background:var(--bg);border-radius:12px 12px 0 0;">
+      <span class="fw-semibold" style="font-size:0.9rem;">
+        <i class="bi bi-clipboard-data me-2 text-primary"></i>
+        Produção Apontada — {{ data | replace('-', '/') if data else '—' }}
+      </span>
+    </div>
+    <div class="card-body p-0">
+      {% if resumo %}
+      <div class="table-responsive">
+        <table class="table table-hover mb-0" style="font-size:0.84rem;">
+          <thead style="font-size:0.72rem;text-transform:uppercase;letter-spacing:.5px;background:var(--bg);">
+            <tr>
+              <th class="ps-3 py-2">Turno</th>
+              <th>Modelo</th>
+              <th>Linha</th>
+              <th>OPs</th>
+              <th class="text-end pe-3">Quantidade</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% set tcores = {'1º Turno': 'warning', '2º Turno': 'primary', '3º Turno': 'secondary'} %}
+            {% for r in resumo %}
+            <tr>
+              <td class="ps-3">
+                <span class="badge bg-{{ tcores.get(r.turno, 'secondary') }} {% if r.turno == '1º Turno' %}text-dark{% endif %}"
+                      style="font-size:0.7rem;">{{ r.turno }}</span>
+              </td>
+              <td class="fw-semibold">{{ r.modelo }}</td>
+              <td class="text-muted">{{ r.linha }}</td>
+              <td class="text-muted small">{{ r.ops or '—' }}</td>
+              <td class="text-end pe-3 fw-bold text-success">
+                {{ "{:,.0f}".format(r.quantidade or 0).replace(',','.') }}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+          <tfoot style="background:var(--bg);">
+            <tr>
+              <td colspan="4" class="ps-3 fw-semibold text-end" style="font-size:0.8rem;">Total:</td>
+              <td class="text-end pe-3 fw-bold text-primary">
+                {{ "{:,.0f}".format(resumo | sum(attribute='quantidade')).replace(',','.') }}
+              </td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+      {% else %}
+      <div class="p-5 text-center text-muted">
+        <i class="bi bi-clipboard-data d-block fs-1 mb-3 opacity-25"></i>
+        <p class="mb-0 fw-semibold">Nenhum apontamento para esta data</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Equipe cadastrada -->
+  <div class="card" style="border-radius:12px;border-color:var(--border);">
+    <div class="card-header py-2 px-3" style="border-color:var(--border);background:var(--bg);border-radius:12px 12px 0 0;">
+      <span class="fw-semibold" style="font-size:0.9rem;">
+        <i class="bi bi-people me-2 text-primary"></i>Equipe de Entrega
+      </span>
+    </div>
+    <div class="card-body p-3">
+      {% if equipe %}
+      <div class="row g-2">
+        {% for m in equipe %}
+        <div class="col-12 col-sm-6 col-lg-4">
+          <div class="d-flex align-items-center gap-3 p-2 rounded" style="background:var(--bg);">
+            <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                 style="width:36px;height:36px;background:{{ '#0d6efd20' if m.tipo == 'motorista' else '#19875420' }};">
+              <i class="bi bi-{{ 'truck' if m.tipo == 'motorista' else 'person' }}"
+                 style="color:{{ '#0d6efd' if m.tipo == 'motorista' else '#198754' }};font-size:1rem;"></i>
+            </div>
+            <div class="flex-fill">
+              <div class="fw-semibold" style="font-size:0.85rem;">{{ m.nome }}</div>
+              <div class="text-muted small">{{ 'Motorista' if m.tipo == 'motorista' else 'Apoio' }}
+                {% if m.telefone %} · {{ m.telefone }}{% endif %}
+              </div>
+            </div>
+            <button class="btn btn-link text-danger p-0" style="font-size:0.8rem;"
+                    onclick="removerMembro({{ m.id }}, '{{ m.nome | e }}')" title="Remover">
+              <i class="bi bi-trash"></i>
+            </button>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p class="text-muted small mb-0">Nenhum membro cadastrado. Clique em "Gerenciar Equipe" para adicionar.</p>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+
+<!-- Modal: Gerenciar Equipe -->
+<div class="modal fade" id="modalEquipe" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content" style="border-radius:12px;border-color:var(--border);">
+      <div class="modal-header border-bottom" style="border-color:var(--border) !important;">
+        <h6 class="modal-title fw-semibold">
+          <i class="bi bi-people me-2 text-primary"></i>Adicionar Membro da Equipe
+        </h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row g-3">
+          <div class="col-12">
+            <label class="form-label fw-semibold" style="font-size:0.8rem;">Nome <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="inputNomeMembro" placeholder="Nome completo" style="border-radius:8px;">
+          </div>
+          <div class="col-6">
+            <label class="form-label fw-semibold" style="font-size:0.8rem;">Tipo <span class="text-danger">*</span></label>
+            <select class="form-select" id="selectTipoMembro" style="border-radius:8px;">
+              <option value="motorista">Motorista</option>
+              <option value="apoio">Apoio / Carga-Descarga</option>
+            </select>
+          </div>
+          <div class="col-6">
+            <label class="form-label fw-semibold" style="font-size:0.8rem;">Telefone</label>
+            <input type="text" class="form-control" id="inputTelefoneMembro" placeholder="(00) 00000-0000" style="border-radius:8px;">
+          </div>
+        </div>
+        <div id="erroEquipeModal" class="alert alert-danger py-2 px-3 mt-3 mb-0" style="display:none;font-size:0.82rem;border-radius:8px;"></div>
+      </div>
+      <div class="modal-footer border-top" style="border-color:var(--border) !important;">
+        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary btn-sm fw-semibold" onclick="salvarMembro()">
+          <i class="bi bi-check-lg me-1"></i>Adicionar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const URL_EQUIPE_NOVO    = "{{ url_for('pages.logistica_equipe_novo') }}";
+const URL_EQUIPE_EXCLUIR = (id) => `/logistica/equipe/${id}/excluir`;
+
+function abrirModalEquipe() {
+  document.getElementById("inputNomeMembro").value    = "";
+  document.getElementById("inputTelefoneMembro").value = "";
+  document.getElementById("selectTipoMembro").value   = "motorista";
+  document.getElementById("erroEquipeModal").style.display = "none";
+  new bootstrap.Modal(document.getElementById("modalEquipe")).show();
+}
+
+function salvarMembro() {
+  const erroBox = document.getElementById("erroEquipeModal");
+  erroBox.style.display = "none";
+  const body = {
+    nome:     document.getElementById("inputNomeMembro").value.trim(),
+    tipo:     document.getElementById("selectTipoMembro").value,
+    telefone: document.getElementById("inputTelefoneMembro").value.trim(),
+  };
+  fetch(URL_EQUIPE_NOVO, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  })
+    .then(r => r.json())
+    .then(data => {
+      if (data.ok) {
+        bootstrap.Modal.getInstance(document.getElementById("modalEquipe")).hide();
+        mostrarAlerta("success", "Membro adicionado.");
+        setTimeout(() => location.reload(), 800);
+      } else {
+        erroBox.textContent = data.erro || "Erro ao adicionar.";
+        erroBox.style.display = "";
+      }
+    })
+    .catch(() => { erroBox.textContent = "Erro de conexão."; erroBox.style.display = ""; });
+}
+
+function removerMembro(id, nome) {
+  if (!confirm(`Remover "${nome}" da equipe?`)) return;
+  fetch(URL_EQUIPE_EXCLUIR(id), { method: "POST" })
+    .then(r => r.json())
+    .then(data => {
+      if (data.ok) { mostrarAlerta("success", "Membro removido."); setTimeout(() => location.reload(), 800); }
+      else mostrarAlerta("danger", data.erro || "Erro ao remover.");
+    })
+    .catch(() => mostrarAlerta("danger", "Erro de conexão."));
+}
+
+function mostrarAlerta(tipo, msg) {
+  const area = document.getElementById("alertArea");
+  const div  = document.createElement("div");
+  div.className = `alert alert-${tipo} alert-dismissible d-flex align-items-center gap-2 mb-3`;
+  div.role = "alert";
+  div.innerHTML = `<i class="bi bi-${tipo === "success" ? "check-circle-fill" : "x-circle-fill"} fs-5 flex-shrink-0"></i>
+    <div>${msg}</div><button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>`;
+  area.prepend(div);
+  setTimeout(() => div.remove(), 4000);
+}
+</script>
+{% endblock %}
