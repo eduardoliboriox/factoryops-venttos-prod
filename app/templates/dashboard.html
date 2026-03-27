@@ -1,0 +1,458 @@
+{% extends "layouts/app.html" %}
+{% block title %}Dashboard & KPIs{% endblock %}
+{% block page_title %}
+<div class="d-flex align-items-center w-100">
+  <span class="me-auto">
+    FactoryOps · Dashboard & KPIs
+  </span>
+
+  <div class="ms-auto d-flex gap-2">
+
+    <a href="#" class="btn btn-outline-info">
+      <i class="bi bi-file-earmark-text"></i> Relatórios
+    </a>
+
+    <a href="{{ url_for('pages.powerbi') }}" class="btn btn-outline-primary">
+      <i class="bi bi-bar-chart"></i> Power BI
+    </a>
+
+    {% if current_user.is_authenticated and current_user.is_admin %}
+    <a href="{{ url_for('auth.admin_users') }}"
+       class="btn btn-outline-dark">
+      <i class="bi bi-shield-lock"></i> Admin
+    </a>
+    {% endif %}
+
+    <button class="btn btn-outline-purple"
+            type="button"
+            onclick="toggleFullscreen()">
+      <i class="bi bi-arrows-fullscreen"></i>
+    </button>
+    
+    {% if current_user.is_authenticated %}
+    <a href="{{ url_for('auth.logout') }}"
+       class="btn btn-outline-danger">
+      <i class="bi bi-box-arrow-right"></i> Sair
+    </a>
+    {% endif %}
+  
+  </div>
+</div>
+{% endblock %}
+
+<div id="dashboardLoadingOverlay" class="dashboard-loading-overlay d-none">
+  <div class="dashboard-loading-content">
+    <div class="spinner-border text-primary" role="status"></div>
+    <div class="loading-text mt-3">Atualizando dados...</div>
+  </div>
+</div>
+
+{% block content %}
+<div class="container-fluid">
+  
+  <form method="get" id="dashboardFilters" class="row g-3 mb-4">
+
+    <div class="col-md-3 fw-bold">
+      <label class="form-label">Data Inicial</label>
+      <input type="date"
+             name="data_inicial"
+             class="form-control"
+             value="{{ filtros.data_inicial }}">
+    </div>
+  
+    <div class="col-md-3 fw-bold">
+      <label class="form-label">Data Final</label>
+      <input type="date"
+             name="data_final"
+             class="form-control"
+             value="{{ filtros.data_final }}">
+    </div>
+  
+    <div class="col-md-3 fw-bold">
+      <label class="form-label">Turno</label>
+      <select name="turno" class="form-select">
+        <option value="">Todos</option>
+        <option value="1T" {% if filtros.turno == '1T' %}selected{% endif %}>1º Turno</option>
+        <option value="2T" {% if filtros.turno == '2T' %}selected{% endif %}>2º Turno</option>
+        <option value="3T" {% if filtros.turno == '3T' %}selected{% endif %}>3º Turno</option>
+      </select>
+    </div>
+    
+    <div class="col-md-3 fw-bold">
+      <label class="form-label">Unidade</label>
+      <select name="filial" class="form-select">
+        <option value="">Todas</option>
+        <option value="VAC" {% if filtros.filial == 'VAC' %}selected{% endif %}>VAC</option>
+        <option value="VTE" {% if filtros.filial == 'VTE' %}selected{% endif %}>VTE</option>
+        <option value="VTT" {% if filtros.filial == 'VTT' %}selected{% endif %}>VTT</option>
+      </select>
+    </div>
+
+  </form>
+
+<div class="row g-3 mb-4 text-center">
+  <div class="col-md-2">
+    <div class="card shadow-sm p-3 kpi-card">
+      <small>Solicitações Abertas</small>
+      <h4 id="kpi-solicitacoes-abertas">0</h4>
+    </div>
+  </div>
+
+  <div class="col-md-2">
+    <div class="card shadow-sm p-3 kpi-card">
+      <small>Solicitações Realizadas</small>
+      <h4 id="kpi-solicitacoes-fechadas">0</h4>
+    </div>
+  </div>
+
+  <div class="col-md-2">
+    <div class="card shadow-sm p-3 kpi-card">
+      <small>Total Gasto</small>
+      <h4 id="kpi-total-gasto" class="text-success">R$ 0,00</h4>
+    </div>
+  </div>
+  
+  <div class="col-md-2">
+    <div class="card shadow-sm p-3 kpi-card">
+      <small>Absenteísmo Geral</small>
+      <h4 id="kpi-abs">{{ kpis.absenteismo }}%</h4>
+    </div>
+  </div>
+
+  <div class="col-md-2">
+    <div class="card shadow-sm p-3 kpi-card">
+      <small>Clientes Ativos</small>
+      <h4 id="kpi-linhas">{{ kpis.linhas }}</h4>
+    </div>
+  </div>
+</div>
+  
+<div class="row g-3 mb-4">
+
+<div class="col-md-4">
+  <div class="card shadow-sm p-3">
+    <h6 class="fw-bold text-primary mb-3">
+      <i class="bi bi-geo-alt"></i>
+      Ranking por Unidade
+    </h6>
+
+    <div class="table-responsive">
+      <table class="table table-sm align-middle text-center mb-0">
+        <thead>
+          <tr>
+            <th>Unidade</th>
+            <th>% Extras</th>
+            <th>Provisionado</th>
+            <th>Realizado</th>
+          </tr>
+        </thead>
+        <tbody id="rankingExtrasBody">
+          {% for f in ranking_extras %}
+          <tr>
+            <td class="fw-semibold">{{ f.filial }}</td>
+            <td>
+              <span class="badge bg-primary">
+                {{ f.percentual }}%
+              </span>
+            </td>
+            <td class="text-warning fw-bold">
+              R$ {{ "{:,.2f}".format(f.provisionado) }}
+            </td>
+            <td class="text-success fw-bold">
+              R$ {{ "{:,.2f}".format(f.realizado) }}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+</div>
+  
+  <div class="col-md-4">
+    <div class="card shadow-sm p-3">
+      <h6 class="fw-bold text-danger mb-3">
+        <i class="bi bi-bullseye"></i>
+        Status dos Objetivos
+      </h6>
+  
+      <ul class="list-group list-group-flush" id="rankingObjetivosList">
+        {% for o in ranking_objetivos %}
+        <li class="list-group-item d-flex justify-content-between">
+          {{ o.status }}
+          <span class="badge bg-danger">
+            {{ o.percentual }}%
+          </span>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+
+  <div class="col-md-4">
+    <div class="card shadow-sm p-3">
+  
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <h6 class="fw-bold text-warning mb-0">
+          <i class="bi bi-building"></i>
+          Ranking de solicitações por cliente
+        </h6>
+      </div>
+  
+      <ul class="list-group list-group-flush" id="rankingClientesList">
+        {% for c in ranking_clientes %}
+        <li class="list-group-item d-flex justify-content-between">
+          {{ c.cliente }}
+          <span class="badge bg-warning">
+            {{ c.percentual }}%
+          </span>
+        </li>
+        {% endfor %}
+      </ul>
+  
+    </div>
+  </div>
+
+</div>
+  
+  <div class="row g-4 mb-4">
+  
+    <div class="col-lg-4">
+      <div class="card shadow-sm p-3">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h6 class="fw-bold text-success mb-0">
+            <i class="bi bi-cash-coin"></i>
+            Composição da provisão (financeiro)
+          </h6>
+
+          <button class="btn btn-sm btn-outline-success d-none"
+                  onclick="toggleGastos()"
+                  id="toggleGastosBtn">
+            Ver mais
+          </button>
+        </div>
+
+        <ul class="list-group list-group-flush" id="rankingGastosList">
+          {% if ranking_tipos_provisao and ranking_tipos_provisao|length %}
+            {% for g in ranking_tipos_provisao %}
+            <li class="list-group-item d-flex justify-content-between
+                {% if loop.index0 >= 6 %}d-none extra-gasto{% endif %}">
+              <span>
+                {{ g.tipo }}
+                <span class="badge bg-primary ms-2">{{ g.percentual }}%</span>
+              </span>
+              <span class="fw-bold text-success">
+                R$ {{ "{:,.2f}".format(g.total) }}
+              </span>
+            </li>
+            {% endfor %}
+          {% else %}
+            <li class="list-group-item text-muted d-flex justify-content-between">
+              Nenhuma provisão encontrada
+              <span class="badge bg-secondary">0</span>
+            </li>
+          {% endif %}
+        </ul>
+      </div>
+    </div>
+  
+    <div class="col-lg-8">
+  
+      <div class="row g-3">
+  
+        <div class="col-12 col-lg-6">
+          <div class="card shadow-sm p-3">
+            <h6 class="fw-bold text-info mb-3">
+              <i class="bi bi-list-check"></i>
+              Ranking por tipo de solicitação
+            </h6>
+        
+            <ul class="list-group list-group-flush" id="rankingTiposList">
+              <li class="list-group-item d-flex justify-content-between">
+                Hora extra
+                <span class="badge bg-info">0.00%</span>
+              </li>
+              <li class="list-group-item d-flex justify-content-between">
+                Banco de Horas
+                <span class="badge bg-info">0.00%</span>
+              </li>
+              <li class="list-group-item d-flex justify-content-between">
+                Compensação
+                <span class="badge bg-info">0.00%</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+  
+        <div class="col-12 col-lg-6">
+          <div class="card shadow-sm p-3">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h6 class="fw-bold text-danger mb-0">
+                <i class="bi bi-exclamation-triangle"></i>
+                Ranking de absenteísmo por data
+              </h6>
+        
+              <button class="btn btn-sm btn-outline-danger"
+                      onclick="toggleDatas()"
+                      id="toggleDatasBtn">
+                Ver mais
+              </button>
+            </div>
+        
+            <ul class="list-group list-group-flush"
+                id="rankingAbsenteismoDataList">
+            </ul>
+          </div>
+        </div>
+  
+      </div>
+    </div>
+  
+  </div>
+
+<div class="modal fade" id="modalLinha" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content shadow">
+
+      <div class="modal-header">
+        <h6 class="modal-title" id="modalLinhaTitulo"></h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body p-2">
+        <ul class="list-group list-group-flush" id="modalLista"></ul>
+
+        <div class="mt-2 text-end fw-bold">
+          Total: <span id="modalTotal">0</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="modalAbsenteismo" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content shadow">
+
+      <div class="modal-header">
+        <h6 class="modal-title" id="modalAbsDataTitulo"></h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body p-2">
+
+        <div class="table-responsive">
+          <table class="table table-sm table-bordered align-middle mb-2">
+            <thead class="table-light">
+              <tr>
+                <th style="width: 120px;">Matrícula</th>
+                <th>Nome</th>
+                <th style="width: 120px;" class="text-end">Quantidade</th>
+              </tr>
+            </thead>
+            <tbody id="modalAbsTabelaBody">
+            </tbody>
+          </table>
+        </div>
+
+        <div class="mt-2 text-end fw-bold">
+          Total: <span id="modalAbsTotal">0</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+function toggleCargos() {
+  const extras = document.querySelectorAll(".extra-cargo");
+  if (!extras.length) return;
+
+  const btn = document.getElementById("toggleCargosBtn");
+  const isHidden = extras[0].classList.contains("d-none");
+
+  extras.forEach(el => {
+    el.classList.toggle("d-none", !isHidden);
+  });
+
+  btn.textContent = isHidden ? "Recolher" : "Ver mais";
+}
+</script>
+
+<script>
+function toggleLinhas() {
+  const extras = document.querySelectorAll(".extra-linha");
+  if (!extras.length) return;
+
+  const btn = document.getElementById("toggleLinhasBtn");
+  const isHidden = extras[0].classList.contains("d-none");
+
+  extras.forEach(el => {
+    el.classList.toggle("d-none", !isHidden);
+  });
+
+  btn.textContent = isHidden ? "Recolher" : "Ver mais";
+}
+</script>
+
+<script>
+function toggleFerias() {
+  const extras = document.querySelectorAll(".extra-ferias");
+  if (!extras.length) return;
+
+  const btn = document.getElementById("toggleFeriasBtn");
+  const isHidden = extras[0].classList.contains("d-none");
+
+  extras.forEach(el => el.classList.toggle("d-none", !isHidden));
+  btn.textContent = isHidden ? "Recolher" : "Ver mais";
+}
+</script>
+
+<script>
+function toggleGastos() {
+  const extras = document.querySelectorAll(".extra-gasto");
+  if (!extras.length) return;
+
+  const btn = document.getElementById("toggleGastosBtn");
+  const isHidden = extras[0].classList.contains("d-none");
+
+  extras.forEach(el => {
+    el.classList.toggle("d-none", !isHidden);
+  });
+
+  btn.textContent = isHidden ? "Recolher" : "Ver mais";
+}
+</script>
+
+<script>
+const btnHoje = document.getElementById("btnHoje");
+if (btnHoje) {
+  btnHoje.addEventListener("click", function(){
+    const hoje = new Date().toISOString().split("T")[0];
+    document.querySelector("input[name='data_inicial']").value = hoje;
+    document.querySelector("input[name='data_final']").value = hoje;
+  });
+}
+</script>
+  
+<script>
+function toggleDatas() {
+  const extras = document.querySelectorAll(".extra-data");
+  if (!extras.length) return;
+
+  const btn = document.getElementById("toggleDatasBtn");
+  const isHidden = extras[0].classList.contains("d-none");
+
+  extras.forEach(el => {
+    el.classList.toggle("d-none", !isHidden);
+  });
+
+  btn.textContent = isHidden ? "Recolher" : "Ver mais";
+}
+</script>
+
+<script src="{{ url_for('static', filename='js/dashboard-live.js') }}"></script>
+{% endblock %}

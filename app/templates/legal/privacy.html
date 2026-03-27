@@ -1,0 +1,132 @@
+{% extends "layouts/auth.html" %}
+{% block title %}Política de Privacidade{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <div class="card shadow-sm p-4 legal-container">
+
+    <h3 class="mb-4 text-center">Política de Privacidade</h3>
+
+    <p>
+      Esta Política de Privacidade descreve como o sistema <strong>{{ APP_NAME }}</strong>
+      realiza o tratamento de dados pessoais, em conformidade com a
+      Lei nº 13.709/2018 (Lei Geral de Proteção de Dados – LGPD)
+      e demais normas aplicáveis à proteção de dados no Brasil.
+    </p>
+
+    <h5>1. Contexto de Uso</h5>
+    <p>
+      O <strong>{{ APP_NAME }}</strong> é uma plataforma corporativa utilizada em ambiente industrial
+      (setor de produção SMT) para apoiar rotinas operacionais, cadastros técnicos e gestão de informações
+      relacionadas à operação interna.
+    </p>
+
+    <h5>2. Controlador dos Dados</h5>
+    <p>
+      O Controlador dos dados pessoais tratados por meio da plataforma é
+      a organização responsável pela sua operação e disponibilização.
+      Em ambiente corporativo, o tratamento ocorre conforme diretrizes internas,
+      políticas de segurança e governança aplicáveis.
+    </p>
+
+    <h5>3. Dados Pessoais Coletados</h5>
+    <p>
+      No contexto de utilização do sistema, podem ser tratados os seguintes dados pessoais:
+    </p>
+    <ul>
+      <li>Nome completo</li>
+      <li>Matrícula funcional</li>
+      <li>Setor / Departamento</li>
+      <li>Endereço eletrônico (e-mail corporativo)</li>
+      <li>Telefone</li>
+      <li>Endereço residencial (quando aplicável)</li>
+      <li>Credenciais de autenticação (armazenadas de forma criptografada)</li>
+      <li>Registros de autenticação e logs de acesso (para auditoria e segurança)</li>
+    </ul>
+
+    <h5>4. Finalidade do Tratamento</h5>
+    <p>
+      Os dados pessoais são tratados para finalidades legítimas e específicas,
+      incluindo, mas não se limitando a:
+    </p>
+    <ul>
+      <li>Autenticação e controle de acesso ao sistema</li>
+      <li>Gestão de perfis e permissões de usuários</li>
+      <li>Suporte a funcionalidades operacionais do sistema (uso interno)</li>
+      <li>Rastreabilidade, auditoria e segurança da informação</li>
+      <li>Envio de comunicações operacionais (ex.: redefinição de senha)</li>
+    </ul>
+
+    <h5>5. Base Legal</h5>
+    <p>
+      O tratamento de dados pessoais no <strong>{{ APP_NAME }}</strong> fundamenta-se nas bases legais
+      previstas nos artigos 7º e 11 da LGPD, especialmente:
+    </p>
+    <ul>
+      <li>Cumprimento de obrigação legal ou regulatória (quando aplicável)</li>
+      <li>Execução de contrato ou de procedimentos preliminares relacionados</li>
+      <li>Legítimo interesse do controlador, respeitados os direitos e liberdades do titular</li>
+    </ul>
+
+    <h5>6. Armazenamento e Segurança</h5>
+    <p>
+      Os dados são armazenados em banco de dados PostgreSQL,
+      hospedado em infraestrutura em nuvem (Railway),
+      com aplicação de medidas técnicas e administrativas adequadas,
+      incluindo:
+    </p>
+    <ul>
+      <li>Criptografia de senhas por meio de hash seguro</li>
+      <li>Controle de acesso baseado em perfil de usuário</li>
+      <li>Proteção por autenticação e sessão segura</li>
+      <li>Registro de logs para rastreabilidade e auditoria</li>
+    </ul>
+
+    <h5>7. Compartilhamento de Dados</h5>
+    <p>
+      O <strong>{{ APP_NAME }}</strong> não comercializa dados pessoais.
+      O compartilhamento poderá ocorrer apenas quando necessário para:
+    </p>
+    <ul>
+      <li>Cumprimento de obrigação legal</li>
+      <li>Determinação judicial ou requisição de autoridade competente</li>
+      <li>Prestadores de serviço essenciais à operação da infraestrutura (ex.: hospedagem)</li>
+    </ul>
+
+    <h5>8. Retenção dos Dados</h5>
+    <p>
+      Os dados pessoais serão mantidos pelo período necessário ao cumprimento
+      das finalidades descritas nesta política, observadas as obrigações legais
+      e regulatórias aplicáveis, bem como políticas internas do controlador.
+    </p>
+
+    <h5>9. Direitos do Titular</h5>
+    <p>
+      Nos termos do artigo 18 da LGPD, o titular dos dados pode solicitar:
+    </p>
+    <ul>
+      <li>Confirmação da existência de tratamento</li>
+      <li>Acesso aos dados</li>
+      <li>Correção de dados incompletos ou desatualizados</li>
+      <li>Anonimização, bloqueio ou eliminação de dados desnecessários</li>
+      <li>Informações sobre compartilhamento</li>
+    </ul>
+
+    <p>
+      As solicitações devem ser direcionadas ao administrador do sistema
+      ou ao responsável interno pela governança de dados.
+    </p>
+
+    <h5>10. Atualizações</h5>
+    <p>
+      Esta Política poderá ser atualizada a qualquer momento para refletir
+      melhorias operacionais, adequações legais ou alterações técnicas.
+    </p>
+
+    <p class="mt-4 text-muted">
+      Última atualização: {{ now().date() }}
+    </p>
+
+  </div>
+</div>
+{% endblock %}

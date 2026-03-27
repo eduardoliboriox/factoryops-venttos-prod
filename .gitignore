@@ -1,0 +1,6 @@
+.env
+__pycache__/
+*.pyc
+coletas/*.json
+dados.json
+instrucoes.md

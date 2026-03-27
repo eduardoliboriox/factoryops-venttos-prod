@@ -1,0 +1,486 @@
+{% extends "layouts/app.html" %}
+{% block title %}PCP · Produção Coletada{% endblock %}
+
+{% block page_title %}
+<div class="page-header">
+  <div class="page-header-title">
+    <span class="page-header-section">PCP</span>
+    <h1 class="page-header-name">Produção Coletada</h1>
+  </div>
+  <div class="page-header-actions">
+    <span class="badge text-bg-danger me-1" style="font-size:0.7rem;padding:5px 8px;">
+      <i class="bi bi-shield-lock"></i> Admin
+    </span>
+    <a href="{{ url_for('pages.inicio') }}" class="btn-header-icon" title="Voltar">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
+      <i class="bi bi-arrows-fullscreen"></i>
+    </button>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+  {% if erro %}
+  <div class="alert alert-warning d-flex align-items-center gap-2 mb-4">
+    <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+    <div><strong>Erro ao carregar dados:</strong> {{ erro }}</div>
+  </div>
+  {% endif %}
+
+  <!-- Gerador de Comando -->
+  <div class="card mb-4" style="border-color:var(--border);border-radius:12px;">
+    <div class="card-header py-2 px-3 d-flex align-items-center gap-2"
+         style="border-color:var(--border);border-radius:12px 12px 0 0;background:var(--card);">
+      <i class="bi bi-terminal text-primary"></i>
+      <span class="fw-semibold" style="font-size:0.9rem;">Coletar dados do PC da fábrica</span>
+    </div>
+    <div class="card-body p-3">
+      <div class="row g-3 align-items-end">
+        <div class="col-12 col-md-5">
+          <p class="text-muted small mb-2">
+            Passo a passo: abra o <strong>CMD</strong>, navegue até o repositório e execute o comando gerado abaixo.
+          </p>
+          <div class="bg-dark text-white rounded px-3 py-2 small font-monospace mb-2" style="font-size:0.78rem;border-radius:8px !important;">
+            cd "C:\Users\eduardo.liborio\Desktop\Programação\smt-manager-venttos-prod"
+          </div>
+        </div>
+        <div class="col-6 col-md-2">
+          <label class="form-label fw-semibold" style="font-size:0.8rem;">Data inicial</label>
+          <input type="date" class="form-control form-control-sm" id="coletaDe">
+        </div>
+        <div class="col-6 col-md-2">
+          <label class="form-label fw-semibold" style="font-size:0.8rem;">Data final</label>
+          <input type="date" class="form-control form-control-sm" id="coletaAte">
+        </div>
+        <div class="col-12 col-md-3 d-flex gap-2 align-items-end">
+          <button class="btn btn-outline-primary btn-sm fw-semibold flex-fill" onclick="gerarComando()">
+            <i class="bi bi-play-fill me-1"></i>Gerar comando
+          </button>
+        </div>
+      </div>
+      <div id="blocoComando" style="display:none;" class="mt-3">
+        <label class="form-label fw-semibold" style="font-size:0.8rem;">Comando gerado — copie e execute no CMD:</label>
+        <div class="d-flex gap-2 align-items-stretch">
+          <input type="text" class="form-control form-control-sm font-monospace" id="comandoGerado"
+                 readonly style="font-size:0.8rem;background:#1e293b;color:#e2e8f0;border-radius:8px;">
+          <button class="btn btn-primary btn-sm fw-semibold px-3" onclick="copiarComando()" title="Copiar">
+            <i class="bi bi-clipboard" id="iconeCopiar"></i>
+          </button>
+        </div>
+        <div class="text-muted small mt-2">
+          <i class="bi bi-info-circle me-1"></i>
+          O arquivo será salvo em <code>coletas/</code> dentro do repositório. Após coletar, use o botão
+          <strong>Importar JSON</strong> abaixo para enviar ao banco.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <div class="card mb-4">
+    <div class="card-body p-3">
+      <form method="GET" class="row g-2 align-items-end">
+        <div class="col-6 col-md-2">
+          <label class="form-label">Data inicial</label>
+          <input type="date" class="form-control" name="dataInicial" value="{{ data_inicial }}">
+        </div>
+        <div class="col-6 col-md-2">
+          <label class="form-label">Data final</label>
+          <input type="date" class="form-control" name="dataFinal" value="{{ data_final }}">
+        </div>
+        <div class="col-6 col-md-2">
+          <label class="form-label">Setor</label>
+          <select class="form-select" name="setor" onchange="this.form.submit()">
+            <option value="">Todos</option>
+            {% for s in filtros.setores %}
+            <option value="{{ s }}" {% if s == setor %}selected{% endif %}>{{ s }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-6 col-md-2">
+          <label class="form-label">Linha</label>
+          <select class="form-select" name="linha">
+            <option value="">Todas</option>
+            {% for l in filtros.linhas %}
+            <option value="{{ l }}" {% if l == linha %}selected{% endif %}>{{ l }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-6 col-md-2">
+          <label class="form-label">Turno</label>
+          <select class="form-select" name="turno">
+            <option value="">Todos</option>
+            <option value="1º Turno" {% if turno == '1º Turno' %}selected{% endif %}>1º Turno</option>
+            <option value="2º Turno" {% if turno == '2º Turno' %}selected{% endif %}>2º Turno</option>
+            <option value="3º Turno" {% if turno == '3º Turno' %}selected{% endif %}>3º Turno</option>
+          </select>
+        </div>
+        <div class="col-6 col-md-2 d-flex gap-2">
+          <button type="submit" class="btn btn-primary flex-fill fw-semibold">
+            <i class="bi bi-search"></i> Filtrar
+          </button>
+          <a href="{{ url_for('pages.pcp_producao_coletada') }}" class="btn btn-outline-secondary" title="Limpar filtros">
+            <i class="bi bi-x-lg"></i>
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- KPIs -->
+  {% if not erro %}
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+      <div class="stat-card">
+        <div class="stat-icon-primary"><i class="bi bi-list-ol"></i></div>
+        <div class="stat-value">{{ kpis.total_registros | default(0) }}</div>
+        <div class="stat-label">Registros</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card">
+        <div class="stat-icon-success"><i class="bi bi-check2-circle"></i></div>
+        <div class="stat-value">{{ (kpis.producao_total | default(0)) | int | string | replace(',', '.') }}</div>
+        <div class="stat-label">Produção Total</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card">
+        <div class="stat-icon-warning"><i class="bi bi-arrow-down-circle"></i></div>
+        <div class="stat-value">{{ (kpis.perda_total | default(0)) | int }}</div>
+        <div class="stat-label">Perda Total</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card">
+        <div class="stat-icon-danger"><i class="bi bi-bug"></i></div>
+        <div class="stat-value">{{ (kpis.defeitos_total | default(0)) | int }}</div>
+        <div class="stat-label">Defeitos Total</div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Tabela -->
+  <div class="card">
+    <div class="card-body p-0">
+      <div class="d-flex align-items-center justify-content-between px-3 py-2 border-bottom">
+        <div>
+          <div class="fw-bold">Registros coletados</div>
+          <div class="text-muted small">
+            {{ data_inicial }} → {{ data_final }}
+            {% if setor %}&nbsp;·&nbsp;{{ setor }}{% endif %}
+            {% if linha %}&nbsp;·&nbsp;{{ linha }}{% endif %}
+            {% if turno %}&nbsp;·&nbsp;{{ turno }}{% endif %}
+          </div>
+        </div>
+        <div class="d-flex align-items-center gap-3">
+          <span class="text-muted small fw-semibold">{{ registros | length }} registros</span>
+          <button class="btn btn-primary btn-sm fw-semibold" data-bs-toggle="modal" data-bs-target="#modalImportar">
+            <i class="bi bi-upload me-1"></i>Importar JSON
+          </button>
+        </div>
+      </div>
+
+      {% if registros %}
+      <div class="table-responsive">
+        <table class="table table-sm table-hover mb-0" style="font-size:0.8rem;">
+          <thead class="table-light" style="font-size:0.72rem;text-transform:uppercase;letter-spacing:.4px;">
+            <tr>
+              <th>Data</th>
+              <th>Setor</th>
+              <th>Linha</th>
+              <th>Turno</th>
+              <th>Modelo</th>
+              <th>Família</th>
+              <th>Início</th>
+              <th>Fim</th>
+              <th class="text-end">Produção</th>
+              <th class="text-end">Perda</th>
+              <th class="text-end">Defeitos</th>
+              <th>Parada</th>
+              <th>Observação</th>
+              <th class="text-muted">Coletado em</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in registros %}
+            <tr>
+              <td class="text-nowrap">{{ r.data }}</td>
+              <td>
+                <span class="badge text-bg-secondary" style="font-size:.7rem;">{{ r.setor }}</span>
+              </td>
+              <td class="text-nowrap">{{ r.linha }}</td>
+              <td class="text-nowrap">{{ r.turno }}</td>
+              <td class="fw-semibold">{{ r.modelo }}</td>
+              <td class="text-muted">{{ r.familia }}</td>
+              <td>{{ r.hora_inicio }}</td>
+              <td>{{ r.hora_fim }}</td>
+              <td class="text-end fw-bold text-success">{{ r.producao_real | default(0) }}</td>
+              <td class="text-end {% if r.qtd_perda %}text-warning fw-semibold{% else %}text-muted{% endif %}">
+                {{ r.qtd_perda | default(0) }}
+              </td>
+              <td class="text-end {% if r.defeitos %}text-danger fw-semibold{% else %}text-muted{% endif %}">
+                {{ r.defeitos | default(0) }}
+              </td>
+              <td class="text-muted small">{{ r.descricao_parada or '—' }}</td>
+              <td class="text-muted small">{{ r.observacao or '—' }}</td>
+              <td class="text-muted small text-nowrap">
+                {% if r.coletado_em %}
+                  {{ r.coletado_em.strftime('%d/%m %H:%M') if r.coletado_em else '—' }}
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="p-5 text-center text-muted">
+        <i class="bi bi-inbox fs-1 d-block mb-3 opacity-25"></i>
+        <div class="fw-semibold">Nenhum registro encontrado</div>
+        <div class="small mt-1">
+          {% if not erro %}
+          Use o botão <i class="bi bi-upload"></i> no cabeçalho para importar um arquivo <code>.json</code> coletado.
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+
+<!-- Modal: Importar JSON -->
+<div class="modal fade" id="modalImportar" tabindex="-1" aria-labelledby="modalImportarLabel" aria-hidden="true" data-bs-backdrop="static">
+  <div class="modal-dialog">
+    <div class="modal-content" style="border-radius:12px;border-color:var(--border);">
+      <div class="modal-header border-bottom" style="border-color:var(--border) !important;">
+        <h5 class="modal-title fw-semibold" id="modalImportarLabel">
+          <i class="bi bi-upload me-2 text-primary"></i>Importar dados coletados
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" id="btnFecharModal"></button>
+      </div>
+
+      <!-- Etapa 1: seleção de arquivo -->
+      <div id="etapaSelecao">
+        <form id="formImportar" enctype="multipart/form-data">
+          <div class="modal-body">
+            <p class="text-muted small mb-3">
+              Selecione o arquivo <code>.json</code> gerado pelo <code>coletor.py</code>.<br>
+              Registros existentes serão atualizados; novos serão inseridos.
+            </p>
+            <div class="mb-3">
+              <label class="form-label fw-semibold" style="font-size:0.8rem;">Arquivo JSON</label>
+              <input type="file" class="form-control" id="arquivoJson" name="arquivo_json" accept=".json" required>
+            </div>
+            <div class="alert alert-info d-flex gap-2 align-items-start py-2 px-3 mb-0" style="font-size:0.8rem;border-radius:8px;">
+              <i class="bi bi-info-circle-fill flex-shrink-0 mt-1"></i>
+              <div>
+                Para gerar o arquivo, execute no PC da fábrica:<br>
+                <code>python coletor.py --de 2026-03-01 --ate 2026-03-24 --json dados.json</code>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer border-top" style="border-color:var(--border) !important;">
+            <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-primary btn-sm fw-semibold" id="btnIniciar">
+              <i class="bi bi-upload me-1"></i>Importar
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Etapa 2: progresso -->
+      <div id="etapaProgresso" style="display:none;">
+        <div class="modal-body">
+          <div class="mb-3">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <span class="fw-semibold small" id="labelProgresso">Importando...</span>
+              <span class="text-muted small" id="contadorProgresso">0 / 0</span>
+            </div>
+            <div class="progress" style="height:12px;border-radius:8px;">
+              <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary"
+                   id="barraProgresso" role="progressbar"
+                   style="width:0%;border-radius:8px;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+              </div>
+            </div>
+            <div class="text-muted small mt-1" id="percentualProgresso">0%</div>
+          </div>
+          <div id="mensagemResultado" style="display:none;"></div>
+        </div>
+        <div class="modal-footer border-top" style="border-color:var(--border) !important;">
+          <button type="button" class="btn btn-success btn-sm fw-semibold" id="btnConcluir" style="display:none;" onclick="location.reload()">
+            <i class="bi bi-check-lg me-1"></i>Ver dados atualizados
+          </button>
+          <button type="button" class="btn btn-outline-secondary btn-sm" id="btnFecharProgresso" style="display:none;" data-bs-dismiss="modal">
+            Fechar
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const urlImportar  = "{{ url_for('pages.pcp_producao_coletada_importar') }}";
+  const urlProgresso = "{{ url_for('pages.pcp_producao_coletada_progresso', job_id='__JOB__') }}";
+
+  let pollingTimer = null;
+
+  document.getElementById("formImportar").addEventListener("submit", function (e) {
+    e.preventDefault();
+
+    const arquivo = document.getElementById("arquivoJson").files[0];
+    if (!arquivo) return;
+
+    const formData = new FormData();
+    formData.append("arquivo_json", arquivo);
+
+    document.getElementById("btnIniciar").disabled = true;
+    document.getElementById("btnIniciar").innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Enviando...';
+
+    fetch(urlImportar, { method: "POST", body: formData })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (data.erro) {
+          mostrarErro(data.erro);
+          return;
+        }
+        mostrarProgresso();
+        iniciarPolling(data.job_id);
+      })
+      .catch(function () {
+        mostrarErro("Erro de comunicação. Tente novamente.");
+      });
+  });
+
+  function iniciarPolling(jobId) {
+    const url = urlProgresso.replace("__JOB__", jobId);
+    pollingTimer = setInterval(function () {
+      fetch(url)
+        .then(function (r) { return r.json(); })
+        .then(function (status) { atualizarProgresso(status); })
+        .catch(function () {});
+    }, 800);
+  }
+
+  function atualizarProgresso(status) {
+    const total   = status.total  || 0;
+    const salvos  = status.salvos || 0;
+    const pct     = total > 0 ? Math.round((salvos / total) * 100) : 0;
+
+    document.getElementById("barraProgresso").style.width = pct + "%";
+    document.getElementById("barraProgresso").setAttribute("aria-valuenow", pct);
+    document.getElementById("percentualProgresso").textContent = pct + "%";
+    document.getElementById("contadorProgresso").textContent = salvos.toLocaleString("pt-BR") + " / " + total.toLocaleString("pt-BR");
+
+    if (status.status === "done") {
+      pararPolling();
+      concluido(salvos, status.erros || 0);
+    } else if (status.status === "error") {
+      pararPolling();
+      mostrarErroProgresso(status.mensagem || "Erro durante a importação.");
+    }
+  }
+
+  function concluido(salvos, erros) {
+    document.getElementById("barraProgresso").classList.remove("progress-bar-striped", "progress-bar-animated");
+    document.getElementById("barraProgresso").classList.add("bg-success");
+    document.getElementById("labelProgresso").textContent = "Importação concluída";
+
+    const msg = document.getElementById("mensagemResultado");
+    msg.style.display = "";
+    msg.innerHTML =
+      '<div class="alert alert-success d-flex gap-2 align-items-center py-2 px-3 mb-0" style="font-size:0.85rem;border-radius:8px;">' +
+      '<i class="bi bi-check-circle-fill fs-5 flex-shrink-0"></i>' +
+      '<div><strong>' + salvos.toLocaleString("pt-BR") + ' registros</strong> salvos/atualizados.' +
+      (erros > 0 ? ' <span class="text-warning">' + erros + ' erros.</span>' : '') +
+      '</div></div>';
+
+    document.getElementById("btnConcluir").style.display = "";
+    document.getElementById("btnFecharProgresso").style.display = "";
+  }
+
+  function mostrarErroProgresso(mensagem) {
+    document.getElementById("barraProgresso").classList.remove("progress-bar-striped", "progress-bar-animated", "bg-primary");
+    document.getElementById("barraProgresso").classList.add("bg-danger");
+    document.getElementById("labelProgresso").textContent = "Erro na importação";
+
+    const msg = document.getElementById("mensagemResultado");
+    msg.style.display = "";
+    msg.innerHTML =
+      '<div class="alert alert-danger d-flex gap-2 align-items-center py-2 px-3 mb-0" style="font-size:0.85rem;border-radius:8px;">' +
+      '<i class="bi bi-x-circle-fill fs-5 flex-shrink-0"></i><div>' + mensagem + '</div></div>';
+
+    document.getElementById("btnFecharProgresso").style.display = "";
+  }
+
+  function mostrarErro(mensagem) {
+    document.getElementById("btnIniciar").disabled = false;
+    document.getElementById("btnIniciar").innerHTML = '<i class="bi bi-upload me-1"></i>Importar';
+    alert(mensagem);
+  }
+
+  function mostrarProgresso() {
+    document.getElementById("etapaSelecao").style.display = "none";
+    document.getElementById("etapaProgresso").style.display = "";
+    document.getElementById("btnFecharModal").style.display = "none";
+  }
+
+  function pararPolling() {
+    if (pollingTimer) { clearInterval(pollingTimer); pollingTimer = null; }
+  }
+
+  document.getElementById("modalImportar").addEventListener("hidden.bs.modal", function () {
+    pararPolling();
+    document.getElementById("etapaSelecao").style.display = "";
+    document.getElementById("etapaProgresso").style.display = "none";
+    document.getElementById("btnFecharModal").style.display = "";
+    document.getElementById("btnIniciar").disabled = false;
+    document.getElementById("btnIniciar").innerHTML = '<i class="bi bi-upload me-1"></i>Importar';
+    document.getElementById("formImportar").reset();
+    document.getElementById("barraProgresso").style.width = "0%";
+    document.getElementById("barraProgresso").className = "progress-bar progress-bar-striped progress-bar-animated bg-primary";
+    document.getElementById("mensagemResultado").style.display = "none";
+    document.getElementById("btnConcluir").style.display = "none";
+    document.getElementById("btnFecharProgresso").style.display = "none";
+    document.getElementById("labelProgresso").textContent = "Importando...";
+    document.getElementById("contadorProgresso").textContent = "0 / 0";
+    document.getElementById("percentualProgresso").textContent = "0%";
+  });
+}());
+
+(function () {
+  const hoje = new Date().toISOString().slice(0, 10);
+  document.getElementById("coletaDe").value = hoje;
+  document.getElementById("coletaAte").value = hoje;
+}());
+
+function gerarComando() {
+  const de  = document.getElementById("coletaDe").value;
+  const ate = document.getElementById("coletaAte").value;
+  if (!de || !ate) { alert("Selecione as datas."); return; }
+  const arquivo = "coletas/dados_" + de + "_" + ate + ".json";
+  const cmd = "python coletor.py --de " + de + " --ate " + ate + " --json " + arquivo;
+  document.getElementById("comandoGerado").value = cmd;
+  document.getElementById("blocoComando").style.display = "";
+  document.getElementById("iconeCopiar").className = "bi bi-clipboard";
+}
+
+function copiarComando() {
+  const input = document.getElementById("comandoGerado");
+  navigator.clipboard.writeText(input.value).then(function () {
+    const icone = document.getElementById("iconeCopiar");
+    icone.className = "bi bi-clipboard-check";
+    setTimeout(function () { icone.className = "bi bi-clipboard"; }, 2000);
+  });
+}
+</script>
+{% endblock %}

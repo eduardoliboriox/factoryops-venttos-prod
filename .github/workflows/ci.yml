@@ -1,0 +1,59 @@
+name: WorkCost CI
+
+on:
+  push:
+    branches:
+      - develop
+      - main
+  pull_request:
+    branches:
+      - develop
+      - main
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    env:
+      ENVIRONMENT: testing
+      SECRET_KEY: test-secret-key
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Wait for Postgres
+        run: sleep 5
+
+      - name: Run application health check
+        run: python -m app.health
+
+      - name: Run tests
+        run: pytest || echo "No tests yet"

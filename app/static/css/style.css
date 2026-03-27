@@ -1,0 +1,1057 @@
+/* =========================
+   VARIÁVEIS
+========================= */
+:root {
+  --sidebar-width: 240px;
+  --header-height: 56px;
+  --bottom-nav-height: 64px;
+
+  --bg: #f1f5f9;
+  --card: #ffffff;
+  --text: #1e293b;
+  --text-muted: #64748b;
+  --border: rgba(15, 23, 42, 0.09);
+
+  --sidebar-bg: #0f172a;
+  --sidebar-border: rgba(255, 255, 255, 0.07);
+  --sidebar-text: rgba(255, 255, 255, 0.55);
+  --sidebar-text-hover: rgba(255, 255, 255, 0.90);
+  --sidebar-text-active: #ffffff;
+  --sidebar-hover-bg: rgba(255, 255, 255, 0.07);
+  --sidebar-active-bg: rgba(59, 130, 246, 0.16);
+  --sidebar-active-accent: #3b82f6;
+
+  --primary: #0d6efd;
+  --success-color: #198754;
+}
+
+/* =========================
+   RESET BÁSICO
+========================= */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial;
+}
+
+/* =========================
+   ESTRUTURA GERAL
+========================= */
+.app {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* =========================
+   SIDEBAR DESKTOP
+========================= */
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: var(--sidebar-width);
+  height: 100vh;
+  background: var(--sidebar-bg);
+  border-right: 1px solid var(--sidebar-border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.sidebar .logo {
+  flex-shrink: 0;
+  padding: 18px 16px;
+  border-bottom: 1px solid var(--sidebar-border);
+  text-align: center;
+}
+
+.sidebar .logo img {
+  width: 100%;
+  max-height: 80px;
+  display: block;
+  margin: 0 auto;
+  object-fit: contain;
+}
+
+.sidebar nav {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 10px;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.sidebar nav::-webkit-scrollbar {
+  display: none;
+}
+
+.sidebar nav a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--sidebar-text);
+  transition: background 0.12s ease, color 0.12s ease;
+  position: relative;
+}
+
+.sidebar nav a i {
+  font-size: 1rem;
+  flex-shrink: 0;
+  width: 18px;
+  text-align: center;
+  color: inherit;
+}
+
+.sidebar nav a:hover {
+  background: var(--sidebar-hover-bg);
+  color: var(--sidebar-text-hover);
+}
+
+.sidebar nav a.active {
+  background: var(--sidebar-active-bg);
+  color: var(--sidebar-text-active);
+  font-weight: 600;
+}
+
+.sidebar nav a.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 18px;
+  border-radius: 0 3px 3px 0;
+  background: var(--sidebar-active-accent);
+}
+
+.sidebar-footer {
+  flex-shrink: 0;
+  padding: 10px 10px 14px;
+  border-top: 1px solid var(--sidebar-border);
+}
+
+.sidebar-footer a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--sidebar-text);
+  transition: background 0.12s ease, color 0.12s ease;
+  position: relative;
+}
+
+.sidebar-footer a i {
+  font-size: 1rem;
+  flex-shrink: 0;
+  width: 18px;
+  text-align: center;
+  color: inherit;
+}
+
+.sidebar-footer a:hover {
+  background: var(--sidebar-hover-bg);
+  color: var(--sidebar-text-hover);
+}
+
+.sidebar-footer a.active {
+  background: var(--sidebar-active-bg);
+  color: var(--sidebar-text-active);
+  font-weight: 600;
+}
+
+.sidebar-footer a.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 18px;
+  border-radius: 0 3px 3px 0;
+  background: var(--sidebar-active-accent);
+}
+
+/* =========================
+   MAIN (DESKTOP)
+========================= */
+.main {
+  margin-left: var(--sidebar-width);
+  width: 100%;
+}
+
+/* =========================
+   HEADER DESKTOP
+========================= */
+.desktop-header {
+  position: fixed;
+  top: 0;
+  left: var(--sidebar-width);
+  right: 0;
+  height: var(--header-height);
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  z-index: 100;
+  gap: 16px;
+}
+
+/* =========================
+   CONTEÚDO
+========================= */
+.content {
+  padding: 24px;
+  padding-top: calc(var(--header-height) + 24px);
+}
+
+/* =========================
+   HEADER MOBILE (FIXO)
+========================= */
+.mobile-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--header-height);
+  background: var(--sidebar-bg);
+  border-bottom: 1px solid var(--sidebar-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 16px;
+  z-index: 200;
+}
+
+.mobile-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.mobile-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mobile-right i {
+  font-size: 18px;
+}
+
+.avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  flex-shrink: 0;
+}
+
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.mobile-page-title {
+  max-width: 150px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #ffffff;
+}
+
+.mobile-username {
+  max-width: 90px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+/* =========================
+   BOTTOM NAV MOBILE
+========================= */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: var(--bottom-nav-height);
+  background: var(--card);
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  z-index: 200;
+}
+
+.bottom-nav a {
+  text-decoration: none;
+  color: var(--text-muted);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 10.5px;
+  letter-spacing: 0.1px;
+  flex: 1;
+  padding: 8px 0;
+  transition: color 0.12s ease;
+}
+
+.bottom-nav i {
+  font-size: 20px;
+  margin-bottom: 3px;
+}
+
+.bottom-nav a.active {
+  color: var(--primary);
+}
+
+.bottom-nav .bottom-icon {
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bottom-nav .bottom-icon > i {
+  line-height: 1;
+  margin-bottom: 0;
+}
+
+.bottom-nav-avatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+  border: 1.5px solid var(--border);
+}
+
+/* =========================
+   AJUSTES MOBILE
+========================= */
+@media (max-width: 767px) {
+
+  .sidebar {
+    display: none;
+  }
+
+  .main {
+    margin-left: 0;
+  }
+
+  .content {
+    padding: 16px;
+    padding-top: calc(var(--header-height) + 16px);
+    padding-bottom: calc(var(--bottom-nav-height) + 16px);
+  }
+
+  .desktop-header {
+    display: none;
+  }
+}
+
+/* =========================
+   FULLSCREEN LAYOUT MODE
+========================= */
+body.fullscreen-mode .sidebar {
+  display: none !important;
+}
+
+body.fullscreen-mode .main {
+  margin-left: 0 !important;
+}
+
+body.fullscreen-mode .desktop-header {
+  left: 0 !important;
+}
+
+body.fullscreen-mode .content {
+  padding-left: 24px;
+  padding-right: 24px;
+}
+
+@media (max-width: 767px) {
+  body.fullscreen-mode .sidebar {
+    display: none !important;
+  }
+}
+
+/* =========================
+   CHECKBOX PCP – DESKTOP
+========================= */
+@media (min-width: 768px) {
+  #pcpTurnos input[type="checkbox"] {
+    transform: scale(1.4);
+    margin-right: 6px;
+    cursor: pointer;
+  }
+
+  #pcpTurnos {
+    font-size: 1.05rem;
+  }
+}
+
+/* ==========================
+   CARTÕES DE MODELO
+========================= */
+.card-modelo {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  background: var(--card);
+  height: 100%;
+  border-left: 3px solid var(--success-color);
+  transition: box-shadow 0.14s ease;
+}
+
+.card-modelo:hover {
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.08);
+}
+
+.card-modelo .codigo {
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--text);
+}
+
+.card-modelo .cliente {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #fff;
+  background-color: var(--success-color);
+  padding: 3px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.card-modelo .linha {
+  margin-top: 6px;
+  font-size: 0.9rem;
+}
+
+.card-modelo .linha strong {
+  color: #475569;
+}
+
+.card-modelo .linha {
+  border-bottom: 1px dashed rgba(15, 23, 42, 0.10);
+  padding-bottom: 4px;
+}
+
+/* =========================
+   KPIs – DASHBOARD
+========================= */
+.kpi-card h4 {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-top: 4px;
+  color: var(--text);
+}
+
+.kpi-card small {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+/* =========================
+   Botão Fullscreen Roxo
+========================= */
+.btn-outline-purple {
+  color: #6f42c1;
+  border-color: #6f42c1;
+}
+
+.btn-outline-purple:hover,
+.btn-outline-purple:focus {
+  background-color: #6f42c1;
+  color: #fff;
+}
+
+.btn-outline-purple:active {
+  background-color: #5a32a3;
+  border-color: #5a32a3;
+  color: #fff;
+}
+
+/* =========================
+   COOKIE BANNER
+========================= */
+.cookie-banner {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #1e293b;
+  color: #fff;
+  padding: 12px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 9999;
+}
+
+.cookie-banner a {
+  color: #60a5fa;
+  text-decoration: underline;
+}
+
+.cookie-content {
+  font-size: 0.875rem;
+}
+
+/* =========================================
+   DASHBOARD LOADING OVERLAY
+   ========================================= */
+.dashboard-loading-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.70);
+  backdrop-filter: blur(4px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.2s ease;
+}
+
+.dashboard-loading-overlay.d-none {
+  display: none !important;
+}
+
+.dashboard-loading-content {
+  text-align: center;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.loading-text {
+  font-size: 0.9rem;
+  letter-spacing: 0.4px;
+  color: var(--text-muted);
+}
+
+/* =========================
+   PAGE HEADER
+========================= */
+.page-header {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 12px;
+  min-width: 0;
+}
+
+.page-header-title {
+  flex: 1;
+  min-width: 0;
+}
+
+.page-header-section {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  display: block;
+  line-height: 1;
+  margin-bottom: 2px;
+}
+
+.page-header-name {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.page-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.btn-header-icon {
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 15px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+  flex-shrink: 0;
+  padding: 0;
+  line-height: 1;
+}
+
+.btn-header-icon:hover {
+  background: rgba(15, 23, 42, 0.06);
+  color: var(--text);
+  border-color: rgba(15, 23, 42, 0.18);
+}
+
+/* =========================
+   BOOTSTRAP CARD — REFINAMENTO GLOBAL
+========================= */
+.card {
+  border-color: var(--border);
+  border-radius: 12px;
+}
+
+/* =========================
+   STAT CARDS (INÍCIO)
+========================= */
+.stat-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px;
+  height: 100%;
+  transition: box-shadow 0.14s ease;
+}
+
+.stat-card:hover {
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.08);
+}
+
+.stat-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  font-size: 18px;
+  margin-bottom: 14px;
+}
+
+.stat-icon-blue {
+  background: rgba(13, 110, 253, 0.10);
+  color: var(--primary);
+}
+
+.stat-icon-green {
+  background: rgba(25, 135, 84, 0.10);
+  color: var(--success-color);
+}
+
+.stat-icon-slate {
+  background: rgba(15, 23, 42, 0.07);
+  color: var(--text-muted);
+}
+
+.stat-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.1;
+  margin-bottom: 4px;
+}
+
+.stat-label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+/* =========================
+   SHORTCUT CARDS (INÍCIO)
+========================= */
+.shortcut-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px 24px;
+  height: 100%;
+}
+
+.shortcut-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.shortcut-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  font-size: 20px;
+  background: rgba(15, 23, 42, 0.05);
+  color: var(--text-muted);
+}
+
+/* =========================
+   SECTION CARD (INFO BANNERS)
+========================= */
+.section-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px 20px;
+}
+
+/* =========================
+   DESKTOP HEADER — USER AREA
+========================= */
+.desktop-user-area {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  margin-left: 12px;
+  padding-left: 12px;
+  border-left: 1px solid var(--border);
+}
+
+.desktop-username {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  white-space: nowrap;
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* =========================
+   FORM CONTROLS — REFINAMENTO GLOBAL
+========================= */
+.form-control,
+.form-select {
+  border-color: rgba(15, 23, 42, 0.15);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  color: var(--text);
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: rgba(13, 110, 253, 0.40);
+  box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.08);
+}
+
+.form-control:disabled,
+.form-control[readonly] {
+  background: rgba(15, 23, 42, 0.03);
+  color: var(--text-muted);
+}
+
+.form-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 5px;
+}
+
+/* =========================
+   TABLES — REFINAMENTO GLOBAL
+========================= */
+.table {
+  --bs-table-border-color: var(--border);
+}
+
+.table:not(.table-sm) > thead > tr > th {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  background: rgba(15, 23, 42, 0.03);
+  padding: 10px 14px;
+  vertical-align: middle;
+  border-bottom-width: 1px;
+  white-space: nowrap;
+}
+
+.table:not(.table-sm) > tbody > tr > td {
+  padding: 10px 14px;
+  font-size: 0.875rem;
+  vertical-align: middle;
+}
+
+/* =========================
+   ALERTS — REFINAMENTO GLOBAL
+========================= */
+.alert {
+  border-radius: 10px;
+  font-size: 0.875rem;
+}
+
+/* =========================
+   BADGES — REFINAMENTO GLOBAL
+========================= */
+.badge {
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+/* =========================
+   MODALS — REFINAMENTO GLOBAL
+========================= */
+.modal-content {
+  border-radius: 14px;
+  border-color: var(--border);
+}
+
+.modal-header {
+  border-bottom-color: var(--border);
+  padding: 16px 20px;
+}
+
+.modal-footer {
+  border-top-color: var(--border);
+  padding: 12px 20px;
+}
+
+.modal-body {
+  padding: 20px;
+}
+
+/* =========================
+   BUTTONS — REFINAMENTO GLOBAL
+========================= */
+.btn {
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.btn-sm {
+  border-radius: 6px;
+  font-size: 0.8rem;
+}
+
+.btn-lg {
+  border-radius: 10px;
+}
+
+/* =========================
+   SIDEBAR — GRUPOS ACCORDION
+========================= */
+.sidebar-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-group-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  background: transparent;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--sidebar-text);
+  transition: background 0.12s ease, color 0.12s ease;
+  position: relative;
+  width: 100%;
+}
+
+.sidebar-group-toggle i:first-child {
+  font-size: 1rem;
+  flex-shrink: 0;
+  width: 18px;
+  text-align: center;
+  color: inherit;
+}
+
+.sidebar-group-toggle:hover {
+  background: var(--sidebar-hover-bg);
+  color: var(--sidebar-text-hover);
+}
+
+.sidebar-group-toggle.active {
+  color: var(--sidebar-text-hover);
+}
+
+.sidebar-chevron {
+  font-size: 0.7rem !important;
+  width: auto !important;
+  transition: transform 0.2s ease;
+}
+
+.sidebar-group-toggle[aria-expanded="true"] .sidebar-chevron {
+  transform: rotate(180deg);
+}
+
+.sidebar-group-items {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 2px 0 4px 28px;
+}
+
+.sidebar-group-items a {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border-radius: 6px;
+  text-decoration: none;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--sidebar-text);
+  transition: background 0.12s ease, color 0.12s ease;
+  position: relative;
+}
+
+.sidebar-group-items a i {
+  font-size: 0.85rem;
+  flex-shrink: 0;
+  width: 16px;
+  text-align: center;
+  color: inherit;
+}
+
+.sidebar-group-items a:hover {
+  background: var(--sidebar-hover-bg);
+  color: var(--sidebar-text-hover);
+}
+
+.sidebar-group-items a.active {
+  background: var(--sidebar-active-bg);
+  color: var(--sidebar-text-active);
+  font-weight: 600;
+}
+
+.sidebar-group-items a.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 14px;
+  border-radius: 0 3px 3px 0;
+  background: var(--sidebar-active-accent);
+}
+
+/* =========================
+   HEADER — DROPDOWN SEM SETA
+========================= */
+.dropdown-toggle-no-arrow {
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 15px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+  padding: 0;
+  line-height: 1;
+}
+
+.dropdown-toggle-no-arrow::after {
+  display: none;
+}
+
+.dropdown-toggle-no-arrow:hover {
+  background: rgba(15, 23, 42, 0.06);
+  color: var(--text);
+  border-color: rgba(15, 23, 42, 0.18);
+}
+
+.header-avatar-img {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+/* =========================
+   EM CONSTRUÇÃO
+========================= */
+.under-construction-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+}
+
+.under-construction-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 48px 40px;
+  text-align: center;
+  max-width: 420px;
+  width: 100%;
+}
+
+.uc-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  background: rgba(13, 110, 253, 0.08);
+  color: var(--primary);
+  display: grid;
+  place-items: center;
+  font-size: 28px;
+  margin: 0 auto 20px;
+}
+
+.uc-title {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 10px;
+}
+
+.uc-subtitle {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin: 0;
+  line-height: 1.6;
+}

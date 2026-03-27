@@ -1,0 +1,1590 @@
+{% extends "layouts/app.html" %}
+{% block title %}Medição da Pasta de Solda/Adesivo{% endblock %}
+
+{% block page_title %}
+<div class="page-header">
+  <div class="page-header-title">
+    <span class="page-header-section">Produção</span>
+    <h1 class="page-header-name">Controle de Medição da Altura da Pasta de Solda/Adesivo</h1>
+  </div>
+  <div class="page-header-actions">
+    <a href="{{ url_for('pages.inicio') }}" class="btn-header-icon" title="Voltar">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
+      <i class="bi bi-arrows-fullscreen"></i>
+    </button>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<style>
+  .mp-card {
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: var(--card);
+    overflow: hidden;
+    margin-bottom: 20px;
+  }
+  .mp-card .mp-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 16px;
+    border-bottom: 1px solid rgba(15,23,42,0.08);
+  }
+  .mp-header-blue  { background: linear-gradient(180deg, rgba(13,110,253,0.08), transparent); }
+  .mp-header-green { background: linear-gradient(180deg, rgba(25,135,84,0.08), transparent); }
+  .mp-header-gray  { background: linear-gradient(180deg, rgba(15,23,42,0.05), transparent); }
+  .mp-header-red   { background: linear-gradient(180deg, rgba(220,53,69,0.07), transparent); }
+  .mp-card .mp-title { display: flex; align-items: center; gap: 10px; }
+  .mp-card .mp-icon {
+    width: 40px; height: 40px; border-radius: 12px;
+    display: grid; place-items: center; font-size: 18px;
+  }
+  .mp-icon-blue  { background: rgba(13,110,253,0.12); color: #0d6efd; }
+  .mp-icon-green { background: rgba(25,135,84,0.12);  color: #198754; }
+  .mp-icon-gray  { background: rgba(15,23,42,0.08);   color: rgba(15,23,42,0.60); }
+  .mp-icon-red   { background: rgba(220,53,69,0.12);  color: #dc3545; }
+  .mp-subtitle { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+  .mp-body { padding: 16px; }
+
+  .doc-meta {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+    margin-bottom: 0;
+  }
+  .doc-meta .meta-field label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+  }
+  .doc-meta .meta-field input,
+  .doc-meta .meta-field select {
+    width: 100%;
+    border: 1px solid rgba(15,23,42,0.14);
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 13px;
+    background: #fff;
+  }
+  .doc-meta .meta-field input:focus,
+  .doc-meta .meta-field select:focus {
+    outline: none;
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 3px rgba(13,110,253,0.12);
+  }
+
+  .meas-table {
+    font-size: 11px;
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .meas-table th, .meas-table td {
+    border: 1px solid rgba(15,23,42,0.14);
+    padding: 4px 6px;
+    vertical-align: middle;
+    text-align: center;
+  }
+  .meas-table thead th {
+    background: rgba(15,23,42,0.05);
+    font-weight: 700;
+    font-size: 10px;
+    text-transform: uppercase;
+    white-space: nowrap;
+    letter-spacing: 0.5px;
+  }
+  .meas-table .group-label {
+    font-weight: 700;
+    font-size: 11px;
+    background: rgba(13,110,253,0.06);
+    text-align: left;
+    padding-left: 8px;
+    color: #0d6efd;
+  }
+  .meas-table .side-label {
+    font-size: 10px;
+    font-weight: 700;
+    background: rgba(15,23,42,0.03);
+    text-align: left;
+    padding-left: 10px;
+    white-space: nowrap;
+    width: 50px;
+  }
+  .meas-table .row-label {
+    font-size: 10px;
+    background: rgba(15,23,42,0.02);
+    text-align: left;
+    padding-left: 14px;
+    white-space: nowrap;
+    width: 120px;
+  }
+  .meas-table td input.meas-input {
+    width: 100%;
+    border: none;
+    background: transparent;
+    font-size: 11px;
+    padding: 2px 3px;
+    outline: none;
+    min-width: 55px;
+    text-align: center;
+  }
+  .meas-table td input.meas-input:focus {
+    background: rgba(13,110,253,0.06);
+    border-radius: 3px;
+  }
+  .meas-table .sign-row-label {
+    font-size: 10px;
+    font-weight: 700;
+    background: rgba(25,135,84,0.05);
+    text-align: left;
+    padding-left: 8px;
+    white-space: nowrap;
+    color: #198754;
+  }
+  .meas-table .sign-row-leader {
+    font-size: 10px;
+    font-weight: 700;
+    background: rgba(13,110,253,0.05);
+    text-align: left;
+    padding-left: 8px;
+    white-space: nowrap;
+    color: #0d6efd;
+  }
+  .meas-table .hora-row-label {
+    font-size: 10px;
+    font-weight: 700;
+    background: rgba(255,193,7,0.08);
+    text-align: left;
+    padding-left: 8px;
+    white-space: nowrap;
+    color: #856404;
+  }
+  .sign-cell { vertical-align: middle; text-align: center; min-width: 80px; }
+  .sign-cell .sign-btn {
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 6px;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .sign-cell .signed-tag {
+    font-size: 10px;
+    font-weight: 700;
+    color: #198754;
+    white-space: nowrap;
+  }
+  .hora-cell {
+    font-size: 10px;
+    font-weight: 600;
+    color: #856404;
+    background: rgba(255,193,7,0.06);
+  }
+  .posi-mec-input {
+    border: none;
+    border-bottom: 1px solid rgba(13,110,253,0.35);
+    background: transparent;
+    font-size: 11px;
+    padding: 1px 4px;
+    outline: none;
+    width: 90px;
+    color: #0d6efd;
+    font-weight: 400;
+  }
+  .posi-mec-input:focus {
+    border-bottom-color: #0d6efd;
+    background: rgba(13,110,253,0.05);
+    border-radius: 3px;
+  }
+  .doc-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding: 10px 14px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 14px;
+  }
+  .doc-id-badge {
+    font-size: .78rem; font-weight: 700; color: var(--text-muted);
+    background: rgba(15,23,42,.05); border-radius: 6px;
+    padding: 4px 10px; border: 1px solid var(--border);
+  }
+  .doc-id-badge.saved { color: #198754; background: rgba(25,135,84,.08); border-color: rgba(25,135,84,.25); }
+
+  .obs-section {
+    border: 1px solid rgba(15,23,42,0.12);
+    border-radius: 8px;
+    padding: 12px;
+    margin-top: 12px;
+    font-size: 12px;
+  }
+  .obs-section ul {
+    padding-left: 16px;
+    margin: 0;
+    color: var(--text-muted);
+  }
+  .obs-section li { margin-bottom: 4px; }
+
+  .plano-row-mp { border-bottom: 1px solid rgba(15,23,42,0.08); padding: 12px 0; }
+  .plano-row-mp:last-child { border-bottom: none; }
+  .plano-item-label-mp { font-size: 11px; font-weight: 700; color: rgba(15,23,42,0.50); margin-bottom: 4px; }
+
+  #mpCliente, #mpModelo { text-transform: uppercase; }
+
+  .print-header-verso { display: none; align-items: center; gap: 16px; padding: 12px 16px; border: 1px solid #ccc; border-bottom: none; background: #fff; }
+  .print-header-verso .print-header-logo img { height: 48px; width: auto; }
+  .print-header-verso .print-header-title { flex: 1; text-align: center; }
+  .print-header-verso .print-header-doc { text-align: right; font-size: 11px; color: #333; white-space: nowrap; }
+  .print-header-verso .print-header-doc .print-doc-num { font-weight: 700; font-size: 12px; }
+
+  .plano-print-table { display: none; width: 100%; border-collapse: collapse; font-size: 9px; }
+  .plano-print-table th, .plano-print-table td {
+    border: 1px solid #999; padding: 2px 3px; text-align: center; vertical-align: middle;
+  }
+  .plano-print-table th {
+    background: rgba(15,23,42,0.07); font-weight: 700; font-size: 8px;
+    text-transform: uppercase; letter-spacing: 0.3px; white-space: nowrap;
+  }
+  .plano-print-table td { height: 18px; }
+  .plano-print-table td.cell-text { text-align: left; }
+
+  .print-header {
+    display: none;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 16px;
+    border: 1px solid #ccc;
+    border-bottom: none;
+    background: #fff;
+  }
+  .print-header-logo img { height: 48px; width: auto; }
+  .print-header-title {
+    flex: 1;
+    text-align: center;
+  }
+  .print-title-main {
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: #000;
+  }
+  .print-title-sub {
+    font-size: 11px;
+    color: #444;
+    margin-top: 2px;
+  }
+  .print-header-doc {
+    text-align: right;
+    font-size: 11px;
+    color: #333;
+    white-space: nowrap;
+  }
+  .print-header-doc .print-doc-num {
+    font-weight: 700;
+    font-size: 12px;
+  }
+
+  @media print {
+    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+    @page { size: A4 landscape; margin: 4mm; }
+
+    html, body { margin: 0 !important; padding: 0 !important; }
+
+    .sidebar,
+    .mobile-header,
+    .desktop-header,
+    .bottom-nav,
+    .nav-tabs,
+    .doc-toolbar,
+    #btnAddPlanoRow,
+    #btnSalvarPlanoMp,
+    .sign-btn,
+    #tab-consultar-mp,
+    .d-print-none,
+    [data-bs-dismiss],
+    .modal,
+    .modal-backdrop { display: none !important; }
+
+    .main { margin-left: 0 !important; padding-top: 0 !important; }
+    .app  { display: block !important; }
+    .container-fluid { padding: 0 !important; }
+    section.content { padding: 0 !important; }
+
+    /* Print header compact — frente */
+    .print-header {
+      display: flex !important;
+      padding: 4px 8px !important;
+      gap: 8px !important;
+    }
+    .print-header-logo img { height: 34px !important; }
+    .print-title-main { font-size: 11px !important; }
+    .print-title-sub  { font-size: 9px !important; margin-top: 1px !important; }
+    .print-header-doc { font-size: 9px !important; }
+    .print-header-doc .print-doc-num { font-size: 10px !important; }
+
+    .tab-pane { display: block !important; opacity: 1 !important; }
+    #tab-consultar-mp { display: none !important; }
+
+    /* Verso — Plano de Ação: page 2 */
+    #tab-plano {
+      display: block !important;
+      page-break-before: always !important;
+    }
+    #tab-plano .mp-card,
+    #tab-plano #msgPlanoMp { display: none !important; }
+    .print-header-verso {
+      display: flex !important;
+      padding: 4px 8px !important;
+      gap: 8px !important;
+    }
+    .print-header-verso .print-header-logo img { height: 34px !important; }
+    .print-header-verso .print-header-doc { font-size: 9px !important; }
+    .print-header-verso .print-header-doc .print-doc-num { font-size: 10px !important; }
+    .plano-print-table { display: table !important; }
+    .plano-print-table th { font-size: 7px !important; padding: 1px 2px !important; }
+    .plano-print-table td { font-size: 8px !important; padding: 1px 2px !important; height: 14px !important; }
+
+    /* Cards */
+    .mp-card {
+      box-shadow: none !important;
+      border: 1px solid #ccc !important;
+      border-radius: 0 !important;
+      margin-bottom: 3px !important;
+      overflow: visible !important;
+    }
+    .mp-card .mp-header { display: none !important; }
+    .mp-body { padding: 3px !important; }
+
+    /* Identification fields — single row */
+    .doc-meta {
+      display: flex !important;
+      flex-wrap: nowrap !important;
+      gap: 4px !important;
+    }
+    .doc-meta .meta-field { flex: 1 1 0; min-width: 0; }
+    .doc-meta .meta-field label {
+      font-size: 7px !important;
+      margin-bottom: 1px !important;
+      white-space: nowrap;
+    }
+    .doc-meta .meta-field input,
+    .doc-meta .meta-field select {
+      padding: 1px 3px !important;
+      font-size: 8px !important;
+      border-radius: 0 !important;
+    }
+
+    /* Remove horizontal scroll from table wrapper */
+    .table-responsive { overflow: visible !important; }
+
+    /* Measurement table — forced to fit page width */
+    .meas-table {
+      font-size: 8px !important;
+      table-layout: fixed !important;
+      width: 100% !important;
+    }
+    .meas-table th, .meas-table td {
+      border-color: #999 !important;
+      padding: 1px 2px !important;
+    }
+    .meas-table .group-label,
+    .meas-table .sign-row-label,
+    .meas-table .sign-row-leader,
+    .meas-table .hora-row-label { font-size: 8px !important; }
+    .meas-table .side-label {
+      font-size: 7px !important;
+      width: 36px !important;
+    }
+    .meas-table .row-label {
+      font-size: 7px !important;
+      width: 90px !important;
+    }
+    .meas-table td input.meas-input {
+      font-size: 8px !important;
+      min-width: 0 !important;
+      width: 100% !important;
+    }
+    .signed-tag { font-size: 8px !important; }
+
+    /* Observations */
+    .obs-section {
+      border: 1px solid #ccc !important;
+      border-radius: 0 !important;
+      padding: 3px 6px !important;
+      margin-top: 3px !important;
+      font-size: 7px !important;
+    }
+    .obs-section ul { padding-left: 10px !important; margin: 0 !important; }
+    .obs-section li { margin-bottom: 1px !important; }
+  }
+</style>
+
+<div class="container-fluid">
+
+  <!-- Signature Modal -->
+  <div class="modal fade" id="signModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header py-2">
+          <h6 class="modal-title mb-0" id="signModalTitle">Assinar</h6>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body py-3">
+          <div class="mb-2">
+            <label class="form-label" style="font-size:0.78rem;font-weight:600;">Usuário / Matrícula</label>
+            <input type="text" class="form-control form-control-sm" id="signModalUser" autocomplete="off" placeholder="Ex: 12345">
+          </div>
+          <div class="mb-2">
+            <label class="form-label" style="font-size:0.78rem;font-weight:600;">Senha</label>
+            <input type="password" class="form-control form-control-sm" id="signModalPass" autocomplete="new-password">
+          </div>
+          <div class="text-danger d-none" id="signModalErr" style="font-size:11px;"></div>
+        </div>
+        <div class="modal-footer py-2">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-success btn-sm" id="signModalConfirmBtn">Confirmar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Load Document Modal -->
+  <div class="modal fade" id="loadDocModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header py-2">
+          <h6 class="modal-title mb-0">Carregar Documento</h6>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body py-3">
+          <label class="form-label" style="font-size:0.78rem;font-weight:600;">Número do Documento</label>
+          <div class="input-group input-group-sm">
+            <span class="input-group-text">MA-</span>
+            <input type="number" class="form-control" id="loadDocId" min="1" placeholder="Ex: 1">
+            <span class="input-group-text" id="loadDocYearSuffix"></span>
+          </div>
+          <div class="text-danger d-none mt-2" id="loadDocErr" style="font-size:11px;"></div>
+        </div>
+        <div class="modal-footer py-2">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-primary btn-sm" id="loadDocConfirmBtn">Carregar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <ul class="nav nav-tabs mb-3" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-medicao" type="button" role="tab">
+        <i class="bi bi-rulers me-1"></i> Nova Medição
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-plano" type="button" role="tab">
+        <i class="bi bi-exclamation-triangle me-1"></i> Plano de Ação
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-consultar-mp" type="button" role="tab">
+        <i class="bi bi-search me-1"></i> Consultar
+      </button>
+    </li>
+  </ul>
+
+  <div class="tab-content">
+
+    <!-- TAB NOVA MEDIÇÃO -->
+    <div class="tab-pane fade show active" id="tab-medicao" role="tabpanel">
+
+      <div class="print-header">
+        <div class="print-header-logo">
+          <img src="{{ url_for('static', filename='images/logos/logo.png') }}" alt="Venttos">
+        </div>
+        <div class="print-header-title">
+          <div class="print-title-main">Controle de Medição da Altura da Pasta de Solda/Adesivo</div>
+          <div class="print-title-sub">(Solder/Adhesive Paste Height Measurement Control) · PRO006</div>
+        </div>
+        <div class="print-header-doc">
+          <div class="print-doc-num">Nº <span id="printDocId">—</span></div>
+        </div>
+      </div>
+
+      <div class="doc-toolbar d-print-none">
+        <button class="btn btn-outline-secondary btn-sm" id="btnNovo">
+          <i class="bi bi-file-earmark-plus"></i> Novo
+        </button>
+        <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#loadDocModal">
+          <i class="bi bi-folder2-open"></i> Carregar MA-
+        </button>
+        <span class="doc-id-badge" id="docIdBadge">Novo Documento</span>
+        <div class="ms-auto d-flex gap-2">
+          <button class="btn btn-success btn-sm fw-bold" id="btnSalvarMedicao" type="button">
+            <i class="bi bi-floppy"></i> Salvar
+          </button>
+          <button class="btn btn-outline-secondary btn-sm" onclick="window.print()" type="button">
+            <i class="bi bi-printer"></i> Imprimir
+          </button>
+        </div>
+      </div>
+
+      <div id="msgMedicao"></div>
+
+      <div class="mp-card">
+        <div class="mp-header mp-header-blue">
+          <div class="mp-title">
+            <div class="mp-icon mp-icon-blue"><i class="bi bi-card-list"></i></div>
+            <div>
+              <div class="fw-bold">Identificação</div>
+              <div class="mp-subtitle">PRO006 · Solder/Adhesive Paste Height Measurement Control</div>
+            </div>
+          </div>
+          <span class="badge text-bg-primary">PASSO 1</span>
+        </div>
+        <div class="mp-body">
+          <div class="doc-meta">
+            <div class="meta-field">
+              <label>Data (Date)</label>
+              <input type="date" id="mpData">
+            </div>
+            <div class="meta-field">
+              <label>Cliente (Customer)</label>
+              <input type="text" id="mpCliente" placeholder="Nome do cliente">
+            </div>
+            <div class="meta-field">
+              <label>Turno (Shift)</label>
+              <select id="mpTurno">
+                <option value="">Selecione</option>
+                <option value="1">1° Turno</option>
+                <option value="2">2° Turno</option>
+                <option value="3">3° Turno</option>
+              </select>
+            </div>
+            <div class="meta-field">
+              <label>Modelo (Model)</label>
+              <input type="text" id="mpModelo" placeholder="Ex: ABC-123">
+            </div>
+            <div class="meta-field">
+              <label>Esp. Stencil (Thickness)</label>
+              <input type="text" id="mpEspStencil" placeholder="Ex: 0.15mm">
+            </div>
+            <div class="meta-field">
+              <label>Tolerância (Tolerance)</label>
+              <input type="text" id="mpTolerancia" placeholder="Ex: ±30%">
+            </div>
+            <div class="meta-field">
+              <label>Lado (Side)</label>
+              <select id="mpLado">
+                <option value="">Selecione</option>
+                <option value="TOP">TOP</option>
+                <option value="BOTTOM">BOTTOM</option>
+                <option value="AMBOS">AMBOS</option>
+              </select>
+            </div>
+            <div class="meta-field">
+              <label>Setor</label>
+              <select id="mpSetor">
+                <option value="">Carregando...</option>
+              </select>
+            </div>
+            <div class="meta-field">
+              <label>Linha (Line)</label>
+              <select id="mpLinha">
+                <option value="">Selecione o setor</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mp-card">
+        <div class="mp-header mp-header-green">
+          <div class="mp-title">
+            <div class="mp-icon mp-icon-green"><i class="bi bi-grid-3x3"></i></div>
+            <div>
+              <div class="fw-bold">Medições por Horário</div>
+              <div class="mp-subtitle">2 componentes × FRONT/REAR × Menor Valor / Pico</div>
+            </div>
+          </div>
+          <span class="badge text-bg-success">PASSO 2</span>
+        </div>
+        <div class="mp-body p-2">
+          <div class="table-responsive">
+            <table class="meas-table" id="measTable">
+              <thead>
+                <tr>
+                  <th style="text-align:left;" colspan="3">Componente / Posi. Mec. / Lado / Medida</th>
+                  <th>1° HOR.</th>
+                  <th>2° HOR.</th>
+                  <th>3° HOR.</th>
+                  <th>4° HOR.</th>
+                  <th>5° HOR.</th>
+                  <th>6° HOR.</th>
+                  <th>7° HOR.</th>
+                  <th>8° HOR.</th>
+                  <th>9° HOR.</th>
+                  <th>10° HOR.</th>
+                </tr>
+              </thead>
+              <tbody id="measBody"></tbody>
+            </table>
+          </div>
+
+          <div class="obs-section">
+            <strong style="font-size:11px;color:var(--text-muted);">Observações:</strong>
+            <ul>
+              <li>A medição deve ser realizada através do equipamento MALCOM TD-4M (The measurement is done on MALCOM TD-4M equipment)</li>
+              <li>As linhas que não têm SPI devem registrar seus parâmetros neste documento. (The lines that do not have SPI must register their parameters in this document)</li>
+              <li>Os pontos de medição estão indicados como pico de medida (The measurement points are indicated as measurement peaks)</li>
+              <li>As linhas com SPI usam esse equipamento MALCOM TD-4M se estiverem fora das especificações. (The lines that do not use the equipment MALCOM TD-4M are those that do not have SPI)</li>
+              <li>Caso alguma anomalia fora de especificações seja encontrada, avisar ao SMT Líder de Produção, Técnico de Produção ou Supervisor.</li>
+              <li>As referências de medição para pasta de solda variam de acordo com a tolerância de cada produto.</li>
+            </ul>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+    <!-- TAB PLANO DE AÇÃO -->
+    <div class="tab-pane fade" id="tab-plano" role="tabpanel">
+
+      <div class="print-header-verso">
+        <div class="print-header-logo">
+          <img src="{{ url_for('static', filename='images/logos/logo.png') }}" alt="Venttos">
+        </div>
+        <div class="print-header-title">
+          <div class="print-title-main">Plano de Ação / Action Plan</div>
+          <div class="print-title-sub">Controle de Medição da Altura da Pasta de Solda/Adesivo</div>
+        </div>
+        <div class="print-header-doc">
+          <div class="print-doc-num">Ref. Nº <span id="printDocIdVerso">—</span></div>
+        </div>
+      </div>
+
+      <table class="plano-print-table" id="planoPrintTable">
+        <thead>
+          <tr>
+            <th style="width:42px;">DIA<br><span style="font-weight:400;font-size:7px;">(Day)</span></th>
+            <th style="width:50px;">ITEM</th>
+            <th>PROBLEMA<br><span style="font-weight:400;font-size:7px;">(Issue)</span></th>
+            <th>CAUSA<br><span style="font-weight:400;font-size:7px;">(Root Cause)</span></th>
+            <th>AÇÃO<br><span style="font-weight:400;font-size:7px;">(Action Plan)</span></th>
+            <th style="width:52px;">QUANDO?<br><span style="font-weight:400;font-size:7px;">(When?)</span></th>
+            <th style="width:72px;">RESPONSÁVEL<br><span style="font-weight:400;font-size:7px;">(PIC)</span></th>
+            <th style="width:62px;">ASSINATURA<br><span style="font-weight:400;font-size:7px;">(Signature)</span></th>
+            <th style="width:42px;">STATUS</th>
+          </tr>
+        </thead>
+        <tbody id="planoPrintBody"></tbody>
+      </table>
+
+      <div id="msgPlanoMp"></div>
+
+      <div class="mp-card">
+        <div class="mp-header mp-header-red">
+          <div class="mp-title">
+            <div class="mp-icon mp-icon-red"><i class="bi bi-exclamation-triangle"></i></div>
+            <div>
+              <div class="fw-bold">Plano de Ação</div>
+              <div class="mp-subtitle">Registre ações corretivas para medições fora de especificação.</div>
+            </div>
+          </div>
+        </div>
+        <div class="mp-body">
+          <div class="doc-meta" style="grid-template-columns: repeat(auto-fit, minmax(120px,1fr)); margin-bottom: 16px;">
+            <div class="meta-field" style="flex: 0 0 auto; min-width: 220px;">
+              <label>Documento Nº (Document ID)</label>
+              <div style="display:flex;gap:6px;align-items:center;">
+                <input type="number" id="planoDocIdInput" min="1" placeholder="ID do documento" style="width:100%;border:1px solid rgba(15,23,42,0.14);border-radius:8px;padding:6px 10px;font-size:13px;">
+                <button type="button" id="btnCarregarPlano" class="btn btn-outline-primary btn-sm" style="white-space:nowrap;">
+                  <i class="bi bi-folder2-open"></i> Carregar
+                </button>
+              </div>
+              <div class="text-danger d-none mt-1" id="planoDocErr" style="font-size:11px;"></div>
+            </div>
+            <div class="meta-field">
+              <label>Dia</label>
+              <input type="date" id="planoDia">
+            </div>
+            <div class="meta-field">
+              <label>Item</label>
+              <input type="text" id="planoItem" placeholder="Ex: Componente 1 FRONT">
+            </div>
+          </div>
+          <div id="planoRowsContainer">
+            <div class="plano-row-mp">
+              <div class="row g-2">
+                <div class="col-md-6">
+                  <div class="plano-item-label-mp">OCORRÊNCIA (Problem)</div>
+                  <input class="form-control form-control-sm" type="text" data-plano="ocorrencia" placeholder="Descreva a ocorrência" style="border-radius:8px;">
+                </div>
+                <div class="col-md-6">
+                  <div class="plano-item-label-mp">CAUSA (Root Cause)</div>
+                  <input class="form-control form-control-sm" type="text" data-plano="causa" placeholder="Causa identificada" style="border-radius:8px;">
+                </div>
+                <div class="col-md-6">
+                  <div class="plano-item-label-mp">AÇÃO (Action Plan)</div>
+                  <input class="form-control form-control-sm" type="text" data-plano="acao" placeholder="Ação corretiva" style="border-radius:8px;">
+                </div>
+                <div class="col-md-3">
+                  <div class="plano-item-label-mp">QUANDO? (When?)</div>
+                  <input class="form-control form-control-sm" type="date" data-plano="quando" style="border-radius:8px;">
+                </div>
+                <div class="col-md-3">
+                  <div class="plano-item-label-mp">RESPONSÁVEL (PIC)</div>
+                  <input class="form-control form-control-sm" type="text" data-plano="responsavel" placeholder="Nome" style="border-radius:8px;">
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="d-flex gap-2 mt-3">
+            <button class="btn btn-outline-secondary btn-sm" id="btnAddPlanoRow" type="button">
+              <i class="bi bi-plus"></i> Adicionar linha
+            </button>
+            <button class="btn btn-warning fw-bold px-4" id="btnSalvarPlanoMp" type="button">
+              <i class="bi bi-save"></i> Salvar Plano
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- TAB CONSULTAR -->
+    <div class="tab-pane fade" id="tab-consultar-mp" role="tabpanel">
+
+      <div class="mp-card">
+        <div class="mp-header mp-header-gray">
+          <div class="mp-title">
+            <div class="mp-icon mp-icon-gray"><i class="bi bi-funnel"></i></div>
+            <div>
+              <div class="fw-bold">Filtros</div>
+              <div class="mp-subtitle">Busque medições por data ou linha.</div>
+            </div>
+          </div>
+        </div>
+        <div class="mp-body">
+          <div class="row g-3 align-items-end">
+            <div class="col-md-2">
+              <label class="form-label" style="font-size:0.8rem;font-weight:600;">Data</label>
+              <input class="form-control" type="date" id="filtroDataMp">
+            </div>
+            <div class="col-md-2">
+              <label class="form-label" style="font-size:0.8rem;font-weight:600;">Setor</label>
+              <select class="form-select" id="filtroSetorMp">
+                <option value="">Todos</option>
+              </select>
+            </div>
+            <div class="col-md-2">
+              <label class="form-label" style="font-size:0.8rem;font-weight:600;">Linha</label>
+              <select class="form-select" id="filtroLinhaMp">
+                <option value="">Todas</option>
+              </select>
+            </div>
+            <div class="col-md-2">
+              <button class="btn btn-primary w-100" type="button" id="btnConsultarMp">
+                <i class="bi bi-search"></i> Buscar
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="msgConsultarMp"></div>
+
+      <div class="mp-card d-none" id="cardResultadosMp">
+        <div class="mp-header mp-header-gray">
+          <div class="mp-title">
+            <div class="mp-icon mp-icon-gray"><i class="bi bi-table"></i></div>
+            <div>
+              <div class="fw-bold">Resultados</div>
+              <div class="mp-subtitle" id="subtitleResultadosMp"></div>
+            </div>
+          </div>
+          <button class="btn btn-sm btn-outline-secondary" onclick="window.print()" title="Imprimir">
+            <i class="bi bi-printer me-1"></i> Imprimir
+          </button>
+        </div>
+        <div class="mp-body p-0">
+          <div class="table-responsive">
+            <table class="table table-sm table-hover mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>ID</th>
+                  <th>Data</th>
+                  <th>Setor</th>
+                  <th>Linha</th>
+                  <th>Modelo</th>
+                  <th>Turno</th>
+                  <th>Criado por</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="resultadosMpBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  "use strict";
+
+  const COMPONENTS = 2;
+  const MEASURES = [
+    { key: 'menor_valor', label: 'Menor Valor (Smaller Value)' },
+    { key: 'pico',        label: 'Pico (Peak)'                 },
+  ];
+  const SIDES = ['FRONT', 'REAR'];
+
+  let documentoId = null;
+  let currentSignTarget = null;
+  const signState = {};
+
+  let planoRegistroId  = null;
+  let planoDocLabel    = '—';
+
+  function fmtDataDia(iso) {
+    if (!iso) return '';
+    const parts = iso.split('-');
+    if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    return iso;
+  }
+
+  function buildMeasTable() {
+    const tbody = document.getElementById('measBody');
+    const rows = [];
+
+    for (let c = 1; c <= COMPONENTS; c++) {
+      rows.push(`<tr>
+        <td class="group-label" colspan="13">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+            <span>Componente ${c}</span>
+            <span style="font-weight:400;font-size:10px;color:rgba(15,23,42,.55);">
+              Posição Mecânica (mechanical position):&nbsp;<input class="posi-mec-input" type="text" id="posi_mec_comp${c}" placeholder="Ex: HDMI, IC" autocomplete="off" style="text-transform:uppercase;">
+            </span>
+          </div>
+        </td>
+      </tr>`);
+
+      for (const side of SIDES) {
+        for (const meas of MEASURES) {
+          const key = `comp${c}_${side}_${meas.key}`;
+          const inputs = Array.from({length: 10}, (_, i) =>
+            `<td><input class="meas-input" type="text" id="${key}_h${i+1}" placeholder="—"></td>`
+          ).join('');
+
+          rows.push(`<tr>
+            <td class="side-label">${side}</td>
+            <td class="row-label" colspan="2">${meas.label}</td>
+            ${inputs}
+          </tr>`);
+        }
+      }
+    }
+
+    const horaCells = Array.from({length: 10}, (_, i) =>
+      `<td class="hora-cell" id="hora_h${i+1}">—</td>`
+    ).join('');
+
+    rows.push(`<tr>
+      <td class="hora-row-label" colspan="3">Hora das Medições<br><span style="font-weight:400;font-size:9px;">(Measurement Time)</span></td>
+      ${horaCells}
+    </tr>`);
+
+    const signOpCells = Array.from({length: 10}, (_, i) => {
+      const hora = i + 1;
+      return `<td class="sign-cell" id="sign_op_h${hora}_cell">
+        <button class="btn btn-outline-secondary sign-btn" data-role="op" data-hora="${hora}" title="Assinar este horário">
+          <i class="bi bi-pen" style="font-size:10px;"></i>
+        </button>
+        <span class="signed-tag d-none" id="sign_op_h${hora}_tag"></span>
+      </td>`;
+    }).join('');
+
+    rows.push(`<tr>
+      <td class="sign-row-label" colspan="3">Visto do(a) Operador(a)<br><span style="font-weight:400;font-size:9px;">(Operator Signature)</span></td>
+      ${signOpCells}
+    </tr>`);
+
+    const signLidCells = Array.from({length: 10}, (_, i) => {
+      const hora = i + 1;
+      return `<td class="sign-cell" id="sign_lid_h${hora}_cell">
+        <button class="btn btn-outline-secondary sign-btn" data-role="lid" data-hora="${hora}" title="Assinar este horário">
+          <i class="bi bi-pen" style="font-size:10px;"></i>
+        </button>
+        <span class="signed-tag d-none" id="sign_lid_h${hora}_tag"></span>
+      </td>`;
+    }).join('');
+
+    rows.push(`<tr>
+      <td class="sign-row-leader" colspan="3">Visto do(a) Líder<br><span style="font-weight:400;font-size:9px;">(Leader Signature)</span></td>
+      ${signLidCells}
+    </tr>`);
+
+    tbody.innerHTML = rows.join('');
+
+    tbody.querySelectorAll('.sign-btn').forEach(btn => {
+      btn.addEventListener('click', () => openSignModal(btn.dataset.role, parseInt(btn.dataset.hora)));
+    });
+  }
+
+  function openSignModal(role, hora) {
+    currentSignTarget = { role, hora };
+    const roleLabel = role === 'op' ? 'Operador(a)' : 'Líder';
+    document.getElementById('signModalTitle').textContent = `Assinar · ${hora}° Horário · ${roleLabel}`;
+    document.getElementById('signModalUser').value = '';
+    document.getElementById('signModalPass').value = '';
+    const errEl = document.getElementById('signModalErr');
+    errEl.classList.add('d-none');
+    errEl.textContent = '';
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('signModal')).show();
+    setTimeout(() => document.getElementById('signModalUser').focus(), 400);
+  }
+
+  async function confirmSignModal() {
+    if (!currentSignTarget) return;
+
+    const { role, hora } = currentSignTarget;
+    const userInput  = document.getElementById('signModalUser');
+    const passInput  = document.getElementById('signModalPass');
+    const errEl      = document.getElementById('signModalErr');
+    const confirmBtn = document.getElementById('signModalConfirmBtn');
+
+    const matricula = userInput.value.trim();
+    const password  = passInput.value;
+
+    if (!matricula || !password) {
+      errEl.textContent = 'Preencha usuário e senha.';
+      errEl.classList.remove('d-none');
+      return;
+    }
+
+    confirmBtn.disabled = true;
+    confirmBtn.textContent = '...';
+
+    try {
+      const r = await fetch('/api/auth/confirm-extra', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+        body: JSON.stringify({ matricula, password }),
+      });
+      const data = await r.json().catch(() => ({}));
+
+      if (r.ok && data.success) {
+        const now  = new Date();
+        const hhmm = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+        const key  = `${role}_h${hora}`;
+
+        signState[key] = { username: data.username, time: now.toISOString() };
+
+        const tag = document.getElementById(`sign_${role}_h${hora}_tag`);
+        tag.textContent = data.username;
+        tag.classList.remove('d-none');
+
+        const cell = document.getElementById(`sign_${role}_h${hora}_cell`);
+        cell.querySelector('.sign-btn').classList.add('d-none');
+
+        if (role === 'op') {
+          const horaCell = document.getElementById(`hora_h${hora}`);
+          if (horaCell) horaCell.textContent = hhmm;
+        }
+
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('signModal')).hide();
+      } else {
+        errEl.textContent = data.error || 'Credenciais inválidas.';
+        errEl.classList.remove('d-none');
+      }
+    } catch {
+      errEl.textContent = 'Erro de comunicação.';
+      errEl.classList.remove('d-none');
+    } finally {
+      confirmBtn.disabled = false;
+      confirmBtn.textContent = 'Confirmar';
+      passInput.value = '';
+    }
+  }
+
+  function setDocumentoId(id, docId) {
+    documentoId = id;
+    const label = docId || String(id);
+    const badge = document.getElementById('docIdBadge');
+    badge.textContent = label;
+    badge.classList.add('saved');
+    document.getElementById('printDocId').textContent = label;
+    const btn = document.getElementById('btnSalvarMedicao');
+    btn.innerHTML = '<i class="bi bi-arrow-repeat me-1"></i>Atualizar';
+    btn.classList.replace('btn-success', 'btn-primary');
+  }
+
+  function clearDocumentoId() {
+    documentoId = null;
+    const badge = document.getElementById('docIdBadge');
+    badge.textContent = 'Novo Documento';
+    badge.classList.remove('saved');
+    document.getElementById('printDocId').textContent = '—';
+    const btn = document.getElementById('btnSalvarMedicao');
+    btn.innerHTML = '<i class="bi bi-floppy me-1"></i>Salvar';
+    btn.classList.replace('btn-primary', 'btn-success');
+  }
+
+  async function loadSectors(targetSelect, filtroSelect) {
+    try {
+      const r = await fetch('/api/production/sectors', { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+      const data = await r.json().catch(() => ({}));
+      const sectors = data.sectors || [];
+
+      [targetSelect, filtroSelect].forEach(sel => {
+        if (!sel) return;
+        const isFilter = sel === filtroSelect;
+        sel.innerHTML = isFilter
+          ? '<option value="">Todos</option>'
+          : '<option value="">Selecione o setor</option>';
+        sectors.forEach(s => {
+          const opt = document.createElement('option');
+          opt.value = s; opt.textContent = s;
+          sel.appendChild(opt);
+        });
+      });
+    } catch {}
+  }
+
+  async function loadLines(setor, targetSelect, placeholder) {
+    targetSelect.innerHTML = `<option value="">${placeholder}</option>`;
+    if (!setor) return;
+    try {
+      const r = await fetch(`/api/production/lines?setor=${encodeURIComponent(setor)}`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+      const data = await r.json().catch(() => ({}));
+      (data.lines || []).forEach(l => {
+        const opt = document.createElement('option');
+        opt.value = l; opt.textContent = l;
+        targetSelect.appendChild(opt);
+      });
+    } catch {}
+  }
+
+  function coletarMedicoes() {
+    const medicoes = [];
+    for (let c = 1; c <= COMPONENTS; c++) {
+      for (const side of SIDES) {
+        for (const meas of MEASURES) {
+          const key   = `comp${c}_${side}_${meas.key}`;
+          const entry = { componente: c, lado: side, tipo_medida: meas.key, horarios: [] };
+          for (let h = 1; h <= 10; h++) {
+            entry.horarios.push(document.getElementById(`${key}_h${h}`)?.value?.trim() || null);
+          }
+          if (entry.horarios.some(v => v)) medicoes.push(entry);
+        }
+      }
+    }
+    return medicoes;
+  }
+
+  function coletarPosiMec() {
+    return Array.from({length: COMPONENTS}, (_, i) =>
+      document.getElementById(`posi_mec_comp${i+1}`)?.value?.trim() || null
+    );
+  }
+
+  function coletarHoras() {
+    return Array.from({length: 10}, (_, i) => {
+      const el = document.getElementById(`hora_h${i+1}`);
+      const v  = el?.textContent?.trim();
+      return (v && v !== '—') ? v : null;
+    });
+  }
+
+  function coletarAssinaturas() {
+    return Object.entries(signState).map(([campo, s]) => ({
+      campo,
+      username:  s.username,
+      timestamp: s.time,
+    }));
+  }
+
+  function limparMedicao() {
+    document.getElementById('mpData').value = new Date().toISOString().slice(0, 10);
+    ['mpCliente','mpEspStencil','mpModelo','mpTolerancia'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    });
+    ['mpTurno','mpLado','mpSetor'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.selectedIndex = 0;
+    });
+    document.getElementById('mpLinha').innerHTML = '<option value="">Selecione o setor</option>';
+    document.querySelectorAll('#measBody .meas-input').forEach(i => i.value = '');
+    document.querySelectorAll('.posi-mec-input').forEach(i => i.value = '');
+    for (let h = 1; h <= 10; h++) {
+      const el = document.getElementById(`hora_h${h}`);
+      if (el) el.textContent = '—';
+    }
+    Object.keys(signState).forEach(k => delete signState[k]);
+    document.querySelectorAll('.signed-tag').forEach(el => { el.textContent = ''; el.classList.add('d-none'); });
+    document.querySelectorAll('#measBody .sign-btn').forEach(el => el.classList.remove('d-none'));
+    clearDocumentoId();
+  }
+
+  function showMsg(el, tipo, texto) {
+    el.innerHTML = `<div class="alert alert-${tipo} alert-dismissible fade show mb-3">
+      ${texto}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>`;
+    if (tipo !== 'danger') setTimeout(() => { try { bootstrap.Alert.getOrCreateInstance(el.querySelector('.alert')).close(); } catch {} }, 5000);
+  }
+
+  async function salvarMedicao() {
+    const msgEl = document.getElementById('msgMedicao');
+    const payload = {
+      data:              document.getElementById('mpData').value,
+      cliente:           document.getElementById('mpCliente').value.trim().toUpperCase() || null,
+      espessura_stencil: document.getElementById('mpEspStencil').value.trim() || null,
+      turno:             document.getElementById('mpTurno').value || null,
+      modelo:            document.getElementById('mpModelo').value.trim().toUpperCase() || null,
+      tolerancia:        document.getElementById('mpTolerancia').value.trim() || null,
+      lado:              document.getElementById('mpLado').value || null,
+      setor:             document.getElementById('mpSetor').value || null,
+      linha:             document.getElementById('mpLinha').value || null,
+      posi_mec:          coletarPosiMec(),
+      medicoes:          coletarMedicoes(),
+      horas:             coletarHoras(),
+      assinaturas:       coletarAssinaturas(),
+    };
+
+    if (!payload.data || !payload.linha) {
+      showMsg(msgEl, 'warning', 'Data e Linha são obrigatórios.');
+      return;
+    }
+
+    const btn  = document.getElementById('btnSalvarMedicao');
+    btn.disabled = true;
+    const orig = btn.innerHTML;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Salvando...';
+
+    try {
+      const url    = documentoId ? `/api/medicao-pasta/registros/${documentoId}` : '/api/medicao-pasta/registros';
+      const method = documentoId ? 'PATCH' : 'POST';
+
+      const r = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+        body: JSON.stringify(payload),
+      });
+      const data = await r.json().catch(() => ({}));
+
+      if (r.ok && data.sucesso) {
+        if (!documentoId) {
+          setDocumentoId(data.id, data.doc_id);
+          showMsg(msgEl, 'success', `Documento ${data.doc_id} criado. Continue preenchendo os horários restantes e clique em Atualizar.`);
+        } else {
+          showMsg(msgEl, 'success', `Documento atualizado com sucesso.`);
+        }
+      } else {
+        showMsg(msgEl, 'danger', data.erro || 'Erro ao salvar medição.');
+      }
+    } catch {
+      showMsg(msgEl, 'danger', 'Erro de comunicação com o servidor.');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = orig;
+    }
+  }
+
+  async function carregarDocumento(id) {
+    const errEl = document.getElementById('loadDocErr');
+    if (errEl) { errEl.classList.add('d-none'); errEl.textContent = ''; }
+
+    try {
+      const r = await fetch(`/api/medicao-pasta/registros/${id}`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+      const data = await r.json().catch(() => null);
+
+      if (!r.ok || !data) {
+        if (errEl) { errEl.textContent = 'Documento não encontrado.'; errEl.classList.remove('d-none'); }
+        return false;
+      }
+
+      const safe = (elId, val) => { const el = document.getElementById(elId); if (el) el.value = val || ''; };
+      safe('mpData',        data.data);
+      safe('mpCliente',     data.cliente);
+      safe('mpEspStencil',  data.espessura_stencil);
+      safe('mpModelo',      data.modelo);
+      safe('mpTolerancia',  data.tolerancia);
+      safe('mpTurno',       data.turno);
+      safe('mpLado',        data.lado);
+      safe('mpSetor',       data.setor);
+
+      await loadLines(data.setor, document.getElementById('mpLinha'), 'Selecione a linha');
+      safe('mpLinha', data.linha);
+
+      if (Array.isArray(data.posi_mec)) {
+        for (let c = 1; c <= COMPONENTS; c++) {
+          const el = document.getElementById(`posi_mec_comp${c}`);
+          if (el) el.value = data.posi_mec[c - 1] || '';
+        }
+      }
+
+      if (Array.isArray(data.medicoes)) {
+        for (const m of data.medicoes) {
+          for (let h = 1; h <= 10; h++) {
+            const el = document.getElementById(`comp${m.componente}_${m.lado}_${m.tipo_medida}_h${h}`);
+            if (el) el.value = m.horarios[h - 1] || '';
+          }
+        }
+      }
+
+      if (Array.isArray(data.horas)) {
+        for (let h = 1; h <= 10; h++) {
+          const el = document.getElementById(`hora_h${h}`);
+          if (el) el.textContent = data.horas[h - 1] || '—';
+        }
+      }
+
+      if (Array.isArray(data.assinaturas)) {
+        for (const sig of data.assinaturas) {
+          const match = sig.campo?.match(/^(op|lid)_h(\d+)$/);
+          if (!match) continue;
+          const [, role, horaStr] = match;
+          const hora = parseInt(horaStr);
+
+          signState[sig.campo] = { username: sig.username, time: sig.timestamp };
+
+          const tag = document.getElementById(`sign_${role}_h${hora}_tag`);
+          if (tag) { tag.textContent = sig.username; tag.classList.remove('d-none'); }
+
+          const signBtn = document.getElementById(`sign_${role}_h${hora}_cell`)?.querySelector('.sign-btn');
+          if (signBtn) signBtn.classList.add('d-none');
+        }
+      }
+
+      setDocumentoId(id, data.doc_id);
+      return true;
+    } catch {
+      if (errEl) { errEl.textContent = 'Erro de comunicação.'; errEl.classList.remove('d-none'); }
+      return false;
+    }
+  }
+
+  function addPlanoRow() {
+    const container = document.getElementById('planoRowsContainer');
+    const div = document.createElement('div');
+    div.className = 'plano-row-mp';
+    div.innerHTML = `<div class="row g-2">
+      <div class="col-md-6">
+        <div class="plano-item-label-mp">OCORRÊNCIA (Problem)</div>
+        <input class="form-control form-control-sm" type="text" data-plano="ocorrencia" placeholder="Descreva a ocorrência" style="border-radius:8px;">
+      </div>
+      <div class="col-md-6">
+        <div class="plano-item-label-mp">CAUSA (Root Cause)</div>
+        <input class="form-control form-control-sm" type="text" data-plano="causa" placeholder="Causa identificada" style="border-radius:8px;">
+      </div>
+      <div class="col-md-6">
+        <div class="plano-item-label-mp">AÇÃO (Action Plan)</div>
+        <input class="form-control form-control-sm" type="text" data-plano="acao" placeholder="Ação corretiva" style="border-radius:8px;">
+      </div>
+      <div class="col-md-3">
+        <div class="plano-item-label-mp">QUANDO? (When?)</div>
+        <input class="form-control form-control-sm" type="date" data-plano="quando" style="border-radius:8px;">
+      </div>
+      <div class="col-md-3">
+        <div class="plano-item-label-mp">RESPONSÁVEL (PIC)</div>
+        <input class="form-control form-control-sm" type="text" data-plano="responsavel" placeholder="Nome" style="border-radius:8px;">
+      </div>
+    </div>`;
+    container.appendChild(div);
+  }
+
+  async function salvarPlanoMp() {
+    const msgEl = document.getElementById('msgPlanoMp');
+    const rows  = document.querySelectorAll('#planoRowsContainer .plano-row-mp');
+    const itens = [];
+
+    for (const row of rows) {
+      const ocorrencia = row.querySelector('[data-plano="ocorrencia"]')?.value?.trim();
+      if (!ocorrencia) continue;
+      itens.push({
+        dia:         document.getElementById('planoDia').value || null,
+        item:        document.getElementById('planoItem').value.trim() || null,
+        ocorrencia,
+        causa:       row.querySelector('[data-plano="causa"]')?.value?.trim() || null,
+        acao:        row.querySelector('[data-plano="acao"]')?.value?.trim() || null,
+        quando:      row.querySelector('[data-plano="quando"]')?.value || null,
+        responsavel: row.querySelector('[data-plano="responsavel"]')?.value?.trim() || null,
+      });
+    }
+
+    if (!itens.length) {
+      showMsg(msgEl, 'warning', 'Preencha ao menos uma ocorrência antes de salvar.');
+      return;
+    }
+
+    const btn = document.getElementById('btnSalvarPlanoMp');
+    btn.disabled = true;
+    const orig = btn.innerHTML;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Salvando...';
+
+    try {
+      const r = await fetch('/api/medicao-pasta/plano-acao', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+        body: JSON.stringify({ itens, registro_id: planoRegistroId }),
+      });
+      const data = await r.json().catch(() => ({}));
+      if (r.ok && data.sucesso) {
+        showMsg(msgEl, 'success', `Plano de ação salvo (${itens.length} item(ns)).`);
+      } else {
+        showMsg(msgEl, 'danger', data.erro || 'Erro ao salvar plano.');
+      }
+    } catch {
+      showMsg(msgEl, 'danger', 'Erro de comunicação com o servidor.');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = orig;
+    }
+  }
+
+  async function consultar() {
+    const msgEl = document.getElementById('msgConsultarMp');
+    const btn   = document.getElementById('btnConsultarMp');
+    btn.disabled = true;
+    const orig = btn.innerHTML;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+
+    const params = new URLSearchParams();
+    const data  = document.getElementById('filtroDataMp').value;
+    const setor = document.getElementById('filtroSetorMp').value;
+    const linha = document.getElementById('filtroLinhaMp').value;
+    if (data)  params.set('data', data);
+    if (setor) params.set('setor', setor);
+    if (linha) params.set('linha', linha);
+
+    try {
+      const r    = await fetch(`/api/medicao-pasta/registros?${params}`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+      const list = await r.json().catch(() => null);
+
+      if (!r.ok || !Array.isArray(list)) {
+        showMsg(msgEl, 'danger', 'Erro ao buscar registros.');
+        return;
+      }
+
+      document.getElementById('subtitleResultadosMp').textContent = `${list.length} registro(s) encontrado(s)`;
+      const tbody = document.getElementById('resultadosMpBody');
+
+      if (!list.length) {
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center py-3" style="color:rgba(15,23,42,.40);">Nenhum registro encontrado.</td></tr>';
+      } else {
+        function esc(s) { return String(s ?? '—').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+        function fmtData(iso) {
+          if (!iso) return '—';
+          try { return new Date(iso + (iso.includes('T') ? '' : 'T00:00:00')).toLocaleDateString('pt-BR'); }
+          catch { return iso; }
+        }
+        tbody.innerHTML = list.map(item => `<tr>
+          <td><strong>${esc(item.doc_id || item.id)}</strong></td>
+          <td>${fmtData(item.data)}</td>
+          <td>${esc(item.setor)}</td>
+          <td>${esc(item.linha)}</td>
+          <td>${esc(item.modelo)}</td>
+          <td>${esc(item.turno ? `${item.turno}° Turno` : null)}</td>
+          <td>${esc(item.username)}</td>
+          <td>
+            <button class="btn btn-sm btn-outline-primary" data-edit-id="${esc(item.id)}" title="Editar">
+              <i class="bi bi-pencil"></i>
+            </button>
+          </td>
+        </tr>`).join('');
+
+        tbody.querySelectorAll('[data-edit-id]').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            const id = parseInt(btn.dataset.editId);
+            limparMedicao();
+            const ok = await carregarDocumento(id);
+            if (ok) {
+              bootstrap.Tab.getOrCreateInstance(document.querySelector('[data-bs-target="#tab-medicao"]')).show();
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+          });
+        });
+      }
+
+      document.getElementById('cardResultadosMp').classList.remove('d-none');
+    } catch {
+      showMsg(msgEl, 'danger', 'Erro de comunicação com o servidor.');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = orig;
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', async () => {
+    buildMeasTable();
+
+    const today = new Date().toISOString().slice(0, 10);
+    document.getElementById('mpData').value       = today;
+    document.getElementById('planoDia').value     = today;
+    document.getElementById('filtroDataMp').value = today;
+
+    const mpSetor       = document.getElementById('mpSetor');
+    const mpLinha       = document.getElementById('mpLinha');
+    const filtroSetorMp = document.getElementById('filtroSetorMp');
+    const filtroLinhaMp = document.getElementById('filtroLinhaMp');
+
+    await loadSectors(mpSetor, filtroSetorMp);
+
+    mpSetor.addEventListener('change', () => loadLines(mpSetor.value, mpLinha, 'Selecione a linha'));
+    filtroSetorMp.addEventListener('change', () => loadLines(filtroSetorMp.value, filtroLinhaMp, 'Todas'));
+
+    document.getElementById('btnSalvarMedicao').addEventListener('click', salvarMedicao);
+    document.getElementById('btnNovo').addEventListener('click', limparMedicao);
+    document.getElementById('btnAddPlanoRow').addEventListener('click', addPlanoRow);
+    document.getElementById('btnSalvarPlanoMp').addEventListener('click', salvarPlanoMp);
+    document.getElementById('btnConsultarMp').addEventListener('click', consultar);
+    document.getElementById('signModalConfirmBtn').addEventListener('click', confirmSignModal);
+
+    document.getElementById('signModalPass').addEventListener('keydown', e => {
+      if (e.key === 'Enter') confirmSignModal();
+    });
+
+    document.getElementById('loadDocConfirmBtn').addEventListener('click', async () => {
+      const id = parseInt(document.getElementById('loadDocId').value);
+      if (!id || id < 1) {
+        const errEl = document.getElementById('loadDocErr');
+        errEl.textContent = 'Informe um ID válido.';
+        errEl.classList.remove('d-none');
+        return;
+      }
+      limparMedicao();
+      const ok = await carregarDocumento(id);
+      if (ok) {
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('loadDocModal')).hide();
+      }
+    });
+
+    document.getElementById('loadDocModal').addEventListener('show.bs.modal', () => {
+      document.getElementById('loadDocId').value = '';
+      document.getElementById('loadDocErr').classList.add('d-none');
+    });
+
+    const loadDocYearSuffix = document.getElementById('loadDocYearSuffix');
+    if (loadDocYearSuffix) loadDocYearSuffix.textContent = `-${new Date().getFullYear()}`;
+
+    ['mpCliente', 'mpModelo'].forEach(id => {
+      document.getElementById(id).addEventListener('input', function () {
+        const pos = this.selectionStart;
+        this.value = this.value.toUpperCase();
+        this.setSelectionRange(pos, pos);
+      });
+    });
+
+    document.addEventListener('input', function (e) {
+      if (e.target.classList.contains('posi-mec-input')) {
+        const pos = e.target.selectionStart;
+        e.target.value = e.target.value.toUpperCase();
+        e.target.setSelectionRange(pos, pos);
+      }
+    });
+
+    document.getElementById('btnCarregarPlano').addEventListener('click', async () => {
+      const errEl = document.getElementById('planoDocErr');
+      errEl.classList.add('d-none');
+      const rawId = parseInt(document.getElementById('planoDocIdInput').value);
+      if (!rawId || rawId < 1) {
+        errEl.textContent = 'Informe um ID válido.';
+        errEl.classList.remove('d-none');
+        return;
+      }
+      const btn = document.getElementById('btnCarregarPlano');
+      btn.disabled = true;
+      try {
+        const r = await fetch(`/api/medicao-pasta/plano-acao/${rawId}`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+        if (!r.ok) throw new Error();
+        const itens = await r.json();
+        if (!Array.isArray(itens)) throw new Error();
+
+        planoRegistroId = rawId;
+        planoDocLabel   = String(rawId);
+
+        const container = document.getElementById('planoRowsContainer');
+        container.innerHTML = '';
+
+        if (itens.length) {
+          document.getElementById('planoDia').value   = itens[0].dia   || '';
+          document.getElementById('planoItem').value  = itens[0].item  || '';
+          itens.forEach(item => {
+            addPlanoRow();
+            const rows = container.querySelectorAll('.plano-row-mp');
+            const row  = rows[rows.length - 1];
+            row.querySelector('[data-plano="ocorrencia"]').value  = item.ocorrencia  || '';
+            row.querySelector('[data-plano="causa"]').value       = item.causa       || '';
+            row.querySelector('[data-plano="acao"]').value        = item.acao        || '';
+            row.querySelector('[data-plano="quando"]').value      = item.quando      || '';
+            row.querySelector('[data-plano="responsavel"]').value = item.responsavel || '';
+          });
+        } else {
+          addPlanoRow();
+        }
+      } catch {
+        errEl.textContent = 'Documento não encontrado ou sem plano de ação.';
+        errEl.classList.remove('d-none');
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    window.addEventListener('beforeprint', () => {
+      const versoRef = document.getElementById('printDocIdVerso');
+      if (versoRef) versoRef.textContent = planoDocLabel;
+
+      const dia  = document.getElementById('planoDia').value;
+      const item = document.getElementById('planoItem').value.trim();
+      const rows = document.querySelectorAll('#planoRowsContainer .plano-row-mp');
+      const tbody = document.getElementById('planoPrintBody');
+
+      const dataRows = [];
+      rows.forEach(row => {
+        const ocorrencia  = row.querySelector('[data-plano="ocorrencia"]')?.value?.trim()  || '';
+        const causa       = row.querySelector('[data-plano="causa"]')?.value?.trim()       || '';
+        const acao        = row.querySelector('[data-plano="acao"]')?.value?.trim()        || '';
+        const quando      = row.querySelector('[data-plano="quando"]')?.value              || '';
+        const responsavel = row.querySelector('[data-plano="responsavel"]')?.value?.trim() || '';
+        const hasData = ocorrencia || causa || acao || quando || responsavel;
+        if (hasData) {
+          dataRows.push({ dia: fmtDataDia(dia), item, ocorrencia, causa, acao, quando: fmtDataDia(quando), responsavel });
+        }
+      });
+
+      const TOTAL_ROWS = 20;
+      while (dataRows.length < TOTAL_ROWS) dataRows.push(null);
+
+      tbody.innerHTML = dataRows.map(r => `<tr>
+        <td>${r?.dia || ''}</td>
+        <td>${r?.item || ''}</td>
+        <td class="cell-text">${r?.ocorrencia || ''}</td>
+        <td class="cell-text">${r?.causa || ''}</td>
+        <td class="cell-text">${r?.acao || ''}</td>
+        <td>${r?.quando || ''}</td>
+        <td>${r?.responsavel || ''}</td>
+        <td></td>
+        <td></td>
+      </tr>`).join('');
+    });
+  });
+})();
+</script>
+{% endblock %}

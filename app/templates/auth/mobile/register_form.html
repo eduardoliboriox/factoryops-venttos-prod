@@ -1,0 +1,190 @@
+{% extends "layouts/auth.html" %}
+{% block title %}Cadastro - WorkCost{% endblock %}
+
+{% block content %}
+<section class="mobile-screen register-form"
+         style="background-image: url('{{ url_for('static', filename='images/banners/bg-cad-form.webp') }}');">
+
+  <div class="mobile-register-wrapper">
+
+    <div class="text-center mb-4">
+      <h4 class="fw-bold mb-1 text-primary">Criar Conta</h4>
+      <small class="text-muted text-primary">
+        Solicite acesso ao sistema
+      </small>
+    </div>
+
+    <div class="mobile-register-card">
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }} text-center py-2">
+            {{ message }}
+          </div>
+        {% endfor %}
+      {% endwith %}
+
+      <form method="post"
+            action="{{ url_for('auth.register') }}"
+            class="mobile-form">
+
+         <h6 class="fw-bold mb-2">Dados pessoais</h6>
+         
+         <select name="user_type"
+                 id="user_type"
+                 class="form-select mb-2"
+                 required>
+           <option value="CLT">Colaborador CLT</option>
+           <option value="PJ">Prestador de Serviço (PJ)</option>
+           <option value="DIRECTOR">Diretoria</option>
+           <option value="OWNER">Proprietário</option>
+         </select>
+         
+         <input name="full_name"
+                class="form-control mb-2"
+                placeholder="Nome completo"
+                required>
+         
+         <input name="matricula"
+                id="matricula_field"
+                class="form-control mb-2"
+                placeholder="Matrícula (somente CLT)">
+         
+         <select name="setor"
+                 class="form-select mb-3"
+                 required>
+           <option value="">Selecione o setor</option>
+           <option>Administração</option>
+           <option>Direção</option>
+           <option>Engenharia</option>
+           <option>Estoque</option>
+           <option>Logística</option>
+           <option>Manutenção</option>
+           <option>Recursos Humanos</option>
+           <option>Serviços Gerais</option>
+           <option>PCP</option>
+           <option>Produção</option>
+           <option>Qualidade</option>
+           <option>TI</option>
+         </select>
+
+        <h6 class="fw-bold mt-3 mb-2">Contato</h6>
+
+        <input type="email"
+               name="email"
+               class="form-control mb-2"
+               placeholder="Email pessoal ou corporativo"
+               required>
+
+        <input name="phone"
+               data-mask="phone"
+               class="form-control mb-3"
+               placeholder="(99) 99999-9999">
+
+        <h6 class="fw-bold mt-3 mb-2">Endereço</h6>
+
+        <div class="row g-2">
+          <div class="col-6">
+            <input name="zip_code"
+                   id="zip_code"
+                   data-mask="zip"
+                   class="form-control"
+                   placeholder="CEP">
+          </div>
+
+          <div class="col-6">
+            <input name="number"
+                   class="form-control"
+                   placeholder="Número">
+          </div>
+        </div>
+
+        <input name="street"
+               id="street"
+               class="form-control mt-2"
+               placeholder="Rua">
+
+        <input name="neighborhood"
+               id="neighborhood"
+               class="form-control mt-2"
+               placeholder="Bairro">
+
+        <div class="row g-2 mt-1">
+          <div class="col-8">
+            <input name="city"
+                   id="city"
+                   class="form-control"
+                   placeholder="Cidade">
+          </div>
+
+          <div class="col-4">
+            <input name="state"
+                   id="state"
+                   class="form-control"
+                   placeholder="UF">
+          </div>
+        </div>
+
+        <input name="complement"
+               class="form-control mt-2"
+               placeholder="Complemento">
+
+        <input name="reference"
+               class="form-control mt-2 mb-3"
+               placeholder="Referência">
+
+        <h6 class="fw-bold mt-3 mb-2">Senha</h6>
+
+        <input type="password"
+               name="password"
+               class="form-control mb-2"
+               placeholder="Senha"
+               required>
+
+        <input type="password"
+               name="password_confirm"
+               class="form-control mb-3"
+               placeholder="Confirmar senha"
+               required>
+
+        <button class="btn btn-primary w-100 mb-2">
+          Solicitar cadastro
+        </button>
+
+        <div class="text-center">
+          <a href="{{ url_for('auth.login_mobile_form') }}">
+            Já tenho conta
+          </a>
+        </div>
+
+      </form>
+
+    </div>
+  </div>
+</section>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const userType = document.getElementById("user_type");
+  const matriculaField = document.getElementById("matricula_field");
+
+  function toggleMatricula() {
+    if (userType.value === "CLT") {
+      matriculaField.setAttribute("required", "required");
+      matriculaField.placeholder = "Matrícula real (obrigatória)";
+    } else {
+      matriculaField.removeAttribute("required");
+      matriculaField.placeholder = "Matrícula (não obrigatória)";
+      matriculaField.value = "";
+    }
+  }
+
+  userType.addEventListener("change", toggleMatricula);
+  toggleMatricula();
+});
+</script>
+
+<script src="{{ url_for('static', filename='js/input-masks.js') }}"></script>
+<script src="{{ url_for('static', filename='js/register.js') }}"></script>
+
+{% endblock %}
