@@ -435,7 +435,7 @@ postgresql://user:password@host:port/database
 Example Railway connection:
 
 ```id="railway_connection_example"
-postgresql://postgres:*****@caboose.proxy.rlwy.net:11094/railway
+postgresql://postgres:SUA_SENHA@SEU_HOST.proxy.rlwy.net:PORTA/railway
 ```
 
 Backup commands must internally use this connection string.
