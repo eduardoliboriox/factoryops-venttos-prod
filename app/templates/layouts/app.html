@@ -46,6 +46,9 @@
 {% set _pcp_menus = [
   'pcp_controle_ops','pcp_apontamento','pcp_planejamento','pcp_entregas','pcp_producao_coletada'
 ] %}
+{% set _log_menus = [
+  'logistica_resumo'
+] %}
 {% set _config_menus = [
   'config_turnos','config_linhas','config_paradas'
 ] %}
@@ -87,6 +90,7 @@
       "pcp_planejamento": "Planejamento",
       "pcp_entregas": "Entregas",
       "pcp_producao_coletada": "Produção Coletada",
+      "logistica_resumo": "Logística",
       "config_turnos": "Turnos",
       "config_linhas": "Linhas e Setores",
       "config_paradas": "Paradas de Linha",
@@ -259,6 +263,31 @@
           </div>
         </div>
       </div>
+      <div class="sidebar-group">
+        <button class="sidebar-group-toggle {% if active_menu in _log_menus %}active{% endif %}"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#nav-logistica"
+                aria-expanded="{{ 'true' if active_menu in _log_menus else 'false' }}">
+          <i class="bi bi-box-seam"></i>
+          <span>Logística</span>
+          <i class="bi bi-chevron-down sidebar-chevron ms-auto"></i>
+        </button>
+        <div class="collapse {% if active_menu in _log_menus %}show{% endif %}"
+             id="nav-logistica">
+          <div class="sidebar-group-items">
+            <a href="{{ url_for('pages.logistica_resumo') }}"
+               class="{% if active_menu == 'logistica_resumo' %}active{% endif %}">
+              <i class="bi bi-clipboard-data"></i> Resumo do Dia
+            </a>
+            <a href="{{ url_for('pages.pcp_entregas') }}?tab=logistica"
+               class="{% if active_menu == 'pcp_entregas' %}active{% endif %}">
+              <i class="bi bi-truck"></i> Entregas
+            </a>
+          </div>
+        </div>
+      </div>
+
       {% if current_user.is_authenticated and current_user.is_admin %}
       <div class="sidebar-group">
         <button class="sidebar-group-toggle {% if active_menu in _config_menus %}active{% endif %}"

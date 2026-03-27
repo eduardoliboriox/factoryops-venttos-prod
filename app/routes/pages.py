@@ -741,7 +741,226 @@ def pcp_planejamento_plano_detalhado():
 @bp.route("/pcp/entregas")
 @login_required
 def pcp_entregas():
-    return render_template("pcp/entregas.html", active_menu="pcp_entregas")
+    from flask import request
+    from app.services import entregas_service as svc
+
+    tab          = request.args.get("tab", "pedido")
+    status       = request.args.get("status", "")
+    data_inicial = request.args.get("dataInicial", "")
+    data_final   = request.args.get("dataFinal", "")
+    data_hoje    = svc.data_padrao()
+
+    try:
+        pedidos   = svc.listar_pedidos(status, "", data_inicial, data_final)
+        entregas  = svc.listar_entregas()
+        equipe    = svc.listar_equipe()
+        erro      = None
+    except Exception as e:
+        pedidos  = []
+        entregas = []
+        equipe   = []
+        erro     = str(e)
+
+    return render_template(
+        "pcp/entregas.html",
+        active_menu="pcp_entregas",
+        tab=tab,
+        pedidos=pedidos,
+        entregas=entregas,
+        equipe=equipe,
+        data_hoje=data_hoje,
+        status_label=svc.STATUS_LABEL,
+        status_cor=svc.STATUS_COR,
+        status_filter=status,
+        data_inicial=data_inicial,
+        data_final=data_final,
+        erro=erro,
+    )
+
+
+@bp.route("/pcp/entregas/pedido/novo", methods=["POST"])
+@login_required
+def pcp_entregas_pedido_novo():
+    from flask import request, jsonify
+    from app.services import entregas_service as svc
+
+    data = request.get_json(silent=True) or {}
+    try:
+        pedido_id = svc.criar_pedido(
+            data.get("numero_pedido", ""),
+            data.get("cliente", ""),
+            data.get("modelo", ""),
+            data.get("familia", ""),
+            int(data.get("quantidade", 0)),
+            data.get("data_pedido", ""),
+            data.get("data_entrega", ""),
+            data.get("observacao", ""),
+        )
+        return jsonify({"ok": True, "id": pedido_id})
+    except (ValueError, Exception) as e:
+        return jsonify({"erro": str(e)}), 400
+
+
+@bp.route("/pcp/entregas/pedido/<int:pedido_id>/editar", methods=["POST"])
+@login_required
+def pcp_entregas_pedido_editar(pedido_id):
+    from flask import request, jsonify
+    from app.services import entregas_service as svc
+
+    data = request.get_json(silent=True) or {}
+    try:
+        svc.atualizar_pedido(
+            pedido_id,
+            data.get("numero_pedido", ""),
+            data.get("cliente", ""),
+            data.get("modelo", ""),
+            data.get("familia", ""),
+            int(data.get("quantidade", 0)),
+            data.get("data_pedido", ""),
+            data.get("data_entrega", ""),
+            data.get("observacao", ""),
+        )
+        return jsonify({"ok": True})
+    except (ValueError, Exception) as e:
+        return jsonify({"erro": str(e)}), 400
+
+
+@bp.route("/pcp/entregas/pedido/<int:pedido_id>/excluir", methods=["POST"])
+@login_required
+def pcp_entregas_pedido_excluir(pedido_id):
+    from flask import jsonify
+    from app.services import entregas_service as svc
+
+    try:
+        svc.excluir_pedido(pedido_id)
+        return jsonify({"ok": True})
+    except (ValueError, Exception) as e:
+        return jsonify({"erro": str(e)}), 400
+
+
+@bp.route("/pcp/entregas/entrega/nova", methods=["POST"])
+@login_required
+def pcp_entregas_entrega_nova():
+    from flask import request, jsonify
+    from app.services import entregas_service as svc
+
+    data = request.get_json(silent=True) or {}
+    try:
+        entrega_id = svc.criar_entrega(
+            int(data.get("pedido_id", 0)),
+            data.get("nota_fiscal", ""),
+        )
+        return jsonify({"ok": True, "id": entrega_id})
+    except (ValueError, Exception) as e:
+        return jsonify({"erro": str(e)}), 400
+
+
+@bp.route("/pcp/entregas/entrega/<int:entrega_id>/status", methods=["POST"])
+@login_required
+def pcp_entregas_entrega_status(entrega_id):
+    from flask import request, jsonify
+    from app.services import entregas_service as svc
+
+    data = request.get_json(silent=True) or {}
+    try:
+        motorista_id = int(data["motorista_id"]) if data.get("motorista_id") else None
+        svc.atualizar_status_entrega(
+            entrega_id,
+            data.get("status", ""),
+            data.get("nota_fiscal"),
+            motorista_id,
+        )
+        membro_ids = [int(x) for x in data.get("membro_ids", []) if x]
+        if membro_ids:
+            svc.sincronizar_equipe_entrega(entrega_id, membro_ids)
+        return jsonify({"ok": True})
+    except (ValueError, Exception) as e:
+        return jsonify({"erro": str(e)}), 400
+
+
+@bp.route("/pcp/entregas/entrega/<int:entrega_id>/localizacao", methods=["POST"])
+@login_required
+def pcp_entregas_entrega_localizacao(entrega_id):
+    from flask import request, jsonify
+    from app.services import entregas_service as svc
+
+    data = request.get_json(silent=True) or {}
+    try:
+        svc.atualizar_localizacao(
+            entrega_id,
+            float(data.get("lat", 0)),
+            float(data.get("lng", 0)),
+        )
+        return jsonify({"ok": True})
+    except (ValueError, Exception) as e:
+        return jsonify({"erro": str(e)}), 400
+
+
+@bp.route("/logistica")
+@login_required
+def logistica_resumo():
+    from flask import request
+    from app.services import entregas_service as svc
+
+    data   = request.args.get("data", svc.data_padrao())
+    resumo = svc.resumo_apontamento_logistica(data)
+    equipe = svc.listar_equipe()
+
+    return render_template(
+        "logistica/resumo.html",
+        active_menu="logistica_resumo",
+        data=data,
+        resumo=resumo,
+        equipe=equipe,
+    )
+
+
+@bp.route("/logistica/equipe/novo", methods=["POST"])
+@login_required
+def logistica_equipe_novo():
+    from flask import request, jsonify
+    from app.services import entregas_service as svc
+
+    data = request.get_json(silent=True) or {}
+    try:
+        membro_id = svc.criar_membro_equipe(
+            data.get("nome", ""),
+            data.get("tipo", ""),
+            data.get("telefone", ""),
+        )
+        return jsonify({"ok": True, "id": membro_id})
+    except (ValueError, Exception) as e:
+        return jsonify({"erro": str(e)}), 400
+
+
+@bp.route("/logistica/equipe/<int:membro_id>/excluir", methods=["POST"])
+@login_required
+def logistica_equipe_excluir(membro_id):
+    from flask import jsonify
+    from app.services import entregas_service as svc
+
+    try:
+        svc.desativar_membro_equipe(membro_id)
+        return jsonify({"ok": True})
+    except Exception as e:
+        return jsonify({"erro": str(e)}), 400
+
+
+@bp.route("/logistica/rastrear/<int:entrega_id>")
+@login_required
+def logistica_rastrear(entrega_id):
+    from flask import abort
+    from app.services import entregas_service as svc
+
+    entrega = svc.buscar_entrega(entrega_id)
+    if not entrega:
+        abort(404)
+
+    return render_template(
+        "logistica/rastrear.html",
+        active_menu="logistica_resumo",
+        entrega=entrega,
+    )
 
 
 # ─── Suporte ─────────────────────────────────────────────────────────────────
