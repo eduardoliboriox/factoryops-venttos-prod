@@ -270,7 +270,8 @@
 ================================================== */
 
 .auth-card-wrapper-split {
-  max-width: 820px;
+  max-width: 960px;
+  width: 90%;
 }
 
 .auth-card.auth-card-split {
@@ -281,13 +282,13 @@
 }
 
 .auth-card-left {
-  flex: 0 0 42%;
+  flex: 0 0 40%;
   background: linear-gradient(150deg, #0a3472 0%, #1251b5 55%, #1976d2 100%);
   border-radius: 14px 0 0 14px;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: 44px 36px;
+  padding: 52px 44px;
   color: #fff;
 }
 
@@ -330,7 +331,7 @@
 
 .auth-card-right {
   flex: 1;
-  padding: 32px 28px;
+  padding: 40px 44px;
   overflow-y: auto;
 }
 
