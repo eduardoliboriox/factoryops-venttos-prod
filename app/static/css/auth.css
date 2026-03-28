@@ -269,9 +269,11 @@
    LOGIN SPLIT CARD (desktop)
 ================================================== */
 
-.auth-card-wrapper-split {
+.auth-card-wrapper-split,
+.auth-container-centered .auth-card-wrapper-split {
   max-width: 960px;
   width: 90%;
+  padding: 32px;
 }
 
 .auth-card.auth-card-split {
