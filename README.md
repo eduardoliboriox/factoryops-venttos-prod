@@ -96,7 +96,7 @@ app/
 │
 ├── routes/
 │   ├── pages.py                      rotas HTML (~70 rotas)
-│   └── api.py                        API REST JSON (~30 endpoints)
+│   └── api.py                        API REST JSON (~55 endpoints)
 │
 ├── services/
 │   ├── apontamento_service.py
@@ -124,14 +124,15 @@ app/
 │   ├── layouts/                      app.html, app_print.html, auth.html
 │   ├── admin/                        backups, chamados de suporte
 │   ├── auth/                         login, registro, perfil, usuários
+│   │   └── mobile/                   login_choice, login_form, register_form
 │   ├── config/                       linhas, turnos, paradas
-│   ├── engenharia/                   estudo de tempo, folha de cronometragem
-│   ├── funcionalidades/              modelos SMT, cadastro, calculadora
+│   ├── engenharia/                   folha de cronometragem
+│   ├── funcionalidades/              modelos SMT, cadastro, calculadora, IM-PA, PTH, VTT
 │   ├── legal/                        política de privacidade, cookies
 │   ├── logistica/                    resumo, rastreamento
 │   ├── pcp/                          OPs, apontamento, planejamento, entregas
 │   ├── producao/                     checklist, pasta de solda, stencil
-│   └── suporte/                      FAQ, ouvidoria, chamados
+│   └── suporte/                      FAQ, ouvidoria, chamados especializados
 │
 └── static/
     ├── css/
@@ -255,14 +256,22 @@ Acesse: `http://127.0.0.1:5000`
 | `/` | Início |
 | `/dashboard` | Dashboard com KPIs |
 | `/powerbi` | Relatórios Power BI |
+| `/smt` | Home SMT |
+| `/smt/dashboard` | Dashboard SMT |
 | `/smt/modelos` | Catálogo de modelos SMT |
 | `/smt/cadastro` | Cadastro de modelo |
 | `/smt/calcular` | Calculadora SMT |
-| `/engenharia/estudo-tempo` | Estudos de tempo |
+| `/smt/estudo-tempo` | Estudos de tempo |
+| `/smt/mais` | Outras funcionalidades SMT |
+| `/funcionalidades/im-pa` | Calculadora IM-PA |
+| `/funcionalidades/pth` | Calculadora PTH |
+| `/funcionalidades/vtt` | Calculadora VTT |
+| `/engenharia/folha-cronometragem` | Folha de cronometragem (impressão) |
 | `/pcp/controle-ops` | Controle de ordens de produção |
 | `/pcp/apontamento` | Apontamento de produção |
 | `/pcp/planejamento` | Planejamento de turno |
 | `/pcp/planejamento/plano-de-voo` | Plano de voo |
+| `/pcp/turnos` | Turnos PCP |
 | `/pcp/producao-coletada` | Produção coletada (importação) |
 | `/pcp/entregas` | Pedidos e entregas |
 | `/logistica` | Resumo logístico |
@@ -274,22 +283,49 @@ Acesse: `http://127.0.0.1:5000`
 | `/config/paradas` | Configuração de paradas |
 | `/suporte/centro-conhecimento` | Central de conhecimento (FAQ) |
 | `/suporte/ouvidoria` | Ouvidoria |
+| `/suporte/suporte-especializado` | Chamados especializados |
+| `/admin/chamados` | Gerenciamento de chamados (admin) |
 | `/admin/backup` | Backup do banco |
 | `/auth/admin/users` | Aprovação de usuários |
+| `/privacy-policy` | Política de privacidade |
+| `/cookie-policy` | Política de cookies |
 
 ### API (JSON)
 
 | Endpoint | Descrição |
 |---|---|
 | `GET/POST/PUT/DELETE /api/modelos` | CRUD de modelos |
+| `GET /api/modelos/history` | Histórico de modelos |
+| `POST /api/modelos/calculo_rapido` | Cálculo rápido de modelo |
 | `POST /api/smt/calcular_meta` | Meta/hora a partir do tempo de montagem |
 | `POST /api/smt/calcular_tempo` | Tempo inverso a partir da meta/hora |
 | `POST /api/calcular_perda` | Perda de produção |
+| `GET /api/employees/<matricula>` | Buscar funcionário por matrícula |
 | `GET/POST /api/time-studies` | Estudos de tempo |
+| `GET/DELETE /api/time-studies/<id>` | Obter/excluir estudo |
 | `POST /api/time-studies/<id>/operations` | Adicionar operação |
+| `PUT/DELETE /api/time-studies/operations/<id>` | Editar/excluir operação |
 | `GET /api/production/sectors` | Listar setores |
 | `GET /api/production/lines` | Listar linhas por setor |
+| `GET /api/push/vapid-public-key` | Chave pública VAPID |
 | `POST /api/push/subscribe` | Inscrição em push notifications |
+| `POST /api/push/unsubscribe` | Cancelar inscrição push |
+| `GET /api/push/diagnostico` | Diagnóstico de push |
+| `POST /api/push/test` | Testar envio de push |
+| `POST /api/profile/avatar` | Upload de avatar |
+| `POST /api/profile/avatar/remove` | Remover avatar |
+| `GET/POST /api/medicao-pasta/registros` | Listar/criar medições de pasta |
+| `GET/PATCH /api/medicao-pasta/registros/<id>` | Obter/atualizar medição |
+| `GET/POST /api/medicao-pasta/plano-acao` | Plano de ação de pasta de solda |
+| `GET/POST /api/limpeza-stencil/registros` | Listar/criar limpezas de stencil |
+| `GET/PATCH /api/limpeza-stencil/registros/<id>` | Obter/atualizar limpeza |
+| `GET/POST /api/checklist-linha/registros` | Listar/criar checklists de linha |
+| `GET/PATCH /api/checklist-linha/registros/<id>` | Obter/atualizar checklist |
+| `GET/POST /api/checklist-linha/registros/<id>/plano-acao` | Plano de ação do checklist |
+| `GET /api/checklist/itens` | Listar itens de checklist |
+| `GET/POST /api/checklist/sessoes` | Sessões de checklist |
+| `GET /api/checklist/sessoes/<id>` | Detalhe de sessão |
+| `POST /api/checklist/plano-acao` | Criar plano de ação |
 
 ---
 
