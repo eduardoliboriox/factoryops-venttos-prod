@@ -1,0 +1,1195 @@
+{% extends "layouts/app.html" %}
+{% block title %}Controle de Limpeza do Stencil{% endblock %}
+
+{% block page_title %}
+<div class="page-header">
+  <div class="page-header-title">
+    <span class="page-header-section">Produção</span>
+    <h1 class="page-header-name">Controle de Limpeza do Stencil</h1>
+  </div>
+  <div class="page-header-actions">
+    <a href="{{ url_for('pages.inicio') }}" class="btn-header-icon" title="Voltar">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
+      <i class="bi bi-arrows-fullscreen"></i>
+    </button>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<style>
+  .st-card {
+    border: 1px solid rgba(15,23,42,0.10);
+    border-radius: 14px;
+    background: #fff;
+    overflow: hidden;
+    margin-bottom: 20px;
+  }
+  .st-card .st-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 16px;
+    border-bottom: 1px solid rgba(15,23,42,0.08);
+  }
+  .st-header-blue  { background: linear-gradient(180deg, rgba(13,110,253,0.08), transparent); }
+  .st-header-green { background: linear-gradient(180deg, rgba(25,135,84,0.08), transparent); }
+  .st-header-gray  { background: linear-gradient(180deg, rgba(15,23,42,0.05), transparent); }
+  .st-card .st-title { display: flex; align-items: center; gap: 10px; }
+  .st-card .st-icon {
+    width: 40px; height: 40px; border-radius: 12px;
+    display: grid; place-items: center; font-size: 18px;
+  }
+  .st-icon-blue  { background: rgba(13,110,253,0.12); color: #0d6efd; }
+  .st-icon-green { background: rgba(25,135,84,0.12);  color: #198754; }
+  .st-icon-gray  { background: rgba(15,23,42,0.08);   color: rgba(15,23,42,0.60); }
+  .st-subtitle { font-size: 12px; color: rgba(15,23,42,0.65); margin-top: 2px; }
+  .st-body { padding: 16px; }
+
+  .stencil-table {
+    font-size: 12px;
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .stencil-table th, .stencil-table td {
+    border: 1px solid rgba(15,23,42,0.14);
+    padding: 5px 8px;
+    vertical-align: middle;
+  }
+  .stencil-table thead th {
+    background: rgba(15,23,42,0.05);
+    font-weight: 700;
+    font-size: 11px;
+    text-transform: uppercase;
+    text-align: center;
+    white-space: nowrap;
+  }
+  .stencil-table .row-label {
+    font-weight: 600;
+    font-size: 11px;
+    white-space: nowrap;
+    width: 110px;
+    background: rgba(15,23,42,0.03);
+  }
+  .stencil-table td input[type="time"],
+  .stencil-table td input[type="text"] {
+    width: 100%;
+    border: none;
+    background: transparent;
+    font-size: 12px;
+    padding: 2px 4px;
+    outline: none;
+    min-width: 70px;
+  }
+  .stencil-table td input:focus {
+    background: rgba(13,110,253,0.06);
+    border-radius: 4px;
+  }
+  .stencil-table td select.cell-select {
+    width: 100%;
+    border: none;
+    background: transparent;
+    font-size: 12px;
+    padding: 2px 2px;
+    outline: none;
+    min-width: 60px;
+    cursor: pointer;
+  }
+  .stencil-table td select.cell-select:focus {
+    background: rgba(13,110,253,0.06);
+    border-radius: 4px;
+  }
+  .doc-meta {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .doc-meta .meta-field label {
+    display: block;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: rgba(15,23,42,0.50);
+    margin-bottom: 4px;
+  }
+  .doc-meta .meta-field input,
+  .doc-meta .meta-field select {
+    width: 100%;
+    border: 1px solid rgba(15,23,42,0.14);
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 13px;
+    background: #fff;
+  }
+  .doc-meta .meta-field input:focus,
+  .doc-meta .meta-field select:focus {
+    outline: none;
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 3px rgba(13,110,253,0.12);
+  }
+
+  #stCliente { text-transform: uppercase; }
+
+  .sign-cell { vertical-align: middle; text-align: center; min-width: 70px; }
+  .sign-cell .sign-btn {
+    font-size: 10px;
+    padding: 2px 5px;
+    border-radius: 6px;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .sign-cell .signed-tag {
+    font-size: 10px;
+    font-weight: 700;
+    color: #198754;
+    white-space: nowrap;
+  }
+  .stencil-table .sign-row-label {
+    font-size: 11px;
+    font-weight: 700;
+    background: rgba(25,135,84,0.05);
+    color: #198754;
+  }
+
+  .bottom-sign-row {
+    display: flex;
+    justify-content: space-around;
+    gap: 24px;
+    padding: 16px;
+    border-top: 1px solid rgba(15,23,42,0.08);
+    margin-top: 8px;
+    flex-wrap: wrap;
+  }
+  .bottom-sign-item {
+    flex: 1;
+    min-width: 180px;
+    max-width: 260px;
+    text-align: center;
+  }
+  .bottom-sign-area {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-bottom: 1.5px solid rgba(15,23,42,0.30);
+    margin-bottom: 6px;
+  }
+  .bottom-sign-label {
+    font-size: 11px;
+    color: rgba(15,23,42,0.55);
+    font-weight: 600;
+  }
+  .bottom-sign-sublabel {
+    font-size: 10px;
+    color: rgba(15,23,42,0.40);
+  }
+  .bottom-signed-name {
+    font-size: 12px;
+    font-weight: 700;
+    color: #198754;
+  }
+
+  .doc-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding: 10px 14px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 14px;
+  }
+  .doc-id-badge {
+    font-size: .78rem; font-weight: 700; color: var(--text-muted);
+    background: rgba(15,23,42,.05); border-radius: 6px;
+    padding: 4px 10px; border: 1px solid var(--border);
+  }
+  .doc-id-badge.saved { color: #198754; background: rgba(25,135,84,.08); border-color: rgba(25,135,84,.25); }
+
+  /* ── Print header ──────────────────────────────── */
+  .print-header {
+    display: none;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 16px;
+    border: 1px solid #ccc;
+    border-bottom: none;
+    background: #fff;
+  }
+  .print-header-logo img { height: 48px; width: auto; }
+  .print-header-title { flex: 1; text-align: center; }
+  .print-title-main {
+    font-size: 13px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.4px; color: #000;
+  }
+  .print-title-sub { font-size: 11px; color: #444; margin-top: 2px; }
+  .print-header-doc { text-align: right; font-size: 11px; color: #333; white-space: nowrap; }
+  .print-header-doc .print-doc-num { font-weight: 700; font-size: 12px; }
+
+  /* ── @media print ──────────────────────────────── */
+  @media print {
+    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+    @page { size: A4 landscape; margin: 4mm; }
+
+    html, body { margin: 0 !important; padding: 0 !important; }
+
+    .sidebar,
+    .mobile-header,
+    .desktop-header,
+    .bottom-nav,
+    .nav-tabs,
+    .doc-toolbar,
+    .sign-btn,
+    #tab-consultar,
+    .d-print-none,
+    [data-bs-dismiss],
+    .modal,
+    .modal-backdrop { display: none !important; }
+
+    .main { margin-left: 0 !important; padding-top: 0 !important; }
+    .app  { display: block !important; }
+    .container-fluid { padding: 0 !important; }
+    section.content { padding: 0 !important; }
+
+    .print-header {
+      display: flex !important;
+      padding: 4px 8px !important;
+      gap: 8px !important;
+    }
+    .print-header-logo img { height: 34px !important; }
+    .print-title-main { font-size: 11px !important; }
+    .print-title-sub  { font-size: 9px !important; margin-top: 1px !important; }
+    .print-header-doc { font-size: 9px !important; }
+    .print-header-doc .print-doc-num { font-size: 10px !important; }
+
+    .tab-pane { display: block !important; opacity: 1 !important; }
+    #tab-consultar { display: none !important; }
+
+    .st-card {
+      box-shadow: none !important;
+      border: 1px solid #ccc !important;
+      border-radius: 0 !important;
+      margin-bottom: 3px !important;
+      overflow: visible !important;
+    }
+    .st-card .st-header { display: none !important; }
+    .st-body { padding: 3px !important; }
+
+    .doc-meta {
+      display: flex !important;
+      flex-wrap: nowrap !important;
+      gap: 4px !important;
+    }
+    .doc-meta .meta-field { flex: 1 1 0; min-width: 0; }
+    .doc-meta .meta-field label {
+      font-size: 7px !important;
+      margin-bottom: 1px !important;
+      white-space: nowrap;
+    }
+    .doc-meta .meta-field input,
+    .doc-meta .meta-field select {
+      padding: 1px 3px !important;
+      font-size: 8px !important;
+      border-radius: 0 !important;
+    }
+
+    .table-responsive { overflow: visible !important; }
+
+    .stencil-table {
+      font-size: 8px !important;
+      table-layout: fixed !important;
+      width: 100% !important;
+    }
+    .stencil-table th, .stencil-table td {
+      border-color: #999 !important;
+      padding: 1px 2px !important;
+    }
+    .stencil-table thead th { font-size: 7px !important; }
+    .stencil-table .row-label { font-size: 7px !important; width: 80px !important; }
+    .stencil-table td input[type="time"],
+    .stencil-table td input[type="text"],
+    .stencil-table td select.cell-select {
+      font-size: 8px !important;
+      min-width: 0 !important;
+      width: 100% !important;
+    }
+    .signed-tag { font-size: 7px !important; }
+
+    .bottom-sign-row { padding: 6px 4px !important; gap: 12px !important; }
+    .bottom-sign-area { min-height: 28px !important; }
+    .bottom-sign-label { font-size: 8px !important; }
+    .bottom-sign-sublabel { font-size: 7px !important; }
+    .bottom-signed-name { font-size: 8px !important; }
+  }
+</style>
+
+<div class="container-fluid">
+
+  <!-- Signature Modal -->
+  <div class="modal fade" id="signModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header py-2">
+          <h6 class="modal-title mb-0" id="signModalTitle">Assinar</h6>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body py-3">
+          <div class="mb-2">
+            <label class="form-label" style="font-size:0.78rem;font-weight:600;">Usuário / Matrícula</label>
+            <input type="text" class="form-control form-control-sm" id="signModalUser" autocomplete="off" placeholder="Ex: 12345">
+          </div>
+          <div class="mb-2">
+            <label class="form-label" style="font-size:0.78rem;font-weight:600;">Senha</label>
+            <input type="password" class="form-control form-control-sm" id="signModalPass" autocomplete="new-password">
+          </div>
+          <div class="text-danger d-none" id="signModalErr" style="font-size:11px;"></div>
+        </div>
+        <div class="modal-footer py-2">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-success btn-sm" id="signModalConfirmBtn">Confirmar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Load Document Modal -->
+  <div class="modal fade" id="loadDocModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header py-2">
+          <h6 class="modal-title mb-0">Carregar Documento</h6>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body py-3">
+          <label class="form-label" style="font-size:0.78rem;font-weight:600;">Número do Documento</label>
+          <div class="input-group input-group-sm">
+            <span class="input-group-text">LS-</span>
+            <input type="number" class="form-control" id="loadDocId" min="1" placeholder="Ex: 1">
+            <span class="input-group-text" id="loadDocYearSuffix"></span>
+          </div>
+          <div class="text-danger d-none mt-2" id="loadDocErr" style="font-size:11px;"></div>
+        </div>
+        <div class="modal-footer py-2">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-primary btn-sm" id="loadDocConfirmBtn">Carregar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <ul class="nav nav-tabs mb-3" id="stencilTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-novo" type="button" role="tab">
+        <i class="bi bi-plus-circle me-1"></i> Novo Registro
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-consultar" type="button" role="tab">
+        <i class="bi bi-search me-1"></i> Consultar
+      </button>
+    </li>
+  </ul>
+
+  <div class="tab-content">
+
+    <!-- TAB NOVO REGISTRO -->
+    <div class="tab-pane fade show active" id="tab-novo" role="tabpanel">
+
+      <!-- Print header (hidden on screen, visible on print) -->
+      <div class="print-header">
+        <div class="print-header-logo">
+          <img src="{{ url_for('static', filename='images/logos/logo.png') }}" alt="Venttos">
+        </div>
+        <div class="print-header-title">
+          <div class="print-title-main">Controle de Limpeza do Stencil</div>
+          <div class="print-title-sub">(Stencil Cleaning Control) · ENG016</div>
+        </div>
+        <div class="print-header-doc">
+          <div class="print-doc-num">Nº <span id="printDocId">—</span></div>
+        </div>
+      </div>
+
+      <div class="doc-toolbar d-print-none">
+        <button class="btn btn-outline-secondary btn-sm" id="btnNovo">
+          <i class="bi bi-file-earmark-plus"></i> Novo
+        </button>
+        <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#loadDocModal">
+          <i class="bi bi-folder2-open"></i> Carregar LS-
+        </button>
+        <span class="doc-id-badge" id="docIdBadge">Novo Documento</span>
+        <div class="ms-auto d-flex gap-2">
+          <button class="btn btn-success btn-sm fw-bold" id="btnSalvarStencil" type="button">
+            <i class="bi bi-floppy"></i> Salvar
+          </button>
+          <button class="btn btn-outline-secondary btn-sm" onclick="window.print()" type="button">
+            <i class="bi bi-printer"></i> Imprimir
+          </button>
+        </div>
+      </div>
+
+      <div id="msgStencil"></div>
+
+      <div class="st-card">
+        <div class="st-header st-header-blue">
+          <div class="st-title">
+            <div class="st-icon st-icon-blue"><i class="bi bi-layout-text-window"></i></div>
+            <div>
+              <div class="fw-bold">Identificação</div>
+              <div class="st-subtitle">ENG016 · Stencil Cleaning Control</div>
+            </div>
+          </div>
+          <span class="badge text-bg-primary">PASSO 1</span>
+        </div>
+        <div class="st-body">
+          <div class="doc-meta">
+            <div class="meta-field">
+              <label>Data</label>
+              <input type="date" id="stData">
+            </div>
+            <div class="meta-field">
+              <label>Cliente (Customer)</label>
+              <input type="text" id="stCliente" placeholder="Nome do cliente">
+            </div>
+            <div class="meta-field">
+              <label>Setor</label>
+              <select id="stSetor">
+                <option value="">Carregando...</option>
+              </select>
+            </div>
+            <div class="meta-field">
+              <label>Linha (Line)</label>
+              <select id="stLinha">
+                <option value="">Selecione o setor</option>
+              </select>
+            </div>
+            <div class="meta-field">
+              <label>Identificação do Stencil</label>
+              <input type="text" id="stIdentificacao" placeholder="Código / referência">
+            </div>
+            <div class="meta-field">
+              <label>Espessura (Thickness)</label>
+              <input type="text" id="stEspessura" placeholder="Ex: 0.15mm">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="st-card">
+        <div class="st-header st-header-green">
+          <div class="st-title">
+            <div class="st-icon st-icon-green"><i class="bi bi-clock-history"></i></div>
+            <div>
+              <div class="fw-bold">Registros por Horário</div>
+              <div class="st-subtitle">Preencha os dados de cada horário de limpeza.</div>
+            </div>
+          </div>
+          <span class="badge text-bg-success">PASSO 2</span>
+        </div>
+        <div class="st-body p-2">
+          <div class="table-responsive">
+            <table class="stencil-table">
+              <thead>
+                <tr>
+                  <th style="text-align:left;">Campo</th>
+                  <th>1° HOR.</th>
+                  <th>2° HOR.</th>
+                  <th>3° HOR.</th>
+                  <th>4° HOR.</th>
+                  <th>5° HOR.</th>
+                  <th>6° HOR.</th>
+                  <th>7° HOR.</th>
+                  <th>8° HOR.</th>
+                  <th>9° HOR.</th>
+                  <th>10° HOR.</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="row-label">Horário Início<br><span style="font-weight:400;color:rgba(15,23,42,.45);">(Start time)</span></td>
+                  <td><input type="time" data-row="inicio" data-col="1"></td>
+                  <td><input type="time" data-row="inicio" data-col="2"></td>
+                  <td><input type="time" data-row="inicio" data-col="3"></td>
+                  <td><input type="time" data-row="inicio" data-col="4"></td>
+                  <td><input type="time" data-row="inicio" data-col="5"></td>
+                  <td><input type="time" data-row="inicio" data-col="6"></td>
+                  <td><input type="time" data-row="inicio" data-col="7"></td>
+                  <td><input type="time" data-row="inicio" data-col="8"></td>
+                  <td><input type="time" data-row="inicio" data-col="9"></td>
+                  <td><input type="time" data-row="inicio" data-col="10"></td>
+                </tr>
+                <tr>
+                  <td class="row-label">Horário Fim<br><span style="font-weight:400;color:rgba(15,23,42,.45);">(End time)</span></td>
+                  <td><input type="time" data-row="fim" data-col="1"></td>
+                  <td><input type="time" data-row="fim" data-col="2"></td>
+                  <td><input type="time" data-row="fim" data-col="3"></td>
+                  <td><input type="time" data-row="fim" data-col="4"></td>
+                  <td><input type="time" data-row="fim" data-col="5"></td>
+                  <td><input type="time" data-row="fim" data-col="6"></td>
+                  <td><input type="time" data-row="fim" data-col="7"></td>
+                  <td><input type="time" data-row="fim" data-col="8"></td>
+                  <td><input type="time" data-row="fim" data-col="9"></td>
+                  <td><input type="time" data-row="fim" data-col="10"></td>
+                </tr>
+                <tr>
+                  <td class="row-label">Modelo<br><span style="font-weight:400;color:rgba(15,23,42,.45);">(Model)</span></td>
+                  <td><input type="text" data-row="modelo" data-col="1" class="modelo-input"></td>
+                  <td><input type="text" data-row="modelo" data-col="2" class="modelo-input"></td>
+                  <td><input type="text" data-row="modelo" data-col="3" class="modelo-input"></td>
+                  <td><input type="text" data-row="modelo" data-col="4" class="modelo-input"></td>
+                  <td><input type="text" data-row="modelo" data-col="5" class="modelo-input"></td>
+                  <td><input type="text" data-row="modelo" data-col="6" class="modelo-input"></td>
+                  <td><input type="text" data-row="modelo" data-col="7" class="modelo-input"></td>
+                  <td><input type="text" data-row="modelo" data-col="8" class="modelo-input"></td>
+                  <td><input type="text" data-row="modelo" data-col="9" class="modelo-input"></td>
+                  <td><input type="text" data-row="modelo" data-col="10" class="modelo-input"></td>
+                </tr>
+                <tr>
+                  <td class="row-label">Fase<br><span style="font-weight:400;color:rgba(15,23,42,.45);">(Phase)</span></td>
+                  <td><select class="cell-select" data-row="fase" data-col="1"><option value="">-</option><option>TOP</option><option>BOTTOM</option></select></td>
+                  <td><select class="cell-select" data-row="fase" data-col="2"><option value="">-</option><option>TOP</option><option>BOTTOM</option></select></td>
+                  <td><select class="cell-select" data-row="fase" data-col="3"><option value="">-</option><option>TOP</option><option>BOTTOM</option></select></td>
+                  <td><select class="cell-select" data-row="fase" data-col="4"><option value="">-</option><option>TOP</option><option>BOTTOM</option></select></td>
+                  <td><select class="cell-select" data-row="fase" data-col="5"><option value="">-</option><option>TOP</option><option>BOTTOM</option></select></td>
+                  <td><select class="cell-select" data-row="fase" data-col="6"><option value="">-</option><option>TOP</option><option>BOTTOM</option></select></td>
+                  <td><select class="cell-select" data-row="fase" data-col="7"><option value="">-</option><option>TOP</option><option>BOTTOM</option></select></td>
+                  <td><select class="cell-select" data-row="fase" data-col="8"><option value="">-</option><option>TOP</option><option>BOTTOM</option></select></td>
+                  <td><select class="cell-select" data-row="fase" data-col="9"><option value="">-</option><option>TOP</option><option>BOTTOM</option></select></td>
+                  <td><select class="cell-select" data-row="fase" data-col="10"><option value="">-</option><option>TOP</option><option>BOTTOM</option></select></td>
+                </tr>
+                <tr>
+                  <td class="row-label">Status</td>
+                  <td><select class="cell-select" data-row="status" data-col="1"><option value="">-</option><option>OK</option><option>NG</option></select></td>
+                  <td><select class="cell-select" data-row="status" data-col="2"><option value="">-</option><option>OK</option><option>NG</option></select></td>
+                  <td><select class="cell-select" data-row="status" data-col="3"><option value="">-</option><option>OK</option><option>NG</option></select></td>
+                  <td><select class="cell-select" data-row="status" data-col="4"><option value="">-</option><option>OK</option><option>NG</option></select></td>
+                  <td><select class="cell-select" data-row="status" data-col="5"><option value="">-</option><option>OK</option><option>NG</option></select></td>
+                  <td><select class="cell-select" data-row="status" data-col="6"><option value="">-</option><option>OK</option><option>NG</option></select></td>
+                  <td><select class="cell-select" data-row="status" data-col="7"><option value="">-</option><option>OK</option><option>NG</option></select></td>
+                  <td><select class="cell-select" data-row="status" data-col="8"><option value="">-</option><option>OK</option><option>NG</option></select></td>
+                  <td><select class="cell-select" data-row="status" data-col="9"><option value="">-</option><option>OK</option><option>NG</option></select></td>
+                  <td><select class="cell-select" data-row="status" data-col="10"><option value="">-</option><option>OK</option><option>NG</option></select></td>
+                </tr>
+                <tr>
+                  <td class="row-label sign-row-label">Visto (PIC)</td>
+                  {% for col in range(1, 11) %}
+                  <td class="sign-cell" id="sign_visto_h{{ col }}_cell">
+                    <button class="btn btn-outline-secondary sign-btn" data-role="visto" data-hora="{{ col }}" title="Assinar">
+                      <i class="bi bi-pen" style="font-size:10px;"></i>
+                    </button>
+                    <span class="signed-tag d-none" id="sign_visto_h{{ col }}_tag"></span>
+                  </td>
+                  {% endfor %}
+                </tr>
+                <tr>
+                  <td class="row-label">Observação<br><span style="font-weight:400;color:rgba(15,23,42,.45);">(Remark)</span></td>
+                  <td><input type="text" data-row="obs" data-col="1"></td>
+                  <td><input type="text" data-row="obs" data-col="2"></td>
+                  <td><input type="text" data-row="obs" data-col="3"></td>
+                  <td><input type="text" data-row="obs" data-col="4"></td>
+                  <td><input type="text" data-row="obs" data-col="5"></td>
+                  <td><input type="text" data-row="obs" data-col="6"></td>
+                  <td><input type="text" data-row="obs" data-col="7"></td>
+                  <td><input type="text" data-row="obs" data-col="8"></td>
+                  <td><input type="text" data-row="obs" data-col="9"></td>
+                  <td><input type="text" data-row="obs" data-col="10"></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="bottom-sign-row">
+            <div class="bottom-sign-item">
+              <div class="bottom-sign-area" id="sign_lider_area">
+                <button class="btn btn-outline-secondary sign-btn" data-role="lider" title="Assinar como Líder de Produção">
+                  <i class="bi bi-pen me-1" style="font-size:11px;"></i>Assinar
+                </button>
+                <span class="signed-tag d-none bottom-signed-name" id="sign_lider_tag"></span>
+              </div>
+              <div class="bottom-sign-label">Líder de Produção</div>
+              <div class="bottom-sign-sublabel">Production Leader</div>
+            </div>
+            <div class="bottom-sign-item">
+              <div class="bottom-sign-area" id="sign_supervisor_area">
+                <button class="btn btn-outline-secondary sign-btn" data-role="supervisor" title="Assinar como Supervisor">
+                  <i class="bi bi-pen me-1" style="font-size:11px;"></i>Assinar
+                </button>
+                <span class="signed-tag d-none bottom-signed-name" id="sign_supervisor_tag"></span>
+              </div>
+              <div class="bottom-sign-label">Supervisor de Produção</div>
+              <div class="bottom-sign-sublabel">Production Supervisor</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+    <!-- TAB CONSULTAR -->
+    <div class="tab-pane fade" id="tab-consultar" role="tabpanel">
+
+      <div class="st-card">
+        <div class="st-header st-header-gray">
+          <div class="st-title">
+            <div class="st-icon st-icon-gray"><i class="bi bi-funnel"></i></div>
+            <div>
+              <div class="fw-bold">Filtros</div>
+              <div class="st-subtitle">Busque registros por data ou linha.</div>
+            </div>
+          </div>
+        </div>
+        <div class="st-body">
+          <div class="row g-3 align-items-end">
+            <div class="col-md-2">
+              <label class="form-label" style="font-size:0.8rem;font-weight:600;">Data</label>
+              <input class="form-control" type="date" id="filtroDataSt">
+            </div>
+            <div class="col-md-2">
+              <label class="form-label" style="font-size:0.8rem;font-weight:600;">Setor</label>
+              <select class="form-select" id="filtroSetorSt">
+                <option value="">Todos</option>
+              </select>
+            </div>
+            <div class="col-md-2">
+              <label class="form-label" style="font-size:0.8rem;font-weight:600;">Linha</label>
+              <select class="form-select" id="filtroLinhaSt">
+                <option value="">Todas</option>
+              </select>
+            </div>
+            <div class="col-md-2">
+              <button class="btn btn-primary w-100" id="btnConsultarSt" type="button">
+                <i class="bi bi-search"></i> Buscar
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="msgConsultarSt"></div>
+
+      <div class="st-card d-none" id="cardResultadosSt">
+        <div class="st-header st-header-gray">
+          <div class="st-title">
+            <div class="st-icon st-icon-gray"><i class="bi bi-table"></i></div>
+            <div>
+              <div class="fw-bold">Resultados</div>
+              <div class="st-subtitle" id="subtitleResultadosSt"></div>
+            </div>
+          </div>
+        </div>
+        <div class="st-body p-0">
+          <div class="table-responsive">
+            <table class="table table-sm table-hover mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>ID</th>
+                  <th>Data</th>
+                  <th>Setor</th>
+                  <th>Linha</th>
+                  <th>Cliente</th>
+                  <th>Criado por</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="resultadosStBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  "use strict";
+
+  let documentoId   = null;
+  let currentTarget = null;
+  const signState   = {};
+
+  function showMsg(el, tipo, texto) {
+    el.innerHTML = `<div class="alert alert-${tipo} alert-dismissible fade show mb-3">
+      ${texto}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>`;
+    if (tipo !== 'danger') setTimeout(() => { try { bootstrap.Alert.getOrCreateInstance(el.querySelector('.alert')).close(); } catch {} }, 4000);
+  }
+
+  /* ── Setor / Linha ─────────────────────────────────────────────────── */
+
+  async function loadSectors() {
+    try {
+      const r    = await fetch('/api/production/sectors', { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+      const data = await r.json().catch(() => ({}));
+      const sectors = data.sectors || [];
+
+      const selForm   = document.getElementById('stSetor');
+      const selFiltro = document.getElementById('filtroSetorSt');
+
+      selForm.innerHTML = '<option value="">Selecione o setor</option>';
+      sectors.forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s; opt.textContent = s;
+        selForm.appendChild(opt);
+      });
+
+      selFiltro.innerHTML = '<option value="">Todos</option>';
+      sectors.forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s; opt.textContent = s;
+        selFiltro.appendChild(opt);
+      });
+    } catch {}
+  }
+
+  async function loadLines(setor) {
+    const sel = document.getElementById('stLinha');
+    sel.innerHTML = '<option value="">Selecione a linha</option>';
+    if (!setor) return;
+    try {
+      const r    = await fetch(`/api/production/lines?setor=${encodeURIComponent(setor)}`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+      const data = await r.json().catch(() => ({}));
+      (data.lines || []).forEach(l => {
+        const opt = document.createElement('option');
+        opt.value = l; opt.textContent = l;
+        sel.appendChild(opt);
+      });
+    } catch {}
+  }
+
+  async function loadFiltroLinhas(setor) {
+    const sel = document.getElementById('filtroLinhaSt');
+    sel.innerHTML = '<option value="">Todas</option>';
+    if (!setor) return;
+    try {
+      const r    = await fetch(`/api/production/lines?setor=${encodeURIComponent(setor)}`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+      const data = await r.json().catch(() => ({}));
+      (data.lines || []).forEach(l => {
+        const opt = document.createElement('option');
+        opt.value = l; opt.textContent = l;
+        sel.appendChild(opt);
+      });
+    } catch {}
+  }
+
+  /* ── Signature modal ───────────────────────────────────────────────── */
+
+  function openSignModal(role, hora) {
+    currentTarget = { role, hora };
+    const labels = {
+      visto:      hora ? `Visto · ${hora}° Horário` : 'Visto',
+      lider:      'Líder de Produção',
+      supervisor: 'Supervisor de Produção',
+    };
+    document.getElementById('signModalTitle').textContent = `Assinar · ${labels[role] || role}`;
+    document.getElementById('signModalUser').value = '';
+    document.getElementById('signModalPass').value = '';
+    const errEl = document.getElementById('signModalErr');
+    errEl.classList.add('d-none');
+    errEl.textContent = '';
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('signModal')).show();
+    setTimeout(() => document.getElementById('signModalUser').focus(), 400);
+  }
+
+  async function confirmSign() {
+    if (!currentTarget) return;
+
+    const { role, hora } = currentTarget;
+    const userInput  = document.getElementById('signModalUser');
+    const passInput  = document.getElementById('signModalPass');
+    const errEl      = document.getElementById('signModalErr');
+    const confirmBtn = document.getElementById('signModalConfirmBtn');
+
+    const matricula = userInput.value.trim();
+    const password  = passInput.value;
+
+    if (!matricula || !password) {
+      errEl.textContent = 'Preencha usuário e senha.';
+      errEl.classList.remove('d-none');
+      return;
+    }
+
+    confirmBtn.disabled = true;
+    confirmBtn.textContent = '...';
+
+    try {
+      const r = await fetch('/api/auth/confirm-extra', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+        body: JSON.stringify({ matricula, password }),
+      });
+      const data = await r.json().catch(() => ({}));
+
+      if (r.ok && data.success) {
+        const key = hora ? `${role}_h${hora}` : role;
+        signState[key] = { username: data.username, time: new Date().toISOString() };
+
+        if (hora) {
+          const tag  = document.getElementById(`sign_${role}_h${hora}_tag`);
+          const cell = document.getElementById(`sign_${role}_h${hora}_cell`);
+          tag.textContent = data.username;
+          tag.classList.remove('d-none');
+          cell.querySelector('.sign-btn').classList.add('d-none');
+        } else {
+          const tag = document.getElementById(`sign_${role}_tag`);
+          tag.textContent = data.username;
+          tag.classList.remove('d-none');
+          document.getElementById(`sign_${role}_area`).querySelector('.sign-btn').classList.add('d-none');
+        }
+
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('signModal')).hide();
+      } else {
+        errEl.textContent = data.error || 'Credenciais inválidas.';
+        errEl.classList.remove('d-none');
+      }
+    } catch {
+      errEl.textContent = 'Erro de comunicação.';
+      errEl.classList.remove('d-none');
+    } finally {
+      confirmBtn.disabled = false;
+      confirmBtn.textContent = 'Confirmar';
+      passInput.value = '';
+    }
+  }
+
+  /* ── Document banner ───────────────────────────────────────────────── */
+
+  function setDocumentoId(id, docId) {
+    documentoId = id;
+    const label = docId || String(id);
+    const badge = document.getElementById('docIdBadge');
+    badge.textContent = label;
+    badge.classList.add('saved');
+    document.getElementById('printDocId').textContent = label;
+    const btn = document.getElementById('btnSalvarStencil');
+    btn.innerHTML = '<i class="bi bi-arrow-repeat me-1"></i>Atualizar';
+    btn.classList.replace('btn-success', 'btn-primary');
+  }
+
+  function clearDocumentoId() {
+    documentoId = null;
+    const badge = document.getElementById('docIdBadge');
+    badge.textContent = 'Novo Documento';
+    badge.classList.remove('saved');
+    document.getElementById('printDocId').textContent = '—';
+    const btn = document.getElementById('btnSalvarStencil');
+    btn.innerHTML = '<i class="bi bi-floppy me-1"></i>Salvar';
+    btn.classList.replace('btn-primary', 'btn-success');
+  }
+
+  /* ── Collect / clear ───────────────────────────────────────────────── */
+
+  function coletarHorarios() {
+    const horarios = [];
+    for (let col = 1; col <= 10; col++) {
+      horarios.push({
+        posicao:         col,
+        horario_inicio:  document.querySelector(`[data-row="inicio"][data-col="${col}"]`)?.value || null,
+        horario_fim:     document.querySelector(`[data-row="fim"][data-col="${col}"]`)?.value || null,
+        modelo:          document.querySelector(`[data-row="modelo"][data-col="${col}"]`)?.value || null,
+        fase:            document.querySelector(`[data-row="fase"][data-col="${col}"]`)?.value || null,
+        status:          document.querySelector(`[data-row="status"][data-col="${col}"]`)?.value || null,
+        observacao:      document.querySelector(`[data-row="obs"][data-col="${col}"]`)?.value || null,
+      });
+    }
+    return horarios.filter(h => h.horario_inicio || h.horario_fim || h.modelo || h.status || h.fase);
+  }
+
+  function coletarAssinaturas() {
+    return Object.entries(signState).map(([campo, s]) => ({
+      campo,
+      username:  s.username,
+      timestamp: s.time,
+    }));
+  }
+
+  function limparFormulario() {
+    document.getElementById('stData').value = new Date().toISOString().slice(0, 10);
+    ['stCliente','stIdentificacao','stEspessura'].forEach(id => {
+      const el = document.getElementById(id); if (el) el.value = '';
+    });
+    document.getElementById('stSetor').selectedIndex = 0;
+    document.getElementById('stLinha').innerHTML = '<option value="">Selecione o setor</option>';
+    document.querySelectorAll('.stencil-table input').forEach(i => i.value = '');
+    document.querySelectorAll('.stencil-table select.cell-select').forEach(s => s.selectedIndex = 0);
+    for (let h = 1; h <= 10; h++) {
+      const tag  = document.getElementById(`sign_visto_h${h}_tag`);
+      const cell = document.getElementById(`sign_visto_h${h}_cell`);
+      if (tag)  { tag.textContent = ''; tag.classList.add('d-none'); }
+      if (cell) { const btn = cell.querySelector('.sign-btn'); if (btn) btn.classList.remove('d-none'); }
+    }
+    ['lider','supervisor'].forEach(role => {
+      const tag  = document.getElementById(`sign_${role}_tag`);
+      const area = document.getElementById(`sign_${role}_area`);
+      if (tag)  { tag.textContent = ''; tag.classList.add('d-none'); }
+      if (area) { const btn = area.querySelector('.sign-btn'); if (btn) btn.classList.remove('d-none'); }
+    });
+    Object.keys(signState).forEach(k => delete signState[k]);
+    clearDocumentoId();
+  }
+
+  /* ── Save ──────────────────────────────────────────────────────────── */
+
+  async function salvar() {
+    const msgEl  = document.getElementById('msgStencil');
+    const payload = {
+      data:                   document.getElementById('stData').value,
+      cliente:                document.getElementById('stCliente').value.trim().toUpperCase() || null,
+      setor:                  document.getElementById('stSetor').value || null,
+      linha:                  document.getElementById('stLinha').value || null,
+      identificacao_stencil:  document.getElementById('stIdentificacao').value.trim() || null,
+      espessura:              document.getElementById('stEspessura').value.trim() || null,
+      horarios:               coletarHorarios(),
+      assinaturas:            coletarAssinaturas(),
+    };
+
+    if (!payload.data || !payload.linha) {
+      showMsg(msgEl, 'warning', 'Data e Linha são obrigatórios.');
+      return;
+    }
+
+    const btn  = document.getElementById('btnSalvarStencil');
+    btn.disabled = true;
+    const orig = btn.innerHTML;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Salvando...';
+
+    try {
+      const url    = documentoId ? `/api/limpeza-stencil/registros/${documentoId}` : '/api/limpeza-stencil/registros';
+      const method = documentoId ? 'PATCH' : 'POST';
+      const r      = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+        body: JSON.stringify(payload),
+      });
+      const data = await r.json().catch(() => ({}));
+
+      if (r.ok && data.sucesso) {
+        if (!documentoId) {
+          setDocumentoId(data.id, data.doc_id);
+          showMsg(msgEl, 'success', `Documento ${data.doc_id} criado. Continue preenchendo os horários restantes e clique em Atualizar.`);
+        } else {
+          showMsg(msgEl, 'success', 'Documento atualizado com sucesso.');
+        }
+      } else {
+        showMsg(msgEl, 'danger', data.erro || 'Erro ao salvar registro.');
+      }
+    } catch {
+      showMsg(msgEl, 'danger', 'Erro de comunicação com o servidor.');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = orig;
+    }
+  }
+
+  /* ── Load document ─────────────────────────────────────────────────── */
+
+  async function carregarDocumento(id) {
+    const errEl = document.getElementById('loadDocErr');
+    if (errEl) { errEl.classList.add('d-none'); errEl.textContent = ''; }
+
+    try {
+      const r    = await fetch(`/api/limpeza-stencil/registros/${id}`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+      const data = await r.json().catch(() => null);
+
+      if (!r.ok || !data) {
+        if (errEl) { errEl.textContent = 'Documento não encontrado.'; errEl.classList.remove('d-none'); }
+        return false;
+      }
+
+      const safe = (elId, val) => { const el = document.getElementById(elId); if (el) el.value = val || ''; };
+      safe('stData',         data.data);
+      safe('stCliente',      data.cliente);
+      safe('stIdentificacao',data.identificacao_stencil);
+      safe('stEspessura',    data.espessura);
+      safe('stSetor',        data.setor);
+
+      await loadLines(data.setor);
+      safe('stLinha', data.linha);
+
+      if (Array.isArray(data.horarios)) {
+        for (const h of data.horarios) {
+          const col = h.posicao;
+          const setVal = (row, val) => {
+            const el = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+            if (el) el.value = val || '';
+          };
+          setVal('inicio', h.horario_inicio);
+          setVal('fim',    h.horario_fim);
+          setVal('modelo', h.modelo);
+          setVal('fase',   h.fase);
+          setVal('status', h.status);
+          setVal('obs',    h.observacao);
+        }
+      }
+
+      if (Array.isArray(data.assinaturas)) {
+        for (const sig of data.assinaturas) {
+          const campo = sig.campo;
+          signState[campo] = { username: sig.username, time: sig.timestamp };
+
+          const vistoMatch = campo.match(/^visto_h(\d+)$/);
+          if (vistoMatch) {
+            const hora = parseInt(vistoMatch[1]);
+            const tag  = document.getElementById(`sign_visto_h${hora}_tag`);
+            const cell = document.getElementById(`sign_visto_h${hora}_cell`);
+            if (tag)  { tag.textContent = sig.username; tag.classList.remove('d-none'); }
+            if (cell) { const btn = cell.querySelector('.sign-btn'); if (btn) btn.classList.add('d-none'); }
+          } else if (campo === 'lider' || campo === 'supervisor') {
+            const tag  = document.getElementById(`sign_${campo}_tag`);
+            const area = document.getElementById(`sign_${campo}_area`);
+            if (tag)  { tag.textContent = sig.username; tag.classList.remove('d-none'); }
+            if (area) { const btn = area.querySelector('.sign-btn'); if (btn) btn.classList.add('d-none'); }
+          }
+        }
+      }
+
+      setDocumentoId(id, data.doc_id);
+      return true;
+    } catch {
+      if (errEl) { errEl.textContent = 'Erro de comunicação.'; errEl.classList.remove('d-none'); }
+      return false;
+    }
+  }
+
+  /* ── Consultar ─────────────────────────────────────────────────────── */
+
+  async function consultar() {
+    const msgEl = document.getElementById('msgConsultarSt');
+    const btn   = document.getElementById('btnConsultarSt');
+    btn.disabled = true;
+    const orig = btn.innerHTML;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+
+    const params = new URLSearchParams();
+    const data  = document.getElementById('filtroDataSt').value;
+    const setor = document.getElementById('filtroSetorSt').value;
+    const linha = document.getElementById('filtroLinhaSt').value;
+    if (data)  params.set('data', data);
+    if (setor) params.set('setor', setor);
+    if (linha) params.set('linha', linha);
+
+    try {
+      const r    = await fetch(`/api/limpeza-stencil/registros?${params}`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+      const list = await r.json().catch(() => null);
+
+      if (!r.ok || !Array.isArray(list)) {
+        showMsg(msgEl, 'danger', 'Erro ao buscar registros.');
+        return;
+      }
+
+      document.getElementById('subtitleResultadosSt').textContent = `${list.length} registro(s) encontrado(s)`;
+      const card  = document.getElementById('cardResultadosSt');
+      const tbody = document.getElementById('resultadosStBody');
+      card.classList.remove('d-none');
+
+      if (!list.length) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center py-3" style="color:rgba(15,23,42,.40);">Nenhum registro encontrado.</td></tr>';
+        return;
+      }
+
+      function esc(s) { return String(s ?? '—').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+      function fmtData(iso) {
+        if (!iso) return '—';
+        try { return new Date(iso + (iso.includes('T') ? '' : 'T00:00:00')).toLocaleDateString('pt-BR'); } catch { return iso; }
+      }
+
+      tbody.innerHTML = list.map(item => `<tr>
+        <td><strong>${esc(item.doc_id || item.id)}</strong></td>
+        <td>${fmtData(item.data)}</td>
+        <td>${esc(item.setor)}</td>
+        <td>${esc(item.linha)}</td>
+        <td>${esc(item.cliente)}</td>
+        <td>${esc(item.username)}</td>
+        <td>
+          <button class="btn btn-sm btn-outline-primary py-0 px-2"
+            onclick="carregarEAbrir(${item.id})">
+            <i class="bi bi-folder2-open"></i>
+          </button>
+        </td>
+      </tr>`).join('');
+    } catch {
+      showMsg(msgEl, 'danger', 'Erro de comunicação com o servidor.');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = orig;
+    }
+  }
+
+  window.carregarEAbrir = async function(id) {
+    const tab = document.querySelector('[data-bs-target="#tab-novo"]');
+    bootstrap.Tab.getOrCreateInstance(tab).show();
+    await carregarDocumento(id);
+  };
+
+  /* ── Init ──────────────────────────────────────────────────────────── */
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const today = new Date();
+    document.getElementById('stData').value = today.toISOString().slice(0, 10);
+    document.getElementById('filtroDataSt').value = today.toISOString().slice(0, 10);
+
+    const yearSuffix = document.getElementById('loadDocYearSuffix');
+    if (yearSuffix) yearSuffix.textContent = `-${today.getFullYear()}`;
+
+    loadSectors();
+
+    document.getElementById('stSetor').addEventListener('change', e => loadLines(e.target.value));
+    document.getElementById('filtroSetorSt').addEventListener('change', e => loadFiltroLinhas(e.target.value));
+
+    document.querySelectorAll('.modelo-input').forEach(input => {
+      input.addEventListener('input', () => { input.value = input.value.toUpperCase(); });
+    });
+
+    for (let col = 2; col <= 10; col++) {
+      const inicioEl = document.querySelector(`[data-row="inicio"][data-col="${col}"]`);
+      if (!inicioEl) continue;
+      inicioEl.addEventListener('input', () => {
+        if (!inicioEl.value) return;
+        const modeloEl = document.querySelector(`[data-row="modelo"][data-col="${col}"]`);
+        if (modeloEl && !modeloEl.value) {
+          const modelo1 = document.querySelector('[data-row="modelo"][data-col="1"]')?.value || '';
+          if (modelo1) modeloEl.value = modelo1;
+        }
+      });
+    }
+
+    document.querySelectorAll('.sign-btn[data-role]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const role = btn.dataset.role;
+        const hora = btn.dataset.hora ? parseInt(btn.dataset.hora) : null;
+        openSignModal(role, hora);
+      });
+    });
+
+    document.getElementById('signModalConfirmBtn').addEventListener('click', confirmSign);
+    document.getElementById('signModalPass').addEventListener('keydown', e => {
+      if (e.key === 'Enter') confirmSign();
+    });
+
+    document.getElementById('btnSalvarStencil').addEventListener('click', salvar);
+    document.getElementById('btnNovo').addEventListener('click', limparFormulario);
+    document.getElementById('btnConsultarSt').addEventListener('click', consultar);
+
+    document.getElementById('loadDocConfirmBtn').addEventListener('click', async () => {
+      const id = parseInt(document.getElementById('loadDocId').value);
+      if (!id || id < 1) return;
+      const ok = await carregarDocumento(id);
+      if (ok) bootstrap.Modal.getOrCreateInstance(document.getElementById('loadDocModal')).hide();
+    });
+    document.getElementById('loadDocId').addEventListener('keydown', async e => {
+      if (e.key === 'Enter') document.getElementById('loadDocConfirmBtn').click();
+    });
+  });
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,132 @@
+{% extends "layouts/app.html" %}
+{% block title %}Ouvidoria{% endblock %}
+
+{% block page_title %}
+<div class="page-header">
+  <div class="page-header-title">
+    <span class="page-header-section">Suporte</span>
+    <h1 class="page-header-name">Ouvidoria</h1>
+  </div>
+  <div class="page-header-actions">
+    <a href="{{ url_for('pages.inicio') }}" class="btn-header-icon" title="Voltar">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
+      <i class="bi bi-arrows-fullscreen"></i>
+    </button>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+      <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    {% endfor %}
+  {% endwith %}
+
+  <div class="section-card mb-4">
+    <div class="d-flex align-items-center justify-content-between">
+      <div>
+        <div class="fw-semibold">Canal de Ouvidoria</div>
+        <div class="text-muted small mt-1">Sua mensagem é confidencial e será tratada com prioridade</div>
+      </div>
+      <div class="shortcut-icon">
+        <i class="bi bi-megaphone"></i>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4 mb-4">
+    <div class="col-6 col-md-4 col-lg-2">
+      <div class="card text-center p-3 h-100" style="border-radius:12px;cursor:pointer;"
+           onclick="selectTipo('reclamacao')">
+        <div class="fs-2 mb-2">😤</div>
+        <div class="fw-semibold small">Reclamação</div>
+        <div class="text-muted" style="font-size:0.72rem;">Problema</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-4 col-lg-2">
+      <div class="card text-center p-3 h-100" style="border-radius:12px;cursor:pointer;"
+           onclick="selectTipo('sugestao')">
+        <div class="fs-2 mb-2">💡</div>
+        <div class="fw-semibold small">Sugestão</div>
+        <div class="text-muted" style="font-size:0.72rem;">Melhoria</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-4 col-lg-2">
+      <div class="card text-center p-3 h-100" style="border-radius:12px;cursor:pointer;"
+           onclick="selectTipo('elogio')">
+        <div class="fs-2 mb-2">⭐</div>
+        <div class="fw-semibold small">Elogio</div>
+        <div class="text-muted" style="font-size:0.72rem;">Reconhecimento</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-4 col-lg-2">
+      <div class="card text-center p-3 h-100" style="border-radius:12px;cursor:pointer;"
+           onclick="selectTipo('denuncia')">
+        <div class="fs-2 mb-2">🚨</div>
+        <div class="fw-semibold small">Denúncia</div>
+        <div class="text-muted" style="font-size:0.72rem;">Irregularidade</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-4 col-lg-2">
+      <div class="card text-center p-3 h-100" style="border-radius:12px;cursor:pointer;"
+           onclick="selectTipo('solicitacao')">
+        <div class="fs-2 mb-2">📋</div>
+        <div class="fw-semibold small">Solicitação</div>
+        <div class="text-muted" style="font-size:0.72rem;">Pedido de ação</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card p-4" style="border-radius:12px;">
+    <form method="post" action="{{ url_for('pages.suporte_ouvidoria') }}">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label">Tipo de mensagem</label>
+          <select name="tipo" id="tipoSelect" class="form-select" required>
+            <option value="">Selecione...</option>
+            <option value="reclamacao">Reclamação — Problema</option>
+            <option value="sugestao">Sugestão — Melhoria</option>
+            <option value="elogio">Elogio — Reconhecimento</option>
+            <option value="denuncia">Denúncia — Irregularidade</option>
+            <option value="solicitacao">Solicitação — Pedido de ação</option>
+          </select>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Nome para contato <span class="text-muted fw-normal">(opcional)</span></label>
+          <input type="text" name="nome_contato" class="form-control"
+                 placeholder="Caso queira ser identificado">
+        </div>
+        <div class="col-12">
+          <label class="form-label">Mensagem</label>
+          <textarea name="mensagem" class="form-control" rows="5"
+                    placeholder="Descreva com detalhes..." required></textarea>
+        </div>
+        <div class="col-12 d-flex justify-content-end">
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-send me-2"></i>Enviar mensagem
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function selectTipo(tipo) {
+  const sel = document.getElementById("tipoSelect");
+  if (sel) sel.value = tipo;
+  sel.scrollIntoView({ behavior: "smooth", block: "center" });
+}
+</script>
+{% endblock %}

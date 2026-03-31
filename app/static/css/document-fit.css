@@ -1,0 +1,22 @@
+.document-mobile-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.document-desktop-canvas {
+  --doc-scale: 1;
+
+  transform: scale(var(--doc-scale));
+  transform-origin: top left;
+
+  display: inline-block;
+  width: max-content;
+
+  -webkit-font-smoothing: antialiased;
+}
+
+@media (max-width: 768px) {
+  .document-mobile-wrapper {
+    overflow: hidden;
+  }
+}

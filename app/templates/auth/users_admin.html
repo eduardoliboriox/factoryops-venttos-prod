@@ -1,0 +1,108 @@
+{% extends "layouts/app.html" %}
+{% block title %}Administração de Usuários{% endblock %}
+{% block page_title %}
+<div class="page-header">
+  <div class="page-header-title">
+    <span class="page-header-section">Admin</span>
+    <h1 class="page-header-name">Usuários Pendentes</h1>
+  </div>
+  <div class="page-header-actions">
+    <a href="{{ url_for('pages.inicio') }}" class="btn-header-icon" title="Voltar">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    {% if current_user.is_authenticated and current_user.is_admin %}
+    <a href="{{ url_for('auth.admin_users') }}" class="btn btn-sm btn-primary">
+      <i class="bi bi-shield-lock"></i> Pendentes
+    </a>
+    <a href="{{ url_for('auth.admin_users_all') }}" class="btn btn-sm btn-outline-secondary">
+      <i class="bi bi-list-ul"></i> Todos
+    </a>
+    {% endif %}
+    <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
+      <i class="bi bi-arrows-fullscreen"></i>
+    </button>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+
+<div class="document-mobile-wrapper">
+  <div class="document-desktop-canvas">
+
+    <div class="card shadow-sm p-3">
+
+      <div class="d-flex mb-3">
+        <input type="text"
+               id="search"
+               class="form-control me-2"
+               placeholder="Buscar por nome, usuário ou setor">
+        <i class="bi bi-search fs-4 text-muted"></i>
+      </div>
+
+      <table class="table table-hover align-middle">
+        <thead>
+          <tr>
+            <th>Usuário</th>
+            <th>Nome</th>
+            <th>Setor</th>
+            <th>Status</th>
+            <th class="text-end">Ações</th>
+          </tr>
+        </thead>
+        <tbody id="usersTable">
+          {% for u in users %}
+          <tr>
+            <td>{{ u.username }}</td>
+            <td>{{ u.full_name }}</td>
+            <td>{{ u.setor }}</td>
+            <td>
+              {% if u.is_active %}
+                <span class="badge bg-success">Ativo</span>
+              {% else %}
+                <span class="badge bg-warning text-dark">Pendente</span>
+              {% endif %}
+            </td>
+            <td class="text-end">
+              {% if not u.is_active %}
+              <a href="{{ url_for('auth.approve_user_route', user_id=u.id) }}"
+                 class="btn btn-sm btn-outline-success">
+                Aprovar
+              </a>
+
+              <a href="{{ url_for('auth.reject_user_route', user_id=u.id) }}"
+                 class="btn btn-sm btn-outline-danger">
+                Negar
+              </a>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/document-fit.js') }}?v={{ APP_VERSION }}"></script>
+
+<script>
+(function () {
+  const input = document.getElementById("search");
+  if (!input) return;
+
+  input.addEventListener("input", function () {
+    const value = (this.value || "").toLowerCase();
+    document.querySelectorAll("#usersTable tr").forEach(row => {
+      row.style.display = row.innerText.toLowerCase().includes(value)
+        ? "" : "none";
+    });
+  });
+})();
+</script>
+{% endblock %}

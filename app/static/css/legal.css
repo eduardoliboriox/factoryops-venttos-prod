@@ -1,0 +1,34 @@
+.legal-container {
+  max-width: 800px;
+  margin: auto;
+  line-height: 1.6;
+}
+
+/* ===============================
+   LEGAL LINKS - LOGIN
+=============================== */
+
+.legal-links-desktop,
+.legal-links-mobile {
+    font-size: 0.85rem;
+}
+
+.legal-links-desktop a {
+    color: #0d6efd; 
+    text-decoration: none;
+}
+
+.legal-links-desktop a:hover {
+    text-decoration: underline;
+    color: #0a58ca; 
+}
+
+.mobile-screen .legal-links-mobile a {
+    color: #0d6efd !important;
+    text-decoration: none;
+}
+
+.mobile-screen .legal-links-mobile a:hover {
+    text-decoration: underline;
+    color: #0a58ca !important;
+}

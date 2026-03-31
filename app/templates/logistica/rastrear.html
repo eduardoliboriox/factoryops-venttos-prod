@@ -1,0 +1,218 @@
+{% extends "layouts/app.html" %}
+{% block title %}Logística · Rastrear Entrega{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+  #mapa { height: 400px; border-radius: 12px; border: 1px solid var(--border); }
+  @media (max-width: 767px) { #mapa { height: 300px; } }
+</style>
+{% endblock %}
+
+{% block page_title %}
+<div class="page-header">
+  <div class="page-header-title">
+    <span class="page-header-section">Logística</span>
+    <h1 class="page-header-name">Rastrear Entrega</h1>
+  </div>
+  <div class="page-header-actions">
+    <a href="{{ url_for('pages.logistica_resumo') }}" class="btn-header-icon" title="Voltar">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+  <!-- Info da entrega -->
+  <div class="card mb-4" style="border-radius:12px;border-color:var(--border);">
+    <div class="card-body p-3">
+      <div class="row g-2" style="font-size:0.85rem;">
+        <div class="col-6 col-md-3">
+          <span class="text-muted d-block" style="font-size:0.75rem;">Pedido</span>
+          <span class="fw-bold">{{ entrega.numero_pedido }}</span>
+        </div>
+        <div class="col-6 col-md-3">
+          <span class="text-muted d-block" style="font-size:0.75rem;">Cliente</span>
+          <span class="fw-semibold">{{ entrega.cliente }}</span>
+        </div>
+        <div class="col-6 col-md-3">
+          <span class="text-muted d-block" style="font-size:0.75rem;">Motorista</span>
+          <span class="fw-semibold">{{ entrega.motorista_nome or '—' }}</span>
+          {% if entrega.motorista_telefone %}
+          <a href="tel:{{ entrega.motorista_telefone }}" class="d-block text-primary small">
+            <i class="bi bi-telephone me-1"></i>{{ entrega.motorista_telefone }}
+          </a>
+          {% endif %}
+        </div>
+        <div class="col-6 col-md-3">
+          <span class="text-muted d-block" style="font-size:0.75rem;">Status</span>
+          <span class="badge bg-primary" style="font-size:0.75rem;">Em Trânsito</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mapa -->
+  <div class="card mb-4" style="border-radius:12px;border-color:var(--border);">
+    <div class="card-header py-2 px-3" style="border-color:var(--border);background:var(--bg);border-radius:12px 12px 0 0;">
+      <div class="d-flex justify-content-between align-items-center">
+        <span class="fw-semibold" style="font-size:0.9rem;">
+          <i class="bi bi-geo-alt-fill me-2 text-primary"></i>Localização do Motorista
+        </span>
+        <span id="ultimaAtualizacao" class="text-muted small"></span>
+      </div>
+    </div>
+    <div class="card-body p-3">
+      {% if entrega.lat and entrega.lng %}
+      <div id="mapa"></div>
+      <p class="text-muted small mt-2 mb-0">
+        <i class="bi bi-clock me-1"></i>
+        Última atualização:
+        <span id="tsLocalizacao">
+          {{ entrega.localizacao_em.strftime('%d/%m/%Y %H:%M') if entrega.localizacao_em else '—' }}
+        </span>
+      </p>
+      {% else %}
+      <div class="p-4 text-center text-muted" style="background:var(--bg);border-radius:8px;">
+        <i class="bi bi-geo-alt d-block fs-2 mb-2 opacity-25"></i>
+        <p class="mb-0 fw-semibold">Aguardando localização</p>
+        <p class="small">O motorista ainda não compartilhou a localização.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Painel do Motorista: compartilhar localização -->
+  <div class="card" style="border-radius:12px;border-color:var(--border);">
+    <div class="card-header py-2 px-3" style="border-color:var(--border);background:var(--bg);border-radius:12px 12px 0 0;">
+      <span class="fw-semibold" style="font-size:0.9rem;">
+        <i class="bi bi-broadcast me-2 text-success"></i>Compartilhar Minha Localização
+      </span>
+    </div>
+    <div class="card-body p-3">
+      <p class="text-muted small mb-3">
+        Se você é o motorista desta entrega, ative o compartilhamento de localização abaixo.
+        A posição será enviada automaticamente a cada 30 segundos.
+      </p>
+      <div class="d-flex align-items-center gap-3 flex-wrap">
+        <button id="btnIniciarRastreio" class="btn btn-success fw-semibold" style="border-radius:8px;"
+                onclick="iniciarRastreio()">
+          <i class="bi bi-broadcast me-1"></i>Iniciar Rastreio
+        </button>
+        <button id="btnPararRastreio" class="btn btn-outline-danger fw-semibold" style="border-radius:8px;display:none;"
+                onclick="pararRastreio()">
+          <i class="bi bi-stop-circle me-1"></i>Parar Rastreio
+        </button>
+        <span id="statusRastreio" class="text-muted small"></span>
+      </div>
+      <div id="erroRastreio" class="alert alert-danger py-2 px-3 mt-3 mb-0" style="display:none;font-size:0.82rem;border-radius:8px;"></div>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const ENTREGA_ID   = {{ entrega.id }};
+const URL_LOC      = `/pcp/entregas/entrega/${ENTREGA_ID}/localizacao`;
+const LAT_INICIAL  = {{ entrega.lat or 'null' }};
+const LNG_INICIAL  = {{ entrega.lng or 'null' }};
+
+let mapa         = null;
+let marcador     = null;
+let rastreioInt  = null;
+
+if (LAT_INICIAL && LNG_INICIAL) {
+  mapa = L.map("mapa").setView([LAT_INICIAL, LNG_INICIAL], 14);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    maxZoom: 19,
+  }).addTo(mapa);
+  marcador = L.marker([LAT_INICIAL, LNG_INICIAL])
+    .addTo(mapa)
+    .bindPopup("{{ entrega.motorista_nome or 'Motorista' }}")
+    .openPopup();
+}
+
+function iniciarRastreio() {
+  if (!navigator.geolocation) {
+    document.getElementById("erroRastreio").textContent = "Seu navegador não suporta geolocalização.";
+    document.getElementById("erroRastreio").style.display = "";
+    return;
+  }
+  enviarLocalizacao();
+  rastreioInt = setInterval(enviarLocalizacao, 30000);
+  document.getElementById("btnIniciarRastreio").style.display = "none";
+  document.getElementById("btnPararRastreio").style.display   = "";
+  document.getElementById("statusRastreio").textContent = "Rastreio ativo — enviando a cada 30s";
+}
+
+function pararRastreio() {
+  clearInterval(rastreioInt);
+  rastreioInt = null;
+  document.getElementById("btnIniciarRastreio").style.display = "";
+  document.getElementById("btnPararRastreio").style.display   = "none";
+  document.getElementById("statusRastreio").textContent = "Rastreio pausado.";
+}
+
+function enviarLocalizacao() {
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      const lat = pos.coords.latitude;
+      const lng = pos.coords.longitude;
+      fetch(URL_LOC, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ lat, lng }),
+      })
+        .then(r => r.json())
+        .then(data => {
+          if (data.ok) {
+            document.getElementById("statusRastreio").textContent =
+              "Última envio: " + new Date().toLocaleTimeString("pt-BR");
+            document.getElementById("erroRastreio").style.display = "none";
+            atualizarMapa(lat, lng);
+          }
+        })
+        .catch(() => {});
+    },
+    (err) => {
+      document.getElementById("erroRastreio").textContent =
+        "Não foi possível obter sua localização: " + err.message;
+      document.getElementById("erroRastreio").style.display = "";
+    },
+    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+  );
+}
+
+function atualizarMapa(lat, lng) {
+  if (!mapa) {
+    mapa = L.map("mapa").setView([lat, lng], 14);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      maxZoom: 19,
+    }).addTo(mapa);
+  }
+  if (marcador) {
+    marcador.setLatLng([lat, lng]);
+  } else {
+    marcador = L.marker([lat, lng])
+      .addTo(mapa)
+      .bindPopup("{{ entrega.motorista_nome or 'Motorista' }}")
+      .openPopup();
+  }
+  mapa.setView([lat, lng], 14);
+}
+
+// Atualiza localização na tela a cada 30s para quem está acompanhando
+setInterval(() => {
+  if (!rastreioInt) {
+    fetch(`${URL_LOC.replace('/localizacao', '')}/localizacao`, { method: "GET" })
+      .catch(() => {});
+  }
+}, 30000);
+</script>
+{% endblock %}

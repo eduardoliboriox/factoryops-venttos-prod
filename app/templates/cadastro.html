@@ -1,0 +1,199 @@
+{% extends "layouts/app.html" %}
+{% block title %}SMT · Cadastro{% endblock %}
+
+{% block page_title %}
+<div class="page-header">
+  <div class="page-header-title">
+    <span class="page-header-section">SMT</span>
+    <h1 class="page-header-name">Cadastro</h1>
+  </div>
+  <div class="page-header-actions">
+    <a href="{{ url_for('pages.inicio') }}" class="btn-header-icon" title="Voltar">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
+      <i class="bi bi-arrows-fullscreen"></i>
+    </button>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<style>
+  .smt-action-card {
+    border: 1px solid rgba(15,23,42,0.10);
+    border-radius: 14px;
+    background: #fff;
+    overflow: hidden;
+    box-shadow: 0 8px 24px rgba(15,23,42,0.06);
+  }
+  .smt-action-card .sac-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 16px;
+    border-bottom: 1px solid rgba(15,23,42,0.08);
+    background: linear-gradient(180deg, rgba(13,110,253,0.08), transparent);
+  }
+  .smt-action-card .sac-title { display: flex; align-items: center; gap: 10px; }
+  .smt-action-card .sac-icon {
+    width: 40px; height: 40px; border-radius: 12px;
+    display: grid; place-items: center; font-size: 18px;
+    background: rgba(13,110,253,0.12); color: #0d6efd;
+  }
+  .smt-action-card .sac-subtitle { font-size: 12px; color: rgba(15,23,42,0.65); margin-top: 2px; }
+  .smt-action-card .sac-body { padding: 16px; }
+  .smt-action-card .form-label { font-weight: 700; color: rgba(15,23,42,0.80); }
+  .smt-action-card .form-control,
+  .smt-action-card .form-select { border-radius: 12px; border-color: rgba(15,23,42,0.14); }
+  .hint { font-size: 12px; color: rgba(15,23,42,0.65); margin-top: 6px; }
+</style>
+
+<div class="container-fluid">
+
+  <div id="mensagemCadastro"></div>
+
+  <!-- ═══════════════════════════════════════════════
+       SEÇÃO 1 — CADASTRO DE MODELO
+  ════════════════════════════════════════════════ -->
+  <div class="smt-action-card mb-4">
+    <div class="sac-header">
+      <div class="sac-title">
+        <div class="sac-icon"><i class="bi bi-file-earmark-plus"></i></div>
+        <div>
+          <div class="fw-bold">Novo Modelo</div>
+          <div class="sac-subtitle">Preencha os dados e cadastre.</div>
+        </div>
+      </div>
+      <span class="badge text-bg-primary">CREATE</span>
+    </div>
+    <div class="sac-body">
+      <form id="cadastroForm" class="row g-3">
+        <div class="col-md-3">
+          <label class="form-label">Código</label>
+          <input class="form-control form-control-lg" name="codigo" required placeholder="Ex: ABC123">
+          <div class="hint">Use o código do modelo conforme padrão interno.</div>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Cliente</label>
+          <input class="form-control form-control-lg" name="cliente" required placeholder="Ex: Cliente X">
+          <div class="hint">Cliente associado ao modelo.</div>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Setor</label>
+          <select class="form-select form-select-lg" name="setor" id="setorSelect" required>
+            <option value="SMT" selected>SMT</option>
+            <option value="PTH">PTH</option>
+            <option value="IM">IM</option>
+            <option value="PA">PA</option>
+          </select>
+          <div class="hint">Selecione o setor para habilitar as linhas corretas.</div>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Linha</label>
+          <select class="form-select form-select-lg" name="linha" id="linhaSelect" required></select>
+          <div class="hint">As opções mudam conforme o setor.</div>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Meta por hora</label>
+          <input class="form-control form-control-lg" name="meta_padrao" type="number" required placeholder="Ex: 570">
+          <div class="hint">Meta operacional padrão.</div>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Tempo de montagem (seg)</label>
+          <input class="form-control form-control-lg" name="tempo_montagem" type="number" step="0.01" min="0" placeholder="Ex: 19.55">
+          <div class="hint">Opcional.</div>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Placas por Blank</label>
+          <input class="form-control form-control-lg" name="blank" type="number" min="1" value="1" required>
+          <div class="hint">Ex.: 1 individual · 2, 4, 6… por blank.</div>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Fase</label>
+          <select class="form-select form-select-lg" name="fase">
+            <option>TOP</option>
+            <option>BOTTOM</option>
+          </select>
+          <div class="hint">TOP ou BOTTOM conforme setup.</div>
+        </div>
+        <div class="col-12">
+          <div class="d-flex gap-2 flex-wrap">
+            <button id="btnCadastroSubmit" type="submit" class="btn btn-primary btn-lg px-4">
+              <i class="bi bi-save"></i> Cadastrar Modelo
+            </button>
+            <button type="reset" class="btn btn-outline-secondary btn-lg px-4">
+              <i class="bi bi-eraser"></i> Limpar
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  "use strict";
+
+  /* ─────────────────────────────────────────────
+     SEÇÃO 1 — CADASTRO DE MODELO
+  ───────────────────────────────────────────── */
+  const LINHAS_POR_SETOR = {
+    IM:  ["IM-01","IM-02","IM-03","IM-04","IM-05","IM-06","IM-07"],
+    PA:  ["IP-COM","PA-01","PA-03","PA-04","PA-07","PA-08","PA-09","PA-13","WIFI"],
+    PTH: ["ADE-01","AXI-01","AXI-02","AXI-03","JUM-01","JUM-02","RAD-01","RAD-02","RAD-03","ROU-01","ROU-02","ROU-03","ROU-04"],
+    SMT: ["SMT-01","SMT-02","SMT-03","SMT-04","SMT-05","SMT-06","SMT-07","SMT-08","SMT-09"]
+  };
+
+  function renderLinhas(setor, keep) {
+    const sel = document.getElementById('linhaSelect');
+    if (!sel) return;
+    const linhas = LINHAS_POR_SETOR[setor] || [];
+    const prev   = keep ? sel.value : '';
+    sel.innerHTML = '';
+    for (const l of linhas) {
+      const o = document.createElement('option');
+      o.value = l; o.textContent = l;
+      sel.appendChild(o);
+    }
+    sel.value = (prev && linhas.includes(prev)) ? prev : (linhas[0] || '');
+  }
+
+  function msgCadastro(texto, tipo) {
+    const d = document.createElement('div');
+    d.className = `alert alert-${tipo} alert-dismissible fade show`;
+    d.innerHTML = `${texto}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>`;
+    const wrap = document.getElementById('mensagemCadastro');
+    wrap.innerHTML = '';
+    wrap.appendChild(d);
+    setTimeout(() => bootstrap.Alert.getOrCreateInstance(d).close(), 2500);
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const ss = document.getElementById('setorSelect');
+    if (ss) { renderLinhas(ss.value, true); ss.addEventListener('change', () => renderLinhas(ss.value, false)); }
+  });
+
+  document.getElementById('cadastroForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('btnCadastroSubmit');
+    if (btn) { btn.disabled = true; btn._orig = btn.innerHTML; btn.innerHTML = `<span class="spinner-border spinner-border-sm me-2"></span>Salvando...`; }
+    try {
+      const r    = await fetch('/api/modelos', { method: 'POST', body: new FormData(e.target), headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+      const data = await r.json();
+      msgCadastro(data.mensagem, data.sucesso ? 'success' : 'danger');
+      if (data.sucesso) { e.target.reset(); const ss = document.getElementById('setorSelect'); if (ss) { ss.value = 'SMT'; renderLinhas('SMT', false); } }
+    } finally {
+      if (btn) { btn.disabled = false; btn.innerHTML = btn._orig || `<i class="bi bi-save"></i> Cadastrar Modelo`; }
+    }
+  });
+
+})();
+</script>
+{% endblock %}
