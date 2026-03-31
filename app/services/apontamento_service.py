@@ -1,6 +1,7 @@
 from datetime import date, time
 from app.repositories import apontamento_repository as repo
 from app.repositories import turno_config_repository as tc_repo
+from app.repositories import controle_ops_repository as ops_repo
 
 SETORES_SMD = {"SMD"}
 
@@ -35,6 +36,32 @@ def ops_abertas(setor: str = "") -> list:
     return repo.ops_abertas(setor)
 
 
+def _validar_sequencia_roteiro(op: dict) -> None:
+    numero_op = op.get("numero_op", "") or ""
+    if len(numero_op) < 3:
+        return
+    base = numero_op[:-2]
+    sufixo_atual = numero_op[-2:]
+    try:
+        ordem_atual = int(sufixo_atual)
+    except ValueError:
+        return
+
+    familia = ops_repo.buscar_familia_op(base)
+    for anterior in familia:
+        sufixo_ant = anterior["numero_op"][-2:]
+        try:
+            ordem_ant = int(sufixo_ant)
+        except ValueError:
+            continue
+        if ordem_ant < ordem_atual and anterior["produzido"] == 0:
+            setor_ant = anterior["setor"] or "setor anterior"
+            raise ValueError(
+                f"{setor_ant} (OP {anterior['numero_op']}) ainda não tem produção apontada. "
+                "Siga o roteiro de produção."
+            )
+
+
 def vincular(data: str, turno: str, modelo: str, linha: str, op_id: int, quantidade: int,
              setor: str = "", fase: str = None, lote: str = None) -> None:
     if not data or not turno or not modelo or not linha:
@@ -54,6 +81,8 @@ def vincular(data: str, turno: str, modelo: str, linha: str, op_id: int, quantid
     op = repo.buscar_op_para_vincular(op_id)
     if not op:
         raise ValueError("OP não encontrada.")
+
+    _validar_sequencia_roteiro(op)
 
     if op["produto"].strip().upper() != modelo.strip().upper():
         raise ValueError(
@@ -84,7 +113,7 @@ def desvincular(apontamento_id: int) -> None:
     repo.desvincular(apontamento_id)
 
 
-_ORDEM_SETORES = ["PTH", "IM", "SMD", "PA", "VTT"]
+_ORDEM_SETORES = ["PTH", "SMD", "IM", "PA", "VTT"]
 
 
 def fila_producao() -> dict:

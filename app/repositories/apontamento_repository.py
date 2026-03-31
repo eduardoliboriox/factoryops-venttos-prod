@@ -148,7 +148,7 @@ def buscar_op_para_vincular(op_id: int) -> dict | None:
         with conn.cursor(row_factory=dict_row) as cur:
             cur.execute("""
                 SELECT
-                    co.id, co.produto, co.fase_modelo, co.quantidade,
+                    co.id, co.numero_op, co.setor, co.produto, co.fase_modelo, co.quantidade,
                     COALESCE(SUM(CASE WHEN a.fase = 'TOP'    THEN a.quantidade ELSE 0 END), 0) AS top_feito,
                     COALESCE(SUM(CASE WHEN a.fase = 'BOTTOM' THEN a.quantidade ELSE 0 END), 0) AS bottom_feito,
                     CASE WHEN co.fase_modelo = 'AMBAS' THEN
@@ -161,7 +161,7 @@ def buscar_op_para_vincular(op_id: int) -> dict | None:
                 FROM controle_ops co
                 LEFT JOIN apontamento a ON a.op_id = co.id
                 WHERE co.id = %s
-                GROUP BY co.id, co.produto, co.fase_modelo, co.quantidade, co.produzido
+                GROUP BY co.id, co.numero_op, co.setor, co.produto, co.fase_modelo, co.quantidade, co.produzido
             """, (op_id,))
             return cur.fetchone()
 
