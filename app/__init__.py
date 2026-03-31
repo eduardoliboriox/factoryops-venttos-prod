@@ -77,6 +77,28 @@ def create_app():
         flash("Seu acesso está bloqueado. Fale com um administrador.", "danger")
         return redirect(url_for("auth.login"))
 
+    @app.before_request
+    def block_viewer_mutations():
+        from flask import request, redirect, url_for, flash, jsonify
+        from flask_login import current_user
+
+        if not current_user.is_authenticated:
+            return None
+
+        if not getattr(current_user, "is_viewer", False):
+            return None
+
+        if request.method not in ("POST", "PUT", "DELETE", "PATCH"):
+            return None
+
+        endpoint = request.endpoint or ""
+
+        if endpoint.startswith("api."):
+            return jsonify({"error": "Acesso de visualização apenas."}), 403
+
+        flash("Acesso de visualização apenas — edições não são permitidas.", "warning")
+        return redirect(url_for("pages.dashboard"))
+
     app.register_blueprint(pages_bp)
     app.register_blueprint(api_bp, url_prefix="/api")
     app.register_blueprint(auth_bp, url_prefix="/auth")

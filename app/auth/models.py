@@ -17,6 +17,7 @@ class User(UserMixin):
 
         self.is_blocked = data.get("extra_authorized", False)
         self.extra_authorized = self.is_blocked
+        self.is_viewer = data.get("is_viewer", False)
 
     @property
     def is_active(self):
