@@ -4,11 +4,12 @@
 
 .auth-body {
   min-height: 100vh;
-  background-color: #0f172a; 
+  background-color: #0f172a;
   background-image: url("../images/banners/bg-login-desktop.webp");
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
+  background-attachment: fixed;
 }
 
 /* ==================================================
