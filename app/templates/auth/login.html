@@ -94,9 +94,8 @@
                      placeholder="Senha"
                      required>
               <button type="button"
-                      class="input-group-text"
-                      data-toggle-password="login-password"
-                      style="cursor:pointer;">
+                      class="input-group-text btn-toggle-password"
+                      data-toggle-password="login-password">
                 <i class="bi bi-eye"></i>
               </button>
             </div>
@@ -155,6 +154,6 @@
   </div>
 </div>
 
-<script src="{{ url_for('static', filename='js/input-masks.js') }}"></script>
+<script src="{{ url_for('static', filename='js/input-masks.js') }}?v={{ APP_VERSION }}"></script>
 
 {% endblock %}

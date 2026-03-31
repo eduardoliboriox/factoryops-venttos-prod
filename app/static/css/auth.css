@@ -189,6 +189,13 @@
   border-left: none;
 }
 
+.auth-input .btn-toggle-password {
+  background-color: #fff;
+  border-left: none;
+  color: #6c757d;
+  cursor: pointer;
+}
+
 .auth-input .form-control:focus {
   box-shadow: none;
   border-color: #ced4da;
