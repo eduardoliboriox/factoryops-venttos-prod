@@ -5,6 +5,8 @@ Sistema **fullstack Flask (MVC)** de gestão industrial para manufatura SMT, cob
 
 > 🇧🇷 Este README é a referência principal do projeto.
 
+![Tela de login](app/static/images/banners/tela-login-desktop-expo.png)
+
 ---
 
 ## Acesso para Recrutadores
