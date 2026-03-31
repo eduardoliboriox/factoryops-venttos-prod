@@ -352,6 +352,44 @@
   margin-top: 16px;
   font-size: 0.78rem;
   color: #6c757d;
+  flex-wrap: wrap;
+}
+
+.btn-social-circle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  font-size: 1.1rem;
+  text-decoration: none;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.btn-social-circle:hover {
+  opacity: 0.85;
+  transform: scale(1.08);
+}
+
+.btn-social-google {
+  border: 1.5px solid #dc3545;
+  color: #dc3545;
+}
+
+.btn-social-google:hover {
+  background-color: #dc3545;
+  color: #fff;
+}
+
+.btn-social-github {
+  border: 1.5px solid #212529;
+  color: #212529;
+}
+
+.btn-social-github:hover {
+  background-color: #212529;
+  color: #fff;
 }
 
 @media (max-width: 991px) {
