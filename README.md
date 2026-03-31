@@ -7,6 +7,20 @@ Sistema **fullstack Flask (MVC)** de gestão industrial para manufatura SMT, cob
 
 ---
 
+## Acesso para Recrutadores
+
+O sistema está em produção e pode ser acessado diretamente pelo link abaixo.
+
+O usuário de demonstração tem acesso de **somente leitura** — navega por todas as telas, mas não consegue criar, editar ou excluir nada.
+
+| | |
+|---|---|
+| **URL** | https://web-production-457281.up.railway.app/ |
+| **Usuário** | `visit.ops` |
+| **Senha** | `V1s1t@Ops26!` |
+
+---
+
 ## Módulos
 
 | Módulo | Descrição |
