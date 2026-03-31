@@ -2,23 +2,6 @@
 {% block title %}FactoryOps{% endblock %}
 {% block content %}
 
-<header class="auth-header d-none d-lg-flex">
-  <div class="brand">
-    <img src="{{ url_for('static', filename='images/logos/logo-sidebar-desktop.png') }}" alt="Venttos">
-  </div>
-
-  <div class="actions">
-    <a href="{{ url_for('auth.logout') }}"
-       class="btn btn-outline-purple btn-sm">
-      Fazer login
-    </a>
-
-    <a href="{{ url_for('auth.register_form') }}"
-       class="btn btn-outline-primary">
-      Cadastrar-se
-    </a>
-  </div>
-</header>
 
 <div class="auth-container auth-container-centered">
 
@@ -122,19 +105,13 @@
 
         <hr>
 
-        <div class="d-grid gap-2 mb-4">
-          <a href="{{ url_for('auth.login_google') }}" class="btn btn-outline-danger">
-            <i class="bi bi-google me-2"></i> Logar com Google
+        <div class="d-flex justify-content-center gap-3 mb-4">
+          <a href="{{ url_for('auth.login_google') }}" class="btn-social-circle btn-social-google" title="Logar com Google">
+            <i class="bi bi-google"></i>
           </a>
-
-          <a href="{{ url_for('auth.login_github') }}" class="btn btn-outline-dark">
-            <i class="bi bi-github me-2"></i> Logar com GitHub
+          <a href="{{ url_for('auth.login_github') }}" class="btn-social-circle btn-social-github" title="Logar com GitHub">
+            <i class="bi bi-github"></i>
           </a>
-        </div>
-
-        <div class="text-center mt-3">
-          <small class="fw-semibold d-block fw-bold">EDUARDO LIBÓRIO</small>
-          <small class="text-muted">Fullstack Developer</small>
         </div>
 
         <div class="legal-links-desktop text-center mt-3">
@@ -147,6 +124,9 @@
           <span>Acesso Via</span>
           <img src="{{ url_for('static', filename='images/logos/app_icon.svg') }}" width="15" height="15" alt="">
           <span class="fw-semibold text-dark">FactoryOps</span>
+          <span>-</span>
+          <span class="fw-semibold text-dark">EDUARDO LIBÓRIO</span>
+          <span class="text-muted">Fullstack Developer</span>
         </div>
 
       </div>
