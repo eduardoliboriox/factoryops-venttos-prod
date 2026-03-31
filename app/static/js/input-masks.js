@@ -36,4 +36,18 @@ document.addEventListener("DOMContentLoaded", () => {
   document
     .querySelectorAll("[data-mask='zip']")
     .forEach(maskZip);
+
+  document.querySelectorAll("[data-toggle-password]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const input = document.getElementById(btn.dataset.togglePassword);
+      const icon = btn.querySelector("i");
+      if (input.type === "password") {
+        input.type = "text";
+        icon.classList.replace("bi-eye", "bi-eye-slash");
+      } else {
+        input.type = "password";
+        icon.classList.replace("bi-eye-slash", "bi-eye");
+      }
+    });
+  });
 });
