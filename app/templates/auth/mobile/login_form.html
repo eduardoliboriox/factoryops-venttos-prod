@@ -41,7 +41,18 @@
       <span class="input-group-text">
         <i class="bi bi-lock"></i>
       </span>
-      <input type="password" name="password" class="form-control" placeholder="Senha" required>
+      <input type="password"
+             id="login-password"
+             name="password"
+             class="form-control"
+             placeholder="Senha"
+             required>
+      <button type="button"
+              class="input-group-text"
+              data-toggle-password="login-password"
+              style="cursor:pointer;">
+        <i class="bi bi-eye"></i>
+      </button>
     </div>
 
     <button class="btn btn-primary w-100 mb-3">
@@ -69,4 +80,5 @@
 
   </form>
 </section>
+<script src="{{ url_for('static', filename='js/input-masks.js') }}"></script>
 {% endblock %}
