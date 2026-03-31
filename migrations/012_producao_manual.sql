@@ -1,0 +1,5 @@
+ALTER TABLE producao_coletada
+    ADD COLUMN IF NOT EXISTS origem VARCHAR(10) NOT NULL DEFAULT 'auto';
+
+CREATE SEQUENCE IF NOT EXISTS producao_coletada_manual_seq
+    START WITH -1 INCREMENT BY -1;

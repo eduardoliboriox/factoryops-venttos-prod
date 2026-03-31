@@ -50,7 +50,7 @@ def listar(data_inicial: str, data_final: str, setor: str = "", linha: str = "",
                     hora_inicio, hora_fim, intervalo,
                     producao_real, qtd_perda, defeitos,
                     codigo_parada, descricao_parada, observacao,
-                    coletado_em
+                    coletado_em, origem
                 FROM producao_coletada
                 WHERE {where}
                 ORDER BY data DESC, setor, linha, hora_inicio
@@ -113,6 +113,40 @@ def linhas_disponiveis(setor: str = "") -> list:
             else:
                 cur.execute("SELECT linha FROM linha_config ORDER BY linha")
             return [r["linha"] for r in cur.fetchall()]
+
+
+def inserir_manual(data: dict) -> None:
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT nextval('producao_coletada_manual_seq')")
+            manual_id = cur.fetchone()[0]
+            cur.execute("""
+                INSERT INTO producao_coletada (
+                    id, data, setor, linha, turno, modelo,
+                    producao_real, qtd_perda, defeitos, observacao,
+                    coletado_em, origem
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), 'manual')
+            """, (
+                manual_id,
+                data["data"],
+                data["setor"],
+                data["linha"],
+                data["turno"],
+                data["modelo"],
+                data["producao_real"],
+                data.get("qtd_perda", 0),
+                data.get("defeitos", 0),
+                data.get("observacao") or None,
+            ))
+
+
+def excluir_manual(registro_id: int) -> None:
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "DELETE FROM producao_coletada WHERE id = %s AND origem = 'manual'",
+                (registro_id,)
+            )
 
 
 def importar_registros(registros: list) -> dict:

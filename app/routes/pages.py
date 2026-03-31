@@ -174,6 +174,80 @@ def engenharia_folha_crono():
 
 # ─── PCP ─────────────────────────────────────────────────────────────────────
 
+@bp.route("/pcp/lancamento-producao", methods=["GET"])
+@login_required
+@admin_required
+def pcp_lancamento_producao():
+    from flask import request
+    from app.services import producao_manual_service as svc
+
+    data_inicial_pad, data_final_pad = svc.data_padrao()
+
+    data_inicial = request.args.get("dataInicial", data_inicial_pad)
+    data_final   = request.args.get("dataFinal",   data_final_pad)
+    setor        = request.args.get("setor",  "")
+    linha        = request.args.get("linha",  "")
+    turno        = request.args.get("turno",  "")
+
+    try:
+        registros = svc.listar(data_inicial, data_final, setor, linha, turno)
+        filtros   = svc.filtros_disponiveis()
+        erro      = None
+    except Exception as e:
+        registros = []
+        filtros   = {"setores": [], "linhas_por_setor": {}}
+        erro      = str(e)
+
+    return render_template(
+        "pcp/lancamento_producao.html",
+        active_menu="pcp_lancamento_producao",
+        data_inicial=data_inicial,
+        data_final=data_final,
+        setor=setor,
+        linha=linha,
+        turno=turno,
+        registros=registros,
+        filtros=filtros,
+        erro=erro,
+    )
+
+
+@bp.route("/pcp/lancamento-producao/inserir", methods=["POST"])
+@login_required
+@admin_required
+def pcp_lancamento_producao_inserir():
+    from flask import request, redirect, url_for, flash
+    from app.services import producao_manual_service as svc
+
+    try:
+        svc.inserir(request.form)
+        flash("Produção lançada com sucesso.", "success")
+    except ValueError as e:
+        flash(str(e), "danger")
+    except Exception:
+        flash("Erro inesperado ao salvar o lançamento.", "danger")
+
+    return redirect(url_for("pages.pcp_lancamento_producao"))
+
+
+@bp.route("/pcp/lancamento-producao/excluir/<int:registro_id>", methods=["POST"])
+@login_required
+@admin_required
+def pcp_lancamento_producao_excluir(registro_id):
+    from flask import redirect, url_for, flash
+    from app.services import producao_manual_service as svc
+
+    try:
+        svc.excluir(registro_id)
+        flash("Lançamento excluído.", "success")
+    except ValueError as e:
+        flash(str(e), "danger")
+    except Exception:
+        flash("Erro inesperado ao excluir o lançamento.", "danger")
+
+    return redirect(url_for("pages.pcp_lancamento_producao"))
+
+
 @bp.route("/pcp/producao-coletada")
 @login_required
 @admin_required
