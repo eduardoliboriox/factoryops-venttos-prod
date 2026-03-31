@@ -1,12 +1,17 @@
+import re
 from app.repositories import controle_ops_repository as repo
 
 ROTEIRO_PADRAO = [
     ("PTH", "01"),
-    ("IM",  "02"),
-    ("SMD", "03"),
+    ("SMD", "02"),
+    ("IM",  "03"),
 ]
 
 FASES_VALIDAS = {"TOP", "BOTTOM", "AMBAS"}
+
+_OP_RE_INDIVIDUAL = re.compile(r'^[A-Za-z]{5}\d{6}$|^[A-Za-z]{6}\d{5}$')
+_OP_RE_BASE       = re.compile(r'^[A-Za-z]{5}\d{4}$|^[A-Za-z]{6}\d{3}$')
+_OP_SUFIXOS_VALIDOS = {"01", "02", "03", "04"}
 
 
 def listar(filial: str = "", status: str = "", setor: str = "") -> list:
@@ -17,7 +22,7 @@ def buscar_por_id(op_id: int) -> dict | None:
     return repo.buscar_por_id(op_id)
 
 
-def _validar_e_montar(form_data: dict) -> dict:
+def _validar_e_montar(form_data: dict, roteiro_padrao: bool = False) -> dict:
     numero_op   = form_data.get("numero_op", "").strip()
     filial      = form_data.get("filial", "").strip()
     produto     = form_data.get("produto", "").strip()
@@ -26,6 +31,23 @@ def _validar_e_montar(form_data: dict) -> dict:
 
     if not numero_op:
         raise ValueError("Número da OP é obrigatório.")
+
+    if roteiro_padrao:
+        if not _OP_RE_BASE.match(numero_op):
+            raise ValueError(
+                "Para Roteiro Padrão, informe a base da OP sem sufixo: "
+                "5 letras + 4 números ou 6 letras + 3 números."
+            )
+    else:
+        if not _OP_RE_INDIVIDUAL.match(numero_op):
+            raise ValueError(
+                "Formato da OP inválido. Use 5 letras + 6 números ou 6 letras + 5 números."
+            )
+        if numero_op[-2:] not in _OP_SUFIXOS_VALIDOS:
+            raise ValueError(
+                "O sufixo da OP deve terminar em 01, 02, 03 ou 04 (referência ao setor)."
+            )
+
     if not filial:
         raise ValueError("Filial é obrigatória.")
     if not produto:
@@ -56,9 +78,10 @@ def _validar_e_montar(form_data: dict) -> dict:
 
 
 def cadastrar(form_data: dict) -> None:
-    data = _validar_e_montar(form_data)
+    roteiro = form_data.get("roteiro_padrao") == "1"
+    data = _validar_e_montar(form_data, roteiro_padrao=roteiro)
 
-    if form_data.get("roteiro_padrao") == "1":
+    if roteiro:
         registros = [
             {**data, "numero_op": data["numero_op"] + sufixo, "setor": s}
             for s, sufixo in ROTEIRO_PADRAO

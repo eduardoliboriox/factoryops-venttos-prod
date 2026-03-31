@@ -149,3 +149,16 @@ def filiais_disponiveis() -> list:
         with conn.cursor(row_factory=dict_row) as cur:
             cur.execute("SELECT DISTINCT filial FROM controle_ops ORDER BY filial")
             return [r["filial"] for r in cur.fetchall()]
+
+
+def buscar_familia_op(base: str) -> list:
+    with get_db() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute("""
+                SELECT id, numero_op, setor, produzido
+                FROM controle_ops
+                WHERE numero_op LIKE %s
+                  AND RIGHT(numero_op, 2) IN ('01', '02', '03', '04')
+                ORDER BY numero_op
+            """, (base + '__',))
+            return cur.fetchall()
