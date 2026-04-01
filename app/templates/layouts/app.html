@@ -38,7 +38,7 @@
   'funcionalidades_im_pa','funcionalidades_pth','funcionalidades_vtt'
 ] %}
 {% set _prod_menus = [
-  'producao_medicao_pasta','producao_checklist_linha','producao_limpeza_stencil'
+  'producao_medicao_pasta','producao_checklist_linha','producao_limpeza_stencil','smd_monitor_tv'
 ] %}
 {% set _eng_menus = [
   'smt_estudo_tempo','engenharia_folha_crono'
@@ -84,6 +84,7 @@
       "producao_medicao_pasta": "Medição Pasta",
       "producao_checklist_linha": "Checklist Linha",
       "producao_limpeza_stencil": "Limpeza Stencil",
+      "smd_monitor_tv": "Monitor SMD",
       "engenharia_folha_crono": "Folha de Cronometragem",
       "pcp_controle_ops": "Controle de OPs",
       "pcp_apontamento": "Apontamento",
@@ -196,6 +197,10 @@
             <a href="{{ url_for('pages.producao_limpeza_stencil') }}"
                class="{% if active_menu == 'producao_limpeza_stencil' %}active{% endif %}">
               <i class="bi bi-eraser"></i> Limpeza do Stencil
+            </a>
+            <a href="{{ url_for('pages.smd_monitor_tv') }}"
+               class="{% if active_menu == 'smd_monitor_tv' %}active{% endif %}">
+              <i class="bi bi-display"></i> Monitor SMD (TV)
             </a>
           </div>
         </div>
