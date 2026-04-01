@@ -7,11 +7,20 @@ from psycopg.rows import dict_row
 SETOR = "SMD"
 
 
+def _to_time(val) -> time:
+    if isinstance(val, time):
+        return val
+    if hasattr(val, 'hour'):
+        return time(val.hour, val.minute)
+    parts = str(val).split(':')
+    return time(int(parts[0]), int(parts[1]))
+
+
 def _turno_atual(turnos: list) -> dict | None:
     agora = datetime.now().time()
     for t in turnos:
-        ini = t["hora_inicio"]
-        fim = t["hora_fim"]
+        ini = _to_time(t["hora_inicio"])
+        fim = _to_time(t["hora_fim"])
         if ini <= fim:
             if ini <= agora < fim:
                 return t
@@ -22,8 +31,8 @@ def _turno_atual(turnos: list) -> dict | None:
 
 
 def _slots_turno(turno: dict) -> list[time]:
-    ini: time = turno["hora_inicio"]
-    fim: time = turno["hora_fim"]
+    ini: time = _to_time(turno["hora_inicio"])
+    fim: time = _to_time(turno["hora_fim"])
     slots = []
     h = ini.hour
     for _ in range(24):
