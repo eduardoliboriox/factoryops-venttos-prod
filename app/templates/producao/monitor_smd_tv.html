@@ -111,6 +111,30 @@
     margin-top: 2px;
     opacity: 0.8;
   }
+  .th-doc {
+    font-size: 0.68rem !important;
+    line-height: 1.3;
+    vertical-align: middle;
+  }
+  .th-doc small {
+    display: block;
+    font-size: 0.6rem;
+    font-weight: 500;
+    letter-spacing: 0;
+    text-transform: none;
+    opacity: 0.7;
+    margin-top: 2px;
+  }
+  .slot-amanha {
+    font-size: 0.5rem;
+    color: #f59e0b;
+    font-weight: 700;
+    letter-spacing: 0;
+    text-transform: uppercase;
+    display: block;
+    line-height: 1;
+    margin-top: 1px;
+  }
   .tv-cell-inner {
     display: flex;
     flex-direction: column;
@@ -187,8 +211,8 @@
       <thead>
         <tr>
           <th class="th-linha" rowspan="2">Linha</th>
-          <th rowspan="2" title="Checklist Linha (diário)">CL</th>
-          <th rowspan="2" title="Medição Pasta de Solda (por turno)">MP</th>
+          <th rowspan="2" class="th-doc">Checklist<small>Linha</small></th>
+          <th rowspan="2" class="th-doc">Medição<small>Pasta</small></th>
           {% if dados.slots %}
           <th colspan="{{ dados.slots | length }}"
               style="background:rgba(59,130,246,0.15);color:#93c5fd;letter-spacing:1.5px;">
@@ -197,8 +221,11 @@
           {% endif %}
         </tr>
         <tr>
-          {% for h in dados.slots %}
-          <th>{{ h }}</th>
+          {% for s in dados.slots %}
+          <th>
+            {{ s.hora }}
+            {% if s.proximo_dia %}<span class="slot-amanha">+1d</span>{% endif %}
+          </th>
           {% endfor %}
         </tr>
       </thead>
@@ -266,7 +293,7 @@
     <div class="tv-legend-item"><div class="tv-dot red"></div> Pendente / Atrasado</div>
     <div class="tv-legend-item"><div class="tv-dot blue"></div> Ainda não é a hora</div>
     <div class="ms-4" style="color:#334155;font-size:0.72rem;">
-      CL = Checklist Linha &nbsp;·&nbsp; MP = Medição Pasta &nbsp;·&nbsp; LS = Limpeza Stencil (hora a hora)
+      LS = Limpeza Stencil (hora a hora) &nbsp;·&nbsp; <span style="color:#f59e0b;">+1d</span> = próxima madrugada (mesmo turno)
     </div>
   </div>
 
