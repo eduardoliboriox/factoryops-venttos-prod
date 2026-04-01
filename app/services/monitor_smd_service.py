@@ -6,6 +6,12 @@ from psycopg.rows import dict_row
 
 SETOR = "SMD"
 
+_CHAR_FIX = str.maketrans({"§": "º", "\xa7": "º"})
+
+
+def _sanitizar_turno(nome: str) -> str:
+    return nome.translate(_CHAR_FIX) if nome else nome
+
 
 def _to_time(val) -> time:
     if isinstance(val, time):
@@ -126,7 +132,7 @@ def get_status_atual() -> dict:
 
     return {
         "linhas": result_linhas,
-        "turno_nome": turno["turno"] if turno else "Fora de turno",
+        "turno_nome": _sanitizar_turno(turno["turno"]) if turno else "Fora de turno",
         "slots": [s.strftime("%H:%M") for s in slots],
         "hoje": hoje.strftime("%d/%m/%Y"),
         "atualizado_em": datetime.now().strftime("%H:%M:%S"),
