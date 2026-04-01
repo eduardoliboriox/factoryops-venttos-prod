@@ -36,13 +36,16 @@ def _turno_atual(turnos: list) -> dict | None:
     return None
 
 
-def _slots_turno(turno: dict) -> list[time]:
+def _slots_turno(turno: dict) -> list[tuple[time, bool]]:
     ini: time = _to_time(turno["hora_inicio"])
     fim: time = _to_time(turno["hora_fim"])
+    noturno = ini > fim
     slots = []
     h = ini.hour
     for _ in range(24):
-        slots.append(time(h % 24, 0))
+        hora = time(h % 24, 0)
+        proximo_dia = noturno and (h % 24) < ini.hour
+        slots.append((hora, proximo_dia))
         h += 1
         if ini <= fim:
             if (h % 24) >= fim.hour:
@@ -110,8 +113,8 @@ def get_status_atual() -> dict:
     result_linhas = []
     for linha in linhas:
         horas_status = []
-        for slot in slots:
-            passou = agora >= slot
+        for slot, proximo_dia in slots:
+            passou = agora >= slot if not proximo_dia else True
             ls_done = ls_map.get(linha, {}).get(slot.hour, False)
             if not passou:
                 ls = "blue"
@@ -119,7 +122,7 @@ def get_status_atual() -> dict:
                 ls = "green"
             else:
                 ls = "red"
-            horas_status.append({"hora": slot.strftime("%H:%M"), "passou": passou, "ls": ls})
+            horas_status.append({"hora": slot.strftime("%H:%M"), "passou": passou, "ls": ls, "proximo_dia": proximo_dia})
 
         if not turno:
             mp = "blue"
@@ -133,7 +136,7 @@ def get_status_atual() -> dict:
     return {
         "linhas": result_linhas,
         "turno_nome": _sanitizar_turno(turno["turno"]) if turno else "Fora de turno",
-        "slots": [s.strftime("%H:%M") for s in slots],
+        "slots": [{"hora": s.strftime("%H:%M"), "proximo_dia": pd} for s, pd in slots],
         "hoje": hoje.strftime("%d/%m/%Y"),
         "atualizado_em": datetime.now().strftime("%H:%M:%S"),
         "tem_turno": turno is not None,
