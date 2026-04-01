@@ -186,9 +186,17 @@
     <table class="tv-table">
       <thead>
         <tr>
-          <th class="th-linha">Linha</th>
-          <th title="Checklist Linha (diário)">CL</th>
-          <th title="Medição Pasta de Solda (por turno)">MP</th>
+          <th class="th-linha" rowspan="2">Linha</th>
+          <th rowspan="2" title="Checklist Linha (diário)">CL</th>
+          <th rowspan="2" title="Medição Pasta de Solda (por turno)">MP</th>
+          {% if dados.slots %}
+          <th colspan="{{ dados.slots | length }}"
+              style="background:rgba(59,130,246,0.15);color:#93c5fd;letter-spacing:1.5px;">
+            Limpeza Stencil — hora a hora
+          </th>
+          {% endif %}
+        </tr>
+        <tr>
           {% for h in dados.slots %}
           <th>{{ h }}</th>
           {% endfor %}
