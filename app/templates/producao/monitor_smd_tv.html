@@ -1,0 +1,284 @@
+{% extends "layouts/app.html" %}
+{% block title %}Monitor SMD{% endblock %}
+
+{% block page_title %}
+<div class="page-header">
+  <div class="page-header-title">
+    <span class="page-header-section">Produção</span>
+    <h1 class="page-header-name">Monitor SMD</h1>
+  </div>
+  <div class="page-header-actions">
+    <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
+      <i class="bi bi-arrows-fullscreen"></i>
+    </button>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<style>
+  .tv-wrap {
+    background: #0f172a;
+    border-radius: 14px;
+    padding: 20px;
+    min-height: calc(100vh - 120px);
+  }
+  .tv-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+  }
+  .tv-title {
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .tv-shift {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #94a3b8;
+    padding: 4px 14px;
+    background: rgba(255,255,255,0.07);
+    border-radius: 8px;
+  }
+  .tv-clock {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #fff;
+    font-variant-numeric: tabular-nums;
+    font-family: monospace;
+  }
+  .tv-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 4px;
+  }
+  .tv-table th {
+    background: rgba(255,255,255,0.06);
+    color: #94a3b8;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 8px 10px;
+    text-align: center;
+    border-radius: 6px;
+  }
+  .tv-table th.th-linha {
+    text-align: left;
+    min-width: 90px;
+  }
+  .tv-table td {
+    padding: 4px;
+  }
+  .tv-linha-name {
+    color: #e2e8f0;
+    font-size: 1rem;
+    font-weight: 700;
+    padding: 10px 12px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 8px;
+    white-space: nowrap;
+  }
+  .tv-cell {
+    width: 56px;
+    height: 48px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    transition: background 0.3s;
+  }
+  .tv-cell.green  { background: rgba(34,197,94,0.25);  color: #22c55e; }
+  .tv-cell.red    { background: rgba(239,68,68,0.25);  color: #ef4444; }
+  .tv-cell.blue   { background: rgba(59,130,246,0.12); color: #3b82f6; }
+  .tv-cell.doc {
+    width: 52px;
+    height: 48px;
+  }
+  .tv-cell .cell-label {
+    display: block;
+    font-size: 0.55rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    margin-top: 2px;
+    opacity: 0.8;
+  }
+  .tv-cell-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+  }
+  .tv-legend {
+    display: flex;
+    gap: 20px;
+    justify-content: flex-end;
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255,255,255,0.08);
+  }
+  .tv-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+    color: #94a3b8;
+  }
+  .tv-dot {
+    width: 12px; height: 12px; border-radius: 50%;
+  }
+  .tv-dot.green { background: #22c55e; }
+  .tv-dot.red   { background: #ef4444; }
+  .tv-dot.blue  { background: #3b82f6; }
+  .tv-refresh {
+    font-size: 0.72rem;
+    color: #475569;
+    text-align: right;
+    margin-top: 8px;
+  }
+  .tv-no-turno {
+    text-align: center;
+    padding: 60px 20px;
+    color: #475569;
+    font-size: 1.2rem;
+  }
+  body.fullscreen-mode .tv-wrap {
+    min-height: 100vh;
+    border-radius: 0;
+  }
+</style>
+
+<div class="tv-wrap">
+
+  {% if erro %}
+  <div style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);border-radius:10px;padding:16px;color:#ef4444;margin-bottom:16px;">
+    <strong>Erro ao carregar dados:</strong> {{ erro }}
+  </div>
+  {% endif %}
+
+  <div class="tv-header">
+    <div class="tv-title"><i class="bi bi-display me-2"></i>Monitor SMD</div>
+    <div class="tv-shift">{{ dados.turno_nome }} &nbsp;·&nbsp; {{ dados.hoje }}</div>
+    <div class="tv-clock" id="relogio">{{ dados.atualizado_em }}</div>
+  </div>
+
+  {% if not dados.tem_turno %}
+  <div class="tv-no-turno">
+    <i class="bi bi-moon-stars fs-1 d-block mb-3" style="color:#334155;"></i>
+    <div style="color:#64748b;">Nenhum turno ativo no momento.</div>
+  </div>
+  {% elif not dados.linhas %}
+  <div class="tv-no-turno">
+    <i class="bi bi-exclamation-circle fs-1 d-block mb-3" style="color:#334155;"></i>
+    <div style="color:#64748b;">Nenhuma linha SMD configurada.</div>
+  </div>
+  {% else %}
+  <div class="table-responsive">
+    <table class="tv-table">
+      <thead>
+        <tr>
+          <th class="th-linha">Linha</th>
+          <th title="Checklist Linha (diário)">CL</th>
+          <th title="Medição Pasta de Solda (por turno)">MP</th>
+          {% for h in dados.slots %}
+          <th>{{ h }}</th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for linha in dados.linhas %}
+        <tr>
+          <td><div class="tv-linha-name">{{ linha.linha }}</div></td>
+
+          <!-- Checklist Linha (diário) -->
+          <td>
+            <div class="tv-cell doc {{ linha.cl }}">
+              <div class="tv-cell-inner">
+                {% if linha.cl == 'green' %}
+                  <i class="bi bi-check-lg"></i>
+                {% elif linha.cl == 'red' %}
+                  <i class="bi bi-x-lg"></i>
+                {% else %}
+                  <i class="bi bi-dash"></i>
+                {% endif %}
+              </div>
+            </div>
+          </td>
+
+          <!-- Medição Pasta (por turno) -->
+          <td>
+            <div class="tv-cell doc {{ linha.mp }}">
+              <div class="tv-cell-inner">
+                {% if linha.mp == 'green' %}
+                  <i class="bi bi-check-lg"></i>
+                {% elif linha.mp == 'red' %}
+                  <i class="bi bi-x-lg"></i>
+                {% else %}
+                  <i class="bi bi-dash"></i>
+                {% endif %}
+              </div>
+            </div>
+          </td>
+
+          <!-- Limpeza Stencil por hora -->
+          {% for hora in linha.horas %}
+          <td>
+            <div class="tv-cell {{ hora.ls }}">
+              <div class="tv-cell-inner">
+                {% if hora.ls == 'green' %}
+                  <i class="bi bi-check-lg"></i>
+                {% elif hora.ls == 'red' %}
+                  <i class="bi bi-exclamation-lg"></i>
+                {% else %}
+                  <i class="bi bi-dash"></i>
+                {% endif %}
+                <span class="cell-label">LS</span>
+              </div>
+            </div>
+          </td>
+          {% endfor %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+  <div class="tv-legend">
+    <div class="tv-legend-item"><div class="tv-dot green"></div> Realizado</div>
+    <div class="tv-legend-item"><div class="tv-dot red"></div> Pendente / Atrasado</div>
+    <div class="tv-legend-item"><div class="tv-dot blue"></div> Ainda não é a hora</div>
+    <div class="ms-4" style="color:#334155;font-size:0.72rem;">
+      CL = Checklist Linha &nbsp;·&nbsp; MP = Medição Pasta &nbsp;·&nbsp; LS = Limpeza Stencil (hora a hora)
+    </div>
+  </div>
+
+  <div class="tv-refresh">Atualizado às {{ dados.atualizado_em }} · Atualização automática a cada 60s</div>
+</div>
+
+<script>
+(function () {
+  function atualizarRelogio() {
+    const agora = new Date();
+    const h = String(agora.getHours()).padStart(2, '0');
+    const m = String(agora.getMinutes()).padStart(2, '0');
+    const s = String(agora.getSeconds()).padStart(2, '0');
+    const el = document.getElementById('relogio');
+    if (el) el.textContent = h + ':' + m + ':' + s;
+  }
+  setInterval(atualizarRelogio, 1000);
+  atualizarRelogio();
+
+  setTimeout(function () { location.reload(); }, 60000);
+}());
+</script>
+{% endblock %}

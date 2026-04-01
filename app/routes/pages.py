@@ -164,6 +164,24 @@ def producao_limpeza_stencil():
     return render_template("producao/limpeza_stencil.html", active_menu="producao_limpeza_stencil")
 
 
+@bp.route("/smd/monitor-tv")
+@login_required
+def smd_monitor_tv():
+    from app.services import monitor_smd_service as svc
+    try:
+        dados = svc.get_status_atual()
+        erro  = None
+    except Exception as e:
+        dados = {"linhas": [], "turno_nome": "—", "slots": [], "hoje": "", "atualizado_em": "", "tem_turno": False}
+        erro  = str(e)
+    return render_template(
+        "producao/monitor_smd_tv.html",
+        active_menu="smd_monitor_tv",
+        dados=dados,
+        erro=erro,
+    )
+
+
 # ─── Engenharia ──────────────────────────────────────────────────────────────
 
 @bp.route("/engenharia/folha-cronometragem")
