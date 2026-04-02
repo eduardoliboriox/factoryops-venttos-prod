@@ -254,6 +254,11 @@ def fila_producao() -> list:
                              co.fase_modelo, co.quantidade, co.produzido
                 ) sub
                 WHERE saldo > 0
-                ORDER BY setor NULLS LAST, numero_op
+                   OR (produzido > 0 AND EXISTS (
+                       SELECT 1 FROM apontamento a2
+                       WHERE a2.op_id = sub.id
+                         AND a2.data >= CURRENT_DATE - INTERVAL '30 days'
+                   ))
+                ORDER BY setor NULLS LAST, saldo DESC, numero_op
             """)
             return cur.fetchall()
