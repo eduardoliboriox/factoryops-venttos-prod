@@ -794,8 +794,9 @@ def pcp_planejamento_buscar_meta():
     codigo = request.args.get("codigo", "").strip().upper()
     setor  = request.args.get("setor",  "").strip().upper()
     linha  = request.args.get("linha",  "").strip().upper()
+    fase   = request.args.get("fase",   "").strip().upper()
 
-    meta  = mr.buscar_meta_por_codigo(codigo, setor) if codigo else None
+    meta  = mr.buscar_meta_por_codigo(codigo, setor, fase) if codigo else None
     setup = svc.setup_sugerido(setor, linha)
     return jsonify({"meta": meta, "setup_sugerido": setup})
 
