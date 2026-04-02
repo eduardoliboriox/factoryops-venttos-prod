@@ -351,16 +351,24 @@
       {% set scor_txt = {'IM':'text-dark'} %}
       {% if fila_smd %}
         {% for setor, ops in fila_smd.items() %}
-        {% set total_saldo = ops | sum(attribute='saldo') %}
+        {% set ops_abertas_list = ops | selectattr('saldo', 'gt', 0) | list %}
+        {% set ops_concluidas_list = ops | rejectattr('saldo', 'gt', 0) | list %}
+        {% set total_saldo = ops_abertas_list | sum(attribute='saldo') %}
         {% set is_smd = setor == 'SMD' %}
         <div class="card mb-3" style="border-radius:12px;border-color:var(--border);">
           <div class="card-header d-flex align-items-center gap-2 py-2 px-3"
                style="border-radius:12px 12px 0 0;border-color:var(--border);background:var(--bg);">
             <span class="badge bg-{{ scor.get(setor,'secondary') }} {{ scor_txt.get(setor,'') }}"
                   style="font-size:0.75rem;">{{ setor }}</span>
-            <span class="fw-semibold" style="font-size:0.85rem;">{{ ops | length }} OP{{ 's' if ops | length != 1 }}</span>
+            <span class="fw-semibold" style="font-size:0.85rem;">{{ ops_abertas_list | length }} OP{{ 's' if ops_abertas_list | length != 1 }} abertas</span>
             <span class="text-muted small ms-1">·</span>
             <span class="text-muted small">{{ total_saldo }} unid. a produzir</span>
+            {% if ops_concluidas_list %}
+            <span class="text-muted small ms-1">·</span>
+            <span class="text-success small fw-semibold">
+              <i class="bi bi-check-circle-fill me-1"></i>{{ ops_concluidas_list | length }} concluída{{ 's' if ops_concluidas_list | length != 1 }}
+            </span>
+            {% endif %}
             {% if is_smd %}
             {% set ag_bot = ops | selectattr('aguardando_bottom','gt',0) | list | length %}
             {% if ag_bot > 0 %}
@@ -393,8 +401,14 @@
                 <tbody>
                   {% for op in ops %}
                   {% set pct = ((op.produzido / op.quantidade) * 100) | int if op.quantidade > 0 else 0 %}
-                  <tr>
-                    <td class="ps-3 fw-semibold">{{ op.numero_op }}</td>
+                  {% set concluida = op.saldo <= 0 %}
+                  <tr style="{{ 'opacity:0.65;' if concluida else '' }}">
+                    <td class="ps-3 fw-semibold">
+                      {{ op.numero_op }}
+                      {% if concluida %}
+                      <span class="badge bg-success ms-1" style="font-size:0.62rem;vertical-align:middle;">Concluída</span>
+                      {% endif %}
+                    </td>
                     <td class="fw-semibold">{{ op.produto }}</td>
                     <td class="text-muted" style="font-size:0.78rem;">{{ op.descricao or '—' }}</td>
                     {% if is_smd %}
@@ -452,7 +466,7 @@
       {% else %}
       <div class="card p-5 text-center text-muted" style="border-radius:12px;border-color:var(--border);">
         <i class="bi bi-layers d-block fs-1 mb-3 opacity-25"></i>
-        <p class="mb-0 fw-semibold">Nenhuma OP aberta em nenhum setor</p>
+        <p class="mb-0 fw-semibold">Nenhuma OP com produção nos últimos 30 dias</p>
       </div>
       {% endif %}
     </div>
