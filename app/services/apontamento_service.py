@@ -32,6 +32,9 @@ def listar_agrupado(data_inicial: str, data_final: str, setor: str = "", linha: 
                                 hora_inicio_turno=hora_ini, hora_fim_turno=hora_fim)
 
 
+_ORDEM_SETORES = ["PTH", "SMD", "IM", "PA", "VTT"]
+
+
 def ops_abertas(setor: str = "") -> list:
     return repo.ops_abertas(setor)
 
@@ -41,21 +44,22 @@ def _validar_sequencia_roteiro(op: dict) -> None:
     if len(numero_op) < 3:
         return
     base = numero_op[:-2]
-    sufixo_atual = numero_op[-2:]
+    setor_atual = op.get("setor") or ""
     try:
-        ordem_atual = int(sufixo_atual)
+        idx_atual = _ORDEM_SETORES.index(setor_atual)
     except ValueError:
         return
 
     familia = ops_repo.buscar_familia_op(base)
     for anterior in familia:
-        sufixo_ant = anterior["numero_op"][-2:]
+        if anterior["numero_op"] == numero_op:
+            continue
+        setor_ant = anterior["setor"] or ""
         try:
-            ordem_ant = int(sufixo_ant)
+            idx_ant = _ORDEM_SETORES.index(setor_ant)
         except ValueError:
             continue
-        if ordem_ant < ordem_atual and anterior["produzido"] == 0:
-            setor_ant = anterior["setor"] or "setor anterior"
+        if idx_ant < idx_atual and anterior["produzido"] == 0:
             raise ValueError(
                 f"{setor_ant} (OP {anterior['numero_op']}) ainda não tem produção apontada. "
                 "Siga o roteiro de produção."
@@ -111,9 +115,6 @@ def desvincular(apontamento_id: int) -> None:
     if not apontamento_id or apontamento_id <= 0:
         raise ValueError("Apontamento inválido.")
     repo.desvincular(apontamento_id)
-
-
-_ORDEM_SETORES = ["PTH", "SMD", "IM", "PA", "VTT"]
 
 
 def fila_producao() -> dict:
