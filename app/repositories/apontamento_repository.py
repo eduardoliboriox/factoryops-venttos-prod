@@ -56,6 +56,7 @@ def listar_agrupado(data_inicial: str, data_final: str, setor: str = "", linha: 
                 SELECT
                     g.data, g.turno, g.setor, g.linha, g.modelo,
                     g.familia, g.producao_total,
+                    COALESCE(m_blank.blank, 1) AS blank,
                     -- vínculo genérico (sem fase — usado para PTH, IM, PA, VTT)
                     a_gen.id            AS ap_id,
                     a_gen.op_id         AS ap_op_id,
@@ -77,6 +78,11 @@ def listar_agrupado(data_inicial: str, data_final: str, setor: str = "", linha: 
                     co_bot.numero_op    AS bot_numero_op,
                     (co_bot.quantidade - co_bot.produzido) AS bot_saldo
                 FROM agrupado g
+                LEFT JOIN LATERAL (
+                    SELECT COALESCE(MAX(blank), 1) AS blank
+                    FROM modelos
+                    WHERE codigo = g.modelo AND setor = g.setor
+                ) m_blank ON TRUE
                 LEFT JOIN apontamento a_gen ON (
                     a_gen.data   = g.data   AND
                     a_gen.turno  = g.turno  AND
@@ -226,7 +232,8 @@ def fila_producao() -> list:
             cur.execute("""
                 SELECT setor, id, numero_op, produto, descricao, fase_modelo,
                        quantidade, produzido, saldo,
-                       top_feito, bottom_feito, aguardando_bottom, aguardando_top
+                       top_feito, bottom_feito, aguardando_bottom, aguardando_top,
+                       blank
                 FROM (
                     SELECT
                         co.setor, co.id, co.numero_op, co.produto, co.descricao,
@@ -247,11 +254,17 @@ def fila_producao() -> list:
                                 COALESCE(SUM(CASE WHEN a.fase = 'BOTTOM' THEN a.quantidade ELSE 0 END), 0)
                             )
                         ELSE (co.quantidade - co.produzido)
-                        END AS saldo
+                        END AS saldo,
+                        COALESCE(m_blank.blank, 1) AS blank
                     FROM controle_ops co
                     LEFT JOIN apontamento a ON a.op_id = co.id
+                    LEFT JOIN LATERAL (
+                        SELECT COALESCE(MAX(blank), 1) AS blank
+                        FROM modelos
+                        WHERE codigo = co.produto AND setor = co.setor
+                    ) m_blank ON TRUE
                     GROUP BY co.setor, co.id, co.numero_op, co.produto, co.descricao,
-                             co.fase_modelo, co.quantidade, co.produzido
+                             co.fase_modelo, co.quantidade, co.produzido, m_blank.blank
                 ) sub
                 WHERE saldo > 0
                    OR (produzido > 0 AND EXISTS (

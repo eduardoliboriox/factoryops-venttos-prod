@@ -383,23 +383,26 @@
               <table class="table table-hover mb-0" style="font-size:0.82rem;">
                 <thead style="font-size:0.7rem;text-transform:uppercase;letter-spacing:.5px;background:var(--bg);">
                   <tr>
+                    {% set usa_blank_header = setor in ('PTH', 'SMD') %}
                     <th class="ps-3 py-2">Nº OP</th>
                     <th>Produto</th>
                     <th>Descrição</th>
                     {% if is_smd %}<th>Fase</th>{% endif %}
-                    <th class="text-end">Qtd</th>
-                    <th class="text-end">Produzido</th>
+                    <th class="text-end">{{ 'Qtd (bl / pçs)' if usa_blank_header else 'Qtd' }}</th>
+                    <th class="text-end">{{ 'Produzido (bl / pçs)' if usa_blank_header else 'Produzido' }}</th>
                     {% if is_smd %}
                     <th class="text-end">TOP feito</th>
                     <th class="text-end">BOTTOM feito</th>
                     <th class="text-end">Ag. BOTTOM</th>
                     <th class="text-end">Ag. TOP</th>
                     {% endif %}
-                    <th class="text-end pe-3">Saldo</th>
+                    <th class="text-end pe-3">{{ 'Saldo (bl / pçs)' if usa_blank_header else 'Saldo' }}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {% for op in ops %}
+                  {% set b = op.blank if op.blank and op.blank > 1 else 1 %}
+                  {% set usa_blank = setor in ('PTH', 'SMD') and b > 1 %}
                   {% set pct = ((op.produzido / op.quantidade) * 100) | int if op.quantidade > 0 else 0 %}
                   {% set concluida = op.saldo <= 0 %}
                   <tr style="{{ 'opacity:0.65;' if concluida else '' }}">
@@ -409,7 +412,12 @@
                       <span class="badge bg-success ms-1" style="font-size:0.62rem;vertical-align:middle;">Concluída</span>
                       {% endif %}
                     </td>
-                    <td class="fw-semibold">{{ op.produto }}</td>
+                    <td class="fw-semibold">
+                      {{ op.produto }}
+                      {% if usa_blank %}
+                      <span class="badge bg-light text-muted border ms-1" style="font-size:0.62rem;vertical-align:middle;">{{ b }} pçs/blank</span>
+                      {% endif %}
+                    </td>
                     <td class="text-muted" style="font-size:0.78rem;">{{ op.descricao or '—' }}</td>
                     {% if is_smd %}
                     <td>
@@ -419,41 +427,60 @@
                       {% else %}<span class="text-muted">—</span>{% endif %}
                     </td>
                     {% endif %}
-                    <td class="text-end">{{ op.quantidade }}</td>
+                    <td class="text-end">
+                      {% if usa_blank %}
+                      <span class="fw-semibold">{{ (op.quantidade // b) }} bl</span>
+                      <div class="text-muted" style="font-size:0.72rem;">{{ op.quantidade }} pçs</div>
+                      {% else %}
+                      {{ op.quantidade }}
+                      {% endif %}
+                    </td>
                     <td class="text-end">
                       <div class="d-flex align-items-center justify-content-end gap-2">
                         <div style="width:50px;height:6px;border-radius:3px;background:var(--border);overflow:hidden;">
                           <div style="width:{{ pct }}%;height:100%;background:var(--success-color);border-radius:3px;"></div>
                         </div>
+                        {% if usa_blank %}
+                        <div class="text-end" style="line-height:1.2;">
+                          <span>{{ (op.produzido // b) }} bl</span>
+                          <div class="text-muted" style="font-size:0.72rem;">{{ op.produzido }} pçs</div>
+                        </div>
+                        {% else %}
                         <span>{{ op.produzido }}</span>
+                        {% endif %}
                       </div>
                     </td>
                     {% if is_smd %}
                     <td class="text-end">
                       {% if op.top_feito > 0 %}
-                      <span class="badge bg-primary" style="font-size:0.7rem;">{{ op.top_feito }}</span>
+                      <span class="badge bg-primary" style="font-size:0.7rem;">{{ (op.top_feito // b) if usa_blank else op.top_feito }}{% if usa_blank %} bl{% endif %}</span>
                       {% else %}<span class="text-muted">—</span>{% endif %}
                     </td>
                     <td class="text-end">
                       {% if op.bottom_feito > 0 %}
-                      <span class="badge bg-secondary" style="font-size:0.7rem;">{{ op.bottom_feito }}</span>
+                      <span class="badge bg-secondary" style="font-size:0.7rem;">{{ (op.bottom_feito // b) if usa_blank else op.bottom_feito }}{% if usa_blank %} bl{% endif %}</span>
                       {% else %}<span class="text-muted">—</span>{% endif %}
                     </td>
                     <td class="text-end">
                       {% if op.aguardando_bottom > 0 %}
-                      <span class="badge bg-warning text-dark fw-semibold" style="font-size:0.7rem;">{{ op.aguardando_bottom }}</span>
+                      <span class="badge bg-warning text-dark fw-semibold" style="font-size:0.7rem;">{{ (op.aguardando_bottom // b) if usa_blank else op.aguardando_bottom }}</span>
                       {% else %}<span class="text-muted">—</span>{% endif %}
                     </td>
                     <td class="text-end">
                       {% if op.aguardando_top > 0 %}
-                      <span class="badge bg-warning text-dark fw-semibold" style="font-size:0.7rem;">{{ op.aguardando_top }}</span>
+                      <span class="badge bg-warning text-dark fw-semibold" style="font-size:0.7rem;">{{ (op.aguardando_top // b) if usa_blank else op.aguardando_top }}</span>
                       {% else %}<span class="text-muted">—</span>{% endif %}
                     </td>
                     {% endif %}
                     <td class="text-end fw-semibold pe-3
                                {% if op.saldo <= 0 %}text-success
                                {% elif op.saldo < op.quantidade * 0.2 %}text-warning{% endif %}">
+                      {% if usa_blank %}
+                      {{ (op.saldo // b) }} bl
+                      <div class="fw-normal text-muted" style="font-size:0.72rem;">{{ op.saldo }} pçs</div>
+                      {% else %}
                       {{ op.saldo }}
+                      {% endif %}
                     </td>
                   </tr>
                   {% endfor %}
