@@ -95,32 +95,52 @@ function agendarBuscarMeta() {
   _metaTimer = setTimeout(buscarMeta, 700);
 }
 
-function buscarMeta() {
+function buscarMeta(manual) {
+  const info = document.getElementById("modalMetaInfo");
+  if (!info) return;
+
   const codigo = (document.getElementById("modalModelo").value || "").trim().toUpperCase();
   const setor  = (document.getElementById("modalSetor").value  || "").trim().toUpperCase();
   const linha  = (document.getElementById("modalLinha").value  || "").trim().toUpperCase();
-  const info   = document.getElementById("modalMetaInfo");
 
   if (!codigo) {
-    info.style.display = "none";
+    if (manual) {
+      info.textContent   = "Informe o código do modelo para buscar a meta.";
+      info.className     = "form-text text-muted";
+      info.style.display = "";
+    } else {
+      info.style.display = "none";
+    }
     return;
   }
 
   const faseEl = document.getElementById("modalFase");
   const fase   = (_isSmdSetor(setor) && faseEl) ? (faseEl.value || "") : "";
 
-  const url = URL_META() + "?codigo=" + encodeURIComponent(codigo)
-            + "&setor=" + encodeURIComponent(setor)
-            + "&linha=" + encodeURIComponent(linha)
-            + (fase ? "&fase=" + encodeURIComponent(fase) : "");
+  let url;
+  try {
+    url = URL_META() + "?codigo=" + encodeURIComponent(codigo)
+        + "&setor=" + encodeURIComponent(setor)
+        + "&linha=" + encodeURIComponent(linha)
+        + (fase ? "&fase=" + encodeURIComponent(fase) : "");
+  } catch (e) {
+    info.textContent   = "Erro interno ao buscar meta.";
+    info.className     = "form-text text-danger";
+    info.style.display = "";
+    return;
+  }
+
+  info.textContent   = "Buscando…";
+  info.className     = "form-text text-muted";
+  info.style.display = "";
 
   fetch(url)
     .then(r => r.json())
     .then(function(data) {
       if (data.meta !== null && data.meta !== undefined) {
         document.getElementById("modalTaxa").value = Math.round(data.meta);
-        info.textContent = "Meta encontrada: " + Math.round(data.meta) + " pç/h";
-        info.className   = "form-text text-success";
+        info.textContent   = "Meta encontrada: " + Math.round(data.meta) + " pç/h";
+        info.className     = "form-text text-success";
         info.style.display = "";
       } else {
         info.textContent   = "Modelo não cadastrado — informe a meta manualmente.";
