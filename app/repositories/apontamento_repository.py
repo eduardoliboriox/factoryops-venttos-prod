@@ -177,7 +177,7 @@ def vincular(data: str, turno: str, modelo: str, linha: str, op_id: int, quantid
             cur.execute("SELECT fase_modelo FROM controle_ops WHERE id = %s", (op_id,))
             op_row = cur.fetchone()
             fase_modelo = op_row["fase_modelo"] if op_row else None
-            if fase_modelo == "AMBAS":
+            if fase_modelo == "AMBAS" and fase in ("TOP", "BOTTOM"):
                 cur.execute("""
                     UPDATE controle_ops SET produzido = (
                         SELECT LEAST(
@@ -196,7 +196,7 @@ def vincular(data: str, turno: str, modelo: str, linha: str, op_id: int, quantid
 def desvincular(apontamento_id: int) -> None:
     with get_db() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
-            cur.execute("SELECT op_id, quantidade FROM apontamento WHERE id = %s", (apontamento_id,))
+            cur.execute("SELECT op_id, quantidade, fase FROM apontamento WHERE id = %s", (apontamento_id,))
             row = cur.fetchone()
             if not row:
                 return
@@ -204,7 +204,7 @@ def desvincular(apontamento_id: int) -> None:
             op_row = cur.fetchone()
             fase_modelo = op_row["fase_modelo"] if op_row else None
             cur.execute("DELETE FROM apontamento WHERE id = %s", (apontamento_id,))
-            if fase_modelo == "AMBAS":
+            if fase_modelo == "AMBAS" and row["fase"] in ("TOP", "BOTTOM"):
                 cur.execute("""
                     UPDATE controle_ops SET produzido = (
                         SELECT LEAST(
