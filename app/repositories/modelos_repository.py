@@ -221,17 +221,25 @@ def buscar_meta_padrao(codigo: str, fase: str, linha: Optional[str]) -> Optional
 _SMD_SMT_ALIAS: frozenset = frozenset({"SMD", "SMT"})
 
 
-def buscar_meta_por_codigo(codigo: str, setor: str = "") -> Optional[float]:
+def buscar_meta_por_codigo(codigo: str, setor: str = "", fase: str = "") -> Optional[float]:
     with get_db() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
             if setor:
                 if setor.upper() in _SMD_SMT_ALIAS:
-                    cur.execute("""
-                        SELECT meta_padrao FROM modelos
-                        WHERE codigo = %s AND setor = ANY(%s)
-                          AND meta_padrao IS NOT NULL AND meta_padrao > 0
-                        ORDER BY id LIMIT 1
-                    """, (codigo, list(_SMD_SMT_ALIAS)))
+                    if fase:
+                        cur.execute("""
+                            SELECT meta_padrao FROM modelos
+                            WHERE codigo = %s AND setor = ANY(%s) AND fase = %s
+                              AND meta_padrao IS NOT NULL AND meta_padrao > 0
+                            ORDER BY id LIMIT 1
+                        """, (codigo, list(_SMD_SMT_ALIAS), fase.upper()))
+                    else:
+                        cur.execute("""
+                            SELECT meta_padrao FROM modelos
+                            WHERE codigo = %s AND setor = ANY(%s)
+                              AND meta_padrao IS NOT NULL AND meta_padrao > 0
+                            ORDER BY fase DESC, id LIMIT 1
+                        """, (codigo, list(_SMD_SMT_ALIAS)))
                 else:
                     cur.execute("""
                         SELECT meta_padrao FROM modelos

@@ -40,6 +40,10 @@ function onSetorChange(setor, selectLinhaId) {
   });
 }
 
+function _isSmdSetor(setor) {
+  return ["SMD", "SMT"].includes((setor || "").toUpperCase());
+}
+
 function onSetorModalChange(setor) {
   const sel    = document.getElementById("modalLinha");
   const opcoes = OPCOES_LINHA();
@@ -53,7 +57,9 @@ function onSetorModalChange(setor) {
     sel.appendChild(opt);
   });
 
+  document.getElementById("rowModalFase").style.display = _isSmdSetor(setor) ? "" : "none";
   document.getElementById("modalSetup").value = calcularSetupSugerido(setor, "");
+  buscarMeta();
 }
 
 function onLinhaModalChange() {
@@ -100,9 +106,13 @@ function buscarMeta() {
     return;
   }
 
+  const faseEl = document.getElementById("modalFase");
+  const fase   = (_isSmdSetor(setor) && faseEl) ? (faseEl.value || "") : "";
+
   const url = URL_META() + "?codigo=" + encodeURIComponent(codigo)
             + "&setor=" + encodeURIComponent(setor)
-            + "&linha=" + encodeURIComponent(linha);
+            + "&linha=" + encodeURIComponent(linha)
+            + (fase ? "&fase=" + encodeURIComponent(fase) : "");
 
   fetch(url)
     .then(r => r.json())

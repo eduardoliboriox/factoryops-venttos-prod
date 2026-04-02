@@ -10,7 +10,10 @@ STATUS_VALIDOS  = {"PLANEJADO", "EM_EXECUCAO", "CONCLUIDO", "CANCELADO"}
 
 # ─── helpers de tempo ─────────────────────────────────────────────────────────
 
-def _to_minutes(t: time) -> int:
+def _to_minutes(t) -> int:
+    if isinstance(t, str):
+        parts = t.split(":")
+        return int(parts[0]) * 60 + int(parts[1])
     return t.hour * 60 + t.minute
 
 
