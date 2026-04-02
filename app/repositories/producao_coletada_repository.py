@@ -119,7 +119,7 @@ def inserir_manual(data: dict) -> None:
     with get_db() as conn:
         with conn.cursor() as cur:
             cur.execute("SELECT nextval('producao_coletada_manual_seq')")
-            manual_id = cur.fetchone()[0]
+            manual_id = cur.fetchone()["nextval"]
             cur.execute("""
                 INSERT INTO producao_coletada (
                     id, data, setor, linha, turno, modelo,

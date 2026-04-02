@@ -75,7 +75,7 @@ def inserir(data: dict) -> int:
                 data.get("observacao") or None,
                 data.get("criado_por") or None,
             ))
-            return cur.fetchone()[0]
+            return cur.fetchone()["id"]
 
 
 def atualizar(planejamento_id: int, data: dict) -> None:

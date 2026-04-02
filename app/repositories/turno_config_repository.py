@@ -32,7 +32,7 @@ def proximo_ordem(turno: str) -> int:
     with get_db() as conn:
         with conn.cursor() as cur:
             cur.execute(
-                "SELECT COALESCE(MAX(ordem), 0) + 1 FROM turno_config WHERE turno = %s",
+                "SELECT COALESCE(MAX(ordem), 0) + 1 AS proximo FROM turno_config WHERE turno = %s",
                 (turno,)
             )
-            return cur.fetchone()[0]
+            return cur.fetchone()["proximo"]

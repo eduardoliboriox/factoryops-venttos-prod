@@ -30,7 +30,7 @@ def create_sessao(data: dict) -> int:
                     data.get("data_sessao") or "now()",
                 ),
             )
-            sessao_id = cur.fetchone()[0]
+            sessao_id = cur.fetchone()["id"]
             conn.commit()
             return sessao_id
 
