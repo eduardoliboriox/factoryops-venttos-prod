@@ -787,7 +787,7 @@ def pcp_planejamento_plano_de_voo():
 @bp.route("/pcp/planejamento/buscar-meta")
 @login_required
 def pcp_planejamento_buscar_meta():
-    from flask import request, jsonify
+    from flask import request, jsonify, current_app
     from app.repositories import modelos_repository as mr
     from app.services import planejamento_service as svc
 
@@ -796,9 +796,15 @@ def pcp_planejamento_buscar_meta():
     linha  = request.args.get("linha",  "").strip().upper()
     fase   = request.args.get("fase",   "").strip().upper()
 
-    meta  = mr.buscar_meta_por_codigo(codigo, setor, fase) if codigo else None
-    setup = svc.setup_sugerido(setor, linha)
-    return jsonify({"meta": meta, "setup_sugerido": setup})
+    try:
+        meta  = mr.buscar_meta_por_codigo(codigo, setor, fase) if codigo else None
+        setup = svc.setup_sugerido(setor, linha)
+        return jsonify({"meta": meta, "setup_sugerido": setup})
+    except Exception:
+        current_app.logger.exception(
+            "buscar_meta falhou: codigo=%s setor=%s fase=%s", codigo, setor, fase
+        )
+        return jsonify({"meta": None, "setup_sugerido": 0}), 500
 
 
 @bp.route("/pcp/planejamento/plano-detalhado")

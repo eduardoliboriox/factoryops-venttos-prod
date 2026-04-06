@@ -229,17 +229,20 @@ def buscar_meta_por_codigo(codigo: str, setor: str = "", fase: str = "") -> Opti
                     if fase:
                         cur.execute("""
                             SELECT meta_padrao FROM modelos
-                            WHERE UPPER(codigo) = %s AND setor = ANY(%s) AND UPPER(fase) = %s
+                            WHERE UPPER(codigo) = %s
+                              AND setor IN ('SMD', 'SMT')
+                              AND UPPER(fase) = %s
                               AND meta_padrao IS NOT NULL AND meta_padrao > 0
                             ORDER BY id LIMIT 1
-                        """, (codigo, list(_SMD_SMT_ALIAS), fase.upper()))
+                        """, (codigo, fase.upper()))
                     else:
                         cur.execute("""
                             SELECT meta_padrao FROM modelos
-                            WHERE UPPER(codigo) = %s AND setor = ANY(%s)
+                            WHERE UPPER(codigo) = %s
+                              AND setor IN ('SMD', 'SMT')
                               AND meta_padrao IS NOT NULL AND meta_padrao > 0
                             ORDER BY fase DESC, id LIMIT 1
-                        """, (codigo, list(_SMD_SMT_ALIAS)))
+                        """, (codigo,))
                 else:
                     cur.execute("""
                         SELECT meta_padrao FROM modelos
