@@ -229,16 +229,16 @@ def buscar_meta_por_codigo(codigo: str, setor: str = "", fase: str = "") -> Opti
                     if fase:
                         cur.execute("""
                             SELECT meta_padrao FROM modelos
-                            WHERE UPPER(codigo) = %s
+                            WHERE UPPER(TRIM(codigo)) = %s
                               AND setor IN ('SMD', 'SMT')
-                              AND UPPER(fase) = %s
+                              AND UPPER(TRIM(fase)) = %s
                               AND meta_padrao IS NOT NULL AND meta_padrao > 0
                             ORDER BY id LIMIT 1
                         """, (codigo, fase.upper()))
                     else:
                         cur.execute("""
                             SELECT meta_padrao FROM modelos
-                            WHERE UPPER(codigo) = %s
+                            WHERE UPPER(TRIM(codigo)) = %s
                               AND setor IN ('SMD', 'SMT')
                               AND meta_padrao IS NOT NULL AND meta_padrao > 0
                             ORDER BY fase DESC, id LIMIT 1
@@ -246,19 +246,41 @@ def buscar_meta_por_codigo(codigo: str, setor: str = "", fase: str = "") -> Opti
                 else:
                     cur.execute("""
                         SELECT meta_padrao FROM modelos
-                        WHERE UPPER(codigo) = %s AND UPPER(setor) = %s
+                        WHERE UPPER(TRIM(codigo)) = %s AND UPPER(TRIM(setor)) = %s
                           AND meta_padrao IS NOT NULL AND meta_padrao > 0
                         ORDER BY id LIMIT 1
                     """, (codigo, setor))
             else:
                 cur.execute("""
                     SELECT meta_padrao FROM modelos
-                    WHERE UPPER(codigo) = %s
+                    WHERE UPPER(TRIM(codigo)) = %s
                       AND meta_padrao IS NOT NULL AND meta_padrao > 0
                     ORDER BY id LIMIT 1
                 """, (codigo,))
             row = cur.fetchone()
             return float(row["meta_padrao"]) if row else None
+
+
+def buscar_candidatos_diagnostico(fragmento: str) -> list:
+    prefix = fragmento[:20]
+    with get_db() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute("""
+                SELECT codigo, setor, fase, meta_padrao
+                FROM modelos
+                WHERE codigo ILIKE %s
+                ORDER BY codigo LIMIT 5
+            """, (f"%{prefix}%",))
+            return [
+                {
+                    "codigo": r["codigo"],
+                    "codigo_repr": repr(r["codigo"]),
+                    "setor": r["setor"],
+                    "fase": r["fase"],
+                    "meta_padrao": float(r["meta_padrao"]) if r["meta_padrao"] else None,
+                }
+                for r in cur.fetchall()
+            ]
 
 
 def inserir(dados, *, audit_user_id: Optional[int] = None, audit_username: Optional[str] = None):

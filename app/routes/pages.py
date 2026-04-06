@@ -799,7 +799,10 @@ def pcp_planejamento_buscar_meta():
     try:
         meta  = mr.buscar_meta_por_codigo(codigo, setor, fase) if codigo else None
         setup = svc.setup_sugerido(setor, linha)
-        return jsonify({"meta": meta, "setup_sugerido": setup})
+        result = {"meta": meta, "setup_sugerido": setup}
+        if meta is None and codigo:
+            result["_debug"] = mr.buscar_candidatos_diagnostico(codigo)
+        return jsonify(result)
     except Exception:
         current_app.logger.exception(
             "buscar_meta falhou: codigo=%s setor=%s fase=%s", codigo, setor, fase
