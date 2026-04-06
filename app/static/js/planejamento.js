@@ -117,6 +117,8 @@ function buscarMeta(manual) {
   const faseEl = document.getElementById("modalFase");
   const fase   = (_isSmdSetor(setor) && faseEl) ? (faseEl.value || "") : "";
 
+  console.log("[buscarMeta] params:", { codigo, setor, linha, fase, isSmd: _isSmdSetor(setor), faseElVisible: faseEl ? faseEl.closest("#rowModalFase")?.style.display : "n/a" });
+
   let url;
   try {
     url = URL_META() + "?codigo=" + encodeURIComponent(codigo)
@@ -124,19 +126,26 @@ function buscarMeta(manual) {
         + "&linha=" + encodeURIComponent(linha)
         + (fase ? "&fase=" + encodeURIComponent(fase) : "");
   } catch (e) {
+    console.error("[buscarMeta] erro ao construir URL:", e);
     info.textContent   = "Erro interno ao buscar meta.";
     info.className     = "form-text text-danger";
     info.style.display = "";
     return;
   }
 
+  console.log("[buscarMeta] url:", url);
+
   info.textContent   = "Buscando…";
   info.className     = "form-text text-muted";
   info.style.display = "";
 
   fetch(url)
-    .then(r => r.json())
+    .then(function(r) {
+      console.log("[buscarMeta] http status:", r.status);
+      return r.json();
+    })
     .then(function(data) {
+      console.log("[buscarMeta] resposta:", data);
       if (data.meta !== null && data.meta !== undefined) {
         document.getElementById("modalTaxa").value = Math.round(data.meta);
         info.textContent   = "Meta encontrada: " + Math.round(data.meta) + " pç/h";
@@ -154,7 +163,8 @@ function buscarMeta(manual) {
         }
       }
     })
-    .catch(function() {
+    .catch(function(e) {
+      console.error("[buscarMeta] fetch error:", e);
       info.textContent   = "Erro ao buscar meta.";
       info.className     = "form-text text-danger";
       info.style.display = "";
