@@ -88,11 +88,16 @@ def calcular_hora_fim(
     setup_restante    = setup_min
     cursor_min        = _to_minutes(hora_inicio)
 
+    prev_iv_end = None
     for iv in intervalos:
         iv_start = _to_minutes(iv["hora_inicio"])
         iv_end   = _to_minutes(iv["hora_fim"])
         if iv_end <= iv_start:
             iv_end += 24 * 60
+        if prev_iv_end is not None and iv_start < prev_iv_end:
+            iv_start += 24 * 60
+            iv_end   += 24 * 60
+        prev_iv_end = iv_end
 
         janela_start = max(cursor_min, iv_start)
         if janela_start >= iv_end:
@@ -144,22 +149,32 @@ def gerar_plano_hora_a_hora(
         if not p.get("frequencia_dias") or dia_codigo in p["frequencia_dias"].split(",")
     ]
 
-    paradas_intervals = []
-    for p in paradas_ativas:
-        if p["hora_inicio"]:
-            s = _to_minutes(p["hora_inicio"])
-            paradas_intervals.append((s, s + p["duracao_min"], p.get("tipo", "PARADA")))
-
     janelas = []
     for iv in turno_intervalos:
         s = _to_minutes(iv["hora_inicio"])
         e = _to_minutes(iv["hora_fim"])
         if e <= s:
             e += 24 * 60
+        if janelas and s < janelas[-1][1]:
+            s += 24 * 60
+            e += 24 * 60
         janelas.append((s, e))
 
     if not janelas or not planos:
         return []
+
+    turno_cruza_meia_noite = janelas[-1][1] > 24 * 60
+    turno_inicio_min       = janelas[0][0]
+
+    paradas_intervals = []
+    for p in paradas_ativas:
+        if p["hora_inicio"]:
+            s    = _to_minutes(p["hora_inicio"])
+            e    = s + p["duracao_min"]
+            tipo = p.get("tipo", "PARADA")
+            paradas_intervals.append((s, e, tipo))
+            if turno_cruza_meia_noite and s < turno_inicio_min:
+                paradas_intervals.append((s + 24 * 60, e + 24 * 60, tipo))
 
     slots         = []
     total_acumulado = 0
