@@ -145,7 +145,7 @@ function buscarMeta(manual) {
       return r.json();
     })
     .then(function(data) {
-      console.log("[buscarMeta] resposta:", data);
+      console.log("[buscarMeta] resposta:", JSON.stringify(data));
       if (data.meta !== null && data.meta !== undefined) {
         document.getElementById("modalTaxa").value = Math.round(data.meta);
         info.textContent   = "Meta encontrada: " + Math.round(data.meta) + " pç/h";
