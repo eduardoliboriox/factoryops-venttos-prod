@@ -803,11 +803,11 @@ def pcp_planejamento_buscar_meta():
         if meta is None and codigo:
             result["_debug"] = mr.buscar_candidatos_diagnostico(codigo)
         return jsonify(result)
-    except Exception:
+    except Exception as e:
         current_app.logger.exception(
             "buscar_meta falhou: codigo=%s setor=%s fase=%s", codigo, setor, fase
         )
-        return jsonify({"meta": None, "setup_sugerido": 0}), 500
+        return jsonify({"meta": None, "setup_sugerido": 0, "_erro": str(e)}), 500
 
 
 @bp.route("/pcp/planejamento/plano-detalhado")
