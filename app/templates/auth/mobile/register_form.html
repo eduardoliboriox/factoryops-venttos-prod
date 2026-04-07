@@ -81,57 +81,59 @@
                class="form-control mb-3"
                placeholder="(99) 99999-9999">
 
-        <h6 class="fw-bold mt-3 mb-2">Endereço</h6>
+        <div style="display:none;">
+          <h6 class="fw-bold mt-3 mb-2">Endereço</h6>
 
-        <div class="row g-2">
-          <div class="col-6">
-            <input name="zip_code"
-                   id="zip_code"
-                   data-mask="zip"
-                   class="form-control"
-                   placeholder="CEP">
+          <div class="row g-2">
+            <div class="col-6">
+              <input name="zip_code"
+                     id="zip_code"
+                     data-mask="zip"
+                     class="form-control"
+                     placeholder="CEP">
+            </div>
+
+            <div class="col-6">
+              <input name="number"
+                     class="form-control"
+                     placeholder="Número">
+            </div>
           </div>
 
-          <div class="col-6">
-            <input name="number"
-                   class="form-control"
-                   placeholder="Número">
+          <input name="street"
+                 id="street"
+                 class="form-control mt-2"
+                 placeholder="Rua">
+
+          <input name="neighborhood"
+                 id="neighborhood"
+                 class="form-control mt-2"
+                 placeholder="Bairro">
+
+          <div class="row g-2 mt-1">
+            <div class="col-8">
+              <input name="city"
+                     id="city"
+                     class="form-control"
+                     placeholder="Cidade">
+            </div>
+
+            <div class="col-4">
+              <input name="state"
+                     id="state"
+                     class="form-control"
+                     placeholder="UF">
+            </div>
           </div>
+
+          <input name="complement"
+                 class="form-control mt-2"
+                 placeholder="Complemento">
+
+          <input name="reference"
+                 class="form-control mt-2 mb-3"
+                 placeholder="Referência">
         </div>
-
-        <input name="street"
-               id="street"
-               class="form-control mt-2"
-               placeholder="Rua">
-
-        <input name="neighborhood"
-               id="neighborhood"
-               class="form-control mt-2"
-               placeholder="Bairro">
-
-        <div class="row g-2 mt-1">
-          <div class="col-8">
-            <input name="city"
-                   id="city"
-                   class="form-control"
-                   placeholder="Cidade">
-          </div>
-
-          <div class="col-4">
-            <input name="state"
-                   id="state"
-                   class="form-control"
-                   placeholder="UF">
-          </div>
-        </div>
-
-        <input name="complement"
-               class="form-control mt-2"
-               placeholder="Complemento">
-
-        <input name="reference"
-               class="form-control mt-2 mb-3"
-               placeholder="Referência">
 
         <h6 class="fw-bold mt-3 mb-2">Senha</h6>
 
