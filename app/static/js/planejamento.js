@@ -308,6 +308,20 @@ function excluirPlanejamento(id) {
   .catch(() => mostrarAlerta("danger", "Erro de conexão."));
 }
 
+// ─── Imprimir Resumo de Produção ──────────────────────────────────────────────
+function imprimirResumo() {
+  const data   = _root().dataset.dataSelecionada || "";
+  const turno  = document.querySelector("select[name=turno]")?.value || "";
+  const setor  = document.getElementById("resumo-setor-print")?.value || "";
+  const base   = _root().dataset.urlResumoImprimir;
+
+  let url = base + "?data=" + encodeURIComponent(data);
+  if (turno) url += "&turno=" + encodeURIComponent(turno);
+  if (setor) url += "&setor=" + encodeURIComponent(setor);
+
+  window.open(url, "_blank");
+}
+
 // ─── Alertas ──────────────────────────────────────────────────────────────────
 function mostrarAlerta(tipo, msg) {
   const area = document.getElementById("alertArea");

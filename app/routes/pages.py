@@ -874,20 +874,21 @@ def pcp_planejamento_resumo_imprimir():
     from app.services import planejamento_service as svc
     from datetime import date, datetime
 
-    data_str = request.args.get("data",  str(date.today()))
-    turno    = request.args.get("turno", "")
+    data_str     = request.args.get("data",  str(date.today()))
+    turno        = request.args.get("turno", "")
+    setor_filtro = request.args.get("setor", "")
 
     try:
-        resumo = svc.resumo_producao(data_str, turno)
+        resumo = svc.resumo_producao(data_str, turno, setor_filtro)
     except Exception as e:
         resumo = []
 
     dias_semana = ["Segunda-Feira", "Terça-Feira", "Quarta-Feira",
                    "Quinta-Feira", "Sexta-Feira", "Sábado", "Domingo"]
     try:
-        dt          = datetime.strptime(data_str, "%Y-%m-%d")
-        dia_semana  = dias_semana[dt.weekday()]
-        data_fmt    = dt.strftime("%d/%m/%Y")
+        dt         = datetime.strptime(data_str, "%Y-%m-%d")
+        dia_semana = dias_semana[dt.weekday()]
+        data_fmt   = dt.strftime("%d/%m/%Y")
     except ValueError:
         dia_semana = ""
         data_fmt   = data_str
@@ -899,6 +900,7 @@ def pcp_planejamento_resumo_imprimir():
         data_fmt=data_fmt,
         dia_semana=dia_semana,
         turno=turno,
+        setor_filtro=setor_filtro,
     )
 
 

@@ -27,6 +27,10 @@
     letter-spacing: 1px;
     color: #475569;
     margin: 10px 0 4px;
+    padding: 3px 8px;
+    background: #e2e8f0;
+    border-left: 4px solid #1e293b;
+    display: inline-block;
   }
 
   table.rp-table {
@@ -52,11 +56,11 @@
     font-size: 0.78rem;
   }
   table.rp-table tbody tr:nth-child(even) { background: #f8fafc; }
-  table.rp-table .sem-plano td { color: #94a3b8; font-style: italic; }
-  table.rp-table .sem-plano .td-linha { color: #475569; font-style: normal; font-weight: 600; }
+  table.rp-table .sem-plano td { color: #94a3b8; }
+  table.rp-table .sem-plano .td-linha { color: #475569; font-weight: 600; }
   table.rp-table .td-linha { font-weight: 700; white-space: nowrap; }
-  table.rp-table .td-meta { text-align: center; font-weight: 700; }
-  table.rp-table .td-op { font-size: 0.72rem; color: #475569; }
+  table.rp-table .td-total { text-align: center; font-weight: 700; }
+  table.rp-table .td-turno { font-size: 0.7rem; color: #475569; white-space: nowrap; }
 
   @media print {
     .no-print { display: none !important; }
@@ -79,6 +83,7 @@
   </div>
   <div class="rp-header-turno">
     {% if turno %}{{ turno }}{% else %}Todos os Turnos{% endif %}
+    {% if setor_filtro %} &nbsp;·&nbsp; {{ setor_filtro }}{% endif %}
   </div>
 </div>
 
@@ -87,11 +92,12 @@
 <table class="rp-table">
   <thead>
     <tr>
-      <th style="width:80px;">Linha</th>
+      <th style="width:75px;">Linha</th>
+      <th style="width:85px;">Turno</th>
       <th style="width:110px;">Código</th>
       <th>Modelo</th>
       <th style="width:130px;">Ordem de Produção</th>
-      <th style="width:100px;">Meta Diária</th>
+      <th style="width:110px;">Total a Produzir</th>
       <th>Observações</th>
     </tr>
   </thead>
@@ -100,7 +106,7 @@
       {% if item.sem_plano %}
       <tr class="sem-plano">
         <td class="td-linha">{{ item.linha }}</td>
-        <td colspan="5" style="color:#94a3b8;font-style:italic;">SEM PLANO</td>
+        <td colspan="6" style="color:#94a3b8;font-style:italic;">SEM PLANO</td>
       </tr>
       {% else %}
         {% for p in item.planos %}
@@ -108,16 +114,11 @@
           {% if loop.first %}
           <td class="td-linha" rowspan="{{ item.planos | length }}">{{ item.linha }}</td>
           {% endif %}
+          <td class="td-turno">{{ p.turno }}</td>
           <td>{{ p.modelo or '—' }}</td>
-          <td>
-            {% if p.numero_op %}
-            <span style="font-size:0.72rem;color:#475569;">{{ p.numero_op }}</span>
-            {% else %}
-            <span style="color:#94a3b8;">—</span>
-            {% endif %}
-          </td>
-          <td class="td-op">{{ p.numero_op or '—' }}</td>
-          <td class="td-meta">{{ "{:,.0f}".format(p.quantidade_planejada).replace(',', '.') }}</td>
+          <td style="font-size:0.75rem;">{{ p.descricao_op or '—' }}</td>
+          <td style="font-size:0.72rem;color:#475569;">{{ p.numero_op or '—' }}</td>
+          <td class="td-total">{{ "{:,.0f}".format(p.quantidade_planejada).replace(',', '.') }}</td>
           <td style="font-size:0.72rem;color:#475569;">{{ p.observacao or '' }}</td>
         </tr>
         {% endfor %}

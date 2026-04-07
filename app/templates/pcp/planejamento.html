@@ -336,12 +336,18 @@
             <i class="bi bi-file-earmark-bar-graph text-muted"></i>
             <span class="fw-semibold" style="font-size:0.85rem;">Resumo de Produção — {{ data_selecionada }}</span>
           </div>
-          <a href="{{ url_for('pages.pcp_planejamento_resumo_imprimir') }}?data={{ data_selecionada }}{% if turno %}&turno={{ turno | urlencode }}{% endif %}"
-             target="_blank"
-             class="btn btn-sm btn-outline-secondary fw-semibold"
-             style="border-radius:8px;font-size:0.78rem;">
-            <i class="bi bi-printer me-1"></i>Imprimir Resumo
-          </a>
+          <div class="d-flex align-items-center gap-2">
+            <select id="resumo-setor-print" class="form-select form-select-sm" style="border-radius:8px;width:auto;font-size:0.78rem;">
+              <option value="">Todos os setores</option>
+              {% for s in opcoes.keys() | sort %}
+              <option value="{{ s }}">{{ s }}</option>
+              {% endfor %}
+            </select>
+            <button onclick="imprimirResumo()" class="btn btn-sm btn-outline-secondary fw-semibold"
+                    style="border-radius:8px;font-size:0.78rem;">
+              <i class="bi bi-printer me-1"></i>Imprimir
+            </button>
+          </div>
         </div>
       </div>
 
@@ -357,10 +363,11 @@
               <thead style="font-size:0.72rem;text-transform:uppercase;letter-spacing:.5px;background:var(--bg);">
                 <tr>
                   <th class="ps-3 py-2" style="width:90px;">Linha</th>
-                  <th style="width:120px;">Código</th>
+                  <th style="width:85px;">Turno</th>
+                  <th style="width:115px;">Código</th>
                   <th>Modelo</th>
                   <th style="width:140px;">Ordem de Produção</th>
-                  <th class="text-end" style="width:110px;">Meta Diária</th>
+                  <th class="text-end" style="width:120px;">Total a Produzir</th>
                   <th class="pe-3">Observações</th>
                 </tr>
               </thead>
@@ -369,7 +376,7 @@
                   {% if item.sem_plano %}
                   <tr style="opacity:0.6;">
                     <td class="ps-3 fw-bold text-nowrap">{{ item.linha }}</td>
-                    <td colspan="5" class="text-muted fst-italic" style="font-size:0.78rem;">SEM PLANO</td>
+                    <td colspan="6" class="text-muted fst-italic" style="font-size:0.78rem;">SEM PLANO</td>
                   </tr>
                   {% else %}
                     {% for p in item.planos %}
@@ -377,8 +384,9 @@
                       {% if loop.first %}
                       <td class="ps-3 fw-bold text-nowrap" rowspan="{{ item.planos | length }}">{{ item.linha }}</td>
                       {% endif %}
+                      <td class="text-muted small text-nowrap">{{ p.turno }}</td>
                       <td class="fw-semibold">{{ p.modelo or '—' }}</td>
-                      <td class="text-muted small">{{ p.numero_op or '—' }}</td>
+                      <td class="text-muted small">{{ p.descricao_op or '—' }}</td>
                       <td class="text-muted small">{{ p.numero_op or '—' }}</td>
                       <td class="text-end fw-bold">{{ "{:,.0f}".format(p.quantidade_planejada).replace(',', '.') }}</td>
                       <td class="pe-3 text-muted small">{{ p.observacao or '' }}</td>
@@ -757,5 +765,5 @@
   </div>
 </div>
 
-<script src="{{ url_for('static', filename='js/planejamento.js') }}?v=4"></script>
+<script src="{{ url_for('static', filename='js/planejamento.js') }}?v=5"></script>
 {% endblock %}

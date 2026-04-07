@@ -398,7 +398,7 @@ def planos_agrupados_por_linha(data: str) -> list:
     return list(grupos.values())
 
 
-def resumo_producao(data_str: str, turno: str = "") -> list:
+def resumo_producao(data_str: str, turno: str = "", setor: str = "") -> list:
     linhas_config = opcoes_linha()
     registros = repo.listar(data_str, turno)
 
@@ -408,10 +408,12 @@ def resumo_producao(data_str: str, turno: str = "") -> list:
         planos_por_key.setdefault(key, []).append(dict(p))
 
     resultado = []
-    for setor in sorted(linhas_config):
-        grupo = {"setor": setor, "linhas": []}
-        for linha in sorted(linhas_config[setor]):
-            planos_linha = planos_por_key.get((setor, linha), [])
+    for s in sorted(linhas_config):
+        if setor and s != setor:
+            continue
+        grupo = {"setor": s, "linhas": []}
+        for linha in sorted(linhas_config[s]):
+            planos_linha = planos_por_key.get((s, linha), [])
             grupo["linhas"].append({
                 "linha":     linha,
                 "planos":    planos_linha,
