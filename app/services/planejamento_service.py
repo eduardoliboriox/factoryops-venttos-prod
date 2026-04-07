@@ -378,6 +378,50 @@ def opcoes_linha() -> dict:
     return {setor: [r["linha"] for r in rows] for setor, rows in agrupado.items()}
 
 
+def planos_agrupados_por_linha(data: str) -> list:
+    registros = repo.listar(data)
+    grupos: dict = {}
+    for p in registros:
+        key = (p["turno"], p["setor"], p["linha"])
+        if key not in grupos:
+            grupos[key] = {
+                "turno":       p["turno"],
+                "setor":       p["setor"],
+                "linha":       p["linha"],
+                "data":        str(p["data"]),
+                "modelos":     [],
+                "meta_total":  0,
+                "hora_inicio": str(p.get("hora_inicio_prevista") or ""),
+            }
+        grupos[key]["modelos"].append(p["modelo"])
+        grupos[key]["meta_total"] += int(p.get("quantidade_planejada") or 0)
+    return list(grupos.values())
+
+
+def resumo_producao(data_str: str, turno: str = "") -> list:
+    linhas_config = opcoes_linha()
+    registros = repo.listar(data_str, turno)
+
+    planos_por_key: dict = {}
+    for p in registros:
+        key = (p["setor"], p["linha"])
+        planos_por_key.setdefault(key, []).append(dict(p))
+
+    resultado = []
+    for setor in sorted(linhas_config):
+        grupo = {"setor": setor, "linhas": []}
+        for linha in sorted(linhas_config[setor]):
+            planos_linha = planos_por_key.get((setor, linha), [])
+            grupo["linhas"].append({
+                "linha":     linha,
+                "planos":    planos_linha,
+                "sem_plano": not planos_linha,
+            })
+        resultado.append(grupo)
+
+    return resultado
+
+
 def dados_impressao_plano_voo(data_str: str, turno: str, setor: str, linha: str) -> dict:
     planos     = repo.listar_plano_de_voo(data_str, turno=turno, setor=setor, linha=linha)
     intervalos = repo.turno_intervalos(turno)
