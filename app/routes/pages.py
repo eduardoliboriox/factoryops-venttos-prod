@@ -675,12 +675,17 @@ def pcp_planejamento():
     opcoes   = {}
     fila_smd = []
 
+    planos_agrupados = []
+    resumo           = []
+
     try:
-        planos   = svc.listar(data_str, turno, setor, linha)
-        ops      = svc.ops_disponiveis()
-        filtros  = pc_svc.filtros_disponiveis(setor)
-        opcoes   = svc.opcoes_linha()
-        fila_smd = ap_svc.fila_producao()
+        planos           = svc.listar(data_str, turno, setor, linha)
+        ops              = svc.ops_disponiveis()
+        filtros          = pc_svc.filtros_disponiveis(setor)
+        opcoes           = svc.opcoes_linha()
+        fila_smd         = ap_svc.fila_producao()
+        planos_agrupados = svc.planos_agrupados_por_linha(data_str)
+        resumo           = svc.resumo_producao(data_str, turno)
     except Exception as e:
         erro = str(e)
 
@@ -696,6 +701,8 @@ def pcp_planejamento():
         filtros=filtros,
         opcoes=opcoes,
         fila_smd=fila_smd,
+        planos_agrupados=planos_agrupados,
+        resumo=resumo,
         erro=erro,
     )
 
@@ -858,6 +865,41 @@ def pcp_planejamento_plano_voo_imprimir():
         dados = {"slots": [], "data": data_str, "info": {}, "erro": str(e)}
 
     return render_template("pcp/plano_voo_print.html", **dados)
+
+
+@bp.route("/pcp/planejamento/resumo/imprimir")
+@login_required
+def pcp_planejamento_resumo_imprimir():
+    from flask import request
+    from app.services import planejamento_service as svc
+    from datetime import date, datetime
+
+    data_str = request.args.get("data",  str(date.today()))
+    turno    = request.args.get("turno", "")
+
+    try:
+        resumo = svc.resumo_producao(data_str, turno)
+    except Exception as e:
+        resumo = []
+
+    dias_semana = ["Segunda-Feira", "Terça-Feira", "Quarta-Feira",
+                   "Quinta-Feira", "Sexta-Feira", "Sábado", "Domingo"]
+    try:
+        dt          = datetime.strptime(data_str, "%Y-%m-%d")
+        dia_semana  = dias_semana[dt.weekday()]
+        data_fmt    = dt.strftime("%d/%m/%Y")
+    except ValueError:
+        dia_semana = ""
+        data_fmt   = data_str
+
+    return render_template(
+        "pcp/resumo_producao_print.html",
+        resumo=resumo,
+        data=data_str,
+        data_fmt=data_fmt,
+        dia_semana=dia_semana,
+        turno=turno,
+    )
 
 
 @bp.route("/pcp/entregas")

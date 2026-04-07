@@ -26,6 +26,7 @@
      data-url-status-tpl="{{ url_for('pages.pcp_planejamento_status', plan_id=0) }}"
      data-url-excluir-tpl="{{ url_for('pages.pcp_planejamento_excluir', plan_id=0) }}"
      data-url-imprimir="{{ url_for('pages.pcp_planejamento_plano_voo_imprimir') }}"
+     data-url-resumo-imprimir="{{ url_for('pages.pcp_planejamento_resumo_imprimir') }}"
      data-data-selecionada="{{ data_selecionada }}"
      data-ops='{{ ops | tojson }}'
      data-opcoes='{{ opcoes | tojson }}'>
@@ -133,9 +134,17 @@
     </li>
     <li class="nav-item">
       <button class="nav-link" id="tab-voo" data-bs-toggle="tab"
-              data-bs-target="#pane-voo" type="button"
-              onclick="renderPlanoDeVoo('{{ data_selecionada }}')">
-        <i class="bi bi-bar-chart-steps me-1"></i>Plano de Voo
+              data-bs-target="#pane-voo" type="button">
+        <i class="bi bi-send me-1"></i>Plano de Voo
+        {% if planos_agrupados %}
+        <span class="badge bg-primary ms-1" style="font-size:0.65rem;">{{ planos_agrupados | length }}</span>
+        {% endif %}
+      </button>
+    </li>
+    <li class="nav-item">
+      <button class="nav-link" id="tab-resumo" data-bs-toggle="tab"
+              data-bs-target="#pane-resumo" type="button">
+        <i class="bi bi-file-earmark-bar-graph me-1"></i>Resumo de Produção
       </button>
     </li>
     <li class="nav-item">
@@ -267,82 +276,128 @@
 
     <!-- Plano de Voo -->
     <div class="tab-pane fade" id="pane-voo">
-      <!-- Gantt de visão geral -->
-      <div class="card mb-4" style="border-radius:12px;border-color:var(--border);">
-        <div class="card-header py-2 px-3 d-flex align-items-center gap-2"
-             style="border-radius:12px 12px 0 0;border-color:var(--border);background:var(--bg);">
-          <i class="bi bi-bar-chart-steps text-muted"></i>
-          <span class="fw-semibold" style="font-size:0.85rem;">Visão geral — linha do tempo</span>
-        </div>
-        <div class="card-body p-3">
-          <div id="planoDeVooContainer">
-            <div class="p-4 text-center text-muted small">
-              <i class="bi bi-bar-chart-steps d-block fs-2 mb-2 opacity-25"></i>
-              Clique na aba para carregar o plano de voo.
+      {% if planos_agrupados %}
+      <div class="row g-3">
+        {% for grupo in planos_agrupados %}
+        <div class="col-12 col-md-6 col-xl-4">
+          <div class="card h-100" style="border-radius:12px;border-color:var(--border);">
+            <div class="card-header py-2 px-3 d-flex align-items-center justify-content-between"
+                 style="border-radius:12px 12px 0 0;border-color:var(--border);background:var(--bg);">
+              <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-send text-primary" style="font-size:0.9rem;"></i>
+                <span class="fw-bold" style="font-size:0.9rem;">{{ grupo.linha }}</span>
+              </div>
+              <span class="badge bg-light text-dark border" style="font-size:0.7rem;">{{ grupo.setor }}</span>
+            </div>
+            <div class="card-body p-3">
+              <div class="d-flex gap-3 mb-2" style="font-size:0.8rem;">
+                <span><i class="bi bi-clock text-muted me-1"></i>{{ grupo.turno }}</span>
+                {% if grupo.hora_inicio %}
+                <span><i class="bi bi-play-circle text-muted me-1"></i>{{ grupo.hora_inicio }}</span>
+                {% endif %}
+              </div>
+              <div class="mb-2" style="font-size:0.82rem;">
+                {% for modelo in grupo.modelos %}
+                <span class="badge bg-light text-dark border me-1 mb-1" style="font-size:0.72rem;font-weight:600;">{{ modelo }}</span>
+                {% endfor %}
+              </div>
+              <div style="font-size:0.8rem;">
+                <span class="text-muted">Meta diária:</span>
+                <strong class="text-primary ms-1">{{ "{:,.0f}".format(grupo.meta_total).replace(',', '.') }} pçs</strong>
+              </div>
+            </div>
+            <div class="card-footer px-3 py-2" style="border-color:var(--border);border-radius:0 0 12px 12px;background:transparent;">
+              <a href="{{ url_for('pages.pcp_planejamento_plano_voo_imprimir') }}?data={{ grupo.data }}&turno={{ grupo.turno | urlencode }}&setor={{ grupo.setor | urlencode }}&linha={{ grupo.linha | urlencode }}"
+                 target="_blank"
+                 class="btn btn-sm btn-outline-primary w-100 fw-semibold"
+                 style="border-radius:8px;font-size:0.78rem;">
+                <i class="bi bi-printer me-1"></i>Imprimir Plano de Voo
+              </a>
             </div>
           </div>
         </div>
+        {% endfor %}
       </div>
+      {% else %}
+      <div class="card p-5 text-center text-muted" style="border-radius:12px;border-color:var(--border);">
+        <i class="bi bi-send d-block fs-1 mb-3 opacity-25"></i>
+        <p class="mb-0 fw-semibold">Nenhum plano de voo para esta data</p>
+        <p class="small mt-1">Crie planejamentos na aba <strong>Tabela</strong> para gerar os documentos.</p>
+      </div>
+      {% endif %}
+    </div>
 
-      <!-- Detalhamento hora a hora -->
-      <div class="card" style="border-radius:12px;border-color:var(--border);">
+    <!-- Resumo de Produção -->
+    <div class="tab-pane fade" id="pane-resumo">
+      <div class="card mb-3" style="border-radius:12px;border-color:var(--border);">
         <div class="card-header py-2 px-3 d-flex align-items-center justify-content-between"
              style="border-radius:12px 12px 0 0;border-color:var(--border);background:var(--bg);">
           <div class="d-flex align-items-center gap-2">
-            <i class="bi bi-clock-history text-muted"></i>
-            <span class="fw-semibold" style="font-size:0.85rem;">Detalhamento hora a hora</span>
+            <i class="bi bi-file-earmark-bar-graph text-muted"></i>
+            <span class="fw-semibold" style="font-size:0.85rem;">Resumo de Produção — {{ data_selecionada }}</span>
           </div>
+          <a href="{{ url_for('pages.pcp_planejamento_resumo_imprimir') }}?data={{ data_selecionada }}{% if turno %}&turno={{ turno | urlencode }}{% endif %}"
+             target="_blank"
+             class="btn btn-sm btn-outline-secondary fw-semibold"
+             style="border-radius:8px;font-size:0.78rem;">
+            <i class="bi bi-printer me-1"></i>Imprimir Resumo
+          </a>
         </div>
-        <div class="card-body p-3">
-          <div class="row g-2 mb-3">
-            <div class="col-6 col-md-3">
-              <label class="form-label fw-semibold" style="font-size:0.8rem;">Turno</label>
-              <select class="form-select form-select-sm" id="detalhe-turno" style="border-radius:8px;">
-                <option value="">Selecione</option>
-                <option value="1º Turno">1º Turno</option>
-                <option value="2º Turno">2º Turno</option>
-                <option value="3º Turno">3º Turno</option>
-              </select>
-            </div>
-            <div class="col-6 col-md-3">
-              <label class="form-label fw-semibold" style="font-size:0.8rem;">Setor</label>
-              <select class="form-select form-select-sm" id="detalhe-setor"
-                      onchange="onSetorChange(this.value,'detalhe-linha')" style="border-radius:8px;">
-                <option value="">Todos</option>
-                {% for s in opcoes.keys() | sort %}
-                <option value="{{ s }}">{{ s }}</option>
+      </div>
+
+      {% for grupo in resumo %}
+      <div class="card mb-3" style="border-radius:12px;border-color:var(--border);">
+        <div class="card-header py-2 px-3"
+             style="border-radius:12px 12px 0 0;border-color:var(--border);background:var(--bg);">
+          <span class="fw-bold" style="font-size:0.82rem;text-transform:uppercase;letter-spacing:1px;">{{ grupo.setor }}</span>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover mb-0" style="font-size:0.82rem;">
+              <thead style="font-size:0.72rem;text-transform:uppercase;letter-spacing:.5px;background:var(--bg);">
+                <tr>
+                  <th class="ps-3 py-2" style="width:90px;">Linha</th>
+                  <th style="width:120px;">Código</th>
+                  <th>Modelo</th>
+                  <th style="width:140px;">Ordem de Produção</th>
+                  <th class="text-end" style="width:110px;">Meta Diária</th>
+                  <th class="pe-3">Observações</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for item in grupo.linhas %}
+                  {% if item.sem_plano %}
+                  <tr style="opacity:0.6;">
+                    <td class="ps-3 fw-bold text-nowrap">{{ item.linha }}</td>
+                    <td colspan="5" class="text-muted fst-italic" style="font-size:0.78rem;">SEM PLANO</td>
+                  </tr>
+                  {% else %}
+                    {% for p in item.planos %}
+                    <tr>
+                      {% if loop.first %}
+                      <td class="ps-3 fw-bold text-nowrap" rowspan="{{ item.planos | length }}">{{ item.linha }}</td>
+                      {% endif %}
+                      <td class="fw-semibold">{{ p.modelo or '—' }}</td>
+                      <td class="text-muted small">{{ p.numero_op or '—' }}</td>
+                      <td class="text-muted small">{{ p.numero_op or '—' }}</td>
+                      <td class="text-end fw-bold">{{ "{:,.0f}".format(p.quantidade_planejada).replace(',', '.') }}</td>
+                      <td class="pe-3 text-muted small">{{ p.observacao or '' }}</td>
+                    </tr>
+                    {% endfor %}
+                  {% endif %}
                 {% endfor %}
-              </select>
-            </div>
-            <div class="col-6 col-md-3">
-              <label class="form-label fw-semibold" style="font-size:0.8rem;">Linha</label>
-              <select class="form-select form-select-sm" id="detalhe-linha" style="border-radius:8px;">
-                <option value="">Selecione o setor</option>
-                {% for setor, linhas in opcoes.items() %}
-                  {% for l in linhas | sort %}
-                  <option value="{{ l }}" data-setor="{{ setor }}">{{ l }}</option>
-                  {% endfor %}
-                {% endfor %}
-              </select>
-            </div>
-            <div class="col-6 col-md-3 d-flex align-items-end gap-2">
-              <button class="btn btn-primary btn-sm fw-semibold flex-grow-1"
-                      style="border-radius:8px;" onclick="gerarDetalhe()">
-                <i class="bi bi-list-ol me-1"></i>Detalhar
-              </button>
-              <button class="btn btn-outline-secondary btn-sm" style="border-radius:8px;"
-                      title="Imprimir Plano de Voo" onclick="imprimirPlanoVoo()">
-                <i class="bi bi-printer"></i>
-              </button>
-            </div>
-          </div>
-          <div id="detalheContainer">
-            <div class="p-3 text-center text-muted small">
-              Selecione turno e linha para ver o detalhamento hora a hora.
-            </div>
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
+      {% else %}
+      <div class="card p-5 text-center text-muted" style="border-radius:12px;border-color:var(--border);">
+        <i class="bi bi-file-earmark-bar-graph d-block fs-1 mb-3 opacity-25"></i>
+        <p class="mb-0 fw-semibold">Nenhum dado de resumo disponível</p>
+        <p class="small mt-1">Configure as linhas em <strong>Configurações</strong> para ver o resumo.</p>
+      </div>
+      {% endfor %}
     </div>
 
     <!-- Fila de Produção -->
@@ -702,5 +757,5 @@
   </div>
 </div>
 
-<script src="{{ url_for('static', filename='js/planejamento.js') }}?v=3"></script>
+<script src="{{ url_for('static', filename='js/planejamento.js') }}?v=4"></script>
 {% endblock %}

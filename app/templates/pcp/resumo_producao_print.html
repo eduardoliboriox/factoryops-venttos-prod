@@ -1,0 +1,137 @@
+{% extends "layouts/app_print.html" %}
+{% block title %}Resumo de Produção · {{ data_fmt }}{% endblock %}
+
+{% block content %}
+<style>
+  @page { size: A4 landscape; margin: 12mm; }
+  body { padding: 0; font-family: Arial, sans-serif; font-size: 0.8rem; color: #1e293b; }
+
+  .rp-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid #000;
+    padding-bottom: 6px;
+    margin-bottom: 12px;
+  }
+  .rp-header img { height: 32px; }
+  .rp-header-title { text-align: center; }
+  .rp-header-title .dia { font-size: 1.1rem; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; }
+  .rp-header-title .data { font-size: 0.85rem; color: #475569; }
+  .rp-header-turno { font-size: 0.82rem; font-weight: 600; color: #475569; }
+
+  .rp-setor-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #475569;
+    margin: 10px 0 4px;
+  }
+
+  table.rp-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 0;
+  }
+  table.rp-table thead th {
+    background: #1e293b;
+    color: #fff;
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 5px 8px;
+    border: 1px solid #475569;
+    white-space: nowrap;
+  }
+  table.rp-table tbody td {
+    border: 1px solid #cbd5e1;
+    padding: 4px 8px;
+    vertical-align: middle;
+    font-size: 0.78rem;
+  }
+  table.rp-table tbody tr:nth-child(even) { background: #f8fafc; }
+  table.rp-table .sem-plano td { color: #94a3b8; font-style: italic; }
+  table.rp-table .sem-plano .td-linha { color: #475569; font-style: normal; font-weight: 600; }
+  table.rp-table .td-linha { font-weight: 700; white-space: nowrap; }
+  table.rp-table .td-meta { text-align: center; font-weight: 700; }
+  table.rp-table .td-op { font-size: 0.72rem; color: #475569; }
+
+  @media print {
+    .no-print { display: none !important; }
+    a[href]:after { content: none !important; }
+  }
+</style>
+
+<div class="no-print mb-3" style="display:flex;gap:8px;">
+  <button onclick="window.print()" class="btn btn-primary btn-sm">
+    <i class="bi bi-printer me-1"></i>Imprimir
+  </button>
+  <a href="javascript:history.back()" class="btn btn-outline-secondary btn-sm">Voltar</a>
+</div>
+
+<div class="rp-header">
+  <img src="{{ url_for('static', filename='images/logos/logo.png') }}" alt="Venttos">
+  <div class="rp-header-title">
+    <div class="dia">{{ dia_semana }}</div>
+    <div class="data">{{ data_fmt }}</div>
+  </div>
+  <div class="rp-header-turno">
+    {% if turno %}{{ turno }}{% else %}Todos os Turnos{% endif %}
+  </div>
+</div>
+
+{% for grupo in resumo %}
+<div class="rp-setor-label">{{ grupo.setor }}</div>
+<table class="rp-table">
+  <thead>
+    <tr>
+      <th style="width:80px;">Linha</th>
+      <th style="width:110px;">Código</th>
+      <th>Modelo</th>
+      <th style="width:130px;">Ordem de Produção</th>
+      <th style="width:100px;">Meta Diária</th>
+      <th>Observações</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for item in grupo.linhas %}
+      {% if item.sem_plano %}
+      <tr class="sem-plano">
+        <td class="td-linha">{{ item.linha }}</td>
+        <td colspan="5" style="color:#94a3b8;font-style:italic;">SEM PLANO</td>
+      </tr>
+      {% else %}
+        {% for p in item.planos %}
+        <tr>
+          {% if loop.first %}
+          <td class="td-linha" rowspan="{{ item.planos | length }}">{{ item.linha }}</td>
+          {% endif %}
+          <td>{{ p.modelo or '—' }}</td>
+          <td>
+            {% if p.numero_op %}
+            <span style="font-size:0.72rem;color:#475569;">{{ p.numero_op }}</span>
+            {% else %}
+            <span style="color:#94a3b8;">—</span>
+            {% endif %}
+          </td>
+          <td class="td-op">{{ p.numero_op or '—' }}</td>
+          <td class="td-meta">{{ "{:,.0f}".format(p.quantidade_planejada).replace(',', '.') }}</td>
+          <td style="font-size:0.72rem;color:#475569;">{{ p.observacao or '' }}</td>
+        </tr>
+        {% endfor %}
+      {% endif %}
+    {% endfor %}
+  </tbody>
+</table>
+{% endfor %}
+
+{% if not resumo %}
+<div style="padding:24px;text-align:center;color:#666;background:#f8f9fa;border-radius:8px;border:1px solid #dee2e6;">
+  Nenhum dado de planejamento para esta data.
+</div>
+{% endif %}
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+{% endblock %}
