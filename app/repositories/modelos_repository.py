@@ -233,7 +233,7 @@ def buscar_meta_por_codigo(codigo: str, setor: str = "", fase: str = "") -> Opti
                               AND setor IN ('SMD', 'SMT')
                               AND UPPER(TRIM(fase)) = %s
                               AND meta_padrao IS NOT NULL AND meta_padrao > 0
-                            ORDER BY id LIMIT 1
+                            LIMIT 1
                         """, (codigo, fase.upper()))
                     else:
                         cur.execute("""
@@ -241,21 +241,21 @@ def buscar_meta_por_codigo(codigo: str, setor: str = "", fase: str = "") -> Opti
                             WHERE UPPER(TRIM(codigo)) = %s
                               AND setor IN ('SMD', 'SMT')
                               AND meta_padrao IS NOT NULL AND meta_padrao > 0
-                            ORDER BY fase DESC, id LIMIT 1
+                            ORDER BY fase DESC LIMIT 1
                         """, (codigo,))
                 else:
                     cur.execute("""
                         SELECT meta_padrao FROM modelos
                         WHERE UPPER(TRIM(codigo)) = %s AND UPPER(TRIM(setor)) = %s
                           AND meta_padrao IS NOT NULL AND meta_padrao > 0
-                        ORDER BY id LIMIT 1
+                        LIMIT 1
                     """, (codigo, setor))
             else:
                 cur.execute("""
                     SELECT meta_padrao FROM modelos
                     WHERE UPPER(TRIM(codigo)) = %s
                       AND meta_padrao IS NOT NULL AND meta_padrao > 0
-                    ORDER BY id LIMIT 1
+                    LIMIT 1
                 """, (codigo,))
             row = cur.fetchone()
             return float(row["meta_padrao"]) if row else None
