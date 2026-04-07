@@ -27,11 +27,12 @@ def listar(data: str, turno: str = "", setor: str = "", linha: str = "") -> list
                     p.hora_inicio_prevista, p.hora_fim_prevista,
                     p.status, p.observacao, p.criado_por, p.criado_em,
                     co.numero_op,
+                    co.descricao AS descricao_op,
                     (co.quantidade - co.produzido) AS saldo_op
                 FROM planejamento p
                 LEFT JOIN controle_ops co ON co.id = p.op_id
                 WHERE {where}
-                ORDER BY p.linha, p.hora_inicio_prevista
+                ORDER BY p.turno, p.linha, p.hora_inicio_prevista
             """, params)
             return cur.fetchall()
 

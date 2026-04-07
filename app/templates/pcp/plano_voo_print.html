@@ -3,7 +3,7 @@
 
 {% block content %}
 <style>
-  @page { size: A4 landscape; margin: 15mm; }
+  @page { size: A4 portrait; margin: 15mm; }
   body { padding: 0; font-family: Arial, sans-serif; font-size: 0.82rem; }
   .pv-header { display: flex; justify-content: space-between; align-items: center;
                border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 10px; }
@@ -26,12 +26,11 @@
   .pv-table .row-totais td { background: #343a40; color: #fff; font-weight: bold;
                              text-align: center; border: 1px solid #555; }
   .col-horario { width: 130px; text-align: center; font-size: 0.75rem; white-space: nowrap; }
-  .col-modelo { min-width: 160px; }
+  .col-modelo { min-width: 180px; }
   .col-tempo { width: 55px; text-align: center; }
   .col-meta { width: 60px; text-align: center; }
-  .col-qtde { width: 60px; text-align: center; }
   .col-acum { width: 65px; text-align: center; }
-  .col-obs { min-width: 200px; }
+  .col-obs { min-width: 220px; }
   .lbl-setup { font-size: 0.72rem; font-weight: bold; color: #664d03; }
   .lbl-modelo { font-size: 0.8rem; font-weight: bold; color: #0a3622; }
   @media print {
@@ -94,7 +93,6 @@
       <th class="col-modelo">Setup / Modelo</th>
       <th class="col-tempo">Tempo<br><small style="font-size:0.6rem;">(min)</small></th>
       <th class="col-meta">Meta/H</th>
-      <th class="col-qtde">Qtde</th>
       <th class="col-acum">Acum.</th>
       <th class="col-obs">Observação</th>
     </tr>
@@ -113,7 +111,6 @@
           <td class="col-modelo"><span class="lbl-setup">SETUP</span></td>
           <td class="col-tempo">{{ slot.setup_min }}</td>
           <td class="col-meta">0</td>
-          <td class="col-qtde"></td>
           <td class="col-acum"></td>
           <td class="col-obs" style="font-size:0.72rem;">
             SETUP
@@ -128,7 +125,6 @@
           </td>
           <td class="col-tempo">{{ slot.producao_min }}</td>
           <td class="col-meta">{{ slot.meta_hora or '—' }}</td>
-          <td class="col-qtde">{{ slot.pecas if slot.pecas else '' }}</td>
           <td class="col-acum">{{ slot.total_acumulado }}</td>
           <td class="col-obs"></td>
         </tr>
@@ -140,7 +136,6 @@
           <td class="col-modelo"><span class="lbl-setup">SETUP</span></td>
           <td class="col-tempo">{{ slot.setup_min }}</td>
           <td class="col-meta">0</td>
-          <td class="col-qtde"></td>
           <td class="col-acum"></td>
           <td class="col-obs" style="font-size:0.72rem;">
             SETUP
@@ -157,7 +152,6 @@
           </td>
           <td class="col-tempo">{{ slot.producao_min }}</td>
           <td class="col-meta">{{ slot.meta_hora or '—' }}</td>
-          <td class="col-qtde">{{ slot.pecas if slot.pecas else '' }}</td>
           <td class="col-acum">{{ slot.total_acumulado }}</td>
           <td class="col-obs"></td>
         </tr>
@@ -167,8 +161,7 @@
 
     <!-- Totais -->
     <tr class="row-totais">
-      <td colspan="4">TOTAIS</td>
-      <td></td>
+      <td colspan="3">TOTAIS</td>
       <td>{{ total_pecas.v }}</td>
       <td></td>
     </tr>
