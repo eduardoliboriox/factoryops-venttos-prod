@@ -867,6 +867,30 @@ def pcp_planejamento_plano_voo_imprimir():
     return render_template("pcp/plano_voo_print.html", **dados)
 
 
+@bp.route("/pcp/planejamento/plano-de-voo/imprimir-todos")
+@login_required
+def pcp_planejamento_plano_voo_imprimir_todos():
+    from flask import request
+    from app.services import planejamento_service as svc
+    from datetime import date
+
+    data_str     = request.args.get("data",  str(date.today()))
+    turno_filtro = request.args.get("turno", "")
+
+    grupos = svc.planos_agrupados_por_linha(data_str)
+    todos = []
+    for g in grupos:
+        if turno_filtro and g["turno"] != turno_filtro:
+            continue
+        try:
+            dados = svc.dados_impressao_plano_voo(data_str, g["turno"], g["setor"], g["linha"])
+            todos.append(dados)
+        except Exception:
+            pass
+
+    return render_template("pcp/plano_voo_print_todos.html", planos=todos, data=data_str)
+
+
 @bp.route("/pcp/planejamento/resumo/imprimir")
 @login_required
 def pcp_planejamento_resumo_imprimir():
