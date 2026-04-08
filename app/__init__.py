@@ -11,6 +11,65 @@ from app.auth.routes import bp as auth_bp
 from app.auth.models import User
 
 
+def _register_error_handlers(app) -> None:
+    from flask import render_template, request
+
+    _ERROR_CONFIGS = {
+        400: {
+            "titulo":      "Requisição inválida",
+            "mensagem":    "Os dados enviados não puderam ser processados. Verifique o formulário e tente novamente.",
+            "icone":       "exclamation-circle",
+            "nivel":       "warning",
+            "mostrar_voltar": True,
+        },
+        403: {
+            "titulo":      "Acesso negado",
+            "mensagem":    "Você não tem permissão para acessar esta página. Fale com um administrador caso acredite que isto seja um erro.",
+            "icone":       "shield-lock",
+            "nivel":       "warning",
+            "mostrar_voltar": True,
+        },
+        404: {
+            "titulo":      "Página não encontrada",
+            "mensagem":    "A página que você está procurando não existe ou foi movida. Verifique o endereço e tente novamente.",
+            "icone":       "compass",
+            "nivel":       "info",
+            "mostrar_voltar": True,
+        },
+        500: {
+            "titulo":      "Algo deu errado",
+            "mensagem":    "O sistema encontrou um problema inesperado. Nossa equipe já foi notificada e está trabalhando na solução. Tente novamente em alguns instantes.",
+            "icone":       "cloud-slash",
+            "nivel":       "danger",
+            "mostrar_voltar": False,
+        },
+    }
+
+    def _render_error(code: int):
+        cfg = _ERROR_CONFIGS.get(code, _ERROR_CONFIGS[500])
+        is_api = request.path.startswith("/api/")
+        if is_api:
+            from flask import jsonify
+            return jsonify({"error": cfg["titulo"]}), code
+        return render_template("errors/error.html", codigo=code, **cfg), code
+
+    @app.errorhandler(400)
+    def bad_request(e):
+        return _render_error(400)
+
+    @app.errorhandler(403)
+    def forbidden(e):
+        return _render_error(403)
+
+    @app.errorhandler(404)
+    def not_found(e):
+        return _render_error(404)
+
+    @app.errorhandler(500)
+    def server_error(e):
+        return _render_error(500)
+
+
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
@@ -102,6 +161,8 @@ def create_app():
     app.register_blueprint(pages_bp)
     app.register_blueprint(api_bp, url_prefix="/api")
     app.register_blueprint(auth_bp, url_prefix="/auth")
+
+    _register_error_handlers(app)
 
     from app.cli.employees_importer import import_employees
     app.cli.add_command(import_employees)
