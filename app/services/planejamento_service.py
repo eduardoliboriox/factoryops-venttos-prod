@@ -451,20 +451,30 @@ def dados_impressao_plano_voo(data_str: str, turno: str, setor: str, linha: str)
         data_str,
     ) if planos else []
 
+    from app.repositories import linha_lider_repository as lider_repo
+
     primeiro     = dict(planos[0]) if planos else {}
     modelo       = primeiro.get("modelo", "")
     familia      = repo.familia_por_modelo(modelo) if modelo else None
     cliente      = familia.strip().split()[0] if familia else "—"
     meta_diaria  = sum(p.get("quantidade_planejada", 0) for p in planos)
-    responsavel  = primeiro.get("criado_por", "") or "—"
+
+    setor_real = setor or primeiro.get("setor", "")
+    linha_real = linha or primeiro.get("linha", "")
+
+    lider_data  = lider_repo.buscar(setor_real, linha_real, turno) or {}
+    lider       = lider_data.get("lider") or "—"
+    hc          = lider_data.get("hc") or 0
+
+    responsavel = f"{lider} / HC: {hc}" if hc else lider
 
     return {
         "slots":  slots,
         "data":   data_str,
         "info": {
             "cliente":     cliente,
-            "setor":       setor or primeiro.get("setor", ""),
-            "linha":       linha or primeiro.get("linha", ""),
+            "setor":       setor_real,
+            "linha":       linha_real,
             "produto":     modelo,
             "meta_diaria": meta_diaria,
             "turno":       turno,
