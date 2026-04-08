@@ -94,6 +94,14 @@
     color: #b02a37;
   }
 
+  .tc-router .tc-header {
+    background: linear-gradient(180deg, rgba(255, 140, 0, 0.10), transparent);
+  }
+  .tc-router .tc-icon {
+    background: rgba(255, 140, 0, 0.14);
+    color: #b85c00;
+  }
+
   .tc-inverso .tc-header {
     background: linear-gradient(180deg, rgba(13, 202, 240, 0.10), transparent);
   }
@@ -315,6 +323,58 @@
       </form>
 
       <div id="resultadoSMT" class="mt-4 result-box text-center fw-semibold">
+        <span class="text-muted">Use o cronômetro ou informe o tempo para calcular.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Máquina ROUTER (manual / cronômetro) -->
+  <div class="tool-card tc-router mb-4">
+    <div class="tc-header">
+      <div class="tc-title">
+        <div class="tc-icon">
+          <i class="bi bi-scissors"></i>
+        </div>
+        <div>
+          <div class="fw-bold">Máquina ROUTER (Manual / Cronômetro)</div>
+          <div class="tc-subtitle">
+            Gera meta operacional (com perda) e mostra capacidade teórica (sem perda).
+          </div>
+        </div>
+      </div>
+      <span class="badge" style="background:#b85c00;color:#fff;">ROUTER</span>
+    </div>
+
+    <div class="tc-body">
+      <form id="routerForm" class="row g-3">
+
+        <div class="col-md-4">
+          <label class="form-label">Tempo de montagem (s)</label>
+          <input id="routerTempoMontagem" class="form-control form-control-lg" type="number" step="0.01" placeholder="Ex: 19.55">
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label">Placas por blank</label>
+          <input id="routerBlank" class="form-control form-control-lg" type="number" required placeholder="Ex: 1">
+        </div>
+
+        <div class="col-md-4 d-flex align-items-end gap-2">
+          <button id="routerStartTimer" type="button" class="btn btn-outline-success w-100">
+            ▶ Start
+          </button>
+          <button id="routerStopTimer" type="button" class="btn btn-outline-danger w-100">
+            ⏹ Stop
+          </button>
+        </div>
+
+        <div class="col-12">
+          <button class="btn btn-lg w-100" type="submit" style="background:#b85c00;color:#fff;border-radius:8px;">
+            <i class="bi bi-calculator me-1"></i> Calcular Meta ROUTER
+          </button>
+        </div>
+      </form>
+
+      <div id="resultadoROUTER" class="mt-4 result-box text-center fw-semibold">
         <span class="text-muted">Use o cronômetro ou informe o tempo para calcular.</span>
       </div>
     </div>
@@ -545,6 +605,104 @@ document.getElementById("smtForm").addEventListener("submit", async e => {
 
   initTooltips(document.getElementById("resultadoSMT"));
 });
+</script>
+
+<script>
+(function () {
+  let routerInicio = null;
+  const routerInputTempo = document.getElementById('routerTempoMontagem');
+
+  document.getElementById('routerStartTimer').addEventListener('click', () => {
+    routerInicio = performance.now();
+    routerInputTempo.value = '';
+  });
+
+  document.getElementById('routerStopTimer').addEventListener('click', () => {
+    if (!routerInicio) return;
+    const fim = performance.now();
+    routerInputTempo.value = ((fim - routerInicio) / 1000).toFixed(2);
+    routerInicio = null;
+  });
+
+  document.getElementById("routerForm").addEventListener("submit", async e => {
+    e.preventDefault();
+    const tempo = document.getElementById("routerTempoMontagem").value;
+    const blank = document.getElementById("routerBlank").value;
+
+    const fd = new FormData();
+    fd.append("tempo_montagem", tempo);
+    fd.append("blank", blank);
+
+    const r = await fetch("/api/smt/calcular_meta", { method: "POST", body: fd });
+    const data = await r.json();
+
+    if (!data.sucesso) {
+      document.getElementById("resultadoROUTER").innerHTML =
+        `<span class="text-danger">${data.erro}</span>`;
+      return;
+    }
+
+    const metaOperacional = data.dados.meta_hora;
+    const capacidadePlacasInt = data.dados.meta_teorica_placas ?? null;
+    const capacidadeBlanksInt = data.dados.meta_teorica_blanks ?? null;
+
+    let capacidadeFallback = null;
+    if (capacidadePlacasInt !== null) {
+      capacidadeFallback = Number(capacidadePlacasInt);
+    } else if (capacidadeBlanksInt !== null) {
+      capacidadeFallback = Number(capacidadeBlanksInt) * Number(blank);
+    } else {
+      const t = Number(tempo);
+      const b = Number(blank);
+      if (t > 0 && b > 0) {
+        capacidadeFallback = Math.floor(3600 / t) * b;
+      }
+    }
+
+    const resultadoEl = document.getElementById("resultadoROUTER");
+    resultadoEl.innerHTML = `
+      <div class="d-flex flex-column gap-2">
+        <div>
+          Meta Operacional: <strong>${metaOperacional}</strong>
+          <span
+            class="help-icon"
+            tabindex="0"
+            role="button"
+            data-bs-toggle="tooltip"
+            data-bs-placement="top"
+            data-bs-html="true"
+            title="
+              <div><strong>O que é?</strong> Meta/hora considerando a perda padrão.</div>
+              <div class='mt-1'><strong>Regra:</strong> usamos 10% de perda (multiplica por <strong>0.9</strong>).</div>
+              <div class='mt-1'><strong>Em outras palavras:</strong> este valor já é o que você deve usar como meta operacional.</div>
+            "
+          >i</span>
+        </div>
+        <div>
+          Capacidade Teórica da Máquina: <strong>${capacidadeFallback ?? '-'}</strong>
+          <span
+            class="help-icon"
+            tabindex="0"
+            role="button"
+            data-bs-toggle="tooltip"
+            data-bs-placement="top"
+            data-bs-html="true"
+            title="
+              <div><strong>O que é?</strong> Capacidade máxima em 60 minutos, <strong>sem</strong> considerar a perda.</div>
+              <div class='mt-1'><strong>Base:</strong> (3600 ÷ tempo de montagem) = peças/hora (teórico).</div>
+              <div class='mt-1'><strong>Depois:</strong> multiplica pelo blank (placas por blank).</div>
+              <div class='mt-1'><strong>Uso:</strong> referência para entendimento do limite da máquina.</div>
+            "
+          >i</span>
+        </div>
+        <div class="text-muted" style="font-size: 12px;">
+          Dica: compare "Teórica" (sem 10%) vs "Operacional" (com 10%) para entender o impacto da perda.
+        </div>
+      </div>
+    `;
+    initTooltips(resultadoEl);
+  });
+})();
 </script>
 
 <script>

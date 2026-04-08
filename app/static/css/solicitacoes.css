@@ -239,33 +239,33 @@
 /* ===============================
    MOBILE REGISTER — FULL WIDTH FIX
    =============================== */
-@media (max-width: 768px) {
+@media (max-width: 991px) {
 
   .mobile-screen.register-form {
     min-height: 100vh;
-    padding: 40px 16px 24px 16px;
+    padding: 40px 16px 32px 16px;
     display: block;
+    align-items: unset;
+    overflow-y: auto;
   }
 
   .mobile-register-wrapper {
     width: 100%;
+    max-width: 480px;
+    margin: 0 auto;
   }
 
   .mobile-register-wrapper > .text-center {
-    margin-bottom: 28px;
-    margin-top: 20px;
+    margin-bottom: 24px;
+    margin-top: 16px;
   }
 
   .mobile-register-card {
     width: 100%;
     background: #ffffff;
-    padding: 20px;
+    padding: 24px;
     border-radius: 14px;
     box-shadow: 0 6px 18px rgba(0,0,0,0.08);
-  }
-
-  .mobile-form {
-    width: 100%;
   }
 }
 

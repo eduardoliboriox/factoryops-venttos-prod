@@ -1,0 +1,22 @@
+{% extends "errors/base.html" %}
+{% block title %}500 — Erro interno{% endblock %}
+
+{% block body %}
+<div class="error-icon-wrap" style="background:rgba(220,53,69,0.10);color:#dc3545;">
+  <i class="bi bi-exclamation-triangle-fill"></i>
+</div>
+<div class="error-code" style="color:#dc3545;">500</div>
+<div class="error-title">Algo deu errado no servidor</div>
+<div class="error-desc">
+  Ocorreu um problema interno e a equipe já foi notificada.<br>
+  O sistema estará disponível em breve. Agradecemos a paciência.
+</div>
+<div>
+  <a href="/" class="btn-home">
+    <i class="bi bi-house-fill"></i> Voltar ao início
+  </a>
+  <button class="btn-refresh" onclick="location.reload()">
+    <i class="bi bi-arrow-clockwise"></i> Tentar novamente
+  </button>
+</div>
+{% endblock %}
