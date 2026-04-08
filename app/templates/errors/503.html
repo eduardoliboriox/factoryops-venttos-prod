@@ -1,0 +1,22 @@
+{% extends "errors/base.html" %}
+{% block title %}503 — Serviço indisponível{% endblock %}
+
+{% block body %}
+<div class="error-icon-wrap" style="background:rgba(255,193,7,0.15);color:#a06a00;">
+  <i class="bi bi-cloud-slash-fill"></i>
+</div>
+<div class="error-code" style="color:#a06a00;">503</div>
+<div class="error-title">Sistema temporariamente indisponível</div>
+<div class="error-desc">
+  O sistema está passando por uma manutenção ou instabilidade momentânea.<br>
+  Por favor, aguarde alguns minutos e tente novamente.
+</div>
+<div>
+  <a href="/" class="btn-home">
+    <i class="bi bi-house-fill"></i> Voltar ao início
+  </a>
+  <button class="btn-refresh" onclick="location.reload()">
+    <i class="bi bi-arrow-clockwise"></i> Tentar novamente
+  </button>
+</div>
+{% endblock %}

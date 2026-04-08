@@ -43,6 +43,13 @@ def _register_error_handlers(app) -> None:
             "nivel":       "danger",
             "mostrar_voltar": False,
         },
+        503: {
+            "titulo":      "Serviço temporariamente indisponível",
+            "mensagem":    "O sistema está passando por manutenção ou sobrecarga. Aguarde alguns instantes e tente novamente.",
+            "icone":       "cloud-slash",
+            "nivel":       "warning",
+            "mostrar_voltar": False,
+        },
     }
 
     def _render_error(code: int):
@@ -68,6 +75,10 @@ def _register_error_handlers(app) -> None:
     @app.errorhandler(500)
     def server_error(e):
         return _render_error(500)
+
+    @app.errorhandler(503)
+    def service_unavailable(e):
+        return _render_error(503)
 
 
 def create_app():

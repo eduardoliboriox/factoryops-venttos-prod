@@ -1,0 +1,19 @@
+{% extends "errors/base.html" %}
+{% block title %}404 — Página não encontrada{% endblock %}
+
+{% block body %}
+<div class="error-icon-wrap" style="background:rgba(13,110,253,0.10);color:#0d6efd;">
+  <i class="bi bi-map"></i>
+</div>
+<div class="error-code" style="color:#0d6efd;">404</div>
+<div class="error-title">Página não encontrada</div>
+<div class="error-desc">
+  A página que você tentou acessar não existe ou foi movida.<br>
+  Verifique o endereço digitado ou volte ao início.
+</div>
+<div>
+  <a href="/" class="btn-home">
+    <i class="bi bi-house-fill"></i> Voltar ao início
+  </a>
+</div>
+{% endblock %}
