@@ -274,6 +274,29 @@
 }
 
 /* ==================================================
+   MOBILE – REGISTER / CENTERED CONTAINER FIX
+   Overrides the 64px padding from .auth-container
+   that squishes the card on small screens
+================================================== */
+
+@media (max-width: 991px) {
+  .auth-container-centered {
+    padding: 24px 16px;
+    align-items: flex-start;
+  }
+
+  .auth-container-centered .auth-card-wrapper {
+    width: 100%;
+    max-width: 100%;
+    padding: 0;
+  }
+
+  .auth-container-centered .auth-card {
+    max-width: 100%;
+  }
+}
+
+/* ==================================================
    LOGIN SPLIT CARD (desktop)
 ================================================== */
 
