@@ -26,6 +26,7 @@
      data-url-status-tpl="{{ url_for('pages.pcp_planejamento_status', plan_id=0) }}"
      data-url-excluir-tpl="{{ url_for('pages.pcp_planejamento_excluir', plan_id=0) }}"
      data-url-imprimir="{{ url_for('pages.pcp_planejamento_plano_voo_imprimir') }}"
+     data-url-imprimir-todos="{{ url_for('pages.pcp_planejamento_plano_voo_imprimir_todos') }}"
      data-url-resumo-imprimir="{{ url_for('pages.pcp_planejamento_resumo_imprimir') }}"
      data-data-selecionada="{{ data_selecionada }}"
      data-ops='{{ ops | tojson }}'
@@ -277,6 +278,14 @@
     <!-- Plano de Voo -->
     <div class="tab-pane fade" id="pane-voo">
       {% if planos_agrupados %}
+      <div class="d-flex justify-content-end mb-3">
+        <a href="{{ url_for('pages.pcp_planejamento_plano_voo_imprimir_todos') }}?data={{ data_selecionada }}{% if turno %}&turno={{ turno | urlencode }}{% endif %}"
+           target="_blank"
+           class="btn btn-primary btn-sm fw-semibold"
+           style="border-radius:8px;">
+          <i class="bi bi-printer me-1"></i>Imprimir Todos ({{ planos_agrupados | length }})
+        </a>
+      </div>
       <div class="row g-3">
         {% for grupo in planos_agrupados %}
         <div class="col-12 col-md-6 col-xl-4">
