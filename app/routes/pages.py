@@ -461,6 +461,7 @@ def config_linhas_remover():
 def config_paradas():
     from flask import request, flash, redirect, url_for
     from app.services import parada_config_service as svc
+    from app.services import linha_lider_service as lider_svc
 
     erro    = None
     paradas = {}
@@ -482,6 +483,24 @@ def config_paradas():
                 flash("Parada removida.", "success")
             except Exception as e:
                 flash(str(e), "danger")
+        elif acao == "salvar_lider":
+            try:
+                lider_svc.salvar(request.form)
+                flash("Responsável/HC salvo.", "success")
+            except ValueError as e:
+                flash(str(e), "danger")
+            except Exception as e:
+                flash(str(e), "danger")
+        elif acao == "excluir_lider":
+            try:
+                lider_svc.excluir(
+                    request.form.get("setor", ""),
+                    request.form.get("linha", ""),
+                    request.form.get("turno", ""),
+                )
+                flash("Responsável/HC removido.", "success")
+            except Exception as e:
+                flash(str(e), "danger")
         return redirect(url_for("pages.config_paradas"))
 
     try:
@@ -490,12 +509,19 @@ def config_paradas():
     except Exception as e:
         erro = str(e)
 
+    lideres = {}
+    try:
+        lideres = lider_svc.listar_por_setor()
+    except Exception:
+        pass
+
     return render_template(
         "config/paradas.html",
         active_menu="config_paradas",
         paradas=paradas,
         opcoes=opcoes,
         tipos=["INTERVALO_1", "INTERVALO_2", "GINASTICA", "DDS", "REFEICAO", "SETUP", "OUTROS"],
+        lideres=lideres,
         erro=erro,
     )
 

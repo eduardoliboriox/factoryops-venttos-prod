@@ -157,10 +157,136 @@
           </form>
         </div>
       </div>
+
+      <!-- Responsável / HC -->
+      <div class="card mt-4" style="border-radius:12px;border-color:var(--border);">
+        <div class="card-header py-2 px-3 d-flex align-items-center gap-2"
+             style="border-radius:12px 12px 0 0;border-color:var(--border);background:var(--card);">
+          <i class="bi bi-person-badge text-success"></i>
+          <span class="fw-semibold" style="font-size:0.9rem;">Responsável / HC</span>
+        </div>
+        <div class="card-body">
+          <form method="POST">
+            <input type="hidden" name="acao" value="salvar_lider">
+
+            <div class="row g-2 mb-3">
+              <div class="col-6">
+                <label class="form-label fw-semibold" style="font-size:0.8rem;">
+                  Setor <span class="text-danger">*</span>
+                </label>
+                <select class="form-select form-select-sm" name="setor" id="selectSetorLider"
+                        onchange="filtrarLinhasLider(this.value)" style="border-radius:8px;" required>
+                  <option value="">Selecione</option>
+                  {% for setor in opcoes.keys() | sort %}
+                  <option value="{{ setor }}">{{ setor }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="col-6">
+                <label class="form-label fw-semibold" style="font-size:0.8rem;">
+                  Linha <span class="text-danger">*</span>
+                </label>
+                <select class="form-select form-select-sm" name="linha" id="selectLinhaLider"
+                        style="border-radius:8px;" required>
+                  <option value="">Selecione</option>
+                  {% for setor, linhas in opcoes.items() %}
+                    {% for l in linhas | sort %}
+                    <option value="{{ l }}" data-setor="{{ setor }}">{{ l }}</option>
+                    {% endfor %}
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-semibold" style="font-size:0.8rem;">
+                Turno <span class="text-danger">*</span>
+              </label>
+              <select class="form-select form-select-sm" name="turno" style="border-radius:8px;" required>
+                <option value="">Selecione</option>
+                <option value="1º Turno">1º Turno</option>
+                <option value="2º Turno">2º Turno</option>
+                <option value="3º Turno">3º Turno</option>
+              </select>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-semibold" style="font-size:0.8rem;">Nome do Responsável</label>
+              <input type="text" class="form-control form-control-sm" name="lider"
+                     placeholder="Ex: João Silva" style="border-radius:8px;">
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-semibold" style="font-size:0.8rem;">
+                HC
+                <span class="text-muted fw-normal">(headcount da linha)</span>
+              </label>
+              <input type="number" class="form-control form-control-sm" name="hc"
+                     min="0" value="0" style="border-radius:8px;">
+            </div>
+
+            <button type="submit" class="btn btn-success btn-sm w-100 fw-semibold" style="border-radius:8px;">
+              <i class="bi bi-floppy me-1"></i>Salvar Responsável
+            </button>
+          </form>
+        </div>
+      </div>
     </div>
 
     <!-- Lista por setor -->
     <div class="col-12 col-lg-8">
+      {% if lideres %}
+      <div class="card mb-3" style="border-radius:12px;border-color:var(--border);">
+        <div class="card-header py-2 px-3 d-flex align-items-center gap-2"
+             style="border-radius:12px 12px 0 0;border-color:var(--border);background:var(--bg);">
+          <i class="bi bi-people text-success"></i>
+          <span class="fw-semibold" style="font-size:0.9rem;">Responsáveis / HC por Linha</span>
+          <span class="badge bg-success ms-1" style="font-size:0.68rem;">
+            {{ lideres.values() | map('length') | sum }}
+          </span>
+        </div>
+        <div class="card-body p-0">
+          <table class="table table-sm table-hover mb-0" style="font-size:0.82rem;">
+            <thead style="font-size:0.72rem;text-transform:uppercase;letter-spacing:.4px;background:var(--bg);">
+              <tr>
+                <th class="ps-3 py-2">Setor</th>
+                <th>Linha</th>
+                <th>Turno</th>
+                <th>Responsável</th>
+                <th class="text-center">HC</th>
+                <th class="pe-3"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for setor_nome, registros in lideres.items() %}
+                {% for r in registros %}
+                <tr>
+                  <td class="ps-3 fw-semibold text-muted small">{{ r.setor }}</td>
+                  <td class="small">{{ r.linha }}</td>
+                  <td class="small text-muted">{{ r.turno }}</td>
+                  <td class="small">{{ r.lider or '—' }}</td>
+                  <td class="text-center small fw-semibold">{{ r.hc }}</td>
+                  <td class="text-end pe-3">
+                    <form method="POST" style="display:inline;"
+                          onsubmit="return confirm('Remover responsável desta linha?')">
+                      <input type="hidden" name="acao" value="excluir_lider">
+                      <input type="hidden" name="setor" value="{{ r.setor }}">
+                      <input type="hidden" name="linha" value="{{ r.linha }}">
+                      <input type="hidden" name="turno" value="{{ r.turno }}">
+                      <button type="submit" class="btn btn-link btn-sm text-danger p-0" title="Remover">
+                        <i class="bi bi-trash3"></i>
+                      </button>
+                    </form>
+                  </td>
+                </tr>
+                {% endfor %}
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      {% endif %}
+
       {% if paradas %}
         {% set tipo_badge = {
           'INTERVALO_1': 'info',
@@ -330,6 +456,17 @@ function filtrarLinhas(setor) {
     sel.value = '';
   }
   sugerirDuracao();
+}
+
+function filtrarLinhasLider(setor) {
+  const sel = document.getElementById('selectLinhaLider');
+  const opts = sel.querySelectorAll('option[data-setor]');
+  opts.forEach(function(opt) {
+    opt.style.display = (!setor || opt.dataset.setor === setor) ? '' : 'none';
+  });
+  if (sel.value && sel.options[sel.selectedIndex].dataset.setor !== setor) {
+    sel.value = '';
+  }
 }
 </script>
 {% endblock %}
