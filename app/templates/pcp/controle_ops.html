@@ -16,16 +16,8 @@
 {% endblock %}
 
 {% block content %}
-<style>
-.controle-ops-canvas { width: 1024px; transform-origin: top left; }
-@media (max-width: 768px) {
-  .document-mobile-wrapper { overflow-x: hidden; overflow-y: visible; }
-  .controle-ops-canvas { transform: scale(var(--doc-scale, 1)); }
-}
-</style>
-
 <div class="document-mobile-wrapper">
-<div class="controle-ops-canvas">
+<div class="document-desktop-canvas">
 <div class="container-fluid">
 
   {% with messages = get_flashed_messages(with_categories=true) %}
@@ -192,7 +184,7 @@
   </div>
 
 </div>
-</div><!-- /.controle-ops-canvas -->
+</div><!-- /.document-desktop-canvas -->
 </div><!-- /.document-mobile-wrapper -->
 
 <script src="{{ url_for('static', filename='js/document-fit.js') }}"></script>

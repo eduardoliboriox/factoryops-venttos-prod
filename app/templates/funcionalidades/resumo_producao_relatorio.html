@@ -1,0 +1,350 @@
+{% extends "layouts/app.html" %}
+{% block title %}Relatório de Produção – {{ resumo.data.strftime('%d/%m/%Y') if resumo.data else '' }} {{ resumo.turno }}{% endblock %}
+
+{% block styles %}
+<style>
+.rel-wrapper {
+  max-width: 860px;
+  margin: 0 auto;
+}
+.rel-header-card {
+  background: var(--sidebar-bg);
+  color: white;
+  border-radius: 14px;
+  padding: 2rem;
+  margin-bottom: 1.5rem;
+  position: relative;
+  overflow: hidden;
+}
+.rel-header-card::after {
+  content: '';
+  position: absolute;
+  top: -40px; right: -40px;
+  width: 180px; height: 180px;
+  border-radius: 50%;
+  background: rgba(59,130,246,0.15);
+  pointer-events: none;
+}
+.rel-header-card .rel-title {
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  margin-bottom: 0.25rem;
+}
+.rel-header-card .rel-meta {
+  font-size: 0.85rem;
+  opacity: 0.7;
+}
+.rel-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+.rel-badge-turno {
+  background: rgba(59,130,246,0.2);
+  color: #93c5fd;
+  border: 1px solid rgba(59,130,246,0.3);
+}
+.rel-badge-data {
+  background: rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.85);
+  border: 1px solid rgba(255,255,255,0.15);
+}
+.rel-badge-dia {
+  background: rgba(16,185,129,0.15);
+  color: #6ee7b7;
+  border: 1px solid rgba(16,185,129,0.25);
+}
+.linha-rel-card {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--card);
+  margin-bottom: 1.25rem;
+  overflow: hidden;
+}
+.linha-rel-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.875rem 1.25rem;
+  background: rgba(13,110,253,0.06);
+  border-bottom: 1px solid var(--border);
+}
+.linha-rel-header .linha-nome {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.2px;
+}
+.linha-rel-body { padding: 1rem 1.25rem; }
+.linha-obs {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  background: rgba(220,53,69,0.06);
+  border: 1px solid rgba(220,53,69,0.2);
+  border-radius: 8px;
+  padding: 0.625rem 0.875rem;
+  margin-top: 0.75rem;
+  font-size: 0.84rem;
+  color: #dc3545;
+}
+.modelo-rel {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.875rem 1rem;
+  margin-bottom: 0.75rem;
+  background: #fafbfc;
+}
+.modelo-rel:last-child { margin-bottom: 0; }
+.modelo-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.625rem;
+}
+.modelo-codigo {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--text);
+}
+.modelo-produto {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+.op-tag {
+  display: inline-block;
+  background: rgba(13,110,253,0.08);
+  color: #0d6efd;
+  border: 1px solid rgba(13,110,253,0.18);
+  border-radius: 6px;
+  padding: 2px 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-family: monospace;
+  margin: 2px 3px 2px 0;
+}
+.prod-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  margin-right: 6px;
+}
+.prod-chip-top {
+  background: rgba(13,110,253,0.08);
+  border: 1px solid rgba(13,110,253,0.2);
+  color: #0d6efd;
+}
+.prod-chip-bot {
+  background: rgba(108,117,125,0.08);
+  border: 1px solid rgba(108,117,125,0.2);
+  color: #6c757d;
+}
+.modelo-obs {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  background: rgba(255,193,7,0.08);
+  border: 1px solid rgba(255,193,7,0.25);
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  margin-top: 0.5rem;
+  font-size: 0.8rem;
+  color: #856404;
+}
+.rel-footer-info {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-align: center;
+  padding: 1rem 0 0;
+  border-top: 1px solid var(--border);
+  margin-top: 2rem;
+}
+.svg-icon-linha {
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  background: rgba(13,110,253,0.1);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.svg-icon-linha svg { width: 16px; height: 16px; stroke: #0d6efd; fill: none; stroke-width: 2; }
+
+@media print {
+  .sidebar, .desktop-header, .mobile-header, .bottom-nav,
+  .page-header-actions, .btn-header-icon, .no-print { display: none !important; }
+  .main { margin-left: 0 !important; }
+  .content { padding: 0 !important; }
+  .rel-wrapper { max-width: 100%; }
+  .linha-rel-card, .modelo-rel { break-inside: avoid; }
+}
+</style>
+{% endblock %}
+
+{% block page_title %}
+<div class="page-header">
+  <div class="page-header-title">
+    <span class="page-header-section">Funcionalidades</span>
+    <h1 class="page-header-name">Relatório de Produção</h1>
+  </div>
+  <div class="page-header-actions">
+    <a href="{{ url_for('pages.funcionalidades_resumo_producao_editar', resumo_id=resumo.id) }}"
+       class="btn btn-sm btn-outline-secondary fw-semibold no-print" style="border-radius:8px;">
+      <i class="bi bi-pencil me-1"></i>Editar
+    </a>
+    <button class="btn btn-sm btn-primary fw-semibold no-print" style="border-radius:8px;"
+            onclick="window.print()">
+      <i class="bi bi-printer me-1"></i>Imprimir / PDF
+    </button>
+    <a href="{{ url_for('pages.funcionalidades_resumo_producao') }}" class="btn-header-icon no-print" title="Voltar">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <button class="btn-header-icon no-print" onclick="toggleFullscreen()" title="Tela cheia">
+      <i class="bi bi-arrows-fullscreen"></i>
+    </button>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+{% set dias = ['Segunda','Terça','Quarta','Quinta','Sexta','Sábado','Domingo'] %}
+<div class="rel-wrapper">
+
+  <div class="rel-header-card">
+    <div class="d-flex align-items-start justify-content-between flex-wrap gap-3">
+      <div>
+        <div class="rel-title">Resumo de Produção SMD</div>
+        <div class="rel-meta mb-3">Relatório de turno — #{{ resumo.id }}</div>
+        <div class="d-flex flex-wrap gap-2">
+          <span class="rel-badge rel-badge-data">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16">
+              <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5M2 2a1 1 0 0 0-1 1v1h14V3a1 1 0 0 0-1-1zm13 3H1v9a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1z"/>
+            </svg>
+            {{ resumo.data.strftime('%d/%m/%Y') if resumo.data else '—' }}
+          </span>
+          {% if resumo.data %}
+          <span class="rel-badge rel-badge-dia">
+            {{ dias[resumo.data.weekday()] }}
+          </span>
+          {% endif %}
+          <span class="rel-badge rel-badge-turno">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16">
+              <path d="M8 3.5a.5.5 0 0 0-1 0V9a.5.5 0 0 0 .252.434l3.5 2a.5.5 0 0 0 .496-.868L8 8.71z"/>
+              <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16m7-8A7 7 0 1 1 1 8a7 7 0 0 1 14 0"/>
+            </svg>
+            Turno {{ resumo.turno }}
+          </span>
+        </div>
+      </div>
+      <div class="text-end">
+        <div style="font-size:2.5rem;font-weight:800;opacity:0.12;line-height:1;font-family:monospace;">
+          {{ resumo.turno }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% if resumo.linhas %}
+    {% for linha in resumo.linhas %}
+    <div class="linha-rel-card">
+      <div class="linha-rel-header">
+        <div class="svg-icon-linha">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+            <polyline points="9 22 9 12 15 12 15 22"/>
+          </svg>
+        </div>
+        <span class="linha-nome">Linha {{ linha.nome_linha }}</span>
+        <span class="badge bg-light text-muted ms-auto" style="font-size:0.7rem;border:1px solid var(--border);">
+          {{ linha.modelos | length }} modelo(s)
+        </span>
+      </div>
+
+      <div class="linha-rel-body">
+        {% if linha.modelos %}
+          {% for modelo in linha.modelos %}
+          <div class="modelo-rel">
+            <div class="modelo-header">
+              <span style="font-size:1rem;">🔶</span>
+              <span class="modelo-codigo">Modelo: {{ modelo.codigo_modelo }}</span>
+              {% if modelo.produto %}
+              <span class="modelo-produto ms-1">· Produto: {{ modelo.produto }}</span>
+              {% endif %}
+            </div>
+
+            {% if modelo.ops %}
+            <div class="mb-2">
+              {% for op in modelo.ops.split('\n') %}
+                {% set op_clean = op.strip() %}
+                {% if op_clean %}
+                <span class="op-tag">OP: {{ op_clean }}</span>
+                {% endif %}
+              {% endfor %}
+            </div>
+            {% endif %}
+
+            <div class="mb-1">
+              {% if modelo.produzido_top %}
+              <span class="prod-chip prod-chip-top">
+                <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="currentColor" viewBox="0 0 16 16">
+                  <path d="M7.646 4.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1-.708.708L8 5.707l-5.646 5.647a.5.5 0 0 1-.708-.708z"/>
+                </svg>
+                Produzido Top: {{ modelo.produzido_top | int | string | replace('.', '') }}
+              </span>
+              {% endif %}
+              {% if modelo.produzido_bot %}
+              <span class="prod-chip prod-chip-bot">
+                <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="currentColor" viewBox="0 0 16 16">
+                  <path d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/>
+                </svg>
+                Produzido Bot: {{ modelo.produzido_bot | int | string | replace('.', '') }}
+              </span>
+              {% endif %}
+            </div>
+
+            {% if modelo.observacao %}
+            <div class="modelo-obs">
+              <span>⚠️</span>
+              <span>{{ modelo.observacao }}</span>
+            </div>
+            {% endif %}
+          </div>
+          {% endfor %}
+        {% else %}
+          <p class="text-muted small mb-0">Nenhum modelo registrado nesta linha.</p>
+        {% endif %}
+
+        {% if linha.observacao %}
+        <div class="linha-obs">
+          <span>❌</span>
+          <span>{{ linha.observacao }}</span>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  {% else %}
+  <div class="text-center text-muted py-5">
+    <i class="bi bi-bar-chart-steps fs-1 opacity-25 d-block mb-3"></i>
+    Nenhuma linha registrada neste relatório.
+    <a href="{{ url_for('pages.funcionalidades_resumo_producao_editar', resumo_id=resumo.id) }}"
+       class="d-block mt-2">Editar relatório</a>
+  </div>
+  {% endif %}
+
+  <div class="rel-footer-info">
+    Gerado por FactoryOps &middot; {{ resumo.criado_por or '' }} &middot;
+    Relatório #{{ resumo.id }} &middot;
+    {{ resumo.data.strftime('%d/%m/%Y') if resumo.data else '' }} &middot; Turno {{ resumo.turno }}
+  </div>
+
+</div>
+{% endblock %}

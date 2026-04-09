@@ -35,7 +35,8 @@
 
 {% set _func_menus = [
   'smt_cadastro','smt_calcular','smt_modelos',
-  'funcionalidades_im_pa','funcionalidades_pth','funcionalidades_vtt'
+  'funcionalidades_im_pa','funcionalidades_pth','funcionalidades_vtt',
+  'funcionalidades_resumo_producao'
 ] %}
 {% set _prod_menus = [
   'producao_medicao_pasta','producao_checklist_linha','producao_limpeza_stencil','smd_monitor_tv'
@@ -100,7 +101,8 @@
       "suporte_ouvidoria": "Ouvidoria",
       "suporte_especializado": "Suporte Especializado",
       "admin_backup": "Backup",
-      "admin_chamados": "Chamados de Suporte"
+      "admin_chamados": "Chamados de Suporte",
+      "funcionalidades_resumo_producao": "Resumo de Produção"
     } %}
 
     <span class="mobile-page-title">
@@ -168,6 +170,10 @@
             <a href="{{ url_for('pages.funcionalidades_vtt') }}"
                class="{% if active_menu == 'funcionalidades_vtt' %}active{% endif %}">
               <i class="bi bi-arrow-repeat"></i> VTT
+            </a>
+            <a href="{{ url_for('pages.funcionalidades_resumo_producao') }}"
+               class="{% if active_menu == 'funcionalidades_resumo_producao' %}active{% endif %}">
+              <i class="bi bi-bar-chart-steps"></i> Resumo de Produção
             </a>
           </div>
         </div>

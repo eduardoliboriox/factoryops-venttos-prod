@@ -1,0 +1,362 @@
+{% extends "layouts/app.html" %}
+{% block title %}{% if resumo %}Editar{% else %}Novo{% endif %} Resumo de Produção{% endblock %}
+
+{% block styles %}
+<style>
+.linha-card {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--card);
+  margin-bottom: 1rem;
+}
+.linha-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.875rem 1rem;
+  border-bottom: 1px solid var(--border);
+  background: rgba(15,23,42,0.03);
+  border-radius: 12px 12px 0 0;
+}
+.linha-body { padding: 1rem; }
+.modelo-card {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fafbfc;
+  padding: 0.875rem;
+  margin-bottom: 0.75rem;
+  position: relative;
+}
+.modelo-card:last-child { margin-bottom: 0; }
+.btn-remove {
+  background: none;
+  border: none;
+  color: #dc3545;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 6px;
+  line-height: 1;
+  transition: background .12s;
+}
+.btn-remove:hover { background: rgba(220,53,69,0.1); }
+.form-label-sm {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+</style>
+{% endblock %}
+
+{% block page_title %}
+<div class="page-header">
+  <div class="page-header-title">
+    <span class="page-header-section">Funcionalidades</span>
+    <h1 class="page-header-name">
+      {% if resumo %}Editar Relatório #{{ resumo.id }}{% else %}Novo Relatório{% endif %}
+    </h1>
+  </div>
+  <div class="page-header-actions">
+    <a href="{{ url_for('pages.funcionalidades_resumo_producao') }}" class="btn-header-icon" title="Voltar">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    {% if resumo %}
+    <a href="{{ url_for('pages.funcionalidades_resumo_producao_relatorio', resumo_id=resumo.id) }}"
+       class="btn btn-sm btn-outline-primary fw-semibold" style="border-radius:8px;" target="_blank">
+      <i class="bi bi-file-earmark-bar-graph me-1"></i>Ver Relatório
+    </a>
+    {% endif %}
+    <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
+      <i class="bi bi-arrows-fullscreen"></i>
+    </button>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+    <div class="alert alert-{{ category }} alert-dismissible d-flex align-items-center gap-2 mb-4" role="alert">
+      <i class="bi bi-{% if category == 'success' %}check-circle-fill{% else %}x-circle-fill{% endif %} fs-5 flex-shrink-0"></i>
+      <div>{{ message }}</div>
+      <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+  {% endwith %}
+
+  <form method="POST" id="formResumo">
+
+    <input type="hidden" name="dados_json" id="dadosJson">
+
+    <div class="card mb-4" style="border-radius:12px;border-color:var(--border);">
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-12 col-sm-4">
+            <label class="form-label-sm">Data <span class="text-danger">*</span></label>
+            <input type="date" name="data" id="inputData" class="form-control" required
+                   value="{{ resumo.data.strftime('%Y-%m-%d') if resumo and resumo.data else '' }}"
+                   style="border-radius:8px;">
+          </div>
+          <div class="col-12 col-sm-3">
+            <label class="form-label-sm">Turno <span class="text-danger">*</span></label>
+            <select name="turno" id="inputTurno" class="form-select" style="border-radius:8px;">
+              {% for t in ['1T','2T','3T'] %}
+              <option value="{{ t }}" {% if resumo and resumo.turno == t %}selected{% endif %}>{{ t }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-12 col-sm-3">
+            <label class="form-label-sm">Status</label>
+            <select name="status" id="inputStatus" class="form-select" style="border-radius:8px;">
+              <option value="rascunho" {% if not resumo or resumo.status == 'rascunho' %}selected{% endif %}>Rascunho</option>
+              <option value="finalizado" {% if resumo and resumo.status == 'finalizado' %}selected{% endif %}>Finalizado</option>
+            </select>
+          </div>
+          <div class="col-12 col-sm-2 d-flex align-items-end">
+            <div id="diaSemana" class="text-muted fw-semibold" style="font-size:0.9rem;padding-bottom:6px;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="linhasContainer"></div>
+
+    <div class="d-flex gap-2 mb-4">
+      <button type="button" class="btn btn-outline-primary btn-sm fw-semibold"
+              style="border-radius:8px;" onclick="adicionarLinha()">
+        <i class="bi bi-plus-lg me-1"></i>Adicionar Linha
+      </button>
+    </div>
+
+    <div class="d-flex gap-2 justify-content-end">
+      <a href="{{ url_for('pages.funcionalidades_resumo_producao') }}"
+         class="btn btn-outline-secondary btn-sm" style="border-radius:8px;">Cancelar</a>
+      <button type="submit" class="btn btn-primary btn-sm fw-semibold"
+              style="border-radius:8px;">
+        <i class="bi bi-check-lg me-1"></i>Salvar
+      </button>
+    </div>
+
+  </form>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const DADOS_INICIAIS = {{ (resumo.linhas | tojson) if resumo and resumo.linhas else '[]' }};
+
+const DIAS_SEMANA = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
+
+let linhasState = [];
+
+function atualizarDiaSemana() {
+  const val = document.getElementById('inputData').value;
+  const el  = document.getElementById('diaSemana');
+  if (!val) { el.textContent = ''; return; }
+  const d = new Date(val + 'T12:00:00');
+  el.textContent = DIAS_SEMANA[d.getDay()];
+}
+
+document.getElementById('inputData').addEventListener('change', atualizarDiaSemana);
+atualizarDiaSemana();
+
+function linhaId() {
+  return '_l' + Date.now() + Math.random().toString(36).slice(2, 6);
+}
+
+function modeloId() {
+  return '_m' + Date.now() + Math.random().toString(36).slice(2, 6);
+}
+
+function adicionarLinha(dadosIniciais) {
+  const lid = linhaId();
+  const linha = {
+    _id:        lid,
+    nome_linha: dadosIniciais ? dadosIniciais.nome_linha : '',
+    observacao: dadosIniciais ? (dadosIniciais.observacao || '') : '',
+    modelos:    [],
+  };
+  linhasState.push(linha);
+  renderLinha(linha);
+
+  if (dadosIniciais && dadosIniciais.modelos) {
+    dadosIniciais.modelos.forEach(m => adicionarModelo(lid, m));
+  }
+
+  return lid;
+}
+
+function removerLinha(lid) {
+  linhasState = linhasState.filter(l => l._id !== lid);
+  const el = document.getElementById('linha-' + lid);
+  if (el) el.remove();
+}
+
+function adicionarModelo(lid, dadosIniciais) {
+  const linha = linhasState.find(l => l._id === lid);
+  if (!linha) return;
+
+  const mid = modeloId();
+  const modelo = {
+    _id:           mid,
+    codigo_modelo: dadosIniciais ? (dadosIniciais.codigo_modelo || '') : '',
+    produto:       dadosIniciais ? (dadosIniciais.produto || '') : '',
+    ops:           dadosIniciais ? (dadosIniciais.ops || '') : '',
+    produzido_top: dadosIniciais ? (dadosIniciais.produzido_top || 0) : 0,
+    produzido_bot: dadosIniciais ? (dadosIniciais.produzido_bot || 0) : 0,
+    observacao:    dadosIniciais ? (dadosIniciais.observacao || '') : '',
+  };
+  linha.modelos.push(modelo);
+  renderModelo(lid, modelo);
+}
+
+function removerModelo(lid, mid) {
+  const linha = linhasState.find(l => l._id === lid);
+  if (linha) linha.modelos = linha.modelos.filter(m => m._id !== mid);
+  const el = document.getElementById('modelo-' + mid);
+  if (el) el.remove();
+}
+
+function renderLinha(linha) {
+  const container = document.getElementById('linhasContainer');
+  const div = document.createElement('div');
+  div.className = 'linha-card';
+  div.id = 'linha-' + linha._id;
+  div.innerHTML = `
+    <div class="linha-header">
+      <i class="bi bi-diagram-3 text-primary"></i>
+      <input type="text" class="form-control form-control-sm fw-semibold"
+             style="border-radius:6px;max-width:180px;"
+             placeholder="Nome da linha (ex: SMD01)"
+             value="${escHtml(linha.nome_linha)}"
+             oninput="atualizarCampoLinha('${linha._id}','nome_linha',this.value)">
+      <span class="text-muted small ms-auto me-2">Observação da linha:</span>
+      <input type="text" class="form-control form-control-sm"
+             style="border-radius:6px;max-width:320px;"
+             placeholder="❌ Problema geral da linha (opcional)"
+             value="${escHtml(linha.observacao)}"
+             oninput="atualizarCampoLinha('${linha._id}','observacao',this.value)">
+      <button type="button" class="btn-remove ms-2" title="Remover linha"
+              onclick="removerLinha('${linha._id}')">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+    <div class="linha-body">
+      <div id="modelos-${linha._id}"></div>
+      <button type="button" class="btn btn-outline-secondary btn-sm mt-2"
+              style="border-radius:6px;font-size:0.8rem;"
+              onclick="adicionarModelo('${linha._id}')">
+        <i class="bi bi-plus me-1"></i>Adicionar Modelo
+      </button>
+    </div>
+  `;
+  container.appendChild(div);
+}
+
+function renderModelo(lid, modelo) {
+  const container = document.getElementById('modelos-' + lid);
+  if (!container) return;
+  const div = document.createElement('div');
+  div.className = 'modelo-card';
+  div.id = 'modelo-' + modelo._id;
+  div.innerHTML = `
+    <div class="d-flex align-items-start gap-2">
+      <div class="flex-grow-1">
+        <div class="row g-2">
+          <div class="col-12 col-sm-4">
+            <label class="form-label-sm">Modelo <span class="text-danger">*</span></label>
+            <input type="text" class="form-control form-control-sm" style="border-radius:6px;"
+                   placeholder="Ex: 240129"
+                   value="${escHtml(modelo.codigo_modelo)}"
+                   oninput="atualizarCampoModelo('${lid}','${modelo._id}','codigo_modelo',this.value)">
+          </div>
+          <div class="col-12 col-sm-8">
+            <label class="form-label-sm">Produto</label>
+            <input type="text" class="form-control form-control-sm" style="border-radius:6px;"
+                   placeholder="Ex: EBR24692601"
+                   value="${escHtml(modelo.produto)}"
+                   oninput="atualizarCampoModelo('${lid}','${modelo._id}','produto',this.value)">
+          </div>
+          <div class="col-12">
+            <label class="form-label-sm">Ordens de Produção (uma por linha)</label>
+            <textarea class="form-control form-control-sm" rows="2" style="border-radius:6px;resize:vertical;"
+                      placeholder="EBRJFC01002&#10;EBRKFB01002"
+                      oninput="atualizarCampoModelo('${lid}','${modelo._id}','ops',this.value)">${escHtml(modelo.ops)}</textarea>
+          </div>
+          <div class="col-12 col-sm-3">
+            <label class="form-label-sm">Produzido Top</label>
+            <input type="number" min="0" class="form-control form-control-sm" style="border-radius:6px;"
+                   value="${modelo.produzido_top || 0}"
+                   oninput="atualizarCampoModelo('${lid}','${modelo._id}','produzido_top',this.value)">
+          </div>
+          <div class="col-12 col-sm-3">
+            <label class="form-label-sm">Produzido Bot</label>
+            <input type="number" min="0" class="form-control form-control-sm" style="border-radius:6px;"
+                   value="${modelo.produzido_bot || 0}"
+                   oninput="atualizarCampoModelo('${lid}','${modelo._id}','produzido_bot',this.value)">
+          </div>
+          <div class="col-12 col-sm-6">
+            <label class="form-label-sm">Observação / Problema</label>
+            <input type="text" class="form-control form-control-sm" style="border-radius:6px;"
+                   placeholder="🟡 Detalhe do problema (opcional)"
+                   value="${escHtml(modelo.observacao)}"
+                   oninput="atualizarCampoModelo('${lid}','${modelo._id}','observacao',this.value)">
+          </div>
+        </div>
+      </div>
+      <button type="button" class="btn-remove flex-shrink-0 mt-4" title="Remover modelo"
+              onclick="removerModelo('${lid}','${modelo._id}')">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+  `;
+  container.appendChild(div);
+}
+
+function atualizarCampoLinha(lid, campo, valor) {
+  const linha = linhasState.find(l => l._id === lid);
+  if (linha) linha[campo] = valor;
+}
+
+function atualizarCampoModelo(lid, mid, campo, valor) {
+  const linha = linhasState.find(l => l._id === lid);
+  if (!linha) return;
+  const modelo = linha.modelos.find(m => m._id === mid);
+  if (modelo) modelo[campo] = campo === 'produzido_top' || campo === 'produzido_bot'
+    ? parseInt(valor) || 0
+    : valor;
+}
+
+function escHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+document.getElementById('formResumo').addEventListener('submit', function (e) {
+  const payload = {
+    linhas: linhasState.map(l => ({
+      nome_linha: l.nome_linha,
+      observacao: l.observacao,
+      modelos:    l.modelos.map(m => ({
+        codigo_modelo: m.codigo_modelo,
+        produto:       m.produto,
+        ops:           m.ops,
+        produzido_top: m.produzido_top,
+        produzido_bot: m.produzido_bot,
+        observacao:    m.observacao,
+      })),
+    })),
+  };
+  document.getElementById('dadosJson').value = JSON.stringify(payload);
+});
+
+DADOS_INICIAIS.forEach(l => adicionarLinha(l));
+</script>
+{% endblock %}

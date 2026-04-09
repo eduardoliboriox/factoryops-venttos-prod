@@ -132,6 +132,120 @@ def funcionalidades_vtt():
     return render_template("funcionalidades/vtt.html", active_menu="funcionalidades_vtt")
 
 
+@bp.route("/funcionalidades/resumo-producao")
+@login_required
+def funcionalidades_resumo_producao():
+    from flask import request
+    from app.services import resumo_producao_service as svc
+
+    data_inicial = request.args.get("data_inicial", "")
+    data_final   = request.args.get("data_final", "")
+    turno        = request.args.get("turno", "")
+    status       = request.args.get("status", "")
+
+    try:
+        resumos = svc.listar(data_inicial, data_final, turno, status)
+        erro    = None
+    except Exception as e:
+        resumos = []
+        erro    = str(e)
+
+    return render_template(
+        "funcionalidades/resumo_producao_lista.html",
+        active_menu="funcionalidades_resumo_producao",
+        resumos=resumos,
+        data_inicial=data_inicial,
+        data_final=data_final,
+        turno=turno,
+        status=status,
+        erro=erro,
+    )
+
+
+@bp.route("/funcionalidades/resumo-producao/novo", methods=["GET", "POST"])
+@login_required
+def funcionalidades_resumo_producao_novo():
+    from flask import request, flash, redirect, url_for
+    from app.services import resumo_producao_service as svc
+
+    if request.method == "POST":
+        try:
+            resumo_id = svc.criar(request.form, current_user.username)
+            flash("Relatório salvo com sucesso.", "success")
+            return redirect(url_for("pages.funcionalidades_resumo_producao_editar", resumo_id=resumo_id))
+        except ValueError as e:
+            flash(str(e), "danger")
+        except Exception:
+            flash("Erro ao salvar o relatório.", "danger")
+
+    return render_template(
+        "funcionalidades/resumo_producao_form.html",
+        active_menu="funcionalidades_resumo_producao",
+        resumo=None,
+    )
+
+
+@bp.route("/funcionalidades/resumo-producao/<int:resumo_id>/editar", methods=["GET", "POST"])
+@login_required
+def funcionalidades_resumo_producao_editar(resumo_id: int):
+    from flask import request, flash, redirect, url_for
+    from app.services import resumo_producao_service as svc
+
+    resumo = svc.buscar_por_id(resumo_id)
+    if not resumo:
+        flash("Relatório não encontrado.", "warning")
+        return redirect(url_for("pages.funcionalidades_resumo_producao"))
+
+    if request.method == "POST":
+        try:
+            svc.atualizar(resumo_id, request.form)
+            flash("Relatório atualizado.", "success")
+            return redirect(url_for("pages.funcionalidades_resumo_producao_editar", resumo_id=resumo_id))
+        except ValueError as e:
+            flash(str(e), "danger")
+        except Exception:
+            flash("Erro ao atualizar o relatório.", "danger")
+        resumo = svc.buscar_por_id(resumo_id)
+
+    return render_template(
+        "funcionalidades/resumo_producao_form.html",
+        active_menu="funcionalidades_resumo_producao",
+        resumo=resumo,
+    )
+
+
+@bp.route("/funcionalidades/resumo-producao/<int:resumo_id>/relatorio")
+@login_required
+def funcionalidades_resumo_producao_relatorio(resumo_id: int):
+    from flask import flash, redirect, url_for
+    from app.services import resumo_producao_service as svc
+
+    resumo = svc.buscar_por_id(resumo_id)
+    if not resumo:
+        flash("Relatório não encontrado.", "warning")
+        return redirect(url_for("pages.funcionalidades_resumo_producao"))
+
+    return render_template(
+        "funcionalidades/resumo_producao_relatorio.html",
+        active_menu="funcionalidades_resumo_producao",
+        resumo=resumo,
+    )
+
+
+@bp.route("/funcionalidades/resumo-producao/<int:resumo_id>/excluir", methods=["POST"])
+@login_required
+def funcionalidades_resumo_producao_excluir(resumo_id: int):
+    from flask import flash, redirect, url_for
+    from app.services import resumo_producao_service as svc
+
+    try:
+        svc.excluir(resumo_id)
+        flash("Relatório excluído.", "success")
+    except Exception:
+        flash("Erro ao excluir o relatório.", "danger")
+    return redirect(url_for("pages.funcionalidades_resumo_producao"))
+
+
 # ─── Produção ────────────────────────────────────────────────────────────────
 
 @bp.route("/producao/medicao-pasta-solda")
