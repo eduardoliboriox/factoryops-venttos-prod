@@ -383,6 +383,15 @@
     </div>
   </div>
 
+<style>
+.limpeza-stencil-canvas { width: 1024px; transform-origin: top left; }
+@media (max-width: 768px) {
+  .document-mobile-wrapper { overflow-x: hidden; overflow-y: visible; }
+  .limpeza-stencil-canvas { transform: scale(var(--doc-scale, 1)); }
+}
+</style>
+<div class="document-mobile-wrapper">
+<div class="limpeza-stencil-canvas">
   <ul class="nav nav-tabs mb-3" id="stencilTabs" role="tablist">
     <li class="nav-item" role="presentation">
       <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-novo" type="button" role="tab">
@@ -706,6 +715,8 @@
     </div>
 
   </div>
+</div><!-- /.limpeza-stencil-canvas -->
+</div><!-- /.document-mobile-wrapper -->
 </div>
 {% endblock %}
 
@@ -1192,4 +1203,5 @@
   });
 })();
 </script>
+<script src="{{ url_for('static', filename='js/document-fit.js') }}"></script>
 {% endblock %}
