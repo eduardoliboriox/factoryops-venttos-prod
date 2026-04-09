@@ -1,0 +1,160 @@
+{% extends "layouts/app.html" %}
+{% block title %}Resumo de Produção{% endblock %}
+
+{% block page_title %}
+<div class="page-header">
+  <div class="page-header-title">
+    <span class="page-header-section">Funcionalidades</span>
+    <h1 class="page-header-name">Resumo de Produção</h1>
+  </div>
+  <div class="page-header-actions">
+    <a href="{{ url_for('pages.funcionalidades_resumo_producao_novo') }}"
+       class="btn btn-sm btn-primary fw-semibold" style="border-radius:8px;">
+      <i class="bi bi-plus-lg me-1"></i>Novo Relatório
+    </a>
+    <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
+      <i class="bi bi-arrows-fullscreen"></i>
+    </button>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+    <div class="alert alert-{{ category }} alert-dismissible d-flex align-items-center gap-2 mb-4" role="alert">
+      <i class="bi bi-{% if category == 'success' %}check-circle-fill{% else %}x-circle-fill{% endif %} fs-5 flex-shrink-0"></i>
+      <div>{{ message }}</div>
+      <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+  {% endwith %}
+
+  <form method="GET" class="row g-2 mb-4 align-items-end">
+    <div class="col-12 col-sm-6 col-md-3">
+      <label class="form-label fw-semibold" style="font-size:0.8rem;">Data inicial</label>
+      <input type="date" name="data_inicial" class="form-control form-control-sm"
+             value="{{ data_inicial }}" style="border-radius:8px;">
+    </div>
+    <div class="col-12 col-sm-6 col-md-3">
+      <label class="form-label fw-semibold" style="font-size:0.8rem;">Data final</label>
+      <input type="date" name="data_final" class="form-control form-control-sm"
+             value="{{ data_final }}" style="border-radius:8px;">
+    </div>
+    <div class="col-12 col-sm-6 col-md-2">
+      <label class="form-label fw-semibold" style="font-size:0.8rem;">Turno</label>
+      <select name="turno" class="form-select form-select-sm" style="border-radius:8px;">
+        <option value="">Todos</option>
+        <option value="1T" {% if turno == '1T' %}selected{% endif %}>1T</option>
+        <option value="2T" {% if turno == '2T' %}selected{% endif %}>2T</option>
+        <option value="3T" {% if turno == '3T' %}selected{% endif %}>3T</option>
+      </select>
+    </div>
+    <div class="col-12 col-sm-6 col-md-2">
+      <label class="form-label fw-semibold" style="font-size:0.8rem;">Status</label>
+      <select name="status" class="form-select form-select-sm" style="border-radius:8px;">
+        <option value="">Todos</option>
+        <option value="rascunho" {% if status == 'rascunho' %}selected{% endif %}>Rascunho</option>
+        <option value="finalizado" {% if status == 'finalizado' %}selected{% endif %}>Finalizado</option>
+      </select>
+    </div>
+    <div class="col-auto d-flex gap-2">
+      <button type="submit" class="btn btn-outline-primary btn-sm" style="border-radius:6px;">
+        <i class="bi bi-funnel me-1"></i>Filtrar
+      </button>
+      {% if data_inicial or data_final or turno or status %}
+      <a href="{{ url_for('pages.funcionalidades_resumo_producao') }}"
+         class="btn btn-outline-secondary btn-sm" style="border-radius:6px;">
+        <i class="bi bi-x-lg"></i>
+      </a>
+      {% endif %}
+    </div>
+  </form>
+
+  <div class="card" style="border-radius:12px;border-color:var(--border);">
+    <div class="card-body p-0">
+      {% if resumos %}
+      <div class="table-responsive">
+        <table class="table table-hover mb-0" style="font-size:0.84rem;">
+          <thead style="font-size:0.72rem;text-transform:uppercase;letter-spacing:.5px;background:var(--bg);">
+            <tr>
+              <th class="ps-3 py-2">#</th>
+              <th>Data</th>
+              <th>Dia</th>
+              <th>Turno</th>
+              <th class="text-center">Linhas</th>
+              <th>Status</th>
+              <th>Criado por</th>
+              <th class="pe-3"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% set dias = ['Segunda','Terça','Quarta','Quinta','Sexta','Sábado','Domingo'] %}
+            {% for r in resumos %}
+            <tr>
+              <td class="ps-3 fw-semibold text-muted" style="font-size:0.78rem;">{{ r.id }}</td>
+              <td class="fw-semibold">{{ r.data.strftime('%d/%m/%Y') if r.data else '—' }}</td>
+              <td class="text-muted">
+                {% if r.data %}{{ dias[r.data.weekday()] }}{% else %}—{% endif %}
+              </td>
+              <td>
+                <span class="badge bg-primary" style="font-size:0.7rem;">{{ r.turno }}</span>
+              </td>
+              <td class="text-center">
+                <span class="badge bg-secondary" style="font-size:0.7rem;">{{ r.num_linhas }}</span>
+              </td>
+              <td>
+                {% if r.status == 'finalizado' %}
+                  <span class="badge text-bg-success" style="font-size:0.68rem;">Finalizado</span>
+                {% else %}
+                  <span class="badge text-bg-warning text-dark" style="font-size:0.68rem;">Rascunho</span>
+                {% endif %}
+              </td>
+              <td class="text-muted" style="font-size:0.78rem;">{{ r.criado_por or '—' }}</td>
+              <td class="text-end pe-3">
+                <div class="d-flex justify-content-end gap-1">
+                  <a href="{{ url_for('pages.funcionalidades_resumo_producao_relatorio', resumo_id=r.id) }}"
+                     class="btn btn-outline-primary btn-sm" style="border-radius:6px;" title="Ver relatório">
+                    <i class="bi bi-file-earmark-bar-graph"></i>
+                  </a>
+                  <a href="{{ url_for('pages.funcionalidades_resumo_producao_editar', resumo_id=r.id) }}"
+                     class="btn btn-outline-secondary btn-sm" style="border-radius:6px;" title="Editar">
+                    <i class="bi bi-pencil"></i>
+                  </a>
+                  <form method="POST"
+                        action="{{ url_for('pages.funcionalidades_resumo_producao_excluir', resumo_id=r.id) }}"
+                        onsubmit="return confirm('Excluir o relatório #{{ r.id }}?')">
+                    <button type="submit" class="btn btn-outline-danger btn-sm"
+                            style="border-radius:6px;" title="Excluir">
+                      <i class="bi bi-trash3"></i>
+                    </button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="p-5 text-center text-muted">
+        <i class="bi bi-bar-chart-steps d-block fs-1 mb-3 opacity-25"></i>
+        <p class="mb-1">Nenhum relatório encontrado.</p>
+        <a href="{{ url_for('pages.funcionalidades_resumo_producao_novo') }}"
+           class="btn btn-primary btn-sm mt-3 fw-semibold">
+          <i class="bi bi-plus-lg me-1"></i>Criar primeiro relatório
+        </a>
+      </div>
+      {% endif %}
+    </div>
+    {% if resumos %}
+    <div class="card-footer text-muted small px-3 py-2" style="border-color:var(--border);border-radius:0 0 12px 12px;">
+      {{ resumos | length }} relatório(s)
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}
