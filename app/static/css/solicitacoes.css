@@ -243,29 +243,25 @@
 
   .mobile-screen.register-form {
     min-height: 100vh;
-    padding: 40px 16px 32px 16px;
-    display: block;
-    align-items: unset;
+    padding: 24px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     overflow-y: auto;
   }
 
   .mobile-register-wrapper {
     width: 100%;
-    max-width: 480px;
+    max-width: 420px;
     margin: 0 auto;
-  }
-
-  .mobile-register-wrapper > .text-center {
-    margin-bottom: 24px;
-    margin-top: 16px;
   }
 
   .mobile-register-card {
     width: 100%;
     background: #ffffff;
-    padding: 24px;
-    border-radius: 14px;
-    box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+    padding: 28px 24px 24px;
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.18);
   }
 }
 
