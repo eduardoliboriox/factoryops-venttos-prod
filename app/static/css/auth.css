@@ -436,3 +436,31 @@
   }
 
 }
+
+/* ==================================================
+   MOBILE REGISTER FORM
+   These styles must live in auth.css because
+   solicitacoes.css is NOT loaded by the auth layout.
+================================================== */
+
+.mobile-screen.register-form {
+  align-items: flex-start;
+  justify-content: center;
+  padding: 24px 16px 32px;
+  overflow-y: auto;
+  min-height: 100vh;
+}
+
+.mobile-register-wrapper {
+  width: 100%;
+  max-width: 420px;
+  margin: 0 auto;
+}
+
+.mobile-register-card {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.97);
+  padding: 28px 24px 24px;
+  border-radius: 18px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.28);
+}
