@@ -1,5 +1,5 @@
 {% extends "layouts/app.html" %}
-{% block title %}Monitor SMD{% endblock %}
+{% block title %}Monitor SMD — Gerenciamento de Atividades{% endblock %}
 
 {% block page_title %}
 <div class="page-header">
@@ -17,212 +17,557 @@
 
 {% block content %}
 <style>
-  .tv-wrap {
-    background: #0f172a;
-    border-radius: 14px;
-    padding: 20px;
-    min-height: calc(100vh - 120px);
+  /* ================================================
+     BASE
+  ================================================ */
+  .mon {
+    background: #050a14;
+    border-radius: 16px;
+    overflow: hidden;
+    min-height: calc(100vh - 130px);
+    display: flex;
+    flex-direction: column;
+    font-family: Inter, system-ui, -apple-system, sans-serif;
   }
-  .tv-header {
+
+  body.fullscreen-mode .mon {
+    min-height: 100vh;
+    border-radius: 0;
+  }
+
+  /* ================================================
+     HEADER
+  ================================================ */
+  .mon-hdr {
+    background: linear-gradient(135deg, #0c1828 0%, #0f2744 100%);
+    padding: 16px 28px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 20px;
-    padding-bottom: 14px;
-    border-bottom: 1px solid rgba(255,255,255,0.1);
+    gap: 20px;
+    border-bottom: 1px solid rgba(59,130,246,0.14);
+    flex-shrink: 0;
   }
-  .tv-title {
-    font-size: 1.4rem;
-    font-weight: 800;
-    color: #fff;
-    letter-spacing: 1px;
-    text-transform: uppercase;
+
+  .mon-hdr-brand {
+    display: flex;
+    align-items: center;
+    gap: 14px;
   }
-  .tv-shift {
-    font-size: 1rem;
-    font-weight: 600;
-    color: #94a3b8;
-    padding: 4px 14px;
-    background: rgba(255,255,255,0.07);
-    border-radius: 8px;
-  }
-  .tv-clock {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: #fff;
-    font-variant-numeric: tabular-nums;
-    font-family: monospace;
-  }
-  .tv-table {
-    width: 100%;
-    border-collapse: separate;
-    border-spacing: 4px;
-  }
-  .tv-table th {
-    background: rgba(255,255,255,0.06);
-    color: #94a3b8;
-    font-size: 0.72rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    padding: 8px 10px;
-    text-align: center;
-    border-radius: 6px;
-  }
-  .tv-table th.th-linha {
-    text-align: left;
-    min-width: 90px;
-  }
-  .tv-table td {
-    padding: 4px;
-  }
-  .tv-linha-name {
-    color: #e2e8f0;
-    font-size: 1rem;
-    font-weight: 700;
-    padding: 10px 12px;
-    background: rgba(255,255,255,0.05);
-    border-radius: 8px;
-    white-space: nowrap;
-  }
-  .tv-cell {
-    width: 56px;
-    height: 48px;
-    border-radius: 8px;
+
+  .mon-hdr-icon {
+    width: 46px;
+    height: 46px;
+    border-radius: 12px;
+    background: rgba(59,130,246,0.15);
+    border: 1px solid rgba(59,130,246,0.28);
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 1.3rem;
-    transition: background 0.3s;
+    color: #60a5fa;
+    flex-shrink: 0;
   }
-  .tv-cell.green  { background: rgba(34,197,94,0.25);  color: #22c55e; }
-  .tv-cell.red    { background: rgba(239,68,68,0.25);  color: #ef4444; }
-  .tv-cell.blue   { background: rgba(59,130,246,0.12); color: #3b82f6; }
-  .tv-cell.doc {
-    width: 52px;
-    height: 48px;
+
+  .mon-hdr-title {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #f1f5f9;
+    letter-spacing: 0.3px;
+    line-height: 1.15;
   }
-  .tv-cell .cell-label {
-    display: block;
-    font-size: 0.55rem;
+
+  .mon-hdr-sub {
+    font-size: 0.68rem;
+    color: #475569;
+    font-weight: 500;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    margin-top: 3px;
+  }
+
+  .mon-hdr-center {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .mon-shift-badge {
+    padding: 5px 18px;
+    border-radius: 20px;
+    font-size: 0.82rem;
     font-weight: 700;
     letter-spacing: 0.5px;
     text-transform: uppercase;
-    margin-top: 2px;
-    opacity: 0.8;
+    background: rgba(59,130,246,0.14);
+    border: 1px solid rgba(59,130,246,0.28);
+    color: #93c5fd;
+    white-space: nowrap;
   }
-  .th-doc {
-    font-size: 0.68rem !important;
-    line-height: 1.3;
-    vertical-align: middle;
+
+  .mon-shift-badge.fora {
+    background: rgba(100,116,139,0.12);
+    border-color: rgba(100,116,139,0.2);
+    color: #64748b;
   }
-  .th-doc small {
-    display: block;
-    font-size: 0.6rem;
+
+  .mon-hdr-date {
+    font-size: 0.7rem;
+    color: #334155;
     font-weight: 500;
-    letter-spacing: 0;
-    text-transform: none;
-    opacity: 0.7;
-    margin-top: 2px;
+    letter-spacing: 0.5px;
   }
+
+  .mon-clock {
+    font-size: 2.6rem;
+    font-weight: 700;
+    color: #ffffff;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 3px;
+    font-family: 'Courier New', Courier, monospace;
+    text-shadow: 0 0 24px rgba(59,130,246,0.45);
+    white-space: nowrap;
+  }
+
+  /* ================================================
+     SUMMARY BAR
+  ================================================ */
+  .mon-summary {
+    background: rgba(255,255,255,0.018);
+    border-bottom: 1px solid rgba(255,255,255,0.036);
+    padding: 9px 28px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+  }
+
+  .mon-kpi {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .mon-kpi.ok {
+    background: rgba(34,197,94,0.1);
+    color: #86efac;
+    border: 1px solid rgba(34,197,94,0.18);
+  }
+
+  .mon-kpi.warn {
+    background: rgba(239,68,68,0.1);
+    color: #fca5a5;
+    border: 1px solid rgba(239,68,68,0.2);
+    animation: pulse-badge 2.5s ease-in-out infinite;
+  }
+
+  .mon-kpi.neutral {
+    background: rgba(255,255,255,0.04);
+    color: #64748b;
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .mon-kpi-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .mon-kpi.ok   .mon-kpi-dot { background: #22c55e; box-shadow: 0 0 6px rgba(34,197,94,.7); }
+  .mon-kpi.warn .mon-kpi-dot { background: #ef4444; box-shadow: 0 0 6px rgba(239,68,68,.7); }
+
+  @keyframes pulse-badge {
+    0%, 100% { box-shadow: 0 0 0 rgba(239,68,68,.0); }
+    50%       { box-shadow: 0 0 8px rgba(239,68,68,.3); }
+  }
+
+  .mon-summary-sep {
+    width: 1px;
+    height: 18px;
+    background: rgba(255,255,255,0.06);
+    margin: 0 4px;
+    flex-shrink: 0;
+  }
+
+  .mon-summary-refresh {
+    margin-left: auto;
+    font-size: 0.68rem;
+    color: #1e293b;
+    white-space: nowrap;
+  }
+
+  /* ================================================
+     TABLE AREA
+  ================================================ */
+  .mon-body {
+    flex: 1;
+    overflow-x: auto;
+    padding: 16px 20px 0;
+  }
+
+  .mon-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+
+  /* Group headers (row 1) */
+  .mon-table thead .row-groups th {
+    padding: 8px 6px 5px;
+    font-size: 0.62rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    text-align: center;
+    border-bottom: 2px solid rgba(255,255,255,0.04);
+  }
+
+  .th-group-daily {
+    color: #a78bfa;
+    background: rgba(124,58,237,0.07);
+    border-radius: 8px 8px 0 0;
+  }
+
+  .th-group-stencil {
+    color: #60a5fa;
+    background: rgba(37,99,235,0.07);
+    border-radius: 8px 8px 0 0;
+  }
+
+  /* Sub-headers (row 2) */
+  .mon-table thead .row-subheads th {
+    padding: 5px 6px 12px;
+    text-align: center;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+
+  .th-sub-daily {
+    font-size: 0.65rem;
+    color: #7c3aed;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    line-height: 1.4;
+  }
+
+  .th-sub-daily small {
+    display: block;
+    font-size: 0.58rem;
+    font-weight: 500;
+    text-transform: none;
+    color: #5b21b6;
+    letter-spacing: 0;
+    line-height: 1.2;
+  }
+
+  .th-sub-slot {
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: #475569;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.3;
+  }
+
   .slot-amanha {
     font-size: 0.5rem;
     color: #f59e0b;
-    font-weight: 700;
-    letter-spacing: 0;
+    font-weight: 800;
     text-transform: uppercase;
     display: block;
     line-height: 1;
     margin-top: 1px;
+    letter-spacing: 0;
   }
-  .tv-cell-inner {
+
+  /* Linha header cell */
+  .th-linha {
+    padding: 8px 14px 12px 14px;
+    font-size: 0.6rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #1e293b;
+    text-align: left;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+
+  /* ================================================
+     BODY ROWS
+  ================================================ */
+  .mon-table tbody tr {
+    border-bottom: 1px solid rgba(255,255,255,0.025);
+    transition: background 0.15s;
+  }
+
+  .mon-table tbody tr:hover {
+    background: rgba(255,255,255,0.012);
+  }
+
+  /* === Line name === */
+  .td-linha {
+    padding: 8px 16px 8px 12px;
+    white-space: nowrap;
+  }
+
+  .linha-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 9px 16px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 10px;
+    border-left: 3px solid #2563eb;
+    gap: 8px;
+  }
+
+  .linha-text {
+    font-size: 1.0rem;
+    font-weight: 800;
+    color: #f1f5f9;
+    letter-spacing: 0.5px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* === Status cell === */
+  .td-status {
+    padding: 7px 5px;
+    text-align: center;
+  }
+
+  .status-cell {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    transition: all 0.3s;
+  }
+
+  .status-cell.lg {
+    width: 66px;
+    height: 58px;
+    font-size: 1.55rem;
+  }
+
+  .status-cell.sm {
+    width: 50px;
+    height: 50px;
+    font-size: 1.25rem;
+    border-radius: 8px;
+  }
+
+  /* Status colors */
+  .s-green {
+    background: rgba(34,197,94,0.14);
+    color: #22c55e;
+    border: 1px solid rgba(34,197,94,0.22);
+  }
+
+  .s-red {
+    background: rgba(239,68,68,0.15);
+    color: #ef4444;
+    border: 1px solid rgba(239,68,68,0.28);
+    animation: pulse-cell 2.4s ease-in-out infinite;
+  }
+
+  .s-blue {
+    background: rgba(59,130,246,0.08);
+    color: #60a5fa;
+    border: 1px solid rgba(59,130,246,0.14);
+  }
+
+  @keyframes pulse-cell {
+    0%, 100% { box-shadow: 0 0 5px rgba(239,68,68,0.2); }
+    50%       { box-shadow: 0 0 16px rgba(239,68,68,0.55); }
+  }
+
+  /* ================================================
+     LEGEND
+  ================================================ */
+  .mon-legend {
+    padding: 12px 28px 16px;
+    border-top: 1px solid rgba(255,255,255,0.04);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+
+  .mon-legend-items {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+
+  .mon-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 0.78rem;
+    color: #64748b;
+    font-weight: 500;
+  }
+
+  .legend-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+  }
+
+  .legend-dot.g { background: #22c55e; }
+  .legend-dot.r { background: #ef4444; }
+  .legend-dot.b { background: #3b82f6; }
+
+  .mon-legend-meta {
+    font-size: 0.68rem;
+    color: #1e293b;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  /* ================================================
+     EMPTY STATES
+  ================================================ */
+  .mon-empty {
+    flex: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    line-height: 1;
-  }
-  .tv-legend {
-    display: flex;
-    gap: 20px;
-    justify-content: flex-end;
-    margin-top: 16px;
-    padding-top: 12px;
-    border-top: 1px solid rgba(255,255,255,0.08);
-  }
-  .tv-legend-item {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 0.8rem;
-    color: #94a3b8;
-  }
-  .tv-dot {
-    width: 12px; height: 12px; border-radius: 50%;
-  }
-  .tv-dot.green { background: #22c55e; }
-  .tv-dot.red   { background: #ef4444; }
-  .tv-dot.blue  { background: #3b82f6; }
-  .tv-refresh {
-    font-size: 0.72rem;
-    color: #475569;
-    text-align: right;
-    margin-top: 8px;
-  }
-  .tv-no-turno {
+    padding: 80px 20px;
     text-align: center;
-    padding: 60px 20px;
-    color: #475569;
-    font-size: 1.2rem;
+    gap: 14px;
   }
-  body.fullscreen-mode .tv-wrap {
-    min-height: 100vh;
-    border-radius: 0;
+
+  .mon-empty-icon {
+    font-size: 3.5rem;
+    color: #1e293b;
+  }
+
+  .mon-empty-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #334155;
+  }
+
+  .mon-empty-sub {
+    font-size: 0.85rem;
+    color: #1e293b;
   }
 </style>
 
-<div class="tv-wrap">
+{% set n_total    = dados.linhas | length %}
+{% set n_cl_ok   = dados.linhas | selectattr('cl', 'equalto', 'green') | list | length %}
+{% set n_cl_pend = dados.linhas | selectattr('cl', 'equalto', 'red')   | list | length %}
+{% set n_mp_ok   = dados.linhas | selectattr('mp', 'equalto', 'green') | list | length %}
+{% set n_mp_pend = dados.linhas | selectattr('mp', 'equalto', 'red')   | list | length %}
+
+<div class="mon">
+
+  <!-- ===== HEADER ===== -->
+  <div class="mon-hdr">
+    <div class="mon-hdr-brand">
+      <div class="mon-hdr-icon"><i class="bi bi-display"></i></div>
+      <div>
+        <div class="mon-hdr-title">Gerenciamento de Atividades SMD</div>
+        <div class="mon-hdr-sub">Activity Management &nbsp;·&nbsp; Production Floor</div>
+      </div>
+    </div>
+
+    <div class="mon-hdr-center">
+      <div class="mon-shift-badge {% if not dados.tem_turno %}fora{% endif %}">
+        {{ dados.turno_nome }}
+      </div>
+      <div class="mon-hdr-date">{{ dados.hoje }}</div>
+    </div>
+
+    <div class="mon-clock" id="mon-clock">{{ dados.atualizado_em }}</div>
+  </div>
 
   {% if erro %}
-  <div style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);border-radius:10px;padding:16px;color:#ef4444;margin-bottom:16px;">
-    <strong>Erro ao carregar dados:</strong> {{ erro }}
+  <div style="background:rgba(239,68,68,0.08);border-bottom:1px solid rgba(239,68,68,0.18);padding:9px 28px;color:#fca5a5;font-size:0.8rem;flex-shrink:0;">
+    <i class="bi bi-exclamation-triangle me-2"></i><strong>Erro ao carregar dados:</strong> {{ erro }}
   </div>
   {% endif %}
 
-  <div class="tv-header">
-    <div class="tv-title"><i class="bi bi-display me-2"></i>Monitor SMD</div>
-    <div class="tv-shift">{{ dados.turno_nome }} &nbsp;·&nbsp; {{ dados.hoje }}</div>
-    <div class="tv-clock" id="relogio">{{ dados.atualizado_em }}</div>
+  {% if dados.tem_turno and dados.linhas %}
+
+  <!-- ===== SUMMARY BAR ===== -->
+  <div class="mon-summary">
+    <div class="mon-kpi neutral">
+      <span style="color:#475569;">Linhas</span>
+      <strong style="color:#e2e8f0;font-size:1rem;">{{ n_total }}</strong>
+    </div>
+
+    <div class="mon-summary-sep"></div>
+
+    <div class="mon-kpi {% if n_cl_pend == 0 %}ok{% else %}neutral{% endif %}">
+      <div class="mon-kpi-dot"></div>
+      Checklist &nbsp;
+      <strong>{{ n_cl_ok }}/{{ n_total }}</strong>
+    </div>
+
+    {% if n_cl_pend > 0 %}
+    <div class="mon-kpi warn">
+      <div class="mon-kpi-dot"></div>
+      {{ n_cl_pend }} pendente{% if n_cl_pend > 1 %}s{% endif %}
+    </div>
+    {% endif %}
+
+    <div class="mon-summary-sep"></div>
+
+    <div class="mon-kpi {% if n_mp_pend == 0 %}ok{% else %}neutral{% endif %}">
+      <div class="mon-kpi-dot"></div>
+      Medição Pasta &nbsp;
+      <strong>{{ n_mp_ok }}/{{ n_total }}</strong>
+    </div>
+
+    {% if n_mp_pend > 0 %}
+    <div class="mon-kpi warn">
+      <div class="mon-kpi-dot"></div>
+      {{ n_mp_pend }} pendente{% if n_mp_pend > 1 %}s{% endif %}
+    </div>
+    {% endif %}
+
+    <div class="mon-summary-refresh">
+      <i class="bi bi-arrow-clockwise me-1"></i>Auto-refresh 60s
+    </div>
   </div>
 
-  {% if not dados.tem_turno %}
-  <div class="tv-no-turno">
-    <i class="bi bi-moon-stars fs-1 d-block mb-3" style="color:#334155;"></i>
-    <div style="color:#64748b;">Nenhum turno ativo no momento.</div>
-  </div>
-  {% elif not dados.linhas %}
-  <div class="tv-no-turno">
-    <i class="bi bi-exclamation-circle fs-1 d-block mb-3" style="color:#334155;"></i>
-    <div style="color:#64748b;">Nenhuma linha SMD configurada.</div>
-  </div>
-  {% else %}
-  <div class="table-responsive">
-    <table class="tv-table">
+  <!-- ===== TABLE ===== -->
+  <div class="mon-body">
+    <table class="mon-table">
       <thead>
-        <tr>
+        <tr class="row-groups">
           <th class="th-linha" rowspan="2">Linha</th>
-          <th rowspan="2" class="th-doc">Checklist<small>Linha</small></th>
-          <th rowspan="2" class="th-doc">Medição<small>Pasta</small></th>
+          <th colspan="2" class="th-group-daily">Atividades Diárias</th>
           {% if dados.slots %}
-          <th colspan="{{ dados.slots | length }}"
-              style="background:rgba(59,130,246,0.15);color:#93c5fd;letter-spacing:1.5px;">
-            Limpeza Stencil — hora a hora
+          <th colspan="{{ dados.slots | length }}" class="th-group-stencil">
+            Limpeza Stencil — Hora a Hora
           </th>
           {% endif %}
         </tr>
-        <tr>
+        <tr class="row-subheads">
+          <th class="th-sub-daily">
+            Checklist
+            <small>Linha</small>
+          </th>
+          <th class="th-sub-daily">
+            Medição
+            <small>Pasta</small>
+          </th>
           {% for s in dados.slots %}
-          <th>
+          <th class="th-sub-slot">
             {{ s.hora }}
             {% if s.proximo_dia %}<span class="slot-amanha">+1d</span>{% endif %}
           </th>
@@ -232,88 +577,110 @@
       <tbody>
         {% for linha in dados.linhas %}
         <tr>
-          <td><div class="tv-linha-name">{{ linha.linha }}</div></td>
-
-          <!-- Checklist Linha (diário) -->
-          <td>
-            <div class="tv-cell doc {{ linha.cl }}">
-              <div class="tv-cell-inner">
-                {% if linha.cl == 'green' %}
-                  <i class="bi bi-check-lg"></i>
-                {% elif linha.cl == 'red' %}
-                  <i class="bi bi-x-lg"></i>
-                {% else %}
-                  <i class="bi bi-dash"></i>
-                {% endif %}
-              </div>
+          <td class="td-linha">
+            <div class="linha-badge">
+              <span class="linha-text">{{ linha.linha }}</span>
             </div>
           </td>
 
-          <!-- Medição Pasta (por turno) -->
-          <td>
-            <div class="tv-cell doc {{ linha.mp }}">
-              <div class="tv-cell-inner">
-                {% if linha.mp == 'green' %}
-                  <i class="bi bi-check-lg"></i>
-                {% elif linha.mp == 'red' %}
-                  <i class="bi bi-x-lg"></i>
-                {% else %}
-                  <i class="bi bi-dash"></i>
-                {% endif %}
-              </div>
+          <!-- Checklist Linha -->
+          <td class="td-status">
+            <div class="status-cell lg s-{{ linha.cl }}">
+              {% if linha.cl == 'green' %}
+                <i class="bi bi-check-lg"></i>
+              {% elif linha.cl == 'red' %}
+                <i class="bi bi-x-lg"></i>
+              {% else %}
+                <i class="bi bi-dash"></i>
+              {% endif %}
+            </div>
+          </td>
+
+          <!-- Medição Pasta -->
+          <td class="td-status">
+            <div class="status-cell lg s-{{ linha.mp }}">
+              {% if linha.mp == 'green' %}
+                <i class="bi bi-check-lg"></i>
+              {% elif linha.mp == 'red' %}
+                <i class="bi bi-x-lg"></i>
+              {% else %}
+                <i class="bi bi-dash"></i>
+              {% endif %}
             </div>
           </td>
 
           <!-- Limpeza Stencil por hora -->
           {% for hora in linha.horas %}
-          <td>
-            <div class="tv-cell {{ hora.ls }}">
-              <div class="tv-cell-inner">
-                {% if hora.ls == 'green' %}
-                  <i class="bi bi-check-lg"></i>
-                {% elif hora.ls == 'red' %}
-                  <i class="bi bi-exclamation-lg"></i>
-                {% else %}
-                  <i class="bi bi-dash"></i>
-                {% endif %}
-                <span class="cell-label">LS</span>
-              </div>
+          <td class="td-status">
+            <div class="status-cell sm s-{{ hora.ls }}">
+              {% if hora.ls == 'green' %}
+                <i class="bi bi-check-lg"></i>
+              {% elif hora.ls == 'red' %}
+                <i class="bi bi-exclamation-lg"></i>
+              {% else %}
+                <i class="bi bi-dash"></i>
+              {% endif %}
             </div>
           </td>
           {% endfor %}
+
         </tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
+
+  {% elif not dados.tem_turno %}
+  <div class="mon-empty">
+    <div class="mon-empty-icon"><i class="bi bi-moon-stars"></i></div>
+    <div class="mon-empty-title">Nenhum turno ativo no momento</div>
+    <div class="mon-empty-sub">Verifique a configuração em <strong style="color:#334155;">/config/turnos</strong></div>
+  </div>
+
+  {% else %}
+  <div class="mon-empty">
+    <div class="mon-empty-icon"><i class="bi bi-exclamation-circle"></i></div>
+    <div class="mon-empty-title">Nenhuma linha SMD configurada</div>
+    <div class="mon-empty-sub">Adicione linhas em <strong style="color:#334155;">/config/linhas</strong></div>
+  </div>
   {% endif %}
 
-  <div class="tv-legend">
-    <div class="tv-legend-item"><div class="tv-dot green"></div> Realizado</div>
-    <div class="tv-legend-item"><div class="tv-dot red"></div> Pendente / Atrasado</div>
-    <div class="tv-legend-item"><div class="tv-dot blue"></div> Ainda não é a hora</div>
-    <div class="ms-4" style="color:#334155;font-size:0.72rem;">
-      LS = Limpeza Stencil (hora a hora) &nbsp;·&nbsp; <span style="color:#f59e0b;">+1d</span> = próxima madrugada (mesmo turno)
+  <!-- ===== LEGEND ===== -->
+  <div class="mon-legend">
+    <div class="mon-legend-items">
+      <div class="mon-legend-item">
+        <div class="legend-dot g"></div>
+        Realizado
+      </div>
+      <div class="mon-legend-item">
+        <div class="legend-dot r"></div>
+        Pendente / Atrasado
+      </div>
+      <div class="mon-legend-item">
+        <div class="legend-dot b"></div>
+        Ainda não é a hora
+      </div>
+    </div>
+    <div class="mon-legend-meta">
+      <span><span style="color:#f59e0b;font-weight:700;">+1d</span> = próxima madrugada (turno noturno)</span>
+      <span>·</span>
+      <span>Atualizado às {{ dados.atualizado_em }}</span>
     </div>
   </div>
 
-  <div class="tv-refresh">Atualizado às {{ dados.atualizado_em }} · Atualização automática a cada 60s</div>
 </div>
 
 <script>
 (function () {
-  function atualizarRelogio() {
-    const agora = new Date();
-    const h = String(agora.getHours()).padStart(2, '0');
-    const m = String(agora.getMinutes()).padStart(2, '0');
-    const s = String(agora.getSeconds()).padStart(2, '0');
-    const el = document.getElementById('relogio');
-    if (el) el.textContent = h + ':' + m + ':' + s;
+  var el = document.getElementById('mon-clock');
+  function tick() {
+    var d = new Date();
+    var p = function(n){ return String(n).padStart(2,'0'); };
+    if (el) el.textContent = p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds());
   }
-  setInterval(atualizarRelogio, 1000);
-  atualizarRelogio();
-
-  setTimeout(function () { location.reload(); }, 60000);
+  setInterval(tick, 1000);
+  tick();
+  setTimeout(function(){ location.reload(); }, 60000);
 }());
 </script>
 {% endblock %}
