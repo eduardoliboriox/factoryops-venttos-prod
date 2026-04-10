@@ -10,10 +10,6 @@
     <h1 class="page-header-name">Resumo de Produção</h1>
   </div>
   <div class="page-header-actions">
-    <a href="{{ url_for('pages.funcionalidades_resumo_producao_novo') }}"
-       class="btn btn-sm btn-primary fw-semibold" style="border-radius:8px;">
-      <i class="bi bi-plus-lg me-1"></i>Novo Relatório
-    </a>
     <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
       <i class="bi bi-arrows-fullscreen"></i>
     </button>
@@ -33,6 +29,16 @@
     </div>
     {% endfor %}
   {% endwith %}
+
+  <div class="d-flex align-items-center gap-2 mb-4">
+    <a href="{{ url_for('pages.smt_mais') }}" class="btn btn-outline-secondary btn-sm d-md-none" style="border-radius:8px;">
+      <i class="bi bi-arrow-left me-1"></i>Voltar
+    </a>
+    <a href="{{ url_for('pages.funcionalidades_resumo_producao_novo') }}"
+       class="btn btn-primary btn-sm fw-semibold ms-auto" style="border-radius:8px;">
+      <i class="bi bi-plus-lg me-1"></i>Novo Relatório
+    </a>
+  </div>
 
   <form method="GET" class="row g-2 mb-4 align-items-end">
     <div class="col-12 col-sm-6 col-md-3">
