@@ -4,9 +4,16 @@ from app.repositories import resumo_producao_repository as repo
 TURNOS_VALIDOS = {"1T", "2T", "3T"}
 STATUS_VALIDOS = {"rascunho", "finalizado"}
 
+TURNO_LABEL = {
+    "1T": "1° Turno",
+    "2T": "2° Turno",
+    "3T": "3° Turno",
+}
 
-def listar(data_inicial: str = "", data_final: str = "", turno: str = "", status: str = "") -> list:
-    return repo.listar(data_inicial, data_final, turno, status)
+
+def listar(data_inicial: str = "", data_final: str = "", turno: str = "",
+           status: str = "", criado_por: str = "") -> list:
+    return repo.listar(data_inicial, data_final, turno, status, criado_por)
 
 
 def buscar_por_id(resumo_id: int) -> dict | None:
@@ -26,7 +33,7 @@ def _parsear_dados_json(form_data: dict) -> dict:
     if not data:
         raise ValueError("Data é obrigatória.")
     if turno not in TURNOS_VALIDOS:
-        raise ValueError(f"Turno inválido. Use: {', '.join(TURNOS_VALIDOS)}.")
+        raise ValueError(f"Turno inválido. Use: {', '.join(sorted(TURNOS_VALIDOS))}.")
 
     status = form_data.get("status", "rascunho").strip()
     if status not in STATUS_VALIDOS:

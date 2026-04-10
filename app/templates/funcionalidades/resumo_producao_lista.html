@@ -1,6 +1,8 @@
 {% extends "layouts/app.html" %}
 {% block title %}Resumo de Produção{% endblock %}
 
+{% set turno_label = {'1T': '1° Turno', '2T': '2° Turno', '3T': '3° Turno'} %}
+
 {% block page_title %}
 <div class="page-header">
   <div class="page-header-title">
@@ -47,9 +49,9 @@
       <label class="form-label fw-semibold" style="font-size:0.8rem;">Turno</label>
       <select name="turno" class="form-select form-select-sm" style="border-radius:8px;">
         <option value="">Todos</option>
-        <option value="1T" {% if turno == '1T' %}selected{% endif %}>1T</option>
-        <option value="2T" {% if turno == '2T' %}selected{% endif %}>2T</option>
-        <option value="3T" {% if turno == '3T' %}selected{% endif %}>3T</option>
+        <option value="1T" {% if turno == '1T' %}selected{% endif %}>1° Turno</option>
+        <option value="2T" {% if turno == '2T' %}selected{% endif %}>2° Turno</option>
+        <option value="3T" {% if turno == '3T' %}selected{% endif %}>3° Turno</option>
       </select>
     </div>
     <div class="col-12 col-sm-6 col-md-2">
@@ -80,13 +82,12 @@
         <table class="table table-hover mb-0" style="font-size:0.84rem;">
           <thead style="font-size:0.72rem;text-transform:uppercase;letter-spacing:.5px;background:var(--bg);">
             <tr>
-              <th class="ps-3 py-2">#</th>
+              <th class="ps-3 py-2">ID</th>
               <th>Data</th>
               <th>Dia</th>
               <th>Turno</th>
               <th class="text-center">Linhas</th>
               <th>Status</th>
-              <th>Criado por</th>
               <th class="pe-3"></th>
             </tr>
           </thead>
@@ -94,13 +95,17 @@
             {% set dias = ['Segunda','Terça','Quarta','Quinta','Sexta','Sábado','Domingo'] %}
             {% for r in resumos %}
             <tr>
-              <td class="ps-3 fw-semibold text-muted" style="font-size:0.78rem;">{{ r.id }}</td>
+              <td class="ps-3 fw-semibold text-muted" style="font-size:0.78rem;">
+                {{ r.id }} - {{ r.data.year if r.data else '—' }}
+              </td>
               <td class="fw-semibold">{{ r.data.strftime('%d/%m/%Y') if r.data else '—' }}</td>
               <td class="text-muted">
                 {% if r.data %}{{ dias[r.data.weekday()] }}{% else %}—{% endif %}
               </td>
               <td>
-                <span class="badge bg-primary" style="font-size:0.7rem;">{{ r.turno }}</span>
+                <span class="badge bg-primary" style="font-size:0.7rem;">
+                  {{ turno_label.get(r.turno, r.turno) }}
+                </span>
               </td>
               <td class="text-center">
                 <span class="badge bg-secondary" style="font-size:0.7rem;">{{ r.num_linhas }}</span>
@@ -112,7 +117,6 @@
                   <span class="badge text-bg-warning text-dark" style="font-size:0.68rem;">Rascunho</span>
                 {% endif %}
               </td>
-              <td class="text-muted" style="font-size:0.78rem;">{{ r.criado_por or '—' }}</td>
               <td class="text-end pe-3">
                 <div class="d-flex justify-content-end gap-1">
                   <a href="{{ url_for('pages.funcionalidades_resumo_producao_relatorio', resumo_id=r.id) }}"
@@ -125,7 +129,7 @@
                   </a>
                   <form method="POST"
                         action="{{ url_for('pages.funcionalidades_resumo_producao_excluir', resumo_id=r.id) }}"
-                        onsubmit="return confirm('Excluir o relatório #{{ r.id }}?')">
+                        onsubmit="return confirm('Excluir o relatório {{ r.id }} - {{ r.data.year if r.data else '' }}?')">
                     <button type="submit" class="btn btn-outline-danger btn-sm"
                             style="border-radius:6px;" title="Excluir">
                       <i class="bi bi-trash3"></i>
