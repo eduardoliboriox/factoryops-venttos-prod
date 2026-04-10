@@ -202,22 +202,7 @@
     </h1>
   </div>
   <div class="page-header-actions">
-    <a href="{{ url_for('pages.funcionalidades_resumo_producao_novo') }}"
-       class="btn btn-sm btn-outline-success fw-semibold no-print" style="border-radius:8px;">
-      <i class="bi bi-plus-lg me-1"></i>Novo
-    </a>
-    <a href="{{ url_for('pages.funcionalidades_resumo_producao_editar', resumo_id=resumo.id) }}"
-       class="btn btn-sm btn-outline-secondary fw-semibold no-print" style="border-radius:8px;">
-      <i class="bi bi-pencil me-1"></i>Editar
-    </a>
-    <button class="btn btn-sm btn-primary fw-semibold no-print" style="border-radius:8px;"
-            onclick="window.print()">
-      <i class="bi bi-download me-1"></i>Baixar / PDF
-    </button>
-    <a href="{{ url_for('pages.funcionalidades_resumo_producao') }}" class="btn-header-icon no-print" title="Voltar">
-      <i class="bi bi-arrow-left"></i>
-    </a>
-    <button class="btn-header-icon no-print" onclick="toggleFullscreen()" title="Tela cheia">
+    <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
       <i class="bi bi-arrows-fullscreen"></i>
     </button>
   </div>
@@ -227,6 +212,25 @@
 {% block content %}
 {% set dias = ['Segunda','Terça','Quarta','Quinta','Sexta','Sábado','Domingo'] %}
 <div class="rel-wrapper">
+
+  <div class="d-flex align-items-center gap-2 mb-4 no-print">
+    <a href="{{ url_for('pages.funcionalidades_resumo_producao') }}"
+       class="btn btn-outline-secondary btn-sm d-md-none" style="border-radius:8px;">
+      <i class="bi bi-arrow-left me-1"></i>Voltar
+    </a>
+    <a href="{{ url_for('pages.funcionalidades_resumo_producao_editar', resumo_id=resumo.id) }}"
+       class="btn btn-outline-secondary btn-sm" style="border-radius:8px;">
+      <i class="bi bi-pencil me-1"></i>Editar
+    </a>
+    <a href="{{ url_for('pages.funcionalidades_resumo_producao_novo') }}"
+       class="btn btn-outline-success btn-sm fw-semibold" style="border-radius:8px;">
+      <i class="bi bi-plus-lg me-1"></i>Novo
+    </a>
+    <button class="btn btn-primary btn-sm fw-semibold ms-auto" style="border-radius:8px;"
+            onclick="window.print()">
+      <i class="bi bi-download me-1"></i>Baixar / PDF
+    </button>
+  </div>
 
   <div class="rel-header-card">
     <div class="d-flex align-items-start justify-content-between flex-wrap gap-3">
