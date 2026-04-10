@@ -1,5 +1,7 @@
 {% extends "layouts/app.html" %}
-{% block title %}Relatório de Produção – {{ resumo.data.strftime('%d/%m/%Y') if resumo.data else '' }} {{ resumo.turno }}{% endblock %}
+{% set turno_label = {'1T': '1° Turno', '2T': '2° Turno', '3T': '3° Turno'} %}
+{% set turno_str = turno_label.get(resumo.turno, resumo.turno) %}
+{% block title %}Relatório {{ resumo.data.strftime('%d/%m/%Y') if resumo.data else '' }} · {{ turno_str }}{% endblock %}
 
 {% block styles %}
 <style>
@@ -93,6 +95,7 @@
   margin-top: 0.75rem;
   font-size: 0.84rem;
   color: #dc3545;
+  white-space: pre-line;
 }
 .modelo-rel {
   border: 1px solid var(--border);
@@ -105,7 +108,8 @@
 .modelo-header {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  flex-wrap: wrap;
+  gap: 0.4rem;
   margin-bottom: 0.625rem;
 }
 .modelo-codigo {
@@ -193,16 +197,22 @@
 <div class="page-header">
   <div class="page-header-title">
     <span class="page-header-section">Funcionalidades</span>
-    <h1 class="page-header-name">Relatório de Produção</h1>
+    <h1 class="page-header-name">
+      Relatório {{ resumo.id }} - {{ resumo.data.year if resumo.data else '' }}
+    </h1>
   </div>
   <div class="page-header-actions">
+    <a href="{{ url_for('pages.funcionalidades_resumo_producao_novo') }}"
+       class="btn btn-sm btn-outline-success fw-semibold no-print" style="border-radius:8px;">
+      <i class="bi bi-plus-lg me-1"></i>Novo
+    </a>
     <a href="{{ url_for('pages.funcionalidades_resumo_producao_editar', resumo_id=resumo.id) }}"
        class="btn btn-sm btn-outline-secondary fw-semibold no-print" style="border-radius:8px;">
       <i class="bi bi-pencil me-1"></i>Editar
     </a>
     <button class="btn btn-sm btn-primary fw-semibold no-print" style="border-radius:8px;"
             onclick="window.print()">
-      <i class="bi bi-printer me-1"></i>Imprimir / PDF
+      <i class="bi bi-download me-1"></i>Baixar / PDF
     </button>
     <a href="{{ url_for('pages.funcionalidades_resumo_producao') }}" class="btn-header-icon no-print" title="Voltar">
       <i class="bi bi-arrow-left"></i>
@@ -222,7 +232,7 @@
     <div class="d-flex align-items-start justify-content-between flex-wrap gap-3">
       <div>
         <div class="rel-title">Resumo de Produção SMD</div>
-        <div class="rel-meta mb-3">Relatório de turno — #{{ resumo.id }}</div>
+        <div class="rel-meta mb-3">Relatório de turno · {{ resumo.criado_por or '' }}</div>
         <div class="d-flex flex-wrap gap-2">
           <span class="rel-badge rel-badge-data">
             <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16">
@@ -240,7 +250,7 @@
               <path d="M8 3.5a.5.5 0 0 0-1 0V9a.5.5 0 0 0 .252.434l3.5 2a.5.5 0 0 0 .496-.868L8 8.71z"/>
               <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16m7-8A7 7 0 1 1 1 8a7 7 0 0 1 14 0"/>
             </svg>
-            Turno {{ resumo.turno }}
+            {{ turno_str }}
           </span>
         </div>
       </div>
@@ -276,7 +286,7 @@
               <span style="font-size:1rem;">🔶</span>
               <span class="modelo-codigo">Modelo: {{ modelo.codigo_modelo }}</span>
               {% if modelo.produto %}
-              <span class="modelo-produto ms-1">· Produto: {{ modelo.produto }}</span>
+              <span class="modelo-produto">· Produto: {{ modelo.produto }}</span>
               {% endif %}
             </div>
 
@@ -297,7 +307,7 @@
                 <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="currentColor" viewBox="0 0 16 16">
                   <path d="M7.646 4.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1-.708.708L8 5.707l-5.646 5.647a.5.5 0 0 1-.708-.708z"/>
                 </svg>
-                Produzido Top: {{ modelo.produzido_top | int | string | replace('.', '') }}
+                Produzido Top: {{ "{:,}".format(modelo.produzido_top | int).replace(",", ".") }}
               </span>
               {% endif %}
               {% if modelo.produzido_bot %}
@@ -305,7 +315,7 @@
                 <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="currentColor" viewBox="0 0 16 16">
                   <path d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/>
                 </svg>
-                Produzido Bot: {{ modelo.produzido_bot | int | string | replace('.', '') }}
+                Produzido Bot: {{ "{:,}".format(modelo.produzido_bot | int).replace(",", ".") }}
               </span>
               {% endif %}
             </div>
@@ -341,9 +351,9 @@
   {% endif %}
 
   <div class="rel-footer-info">
-    Gerado por FactoryOps &middot; {{ resumo.criado_por or '' }} &middot;
-    Relatório #{{ resumo.id }} &middot;
-    {{ resumo.data.strftime('%d/%m/%Y') if resumo.data else '' }} &middot; Turno {{ resumo.turno }}
+    FactoryOps · {{ resumo.criado_por or '' }} ·
+    Relatório {{ resumo.id }} - {{ resumo.data.year if resumo.data else '' }} ·
+    {{ resumo.data.strftime('%d/%m/%Y') if resumo.data else '' }} · {{ turno_str }}
   </div>
 
 </div>

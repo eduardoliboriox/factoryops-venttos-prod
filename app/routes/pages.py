@@ -144,7 +144,7 @@ def funcionalidades_resumo_producao():
     status       = request.args.get("status", "")
 
     try:
-        resumos = svc.listar(data_inicial, data_final, turno, status)
+        resumos = svc.listar(data_inicial, data_final, turno, status, current_user.username)
         erro    = None
     except Exception as e:
         resumos = []
@@ -167,6 +167,7 @@ def funcionalidades_resumo_producao():
 def funcionalidades_resumo_producao_novo():
     from flask import request, flash, redirect, url_for
     from app.services import resumo_producao_service as svc
+    from app.repositories import linha_config_repository as linha_repo
 
     if request.method == "POST":
         try:
@@ -178,10 +179,16 @@ def funcionalidades_resumo_producao_novo():
         except Exception:
             flash("Erro ao salvar o relatório.", "danger")
 
+    try:
+        linhas_config = linha_repo.listar_por_setor()
+    except Exception:
+        linhas_config = {}
+
     return render_template(
         "funcionalidades/resumo_producao_form.html",
         active_menu="funcionalidades_resumo_producao",
         resumo=None,
+        linhas_config=linhas_config,
     )
 
 
@@ -190,6 +197,7 @@ def funcionalidades_resumo_producao_novo():
 def funcionalidades_resumo_producao_editar(resumo_id: int):
     from flask import request, flash, redirect, url_for
     from app.services import resumo_producao_service as svc
+    from app.repositories import linha_config_repository as linha_repo
 
     resumo = svc.buscar_por_id(resumo_id)
     if not resumo:
@@ -207,10 +215,16 @@ def funcionalidades_resumo_producao_editar(resumo_id: int):
             flash("Erro ao atualizar o relatório.", "danger")
         resumo = svc.buscar_por_id(resumo_id)
 
+    try:
+        linhas_config = linha_repo.listar_por_setor()
+    except Exception:
+        linhas_config = {}
+
     return render_template(
         "funcionalidades/resumo_producao_form.html",
         active_menu="funcionalidades_resumo_producao",
         resumo=resumo,
+        linhas_config=linhas_config,
     )
 
 

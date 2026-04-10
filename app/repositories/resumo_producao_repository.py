@@ -2,7 +2,8 @@ from app.extensions import get_db
 from psycopg.rows import dict_row
 
 
-def listar(data_inicial: str = "", data_final: str = "", turno: str = "", status: str = "") -> list:
+def listar(data_inicial: str = "", data_final: str = "", turno: str = "",
+           status: str = "", criado_por: str = "") -> list:
     filtros = ["1=1"]
     params  = []
 
@@ -18,6 +19,9 @@ def listar(data_inicial: str = "", data_final: str = "", turno: str = "", status
     if status:
         filtros.append("r.status = %s")
         params.append(status)
+    if criado_por:
+        filtros.append("r.criado_por = %s")
+        params.append(criado_por)
 
     where = " AND ".join(filtros)
 

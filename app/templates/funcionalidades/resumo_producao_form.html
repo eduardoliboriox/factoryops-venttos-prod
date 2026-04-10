@@ -11,12 +11,13 @@
 }
 .linha-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.75rem;
   padding: 0.875rem 1rem;
   border-bottom: 1px solid var(--border);
   background: rgba(15,23,42,0.03);
   border-radius: 12px 12px 0 0;
+  flex-wrap: wrap;
 }
 .linha-body { padding: 1rem; }
 .modelo-card {
@@ -33,10 +34,11 @@
   border: none;
   color: #dc3545;
   cursor: pointer;
-  padding: 4px 6px;
+  padding: 4px 8px;
   border-radius: 6px;
   line-height: 1;
   transition: background .12s;
+  flex-shrink: 0;
 }
 .btn-remove:hover { background: rgba(220,53,69,0.1); }
 .form-label-sm {
@@ -44,6 +46,16 @@
   font-weight: 600;
   color: var(--text);
   margin-bottom: 4px;
+  display: block;
+}
+.linha-obs-area {
+  width: 100%;
+  min-height: 60px;
+  resize: vertical;
+}
+@media (max-width: 768px) {
+  .linha-header { flex-direction: column; gap: 0.5rem; }
+  .linha-header .btn-remove { align-self: flex-end; }
 }
 </style>
 {% endblock %}
@@ -53,19 +65,27 @@
   <div class="page-header-title">
     <span class="page-header-section">Funcionalidades</span>
     <h1 class="page-header-name">
-      {% if resumo %}Editar Relatório #{{ resumo.id }}{% else %}Novo Relatório{% endif %}
+      {% if resumo %}
+        {{ resumo.id }} - {{ resumo.data.year if resumo.data else '' }}
+      {% else %}
+        Novo Relatório
+      {% endif %}
     </h1>
   </div>
   <div class="page-header-actions">
-    <a href="{{ url_for('pages.funcionalidades_resumo_producao') }}" class="btn-header-icon" title="Voltar">
-      <i class="bi bi-arrow-left"></i>
+    <a href="{{ url_for('pages.funcionalidades_resumo_producao_novo') }}"
+       class="btn btn-sm btn-outline-success fw-semibold" style="border-radius:8px;" title="Criar novo relatório">
+      <i class="bi bi-plus-lg me-1"></i>Novo
     </a>
     {% if resumo %}
     <a href="{{ url_for('pages.funcionalidades_resumo_producao_relatorio', resumo_id=resumo.id) }}"
-       class="btn btn-sm btn-outline-primary fw-semibold" style="border-radius:8px;" target="_blank">
+       class="btn btn-sm btn-primary fw-semibold" style="border-radius:8px;" target="_blank">
       <i class="bi bi-file-earmark-bar-graph me-1"></i>Ver Relatório
     </a>
     {% endif %}
+    <a href="{{ url_for('pages.funcionalidades_resumo_producao') }}" class="btn-header-icon" title="Voltar">
+      <i class="bi bi-arrow-left"></i>
+    </a>
     <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
       <i class="bi bi-arrows-fullscreen"></i>
     </button>
@@ -99,23 +119,23 @@
                    value="{{ resumo.data.strftime('%Y-%m-%d') if resumo and resumo.data else '' }}"
                    style="border-radius:8px;">
           </div>
-          <div class="col-12 col-sm-3">
+          <div class="col-12 col-sm-4">
             <label class="form-label-sm">Turno <span class="text-danger">*</span></label>
             <select name="turno" id="inputTurno" class="form-select" style="border-radius:8px;">
-              {% for t in ['1T','2T','3T'] %}
-              <option value="{{ t }}" {% if resumo and resumo.turno == t %}selected{% endif %}>{{ t }}</option>
-              {% endfor %}
+              <option value="1T" {% if not resumo or resumo.turno == '1T' %}selected{% endif %}>1° Turno</option>
+              <option value="2T" {% if resumo and resumo.turno == '2T' %}selected{% endif %}>2° Turno</option>
+              <option value="3T" {% if resumo and resumo.turno == '3T' %}selected{% endif %}>3° Turno</option>
             </select>
           </div>
-          <div class="col-12 col-sm-3">
+          <div class="col-6 col-sm-2">
             <label class="form-label-sm">Status</label>
             <select name="status" id="inputStatus" class="form-select" style="border-radius:8px;">
               <option value="rascunho" {% if not resumo or resumo.status == 'rascunho' %}selected{% endif %}>Rascunho</option>
               <option value="finalizado" {% if resumo and resumo.status == 'finalizado' %}selected{% endif %}>Finalizado</option>
             </select>
           </div>
-          <div class="col-12 col-sm-2 d-flex align-items-end">
-            <div id="diaSemana" class="text-muted fw-semibold" style="font-size:0.9rem;padding-bottom:6px;"></div>
+          <div class="col-6 col-sm-2 d-flex align-items-end">
+            <div id="diaSemana" class="fw-semibold text-primary" style="font-size:0.95rem;padding-bottom:7px;"></div>
           </div>
         </div>
       </div>
@@ -148,6 +168,8 @@
 <script>
 const DADOS_INICIAIS = {{ (resumo.linhas | tojson) if resumo and resumo.linhas else '[]' }};
 
+const LINHAS_CONFIG = {{ linhas_config | tojson }};
+
 const DIAS_SEMANA = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
 
 let linhasState = [];
@@ -169,6 +191,23 @@ function linhaId() {
 
 function modeloId() {
   return '_m' + Date.now() + Math.random().toString(36).slice(2, 6);
+}
+
+function buildLinhaSelectOptions(valorAtual) {
+  let opts = '<option value="">Selecione a linha</option>';
+  const setores = Object.keys(LINHAS_CONFIG).sort();
+  if (setores.length === 0) {
+    return '<option value="">Nenhuma linha configurada</option>';
+  }
+  setores.forEach(setor => {
+    opts += `<optgroup label="${escHtml(setor)}">`;
+    LINHAS_CONFIG[setor].forEach(l => {
+      const sel = l.linha === valorAtual ? ' selected' : '';
+      opts += `<option value="${escHtml(l.linha)}"${sel}>${escHtml(l.linha)}</option>`;
+    });
+    opts += '</optgroup>';
+  });
+  return opts;
 }
 
 function adicionarLinha(dadosIniciais) {
@@ -225,24 +264,35 @@ function renderLinha(linha) {
   const div = document.createElement('div');
   div.className = 'linha-card';
   div.id = 'linha-' + linha._id;
+
+  const selectOpts = buildLinhaSelectOptions(linha.nome_linha);
+  const obsVal     = escHtml(linha.observacao);
+
   div.innerHTML = `
     <div class="linha-header">
-      <i class="bi bi-diagram-3 text-primary"></i>
-      <input type="text" class="form-control form-control-sm fw-semibold"
-             style="border-radius:6px;max-width:180px;"
-             placeholder="Nome da linha (ex: SMD01)"
-             value="${escHtml(linha.nome_linha)}"
-             oninput="atualizarCampoLinha('${linha._id}','nome_linha',this.value)">
-      <span class="text-muted small ms-auto me-2">Observação da linha:</span>
-      <input type="text" class="form-control form-control-sm"
-             style="border-radius:6px;max-width:320px;"
-             placeholder="❌ Problema geral da linha (opcional)"
-             value="${escHtml(linha.observacao)}"
-             oninput="atualizarCampoLinha('${linha._id}','observacao',this.value)">
-      <button type="button" class="btn-remove ms-2" title="Remover linha"
+      <div class="d-flex align-items-center gap-2 flex-grow-1 flex-wrap">
+        <i class="bi bi-diagram-3 text-primary flex-shrink-0"></i>
+        <select class="form-select form-select-sm fw-semibold"
+                style="border-radius:6px;max-width:220px;min-width:160px;"
+                onchange="atualizarCampoLinha('${linha._id}','nome_linha',this.value)">
+          ${selectOpts}
+        </select>
+      </div>
+      <button type="button" class="btn-remove ms-auto" title="Remover linha"
               onclick="removerLinha('${linha._id}')">
         <i class="bi bi-x-lg"></i>
       </button>
+      <div class="w-100">
+        <label class="form-label-sm mt-2">
+          <i class="bi bi-exclamation-triangle-fill text-danger me-1" style="font-size:0.75rem;"></i>
+          Problema / Observação da linha (opcional)
+        </label>
+        <textarea class="form-control form-control-sm linha-obs-area"
+                  style="border-radius:6px;"
+                  rows="3"
+                  placeholder="Ex: Tivemos problema durante o processo de deck travando..."
+                  oninput="atualizarCampoLinha('${linha._id}','observacao',this.value)">${obsVal}</textarea>
+      </div>
     </div>
     <div class="linha-body">
       <div id="modelos-${linha._id}"></div>
@@ -299,15 +349,15 @@ function renderModelo(lid, modelo) {
                    oninput="atualizarCampoModelo('${lid}','${modelo._id}','produzido_bot',this.value)">
           </div>
           <div class="col-12 col-sm-6">
-            <label class="form-label-sm">Observação / Problema</label>
+            <label class="form-label-sm">Observação do modelo</label>
             <input type="text" class="form-control form-control-sm" style="border-radius:6px;"
-                   placeholder="🟡 Detalhe do problema (opcional)"
+                   placeholder="Ex: 🟡 Feeder 16 faltando"
                    value="${escHtml(modelo.observacao)}"
                    oninput="atualizarCampoModelo('${lid}','${modelo._id}','observacao',this.value)">
           </div>
         </div>
       </div>
-      <button type="button" class="btn-remove flex-shrink-0 mt-4" title="Remover modelo"
+      <button type="button" class="btn-remove mt-4" title="Remover modelo"
               onclick="removerModelo('${lid}','${modelo._id}')">
         <i class="bi bi-x-lg"></i>
       </button>
@@ -325,7 +375,7 @@ function atualizarCampoModelo(lid, mid, campo, valor) {
   const linha = linhasState.find(l => l._id === lid);
   if (!linha) return;
   const modelo = linha.modelos.find(m => m._id === mid);
-  if (modelo) modelo[campo] = campo === 'produzido_top' || campo === 'produzido_bot'
+  if (modelo) modelo[campo] = (campo === 'produzido_top' || campo === 'produzido_bot')
     ? parseInt(valor) || 0
     : valor;
 }
@@ -339,12 +389,12 @@ function escHtml(str) {
     .replace(/>/g, '&gt;');
 }
 
-document.getElementById('formResumo').addEventListener('submit', function (e) {
+document.getElementById('formResumo').addEventListener('submit', function () {
   const payload = {
     linhas: linhasState.map(l => ({
       nome_linha: l.nome_linha,
       observacao: l.observacao,
-      modelos:    l.modelos.map(m => ({
+      modelos: l.modelos.map(m => ({
         codigo_modelo: m.codigo_modelo,
         produto:       m.produto,
         ops:           m.ops,
