@@ -53,6 +53,32 @@
   min-height: 60px;
   resize: vertical;
 }
+.sem-prod-form-banner {
+  display: flex;
+  align-items: center;
+  background: rgba(255,193,7,0.07);
+  border-top: 1px solid rgba(255,193,7,0.25);
+  border-radius: 0 0 12px 12px;
+  padding: 0.625rem 1rem;
+  font-size: 0.82rem;
+  color: #856404;
+  font-weight: 500;
+}
+.op-row input[type="text"] {
+  font-family: monospace;
+  font-size: 0.82rem;
+}
+.ops-header-row {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  margin-bottom: 4px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
 @media (max-width: 768px) {
   .linha-header { flex-direction: column; gap: 0.5rem; }
   .linha-header .btn-remove { align-self: flex-end; }
@@ -171,10 +197,8 @@
 {% block scripts %}
 <script>
 const DADOS_INICIAIS = {{ (resumo.linhas | tojson) if resumo and resumo.linhas else '[]' }};
-
-const LINHAS_CONFIG = {{ linhas_config | tojson }};
-
-const DIAS_SEMANA = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
+const LINHAS_CONFIG  = {{ linhas_config | tojson }};
+const DIAS_SEMANA    = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
 
 let linhasState = [];
 
@@ -189,20 +213,14 @@ function atualizarDiaSemana() {
 document.getElementById('inputData').addEventListener('change', atualizarDiaSemana);
 atualizarDiaSemana();
 
-function linhaId() {
-  return '_l' + Date.now() + Math.random().toString(36).slice(2, 6);
-}
-
-function modeloId() {
-  return '_m' + Date.now() + Math.random().toString(36).slice(2, 6);
-}
+function linhaId()  { return '_l'  + Date.now() + Math.random().toString(36).slice(2, 6); }
+function modeloId() { return '_m'  + Date.now() + Math.random().toString(36).slice(2, 6); }
+function opId()     { return '_op' + Date.now() + Math.random().toString(36).slice(2, 5); }
 
 function buildLinhaSelectOptions(valorAtual) {
   let opts = '<option value="">Selecione a linha</option>';
   const setores = Object.keys(LINHAS_CONFIG).sort();
-  if (setores.length === 0) {
-    return '<option value="">Nenhuma linha configurada</option>';
-  }
+  if (setores.length === 0) return '<option value="">Nenhuma linha configurada</option>';
   setores.forEach(setor => {
     opts += `<optgroup label="${escHtml(setor)}">`;
     LINHAS_CONFIG[setor].forEach(l => {
@@ -214,13 +232,42 @@ function buildLinhaSelectOptions(valorAtual) {
   return opts;
 }
 
+function _parseOps(raw) {
+  if (!raw) return [];
+  if (Array.isArray(raw)) {
+    return raw.map(item => ({
+      _id: opId(),
+      op: (item.op || '').toUpperCase(),
+      quantidade: parseInt(item.quantidade) || 0,
+    }));
+  }
+  try {
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) {
+      return parsed.map(item => ({
+        _id: opId(),
+        op: (item.op || '').toUpperCase(),
+        quantidade: parseInt(item.quantidade) || 0,
+      }));
+    }
+  } catch {}
+  return raw.split('\n')
+    .map(s => s.trim())
+    .filter(s => s)
+    .map(op => ({ _id: opId(), op: op.toUpperCase(), quantidade: 0 }));
+}
+
 function adicionarLinha(dadosIniciais) {
   const lid = linhaId();
+  const hasModelos = dadosIniciais && (dadosIniciais.modelos || []).length > 0;
+  const semProd = dadosIniciais ? !hasModelos : false;
+
   const linha = {
-    _id:        lid,
-    nome_linha: dadosIniciais ? dadosIniciais.nome_linha : '',
-    observacao: dadosIniciais ? (dadosIniciais.observacao || '') : '',
-    modelos:    [],
+    _id:         lid,
+    nome_linha:  dadosIniciais ? dadosIniciais.nome_linha : '',
+    observacao:  dadosIniciais ? (dadosIniciais.observacao || '') : '',
+    modelos:     [],
+    sem_producao: semProd,
   };
   linhasState.push(linha);
   renderLinha(linha);
@@ -247,7 +294,7 @@ function adicionarModelo(lid, dadosIniciais) {
     _id:           mid,
     codigo_modelo: dadosIniciais ? (dadosIniciais.codigo_modelo || '') : '',
     produto:       dadosIniciais ? (dadosIniciais.produto || '') : '',
-    ops:           dadosIniciais ? (dadosIniciais.ops || '') : '',
+    ops:           _parseOps(dadosIniciais ? dadosIniciais.ops : null),
     produzido_top: dadosIniciais ? (dadosIniciais.produzido_top || 0) : 0,
     produzido_bot: dadosIniciais ? (dadosIniciais.produzido_bot || 0) : 0,
     observacao:    dadosIniciais ? (dadosIniciais.observacao || '') : '',
@@ -263,49 +310,81 @@ function removerModelo(lid, mid) {
   if (el) el.remove();
 }
 
-function renderLinha(linha) {
-  const container = document.getElementById('linhasContainer');
+function adicionarOP(lid, mid) {
+  const linha = linhasState.find(l => l._id === lid);
+  if (!linha) return;
+  const modelo = linha.modelos.find(m => m._id === mid);
+  if (!modelo) return;
+  const opItem = { _id: opId(), op: '', quantidade: 0 };
+  modelo.ops.push(opItem);
+  renderOPRow(lid, mid, opItem);
+}
+
+function removerOP(lid, mid, oid) {
+  const linha = linhasState.find(l => l._id === lid);
+  if (!linha) return;
+  const modelo = linha.modelos.find(m => m._id === mid);
+  if (modelo) modelo.ops = modelo.ops.filter(o => o._id !== oid);
+  const el = document.getElementById('op-row-' + oid);
+  if (el) el.remove();
+}
+
+function atualizarCampoOP(lid, mid, oid, campo, valor) {
+  const linha = linhasState.find(l => l._id === lid);
+  if (!linha) return;
+  const modelo = linha.modelos.find(m => m._id === mid);
+  if (!modelo) return;
+  const opItem = modelo.ops.find(o => o._id === oid);
+  if (!opItem) return;
+  opItem[campo] = campo === 'quantidade' ? (parseInt(valor) || 0) : valor;
+}
+
+function toggleSemProducao(lid, checked) {
+  const linha = linhasState.find(l => l._id === lid);
+  if (!linha) return;
+  linha.sem_producao = checked;
+  const corpo  = document.getElementById('corpo-' + lid);
+  const banner = document.getElementById('semprod-banner-' + lid);
+  if (corpo)  corpo.style.display  = checked ? 'none' : '';
+  if (banner) banner.style.display = checked ? '' : 'none';
+}
+
+function atualizarCampoLinha(lid, campo, valor) {
+  const linha = linhasState.find(l => l._id === lid);
+  if (linha) linha[campo] = valor;
+}
+
+function atualizarCampoModelo(lid, mid, campo, valor) {
+  const linha = linhasState.find(l => l._id === lid);
+  if (!linha) return;
+  const modelo = linha.modelos.find(m => m._id === mid);
+  if (modelo) modelo[campo] = (campo === 'produzido_top' || campo === 'produzido_bot')
+    ? parseInt(valor) || 0
+    : valor;
+}
+
+function renderOPRow(lid, mid, opItem) {
+  const container = document.getElementById('ops-list-' + mid);
+  if (!container) return;
   const div = document.createElement('div');
-  div.className = 'linha-card';
-  div.id = 'linha-' + linha._id;
-
-  const selectOpts = buildLinhaSelectOptions(linha.nome_linha);
-  const obsVal     = escHtml(linha.observacao);
-
+  div.className = 'd-flex gap-1 align-items-center mb-1 op-row';
+  div.id = 'op-row-' + opItem._id;
   div.innerHTML = `
-    <div class="linha-header">
-      <div class="d-flex align-items-center gap-2 flex-grow-1 flex-wrap">
-        <i class="bi bi-diagram-3 text-primary flex-shrink-0"></i>
-        <select class="form-select form-select-sm fw-semibold"
-                style="border-radius:6px;max-width:220px;min-width:160px;"
-                onchange="atualizarCampoLinha('${linha._id}','nome_linha',this.value)">
-          ${selectOpts}
-        </select>
-      </div>
-      <button type="button" class="btn-remove ms-auto" title="Remover linha"
-              onclick="removerLinha('${linha._id}')">
-        <i class="bi bi-x-lg"></i>
-      </button>
-      <div class="w-100">
-        <label class="form-label-sm mt-2">
-          <i class="bi bi-exclamation-triangle-fill text-danger me-1" style="font-size:0.75rem;"></i>
-          Problema / Observação da linha (opcional)
-        </label>
-        <textarea class="form-control form-control-sm linha-obs-area"
-                  style="border-radius:6px;"
-                  rows="3"
-                  placeholder="Ex: Tivemos problema durante o processo de deck travando..."
-                  oninput="atualizarCampoLinha('${linha._id}','observacao',this.value)">${obsVal}</textarea>
-      </div>
-    </div>
-    <div class="linha-body">
-      <div id="modelos-${linha._id}"></div>
-      <button type="button" class="btn btn-outline-secondary btn-sm mt-2"
-              style="border-radius:6px;font-size:0.8rem;"
-              onclick="adicionarModelo('${linha._id}')">
-        <i class="bi bi-plus me-1"></i>Adicionar Modelo
-      </button>
-    </div>
+    <input type="text" class="form-control form-control-sm"
+           style="border-radius:6px;text-transform:uppercase;font-family:monospace;flex:2;min-width:0;"
+           placeholder="Ex: EBRJFC01002"
+           value="${escHtml(opItem.op)}"
+           oninput="this.value=this.value.toUpperCase();atualizarCampoOP('${lid}','${mid}','${opItem._id}','op',this.value)">
+    <input type="number" class="form-control form-control-sm"
+           style="border-radius:6px;flex:0 0 90px;"
+           placeholder="Qtd" min="0"
+           value="${opItem.quantidade || ''}"
+           oninput="atualizarCampoOP('${lid}','${mid}','${opItem._id}','quantidade',this.value)">
+    <button type="button" class="btn-remove flex-shrink-0" style="padding:3px 6px;"
+            title="Remover OP"
+            onclick="removerOP('${lid}','${mid}','${opItem._id}')">
+      <i class="bi bi-x-lg" style="font-size:0.78rem;"></i>
+    </button>
   `;
   container.appendChild(div);
 }
@@ -335,18 +414,26 @@ function renderModelo(lid, modelo) {
                    oninput="atualizarCampoModelo('${lid}','${modelo._id}','produto',this.value)">
           </div>
           <div class="col-12">
-            <label class="form-label-sm">Ordens de Produção (uma por linha)</label>
-            <textarea class="form-control form-control-sm" rows="2" style="border-radius:6px;resize:vertical;"
-                      placeholder="EBRJFC01002&#10;EBRKFB01002"
-                      oninput="atualizarCampoModelo('${lid}','${modelo._id}','ops',this.value)">${escHtml(modelo.ops)}</textarea>
+            <label class="form-label-sm">Ordens de Produção</label>
+            <div class="ops-header-row px-1">
+              <span style="flex:2">Nº da OP</span>
+              <span style="flex:0 0 90px">Qtd</span>
+              <span style="flex:0 0 28px"></span>
+            </div>
+            <div id="ops-list-${modelo._id}"></div>
+            <button type="button" class="btn btn-outline-secondary btn-sm mt-1"
+                    style="border-radius:6px;font-size:0.78rem;"
+                    onclick="adicionarOP('${lid}','${modelo._id}')">
+              <i class="bi bi-plus me-1"></i>Adicionar OP
+            </button>
           </div>
-          <div class="col-12 col-sm-3">
+          <div class="col-6 col-sm-3">
             <label class="form-label-sm">Produzido Top</label>
             <input type="number" min="0" class="form-control form-control-sm" style="border-radius:6px;"
                    value="${modelo.produzido_top || 0}"
                    oninput="atualizarCampoModelo('${lid}','${modelo._id}','produzido_top',this.value)">
           </div>
-          <div class="col-12 col-sm-3">
+          <div class="col-6 col-sm-3">
             <label class="form-label-sm">Produzido Bot</label>
             <input type="number" min="0" class="form-control form-control-sm" style="border-radius:6px;"
                    value="${modelo.produzido_bot || 0}"
@@ -355,7 +442,7 @@ function renderModelo(lid, modelo) {
           <div class="col-12 col-sm-6">
             <label class="form-label-sm">Observação do modelo</label>
             <input type="text" class="form-control form-control-sm" style="border-radius:6px;"
-                   placeholder="Ex: 🟡 Feeder 16 faltando"
+                   placeholder="Ex: Problema no feeder 16"
                    value="${escHtml(modelo.observacao)}"
                    oninput="atualizarCampoModelo('${lid}','${modelo._id}','observacao',this.value)">
           </div>
@@ -368,20 +455,72 @@ function renderModelo(lid, modelo) {
     </div>
   `;
   container.appendChild(div);
+  modelo.ops.forEach(opItem => renderOPRow(lid, modelo._id, opItem));
 }
 
-function atualizarCampoLinha(lid, campo, valor) {
-  const linha = linhasState.find(l => l._id === lid);
-  if (linha) linha[campo] = valor;
-}
+function renderLinha(linha) {
+  const container = document.getElementById('linhasContainer');
+  const div = document.createElement('div');
+  div.className = 'linha-card';
+  div.id = 'linha-' + linha._id;
 
-function atualizarCampoModelo(lid, mid, campo, valor) {
-  const linha = linhasState.find(l => l._id === lid);
-  if (!linha) return;
-  const modelo = linha.modelos.find(m => m._id === mid);
-  if (modelo) modelo[campo] = (campo === 'produzido_top' || campo === 'produzido_bot')
-    ? parseInt(valor) || 0
-    : valor;
+  const selectOpts    = buildLinhaSelectOptions(linha.nome_linha);
+  const obsVal        = escHtml(linha.observacao);
+  const semProdChk    = linha.sem_producao ? 'checked' : '';
+  const corpoDisplay  = linha.sem_producao ? 'display:none' : '';
+  const bannerDisplay = linha.sem_producao ? '' : 'display:none';
+
+  div.innerHTML = `
+    <div class="linha-header">
+      <div class="d-flex align-items-center gap-2 flex-grow-1 flex-wrap">
+        <i class="bi bi-diagram-3 text-primary flex-shrink-0"></i>
+        <select class="form-select form-select-sm fw-semibold"
+                style="border-radius:6px;max-width:220px;min-width:160px;"
+                onchange="atualizarCampoLinha('${linha._id}','nome_linha',this.value)">
+          ${selectOpts}
+        </select>
+      </div>
+      <button type="button" class="btn-remove ms-auto" title="Remover linha"
+              onclick="removerLinha('${linha._id}')">
+        <i class="bi bi-x-lg"></i>
+      </button>
+      <div class="w-100">
+        <label class="form-label-sm mt-2">
+          <i class="bi bi-exclamation-triangle-fill text-danger me-1" style="font-size:0.75rem;"></i>
+          Problema / Observação da linha (opcional)
+        </label>
+        <textarea class="form-control form-control-sm linha-obs-area"
+                  style="border-radius:6px;"
+                  rows="3"
+                  placeholder="Ex: Tivemos problema durante o processo de deck travando..."
+                  oninput="atualizarCampoLinha('${linha._id}','observacao',this.value)">${obsVal}</textarea>
+      </div>
+      <div class="w-100 d-flex align-items-center pt-2" style="border-top:1px solid var(--border);margin-top:8px;">
+        <div class="form-check form-switch mb-0">
+          <input class="form-check-input" type="checkbox" role="switch"
+                 id="semProd-${linha._id}" ${semProdChk}
+                 onchange="toggleSemProducao('${linha._id}', this.checked)">
+          <label class="form-check-label fw-semibold" for="semProd-${linha._id}"
+                 style="font-size:0.8rem;color:var(--text);">
+            Sem produção neste turno
+          </label>
+        </div>
+      </div>
+    </div>
+    <div class="linha-body" id="corpo-${linha._id}" style="${corpoDisplay}">
+      <div id="modelos-${linha._id}"></div>
+      <button type="button" class="btn btn-outline-secondary btn-sm mt-2"
+              style="border-radius:6px;font-size:0.8rem;"
+              onclick="adicionarModelo('${linha._id}')">
+        <i class="bi bi-plus me-1"></i>Adicionar Modelo
+      </button>
+    </div>
+    <div id="semprod-banner-${linha._id}" class="sem-prod-form-banner" style="${bannerDisplay}">
+      <i class="bi bi-slash-circle me-2" style="font-size:1rem;"></i>
+      Sem produção neste turno — nenhum modelo será registrado
+    </div>
+  `;
+  container.appendChild(div);
 }
 
 function escHtml(str) {
@@ -398,10 +537,10 @@ document.getElementById('formResumo').addEventListener('submit', function () {
     linhas: linhasState.map(l => ({
       nome_linha: l.nome_linha,
       observacao: l.observacao,
-      modelos: l.modelos.map(m => ({
+      modelos: l.sem_producao ? [] : l.modelos.map(m => ({
         codigo_modelo: m.codigo_modelo,
         produto:       m.produto,
-        ops:           m.ops,
+        ops:           m.ops.map(o => ({ op: o.op, quantidade: o.quantidade })),
         produzido_top: m.produzido_top,
         produzido_bot: m.produzido_bot,
         observacao:    m.observacao,

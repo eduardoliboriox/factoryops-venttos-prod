@@ -44,7 +44,7 @@
   margin-bottom: 0.75rem;
 }
 .rel-logo {
-  height: 40px;
+  height: 72px;
   object-fit: contain;
   filter: brightness(0) invert(1);
   opacity: 0.9;
@@ -144,6 +144,36 @@
   font-family: monospace;
   margin: 2px 3px 2px 0;
 }
+.ops-qty-list {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 0.375rem;
+}
+.ops-qty-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 3px 8px;
+  font-size: 0.75rem;
+  border-bottom: 1px solid var(--border);
+}
+.ops-qty-row:last-child { border-bottom: none; }
+.ops-qty-total {
+  background: rgba(15,23,42,0.03);
+  border-top: 1px solid var(--border) !important;
+}
+.ops-qty-op {
+  font-family: monospace;
+  font-weight: 600;
+  color: #0d6efd;
+  font-size: 0.72rem;
+}
+.ops-qty-val {
+  font-weight: 700;
+  font-family: monospace;
+  color: var(--text);
+}
 .prod-chip {
   display: inline-flex;
   align-items: center;
@@ -176,6 +206,17 @@
   font-size: 0.76rem;
   color: #856404;
 }
+.sem-prod-rel {
+  display: flex;
+  align-items: center;
+  background: rgba(255,193,7,0.06);
+  border: 1px solid rgba(255,193,7,0.2);
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.82rem;
+  color: #856404;
+  font-weight: 500;
+}
 .rel-footer-info {
   font-size: 0.72rem;
   color: var(--text-muted);
@@ -184,14 +225,24 @@
   border-top: 1px solid var(--border);
   margin-top: 1.5rem;
 }
-.svg-icon-linha {
+.linha-icon {
   width: 28px; height: 28px;
   border-radius: 7px;
   background: rgba(13,110,253,0.1);
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
+  font-size: 14px;
+  color: #0d6efd;
 }
-.svg-icon-linha svg { width: 14px; height: 14px; stroke: #0d6efd; fill: none; stroke-width: 2; }
+.modelo-icon {
+  width: 20px; height: 20px;
+  border-radius: 5px;
+  background: rgba(245,158,11,0.12);
+  display: inline-flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  font-size: 11px;
+  color: #d97706;
+}
 
 @media print {
   @page { margin: 8mm; size: A4 portrait; }
@@ -212,7 +263,7 @@
   .rel-title { font-size: 0.85rem !important; margin-bottom: 2px !important; }
   .rel-meta { font-size: 0.65rem !important; margin-bottom: 4px !important; }
   .rel-badge { font-size: 0.6rem !important; padding: 1px 5px !important; }
-  .rel-logo { height: 26px !important; }
+  .rel-logo { height: 40px !important; }
 
   .linhas-grid {
     display: grid !important;
@@ -220,14 +271,10 @@
     gap: 5px !important;
   }
 
-  .linha-rel-card {
-    break-inside: avoid;
-    border-radius: 5px !important;
-  }
+  .linha-rel-card { break-inside: avoid; border-radius: 5px !important; }
   .linha-rel-header { padding: 4px 7px !important; }
   .linha-nome { font-size: 0.7rem !important; }
-  .svg-icon-linha { width: 18px !important; height: 18px !important; }
-  .svg-icon-linha svg { width: 9px !important; height: 9px !important; }
+  .linha-icon { width: 18px !important; height: 18px !important; font-size: 9px !important; }
   .linha-rel-body { padding: 4px 7px !important; }
 
   .modelo-rel {
@@ -241,10 +288,12 @@
   .modelo-codigo { font-size: 0.65rem !important; }
   .modelo-produto { font-size: 0.58rem !important; }
   .op-tag { font-size: 0.56rem !important; padding: 0 4px !important; margin: 1px 2px 1px 0 !important; border-radius: 3px !important; }
+  .ops-qty-row { padding: 2px 5px !important; font-size: 0.58rem !important; }
+  .ops-qty-op, .ops-qty-val { font-size: 0.58rem !important; }
   .prod-chip { font-size: 0.6rem !important; padding: 1px 5px !important; margin-right: 3px !important; }
   .modelo-obs { font-size: 0.58rem !important; padding: 2px 4px !important; margin-top: 2px !important; }
   .linha-obs { font-size: 0.58rem !important; padding: 2px 5px !important; margin-top: 3px !important; }
-
+  .sem-prod-rel { font-size: 0.6rem !important; padding: 3px 6px !important; }
   .rel-footer-info { font-size: 0.58rem !important; padding: 4px 0 0 !important; margin-top: 6px !important; }
 }
 </style>
@@ -283,15 +332,15 @@
        class="btn btn-outline-success btn-sm fw-semibold" style="border-radius:8px;">
       <i class="bi bi-plus-lg me-1"></i>Novo
     </a>
-    <button class="btn btn-primary btn-sm fw-semibold ms-auto" style="border-radius:8px;"
-            onclick="window.print()">
-      <i class="bi bi-download me-1"></i>Baixar / PDF
+    <button id="btnBaixar" class="btn btn-primary btn-sm fw-semibold ms-auto"
+            style="border-radius:8px;" onclick="baixarPNG()">
+      <i class="bi bi-image me-1"></i>Baixar Imagem
     </button>
   </div>
 
   <div class="rel-header-card">
     <div class="rel-header-left">
-      <div class="rel-title">Resumo de Produção SMD</div>
+      <div class="rel-title">Resumo de Produção</div>
       <div class="rel-meta">Relatório de turno · {{ resumo.criado_por or '' }}</div>
       <div class="d-flex flex-wrap gap-2">
         <span class="rel-badge rel-badge-data">
@@ -321,11 +370,8 @@
     {% for linha in resumo.linhas %}
     <div class="linha-rel-card">
       <div class="linha-rel-header">
-        <div class="svg-icon-linha">
-          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-            <polyline points="9 22 9 12 15 12 15 22"/>
-          </svg>
+        <div class="linha-icon">
+          <i class="bi bi-layers-fill"></i>
         </div>
         <span class="linha-nome">Linha {{ linha.nome_linha }}</span>
         <span class="badge bg-light text-muted ms-auto" style="font-size:0.65rem;border:1px solid var(--border);">
@@ -338,48 +384,74 @@
           {% for modelo in linha.modelos %}
           <div class="modelo-rel">
             <div class="modelo-header">
-              <span>🔶</span>
+              <span class="modelo-icon"><i class="bi bi-cpu-fill"></i></span>
               <span class="modelo-codigo">{{ modelo.codigo_modelo }}</span>
               {% if modelo.produto %}
               <span class="modelo-produto">· {{ modelo.produto }}</span>
               {% endif %}
             </div>
 
-            {% if modelo.ops %}
-            <div class="mb-1">
-              {% for op in modelo.ops.split('\n') %}
-                {% set op_clean = op.strip() %}
-                {% if op_clean %}
-                <span class="op-tag">{{ op_clean }}</span>
-                {% endif %}
+            {% if modelo.ops_items %}
+              {% set ns = namespace(total=0, has_qty=false) %}
+              {% for item in modelo.ops_items %}
+                {% if item.quantidade %}{% set ns.has_qty = true %}{% set ns.total = ns.total + item.quantidade %}{% endif %}
               {% endfor %}
-            </div>
+
+              {% if ns.has_qty %}
+              <div class="ops-qty-list mb-2">
+                {% for item in modelo.ops_items %}
+                <div class="ops-qty-row">
+                  <span class="ops-qty-op">{{ item.op }}</span>
+                  <span class="ops-qty-val">{{ "{:,}".format(item.quantidade | int).replace(",", ".") }}</span>
+                </div>
+                {% endfor %}
+                <div class="ops-qty-row ops-qty-total">
+                  <span class="fw-semibold text-muted" style="font-size:0.7rem;text-transform:uppercase;letter-spacing:.5px;">Total</span>
+                  <span class="ops-qty-val" style="color:var(--primary);">{{ "{:,}".format(ns.total | int).replace(",", ".") }}</span>
+                </div>
+              </div>
+              {% else %}
+              <div class="mb-1">
+                {% for item in modelo.ops_items %}
+                <span class="op-tag">{{ item.op }}</span>
+                {% endfor %}
+              </div>
+              {% endif %}
             {% endif %}
 
             <div class="mb-1">
               {% if modelo.produzido_top %}
               <span class="prod-chip prod-chip-top">
-                ▲ Top: {{ "{:,}".format(modelo.produzido_top | int).replace(",", ".") }}
+                <i class="bi bi-arrow-up-short"></i>Top: {{ "{:,}".format(modelo.produzido_top | int).replace(",", ".") }}
               </span>
               {% endif %}
               {% if modelo.produzido_bot %}
               <span class="prod-chip prod-chip-bot">
-                ▼ Bot: {{ "{:,}".format(modelo.produzido_bot | int).replace(",", ".") }}
+                <i class="bi bi-arrow-down-short"></i>Bot: {{ "{:,}".format(modelo.produzido_bot | int).replace(",", ".") }}
               </span>
               {% endif %}
             </div>
 
             {% if modelo.observacao %}
-            <div class="modelo-obs">⚠ {{ modelo.observacao }}</div>
+            <div class="modelo-obs">
+              <i class="bi bi-exclamation-triangle-fill flex-shrink-0 mt-1" style="font-size:0.8rem;"></i>
+              <span>{{ modelo.observacao }}</span>
+            </div>
             {% endif %}
           </div>
           {% endfor %}
         {% else %}
-          <p class="text-muted small mb-0" style="font-size:0.76rem;">Nenhum modelo registrado.</p>
+          <div class="sem-prod-rel">
+            <i class="bi bi-slash-circle me-2" style="font-size:1rem;"></i>
+            <span>Sem produção neste turno</span>
+          </div>
         {% endif %}
 
         {% if linha.observacao %}
-        <div class="linha-obs">❌ {{ linha.observacao }}</div>
+        <div class="linha-obs mt-2">
+          <i class="bi bi-x-circle-fill flex-shrink-0 mt-1" style="font-size:0.8rem;"></i>
+          <span>{{ linha.observacao }}</span>
+        </div>
         {% endif %}
       </div>
     </div>
@@ -401,4 +473,36 @@
   </div>
 
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script>
+async function baixarPNG() {
+  const btn = document.getElementById('btnBaixar');
+  const originalHTML = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Gerando...';
+  try {
+    const el = document.querySelector('.rel-wrapper');
+    const canvas = await html2canvas(el, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: '#f1f5f9',
+      logging: false,
+    });
+    const link = document.createElement('a');
+    link.download = 'resumo-{{ resumo.id }}-{{ resumo.data.strftime("%Y%m%d") if resumo.data else "sem-data" }}-{{ resumo.turno }}.png';
+    link.href = canvas.toDataURL('image/png', 1.0);
+    link.click();
+  } catch (err) {
+    console.error(err);
+    alert('Erro ao gerar imagem. Tente novamente.');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = originalHTML;
+  }
+}
+</script>
 {% endblock %}
