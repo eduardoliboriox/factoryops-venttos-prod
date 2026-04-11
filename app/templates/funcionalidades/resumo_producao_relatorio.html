@@ -479,12 +479,47 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script>
+const PNG_EXPORT_CSS = `
+  .rel-wrapper { max-width: 900px !important; }
+  .rel-header-card { padding: 8px 12px !important; margin-bottom: 8px !important; border-radius: 7px !important; }
+  .rel-title { font-size: 0.85rem !important; margin-bottom: 2px !important; }
+  .rel-meta { font-size: 0.65rem !important; margin-bottom: 4px !important; }
+  .rel-badge { font-size: 0.6rem !important; padding: 1px 5px !important; }
+  .rel-logo { height: 40px !important; }
+  .linhas-grid { grid-template-columns: 1fr 1fr !important; gap: 5px !important; }
+  .linha-rel-card { border-radius: 5px !important; }
+  .linha-rel-header { padding: 4px 7px !important; }
+  .linha-nome { font-size: 0.7rem !important; }
+  .linha-icon { width: 18px !important; height: 18px !important; font-size: 9px !important; }
+  .linha-rel-body { padding: 4px 7px !important; }
+  .modelo-rel { padding: 3px 5px !important; margin-bottom: 3px !important; border-radius: 3px !important; }
+  .modelo-header { gap: 2px !important; margin-bottom: 3px !important; }
+  .modelo-codigo { font-size: 0.65rem !important; }
+  .modelo-produto { font-size: 0.58rem !important; }
+  .op-tag { font-size: 0.56rem !important; padding: 0 4px !important; margin: 1px 2px 1px 0 !important; border-radius: 3px !important; }
+  .ops-qty-row { padding: 2px 5px !important; font-size: 0.58rem !important; }
+  .ops-qty-op, .ops-qty-val { font-size: 0.58rem !important; }
+  .prod-chip { font-size: 0.6rem !important; padding: 1px 5px !important; margin-right: 3px !important; }
+  .modelo-obs { font-size: 0.58rem !important; padding: 2px 4px !important; margin-top: 2px !important; }
+  .linha-obs { font-size: 0.58rem !important; padding: 2px 5px !important; margin-top: 3px !important; }
+  .sem-prod-rel { font-size: 0.6rem !important; padding: 3px 6px !important; }
+  .rel-footer-info { font-size: 0.58rem !important; padding: 4px 0 0 !important; margin-top: 6px !important; }
+  .no-print { display: none !important; }
+`;
+
 async function baixarPNG() {
   const btn = document.getElementById('btnBaixar');
   const originalHTML = btn.innerHTML;
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Gerando...';
+
+  const style = document.createElement('style');
+  style.id = 'png-export-styles';
+  style.textContent = PNG_EXPORT_CSS;
+  document.head.appendChild(style);
+
   try {
+    await new Promise(r => setTimeout(r, 80));
     const el = document.querySelector('.rel-wrapper');
     const canvas = await html2canvas(el, {
       scale: 2,
@@ -500,6 +535,8 @@ async function baixarPNG() {
     console.error(err);
     alert('Erro ao gerar imagem. Tente novamente.');
   } finally {
+    const s = document.getElementById('png-export-styles');
+    if (s) s.remove();
     btn.disabled = false;
     btn.innerHTML = originalHTML;
   }
