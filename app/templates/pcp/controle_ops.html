@@ -16,8 +16,6 @@
 {% endblock %}
 
 {% block content %}
-<div class="document-mobile-wrapper">
-<div class="document-desktop-canvas">
 <div class="container-fluid">
 
   {% with messages = get_flashed_messages(with_categories=true) %}
@@ -184,10 +182,6 @@
   </div>
 
 </div>
-</div><!-- /.document-desktop-canvas -->
-</div><!-- /.document-mobile-wrapper -->
-
-<script src="{{ url_for('static', filename='js/document-fit.js') }}"></script>
 
 <!-- Modal: Nova OP -->
 <div class="modal fade" id="modalNovaOP" tabindex="-1" aria-hidden="true">

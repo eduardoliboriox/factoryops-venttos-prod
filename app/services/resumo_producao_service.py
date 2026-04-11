@@ -11,13 +11,41 @@ TURNO_LABEL = {
 }
 
 
+def _parse_ops_field(ops_raw) -> list:
+    if not ops_raw:
+        return []
+    try:
+        parsed = json.loads(ops_raw)
+        if isinstance(parsed, list):
+            return [
+                {
+                    "op": str(item.get("op", "")).upper(),
+                    "quantidade": int(item.get("quantidade") or 0),
+                }
+                for item in parsed
+                if str(item.get("op", "")).strip()
+            ]
+    except (ValueError, TypeError):
+        pass
+    return [
+        {"op": op.strip().upper(), "quantidade": 0}
+        for op in ops_raw.split("\n")
+        if op.strip()
+    ]
+
+
 def listar(data_inicial: str = "", data_final: str = "", turno: str = "",
            status: str = "", criado_por: str = "") -> list:
     return repo.listar(data_inicial, data_final, turno, status, criado_por)
 
 
 def buscar_por_id(resumo_id: int) -> dict | None:
-    return repo.buscar_por_id(resumo_id)
+    resumo = repo.buscar_por_id(resumo_id)
+    if resumo:
+        for linha in resumo.get("linhas", []):
+            for modelo in linha.get("modelos", []):
+                modelo["ops_items"] = _parse_ops_field(modelo.get("ops"))
+    return resumo
 
 
 def _parsear_dados_json(form_data: dict) -> dict:
@@ -61,10 +89,24 @@ def _parsear_dados_json(form_data: dict) -> dict:
             except (ValueError, TypeError):
                 bot = 0
 
+            ops_raw = modelo.get("ops")
+            if isinstance(ops_raw, list):
+                ops_clean = [
+                    {
+                        "op": str(item.get("op", "")).strip().upper(),
+                        "quantidade": int(item.get("quantidade") or 0),
+                    }
+                    for item in ops_raw
+                    if str(item.get("op", "")).strip()
+                ]
+                ops = json.dumps(ops_clean, ensure_ascii=False) if ops_clean else None
+            else:
+                ops = (ops_raw or "").strip() or None
+
             modelos.append({
                 "codigo_modelo": codigo,
                 "produto":       (modelo.get("produto") or "").strip() or None,
-                "ops":           (modelo.get("ops") or "").strip() or None,
+                "ops":           ops,
                 "produzido_top": top,
                 "produzido_bot": bot,
                 "observacao":    (modelo.get("observacao") or "").strip() or None,
