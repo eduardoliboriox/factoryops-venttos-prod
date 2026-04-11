@@ -297,7 +297,7 @@ function adicionarModelo(lid, dadosIniciais) {
     ops:           _parseOps(dadosIniciais ? dadosIniciais.ops : null),
     produzido_top: dadosIniciais ? (dadosIniciais.produzido_top || 0) : 0,
     produzido_bot: dadosIniciais ? (dadosIniciais.produzido_bot || 0) : 0,
-    observacao:    dadosIniciais ? (dadosIniciais.observacao || '') : '',
+    observacoes:   _parseObservacoes(dadosIniciais ? dadosIniciais.observacao : null),
   };
   linha.modelos.push(modelo);
   renderModelo(lid, modelo);
@@ -361,6 +361,65 @@ function atualizarCampoModelo(lid, mid, campo, valor) {
   if (modelo) modelo[campo] = (campo === 'produzido_top' || campo === 'produzido_bot')
     ? parseInt(valor) || 0
     : valor;
+}
+
+function obsId() { return '_ob' + Date.now() + Math.random().toString(36).slice(2, 5); }
+
+function _parseObservacoes(raw) {
+  if (!raw) return [];
+  return raw.split('\n')
+    .map(s => s.trim())
+    .filter(s => s)
+    .map(texto => ({ _id: obsId(), texto }));
+}
+
+function adicionarObsModelo(lid, mid) {
+  const linha = linhasState.find(l => l._id === lid);
+  if (!linha) return;
+  const modelo = linha.modelos.find(m => m._id === mid);
+  if (!modelo) return;
+  const obsItem = { _id: obsId(), texto: '' };
+  modelo.observacoes.push(obsItem);
+  renderObsRow(lid, mid, obsItem);
+}
+
+function removerObsModelo(lid, mid, oid) {
+  const linha = linhasState.find(l => l._id === lid);
+  if (!linha) return;
+  const modelo = linha.modelos.find(m => m._id === mid);
+  if (modelo) modelo.observacoes = modelo.observacoes.filter(o => o._id !== oid);
+  const el = document.getElementById('obs-row-' + oid);
+  if (el) el.remove();
+}
+
+function atualizarObsItem(lid, mid, oid, valor) {
+  const linha = linhasState.find(l => l._id === lid);
+  if (!linha) return;
+  const modelo = linha.modelos.find(m => m._id === mid);
+  if (!modelo) return;
+  const obs = modelo.observacoes.find(o => o._id === oid);
+  if (obs) obs.texto = valor;
+}
+
+function renderObsRow(lid, mid, obsItem) {
+  const container = document.getElementById('obs-list-' + mid);
+  if (!container) return;
+  const div = document.createElement('div');
+  div.className = 'd-flex gap-1 align-items-center mb-1';
+  div.id = 'obs-row-' + obsItem._id;
+  div.innerHTML = `
+    <input type="text" class="form-control form-control-sm"
+           style="border-radius:6px;flex:1;"
+           placeholder="Ex: Feeder 16 faltando"
+           value="${escHtml(obsItem.texto)}"
+           oninput="atualizarObsItem('${lid}','${mid}','${obsItem._id}',this.value)">
+    <button type="button" class="btn-remove flex-shrink-0" style="padding:3px 6px;"
+            title="Remover observação"
+            onclick="removerObsModelo('${lid}','${mid}','${obsItem._id}')">
+      <i class="bi bi-x-lg" style="font-size:0.78rem;"></i>
+    </button>
+  `;
+  container.appendChild(div);
 }
 
 function renderOPRow(lid, mid, opItem) {
@@ -439,12 +498,14 @@ function renderModelo(lid, modelo) {
                    value="${modelo.produzido_bot || 0}"
                    oninput="atualizarCampoModelo('${lid}','${modelo._id}','produzido_bot',this.value)">
           </div>
-          <div class="col-12 col-sm-6">
-            <label class="form-label-sm">Observação do modelo</label>
-            <input type="text" class="form-control form-control-sm" style="border-radius:6px;"
-                   placeholder="Ex: Problema no feeder 16"
-                   value="${escHtml(modelo.observacao)}"
-                   oninput="atualizarCampoModelo('${lid}','${modelo._id}','observacao',this.value)">
+          <div class="col-12">
+            <label class="form-label-sm">Observações do modelo</label>
+            <div id="obs-list-${modelo._id}"></div>
+            <button type="button" class="btn btn-outline-secondary btn-sm mt-1"
+                    style="border-radius:6px;font-size:0.78rem;"
+                    onclick="adicionarObsModelo('${lid}','${modelo._id}')">
+              <i class="bi bi-plus me-1"></i>Adicionar observação
+            </button>
           </div>
         </div>
       </div>
@@ -456,6 +517,7 @@ function renderModelo(lid, modelo) {
   `;
   container.appendChild(div);
   modelo.ops.forEach(opItem => renderOPRow(lid, modelo._id, opItem));
+  modelo.observacoes.forEach(obsItem => renderObsRow(lid, modelo._id, obsItem));
 }
 
 function renderLinha(linha) {
@@ -543,7 +605,7 @@ document.getElementById('formResumo').addEventListener('submit', function () {
         ops:           m.ops.map(o => ({ op: o.op, quantidade: o.quantidade })),
         produzido_top: m.produzido_top,
         produzido_bot: m.produzido_bot,
-        observacao:    m.observacao,
+        observacao:    m.observacoes.map(o => o.texto.trim()).filter(s => s).join('\n'),
       })),
     })),
   };
