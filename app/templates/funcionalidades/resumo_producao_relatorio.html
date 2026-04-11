@@ -433,10 +433,15 @@
             </div>
 
             {% if modelo.observacao %}
-            <div class="modelo-obs">
-              <i class="bi bi-exclamation-triangle-fill flex-shrink-0 mt-1" style="font-size:0.8rem;"></i>
-              <span>{{ modelo.observacao }}</span>
-            </div>
+              {% for obs_line in modelo.observacao.split('\n') %}
+                {% set obs_clean = obs_line.strip() %}
+                {% if obs_clean %}
+                <div class="modelo-obs">
+                  <i class="bi bi-exclamation-triangle-fill flex-shrink-0 mt-1" style="font-size:0.8rem;"></i>
+                  <span>{{ obs_clean }}</span>
+                </div>
+                {% endif %}
+              {% endfor %}
             {% endif %}
           </div>
           {% endfor %}
