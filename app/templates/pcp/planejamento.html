@@ -202,6 +202,7 @@
                     data-taxa="{{ p.taxa_horaria }}"
                     data-setup="{{ p.setup_min or 0 }}"
                     data-hora-inicio="{{ p.hora_inicio_prevista }}"
+                    data-hora-fim="{{ p.hora_fim_prevista or '' }}"
                     data-obs="{{ p.observacao or '' }}">
                   <td class="ps-3 text-nowrap">{{ p.data }}</td>
                   <td class="text-muted small">{{ p.turno }}</td>
@@ -589,11 +590,13 @@
           <div class="col-6">
             <label class="form-label fw-semibold" style="font-size:0.8rem;">Data <span class="text-danger">*</span></label>
             <input type="date" class="form-control form-control-sm" id="modalData"
-                   value="{{ data_selecionada }}" style="border-radius:8px;">
+                   value="{{ data_selecionada }}" style="border-radius:8px;"
+                   onchange="sugerirHoraInicio()">
           </div>
           <div class="col-6">
             <label class="form-label fw-semibold" style="font-size:0.8rem;">Turno <span class="text-danger">*</span></label>
-            <select class="form-select form-select-sm" id="modalTurno" style="border-radius:8px;">
+            <select class="form-select form-select-sm" id="modalTurno" style="border-radius:8px;"
+                    onchange="sugerirHoraInicio()">
               <option value="">Selecione</option>
               <option value="1º Turno">1º Turno</option>
               <option value="2º Turno">2º Turno</option>
@@ -674,6 +677,7 @@
           <div class="col-4">
             <label class="form-label fw-semibold" style="font-size:0.8rem;">Início previsto <span class="text-danger">*</span></label>
             <input type="time" class="form-control form-control-sm" id="modalHoraInicio" style="border-radius:8px;">
+            <small id="modalHoraInicioHint" class="form-text text-primary" style="display:none;font-size:0.72rem;"></small>
           </div>
         </div>
 
@@ -774,5 +778,5 @@
   </div>
 </div>
 
-<script src="{{ url_for('static', filename='js/planejamento.js') }}?v=5"></script>
+<script src="{{ url_for('static', filename='js/planejamento.js') }}?v=6"></script>
 {% endblock %}
