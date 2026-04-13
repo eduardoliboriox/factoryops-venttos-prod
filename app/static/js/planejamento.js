@@ -67,6 +67,41 @@ function onLinhaModalChange() {
   const linha = document.getElementById("modalLinha").value;
   document.getElementById("modalSetup").value = calcularSetupSugerido(setor, linha);
   buscarMeta();
+  sugerirHoraInicio();
+}
+
+function sugerirHoraInicio() {
+  const data  = (document.getElementById("modalData").value  || "").trim();
+  const turno = (document.getElementById("modalTurno").value || "").trim();
+  const linha = (document.getElementById("modalLinha").value || "").trim();
+  const hint  = document.getElementById("modalHoraInicioHint");
+
+  if (!data || !turno || !linha) {
+    if (hint) hint.style.display = "none";
+    return;
+  }
+
+  const rows = document.querySelectorAll("tr[data-plan-id]");
+  let ultimoFim = null;
+  rows.forEach(function(row) {
+    if (row.dataset.data  !== data)  return;
+    if (row.dataset.turno !== turno) return;
+    if (row.dataset.linha !== linha) return;
+    const fim = (row.dataset.horaFim || "").slice(0, 5);
+    if (!fim) return;
+    if (!ultimoFim || fim > ultimoFim) ultimoFim = fim;
+  });
+
+  const campo = document.getElementById("modalHoraInicio");
+  if (ultimoFim) {
+    campo.value = ultimoFim;
+    if (hint) {
+      hint.textContent   = "Início sugerido com base no último planejamento desta linha.";
+      hint.style.display = "";
+    }
+  } else {
+    if (hint) hint.style.display = "none";
+  }
 }
 
 // ─── Seleção de OP no modal ───────────────────────────────────────────────────
@@ -321,6 +356,16 @@ function imprimirResumo() {
 
   window.open(url, "_blank");
 }
+
+// ─── Modal Novo: sugerir início ao abrir ─────────────────────────────────────
+document.addEventListener("DOMContentLoaded", function() {
+  const modalEl = document.getElementById("modalNovo");
+  if (modalEl) {
+    modalEl.addEventListener("show.bs.modal", function() {
+      sugerirHoraInicio();
+    });
+  }
+});
 
 // ─── Alertas ──────────────────────────────────────────────────────────────────
 function mostrarAlerta(tipo, msg) {
