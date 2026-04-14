@@ -180,7 +180,7 @@
   </div>
 </div>
 
-<script src="{{ url_for('static', filename='js/input-masks.js') }}"></script>
-<script src="{{ url_for('static', filename='js/register.js') }}"></script>
+<script src="{{ url_for('static', filename='js/input-masks.js') }}?v={{ APP_VERSION }}"></script>
+<script src="{{ url_for('static', filename='js/register.js') }}?v={{ APP_VERSION }}"></script>
 
 {% endblock %}
