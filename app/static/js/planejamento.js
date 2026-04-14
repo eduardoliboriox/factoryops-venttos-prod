@@ -2,7 +2,7 @@
 
 // URLs injetadas pelo template via atributos data no elemento #planejamento-root
 const _root        = () => document.getElementById("planejamento-root");
-const URL_CRIAR    = () => _root().dataset.urlCriar;
+const URL_CRIAR_LOTE  = () => _root().dataset.urlCriarLote;
 const URL_PLANO    = () => _root().dataset.urlPlano;
 const URL_DETALHE  = () => _root().dataset.urlDetalhe;
 const URL_META     = () => _root().dataset.urlMeta;
@@ -23,7 +23,7 @@ function calcularSetupSugerido(setor, linha) {
   return 0;
 }
 
-// ─── Filtro dinâmico de linhas ────────────────────────────────────────────────
+// ─── Filtro dinâmico de linhas (fora do modal) ────────────────────────────────
 function onSetorChange(setor, selectLinhaId) {
   const sel    = document.getElementById(selectLinhaId);
   const opcoes = OPCOES_LINHA();
@@ -44,6 +44,7 @@ function _isSmdSetor(setor) {
   return ["SMD", "SMT"].includes((setor || "").toUpperCase());
 }
 
+// ─── Modal Novo: setor muda → atualiza linhas + todos os cards ────────────────
 function onSetorModalChange(setor) {
   const sel    = document.getElementById("modalLinha");
   const opcoes = OPCOES_LINHA();
@@ -57,19 +58,25 @@ function onSetorModalChange(setor) {
     sel.appendChild(opt);
   });
 
-  document.getElementById("rowModalFase").style.display = _isSmdSetor(setor) ? "" : "none";
-  document.getElementById("modalSetup").value = calcularSetupSugerido(setor, "");
-  buscarMeta();
+  document.querySelectorAll("#modelosList .modelo-card").forEach(function(card) {
+    card.querySelector(".row-fase").style.display = _isSmdSetor(setor) ? "" : "none";
+    card.querySelector(".model-setup").value = calcularSetupSugerido(setor, "");
+  });
 }
 
+// ─── Modal Novo: linha muda → atualiza setup de todos os cards ───────────────
 function onLinhaModalChange() {
   const setor = document.getElementById("modalSetor").value;
   const linha = document.getElementById("modalLinha").value;
-  document.getElementById("modalSetup").value = calcularSetupSugerido(setor, linha);
-  buscarMeta();
+
+  document.querySelectorAll("#modelosList .modelo-card").forEach(function(card) {
+    card.querySelector(".model-setup").value = calcularSetupSugerido(setor, linha);
+  });
+
   sugerirHoraInicio();
 }
 
+// ─── Sugestão de hora de início ───────────────────────────────────────────────
 function sugerirHoraInicio() {
   const data  = (document.getElementById("modalData").value  || "").trim();
   const turno = (document.getElementById("modalTurno").value || "").trim();
@@ -104,7 +111,7 @@ function sugerirHoraInicio() {
   }
 }
 
-// ─── Seleção de OP no modal ───────────────────────────────────────────────────
+// ─── Seleção de OP no modal de edição ────────────────────────────────────────
 function onOpChange(selectEl, modeloInputId, saldoId) {
   const ops    = OPS_JSON();
   const op     = ops.find(o => String(o.id) === selectEl.value);
@@ -115,44 +122,128 @@ function onOpChange(selectEl, modeloInputId, saldoId) {
     modelo.value = op.produto;
     saldo.textContent = "Saldo da OP: " + Number(op.saldo).toLocaleString("pt-BR");
     saldo.style.display = "";
-    if (modeloInputId === "modalModelo") buscarMeta();
   } else {
     modelo.value = "";
     saldo.style.display = "none";
   }
 }
 
-// ─── Busca de meta hora ───────────────────────────────────────────────────────
-let _metaTimer = null;
+// ─── Multi-modelo: gerenciamento de cards ────────────────────────────────────
+let _cardMetaTimer = null;
 
-function agendarBuscarMeta() {
-  clearTimeout(_metaTimer);
-  _metaTimer = setTimeout(buscarMeta, 700);
+function _popularOpSelect(selectEl) {
+  const ops = OPS_JSON();
+  selectEl.innerHTML = '<option value="">— Nenhuma OP —</option>';
+  ops.forEach(function(op) {
+    const opt = document.createElement("option");
+    opt.value = op.id;
+    opt.textContent = op.numero_op + " · " + op.produto + " · Saldo: " + Number(op.saldo).toLocaleString("pt-BR");
+    selectEl.appendChild(opt);
+  });
 }
 
-function buscarMeta(manual) {
-  const info = document.getElementById("modalMetaInfo");
-  if (!info) return;
+function adicionarModelo() {
+  const list  = document.getElementById("modelosList");
+  const tpl   = document.getElementById("modeloCardTemplate");
+  const clone = tpl.content.cloneNode(true);
+  const card  = clone.querySelector(".modelo-card");
+  const index = list.children.length;
 
-  const codigo = (document.getElementById("modalModelo").value || "").trim().toUpperCase();
-  const setor  = (document.getElementById("modalSetor").value  || "").trim().toUpperCase();
-  const linha  = (document.getElementById("modalLinha").value  || "").trim().toUpperCase();
+  card.dataset.modelIndex = index;
+  card.querySelector(".modelo-numero").textContent = "Modelo " + (index + 1);
+
+  _popularOpSelect(card.querySelector(".model-op"));
+
+  const setor = document.getElementById("modalSetor").value;
+  const linha = document.getElementById("modalLinha").value;
+
+  if (_isSmdSetor(setor)) {
+    card.querySelector(".row-fase").style.display = "";
+  }
+  card.querySelector(".model-setup").value = calcularSetupSugerido(setor, linha);
+
+  list.appendChild(clone);
+  _updateRemoverButtons();
+}
+
+function removerModelo(btn) {
+  const list = document.getElementById("modelosList");
+  if (list.children.length <= 1) return;
+  btn.closest(".modelo-card").remove();
+  _renumerarModelos();
+  _updateRemoverButtons();
+}
+
+function _renumerarModelos() {
+  document.querySelectorAll("#modelosList .modelo-card").forEach(function(card, i) {
+    card.dataset.modelIndex = i;
+    card.querySelector(".modelo-numero").textContent = "Modelo " + (i + 1);
+  });
+}
+
+function _updateRemoverButtons() {
+  const cards = document.querySelectorAll("#modelosList .modelo-card");
+  cards.forEach(function(card) {
+    const btn = card.querySelector(".btn-remover-modelo");
+    if (btn) btn.style.visibility = cards.length > 1 ? "visible" : "hidden";
+  });
+}
+
+function toggleAteFim(checkbox) {
+  const qtdInput = checkbox.closest(".modelo-card").querySelector(".model-qtd");
+  qtdInput.disabled = checkbox.checked;
+  if (checkbox.checked) {
+    qtdInput.value = "";
+    qtdInput.placeholder = "Até o fim do turno";
+  } else {
+    qtdInput.placeholder = "";
+    qtdInput.disabled = false;
+  }
+}
+
+// ─── OP por card ──────────────────────────────────────────────────────────────
+function onOpChangeCard(selectEl) {
+  const card   = selectEl.closest(".modelo-card");
+  const ops    = OPS_JSON();
+  const op     = ops.find(function(o) { return String(o.id) === selectEl.value; });
+  const modelo = card.querySelector(".model-codigo");
+  const saldo  = card.querySelector(".model-saldo");
+
+  if (op) {
+    modelo.value = op.produto;
+    saldo.textContent = "Saldo da OP: " + Number(op.saldo).toLocaleString("pt-BR");
+    saldo.style.display = "";
+    buscarMetaCard(card);
+  } else {
+    modelo.value = "";
+    saldo.style.display = "none";
+  }
+}
+
+// ─── Busca de meta por card ───────────────────────────────────────────────────
+function agendarBuscarMetaCard(card) {
+  clearTimeout(_cardMetaTimer);
+  _cardMetaTimer = setTimeout(function() { buscarMetaCard(card); }, 700);
+}
+
+function buscarMetaCard(card, manual) {
+  const info   = card.querySelector(".model-meta-info");
+  const codigo = (card.querySelector(".model-codigo").value || "").trim().toUpperCase();
+  const setor  = (document.getElementById("modalSetor").value || "").trim().toUpperCase();
+  const linha  = (document.getElementById("modalLinha").value || "").trim().toUpperCase();
+  const faseEl = card.querySelector(".model-fase");
+  const fase   = (_isSmdSetor(setor) && faseEl) ? (faseEl.value || "") : "";
 
   if (!codigo) {
     if (manual) {
       info.textContent   = "Informe o código do modelo para buscar a meta.";
-      info.className     = "form-text text-muted";
+      info.className     = "model-meta-info form-text text-muted";
       info.style.display = "";
     } else {
       info.style.display = "none";
     }
     return;
   }
-
-  const faseEl = document.getElementById("modalFase");
-  const fase   = (_isSmdSetor(setor) && faseEl) ? (faseEl.value || "") : "";
-
-  console.log("[buscarMeta] params:", { codigo, setor, linha, fase, isSmd: _isSmdSetor(setor), faseElVisible: faseEl ? faseEl.closest("#rowModalFase")?.style.display : "n/a" });
 
   let url;
   try {
@@ -161,87 +252,88 @@ function buscarMeta(manual) {
         + "&linha=" + encodeURIComponent(linha)
         + (fase ? "&fase=" + encodeURIComponent(fase) : "");
   } catch (e) {
-    console.error("[buscarMeta] erro ao construir URL:", e);
-    info.textContent   = "Erro interno ao buscar meta.";
-    info.className     = "form-text text-danger";
-    info.style.display = "";
     return;
   }
 
-  console.log("[buscarMeta] url:", url);
-
   info.textContent   = "Buscando…";
-  info.className     = "form-text text-muted";
+  info.className     = "model-meta-info form-text text-muted";
   info.style.display = "";
 
   fetch(url)
-    .then(function(r) {
-      console.log("[buscarMeta] http status:", r.status);
-      return r.json();
-    })
+    .then(function(r) { return r.json(); })
     .then(function(data) {
-      console.log("[buscarMeta] resposta:", JSON.stringify(data));
       if (data.meta !== null && data.meta !== undefined) {
-        document.getElementById("modalTaxa").value = Math.round(data.meta);
+        card.querySelector(".model-taxa").value = Math.round(data.meta);
         info.textContent   = "Meta encontrada: " + Math.round(data.meta) + " pç/h";
-        info.className     = "form-text text-success";
+        info.className     = "model-meta-info form-text text-success";
         info.style.display = "";
       } else {
         info.textContent   = "Modelo não cadastrado — informe a meta manualmente.";
-        info.className     = "form-text text-warning";
+        info.className     = "model-meta-info form-text text-warning";
         info.style.display = "";
       }
-      if (data.setup_sugerido !== undefined && data.setup_sugerido > 0) {
-        const setupEl = document.getElementById("modalSetup");
+      if (data.setup_sugerido && data.setup_sugerido > 0) {
+        const setupEl = card.querySelector(".model-setup");
         if (!setupEl.value || setupEl.value === "0") {
           setupEl.value = data.setup_sugerido;
         }
       }
     })
-    .catch(function(e) {
-      console.error("[buscarMeta] fetch error:", e);
+    .catch(function() {
       info.textContent   = "Erro ao buscar meta.";
-      info.className     = "form-text text-danger";
+      info.className     = "model-meta-info form-text text-danger";
       info.style.display = "";
     });
 }
 
-// ─── Criar planejamento ───────────────────────────────────────────────────────
+// ─── Criar planejamento (lote) ────────────────────────────────────────────────
 function salvarPlanejamento() {
+  const cards   = document.querySelectorAll("#modelosList .modelo-card");
+  const modelos = [];
+
+  for (const card of cards) {
+    const ateFim = card.querySelector(".model-ate-fim").checked;
+    const qtdRaw = card.querySelector(".model-qtd").value;
+    const qtd    = ateFim ? 0 : (parseInt(qtdRaw) || 0);
+
+    modelos.push({
+      op_id:                (card.querySelector(".model-op").value || null),
+      modelo:               (card.querySelector(".model-codigo").value || "").trim(),
+      quantidade_planejada: qtd,
+      taxa_horaria:         parseInt(card.querySelector(".model-taxa").value)  || 0,
+      setup_min:            parseInt(card.querySelector(".model-setup").value) || 0,
+      observacao:           (card.querySelector(".model-obs").value || "").trim() || null,
+    });
+  }
+
   const payload = {
-    data:                  document.getElementById("modalData").value,
-    turno:                 document.getElementById("modalTurno").value,
-    setor:                 document.getElementById("modalSetor").value,
-    linha:                 document.getElementById("modalLinha").value,
-    op_id:                 document.getElementById("modalOp").value || null,
-    modelo:                document.getElementById("modalModelo").value,
-    quantidade_planejada:  document.getElementById("modalQtd").value,
-    taxa_horaria:          document.getElementById("modalTaxa").value || 0,
-    setup_min:             document.getElementById("modalSetup").value || 0,
-    hora_inicio_prevista:  document.getElementById("modalHoraInicio").value,
-    observacao:            document.getElementById("modalObs").value,
+    header: {
+      data:                 document.getElementById("modalData").value,
+      turno:                document.getElementById("modalTurno").value,
+      setor:                document.getElementById("modalSetor").value,
+      linha:                document.getElementById("modalLinha").value,
+      hora_inicio_prevista: document.getElementById("modalHoraInicio").value,
+    },
+    modelos,
   };
 
-  fetch(URL_CRIAR(), {
+  fetch(URL_CRIAR_LOTE(), {
     method:  "POST",
     headers: { "Content-Type": "application/json" },
     body:    JSON.stringify(payload),
   })
-  .then(r => r.json())
+  .then(function(r) { return r.json(); })
   .then(function(data) {
     if (data.ok) {
-      const fim = data.hora_fim_prevista;
-      const msg = fim
-        ? "Planejamento criado. Fim previsto: " + fim
-        : "Planejamento criado (sem meta/hora, fim não calculado).";
       bootstrap.Modal.getInstance(document.getElementById("modalNovo")).hide();
-      mostrarAlerta("success", msg);
-      setTimeout(() => location.reload(), 1000);
+      const n = modelos.length;
+      mostrarAlerta("success", n === 1 ? "Planejamento criado." : n + " modelos planejados.");
+      setTimeout(function() { location.reload(); }, 1000);
     } else {
       mostrarAlerta("danger", data.erro || "Erro ao criar.");
     }
   })
-  .catch(() => mostrarAlerta("danger", "Erro de conexão."));
+  .catch(function() { mostrarAlerta("danger", "Erro de conexão."); });
 }
 
 // ─── Editar planejamento ──────────────────────────────────────────────────────
@@ -357,12 +449,21 @@ function imprimirResumo() {
   window.open(url, "_blank");
 }
 
-// ─── Modal Novo: sugerir início ao abrir ─────────────────────────────────────
+// ─── Inicialização do modal ───────────────────────────────────────────────────
 document.addEventListener("DOMContentLoaded", function() {
   const modalEl = document.getElementById("modalNovo");
   if (modalEl) {
     modalEl.addEventListener("show.bs.modal", function() {
+      const list = document.getElementById("modelosList");
+      if (list && list.children.length === 0) {
+        adicionarModelo();
+      }
       sugerirHoraInicio();
+    });
+
+    modalEl.addEventListener("hidden.bs.modal", function() {
+      const list = document.getElementById("modelosList");
+      if (list) list.innerHTML = "";
     });
   }
 });
