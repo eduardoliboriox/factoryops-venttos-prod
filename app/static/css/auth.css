@@ -464,3 +464,68 @@
   border-radius: 18px;
   box-shadow: 0 16px 48px rgba(0, 0, 0, 0.28);
 }
+
+/* ==================================================
+   PASSWORD REQUIREMENTS CHECKLIST
+================================================== */
+
+.password-requirements {
+  display: none;
+  margin-bottom: 12px;
+  padding: 10px 14px;
+  background: rgba(15, 23, 42, 0.03);
+  border: 1px solid rgba(15, 23, 42, 0.09);
+  border-radius: 8px;
+}
+
+.password-requirements.visible {
+  display: block;
+}
+
+.requirements-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.requirements-list li {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: color 0.15s ease;
+}
+
+.requirements-list li i {
+  font-size: 0.8rem;
+  flex-shrink: 0;
+}
+
+.requirements-list li.req-met {
+  color: #198754;
+}
+
+.requirements-list li.req-unmet {
+  color: #dc3545;
+}
+
+/* Eye toggle button in input-group */
+.btn-eye {
+  background-color: #fff;
+  border-color: #ced4da;
+  color: #6c757d;
+  padding: 0 12px;
+}
+
+.btn-eye:hover,
+.btn-eye:focus {
+  background-color: #f8f9fa;
+  color: #1e293b;
+  border-color: #ced4da;
+  box-shadow: none;
+}
