@@ -33,8 +33,10 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  const passwordInput = document.getElementById("password");
+  const passwordInput  = document.getElementById("password");
+  const confirmInput   = document.getElementById("password_confirm");
   const requirementsEl = document.getElementById("passwordRequirements");
+  const confirmStatus  = document.getElementById("confirmStatus");
 
   if (passwordInput && requirementsEl) {
     const checks = {
@@ -45,11 +47,7 @@ document.addEventListener("DOMContentLoaded", () => {
       "req-special": v => /[@$#!%&*]/.test(v),
     };
 
-    passwordInput.addEventListener("focus", () => {
-      requirementsEl.classList.add("visible");
-    });
-
-    passwordInput.addEventListener("input", () => {
+    function updateRequirements() {
       const val = passwordInput.value;
       Object.entries(checks).forEach(([id, test]) => {
         const li = document.getElementById(id);
@@ -61,7 +59,32 @@ document.addEventListener("DOMContentLoaded", () => {
           ? "bi bi-check-circle-fill"
           : "bi bi-x-circle";
       });
+      if (confirmInput && confirmInput.value) updateConfirm();
+    }
+
+    function updateConfirm() {
+      if (!confirmInput || !confirmStatus) return;
+      if (!confirmInput.value) {
+        confirmStatus.innerHTML = "";
+        confirmStatus.className = "confirm-status";
+        return;
+      }
+      const match = confirmInput.value === passwordInput.value;
+      confirmStatus.innerHTML = match
+        ? '<i class="bi bi-check-circle-fill"></i> Senhas coincidem'
+        : '<i class="bi bi-x-circle"></i> Senhas não coincidem';
+      confirmStatus.className = match ? "confirm-status match" : "confirm-status mismatch";
+    }
+
+    passwordInput.addEventListener("focus", () => {
+      requirementsEl.classList.add("visible");
     });
+
+    passwordInput.addEventListener("input", updateRequirements);
+
+    if (confirmInput) {
+      confirmInput.addEventListener("input", updateConfirm);
+    }
   }
 
   const userType = document.getElementById("user_type");

@@ -514,6 +514,26 @@
   color: #dc3545;
 }
 
+/* Confirm password match status */
+.confirm-status {
+  font-size: 0.78rem;
+  font-weight: 500;
+  margin-top: -8px;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 18px;
+}
+
+.confirm-status.match {
+  color: #198754;
+}
+
+.confirm-status.mismatch {
+  color: #dc3545;
+}
+
 /* Eye toggle button in input-group */
 .btn-eye {
   background-color: #fff;
