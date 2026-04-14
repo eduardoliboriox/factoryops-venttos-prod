@@ -878,6 +878,27 @@ def pcp_planejamento_criar():
         return jsonify({"erro": str(e)}), 500
 
 
+@bp.route("/pcp/planejamento/criar-lote", methods=["POST"])
+@login_required
+def pcp_planejamento_criar_lote():
+    from flask import request, jsonify
+    from flask_login import current_user
+    from app.services import planejamento_service as svc
+
+    body = request.get_json(silent=True) or {}
+    try:
+        resultados = svc.criar_lote(
+            header=body.get("header", {}),
+            modelos=body.get("modelos", []),
+            username=current_user.username,
+        )
+        return jsonify({"ok": True, "resultados": resultados})
+    except ValueError as e:
+        return jsonify({"erro": str(e)}), 400
+    except Exception as e:
+        return jsonify({"erro": str(e)}), 500
+
+
 @bp.route("/pcp/planejamento/<int:plan_id>/editar", methods=["POST"])
 @login_required
 def pcp_planejamento_editar(plan_id):

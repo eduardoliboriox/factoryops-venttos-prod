@@ -186,9 +186,10 @@ def gerar_plano_hora_a_hora(
         if cursor_min is None:
             cursor_min = hi_min
 
-        remaining      = plano["quantidade_planejada"]
-        taxa           = plano.get("taxa_horaria") or 0
-        setup_restante = plano.get("setup_min") or 0
+        remaining       = plano["quantidade_planejada"]
+        ate_fim         = remaining == 0
+        taxa            = plano.get("taxa_horaria") or 0
+        setup_restante  = plano.get("setup_min") or 0
         plano_concluido = False
 
         for janela_start, janela_end in janelas:
@@ -218,15 +219,20 @@ def gerar_plano_hora_a_hora(
                 producao_min   = max(0, disponivel - setup_no_slot)
 
                 if taxa > 0:
-                    pecas = min(remaining, round((producao_min / 60.0) * taxa))
+                    pecas_calc = round((producao_min / 60.0) * taxa)
+                    pecas = pecas_calc if ate_fim else min(remaining, pecas_calc)
                 else:
                     pecas = 0
 
-                remaining       -= pecas
-                total_acumulado += pecas
-                concluiu         = remaining <= 0
+                if not ate_fim:
+                    remaining -= pecas
+                    concluiu   = remaining <= 0
+                else:
+                    concluiu = False
 
-                if concluiu and pecas > 0 and taxa > 0:
+                total_acumulado += pecas
+
+                if not ate_fim and concluiu and pecas > 0 and taxa > 0:
                     min_real   = (pecas / taxa) * 60
                     fim_real   = slot_inicio + paradas_min_slot + setup_no_slot + min_real
                     hora_fim_s = _from_minutes(int(fim_real)).strftime("%H:%M")
@@ -264,7 +270,7 @@ def gerar_plano_hora_a_hora(
 
 # ─── validação ────────────────────────────────────────────────────────────────
 
-def _validar_e_montar(form_data: dict) -> dict:
+def _validar_e_montar(form_data: dict, ate_fim: bool = False) -> dict:
     data    = form_data.get("data", "").strip()
     turno   = form_data.get("turno", "").strip()
     setor   = form_data.get("setor", "").strip()
@@ -299,7 +305,7 @@ def _validar_e_montar(form_data: dict) -> dict:
         qtd = int(form_data.get("quantidade_planejada", 0))
     except (ValueError, TypeError):
         raise ValueError("Quantidade deve ser um número inteiro.")
-    if qtd <= 0:
+    if not ate_fim and qtd <= 0:
         raise ValueError("Quantidade deve ser maior que zero.")
 
     try:
@@ -342,6 +348,50 @@ def criar(form_data: dict, username: str = "") -> dict:
     data["criado_por"] = username
     new_id = repo.inserir(data)
     return {"id": new_id, "hora_fim_prevista": data["hora_fim_prevista"]}
+
+
+def criar_lote(header: dict, modelos: list, username: str = "") -> list:
+    if not modelos:
+        raise ValueError("Informe ao menos um modelo.")
+
+    resultados    = []
+    hora_corrente = (header.get("hora_inicio_prevista") or "").strip()
+    base          = {
+        "data":  header.get("data", ""),
+        "turno": header.get("turno", ""),
+        "setor": header.get("setor", ""),
+        "linha": header.get("linha", ""),
+    }
+
+    for m in modelos:
+        qtd_raw = m.get("quantidade_planejada")
+        qtd     = int(qtd_raw) if qtd_raw not in (None, "") else 0
+        ate_fim = qtd == 0
+
+        form_data = {
+            **base,
+            "modelo":               (m.get("modelo") or "").strip().upper(),
+            "quantidade_planejada": qtd,
+            "taxa_horaria":         int(m.get("taxa_horaria") or 0),
+            "setup_min":            int(m.get("setup_min") or 0),
+            "hora_inicio_prevista": hora_corrente,
+            "op_id":                m.get("op_id"),
+            "observacao":           (m.get("observacao") or "").strip() or None,
+        }
+
+        data = _validar_e_montar(form_data, ate_fim=ate_fim)
+        data["criado_por"] = username
+        new_id = repo.inserir(data)
+        resultados.append({
+            "id":                new_id,
+            "hora_fim_prevista": data["hora_fim_prevista"],
+            "modelo":            data["modelo"],
+        })
+
+        if data["hora_fim_prevista"]:
+            hora_corrente = data["hora_fim_prevista"]
+
+    return resultados
 
 
 def atualizar(planejamento_id: int, form_data: dict) -> dict:

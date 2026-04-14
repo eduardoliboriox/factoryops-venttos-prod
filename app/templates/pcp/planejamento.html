@@ -27,6 +27,7 @@
      data-url-excluir-tpl="{{ url_for('pages.pcp_planejamento_excluir', plan_id=0) }}"
      data-url-imprimir="{{ url_for('pages.pcp_planejamento_plano_voo_imprimir') }}"
      data-url-imprimir-todos="{{ url_for('pages.pcp_planejamento_plano_voo_imprimir_todos') }}"
+     data-url-criar-lote="{{ url_for('pages.pcp_planejamento_criar_lote') }}"
      data-url-resumo-imprimir="{{ url_for('pages.pcp_planejamento_resumo_imprimir') }}"
      data-data-selecionada="{{ data_selecionada }}"
      data-ops='{{ ops | tojson }}'
@@ -576,7 +577,7 @@
 
 <!-- Modal: Novo Planejamento -->
 <div class="modal fade" id="modalNovo" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog">
+  <div class="modal-dialog modal-lg">
     <div class="modal-content" style="border-radius:12px;border-color:var(--border);">
       <div class="modal-header border-bottom" style="border-color:var(--border) !important;">
         <h6 class="modal-title fw-semibold">
@@ -584,9 +585,9 @@
         </h6>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
-      <div class="modal-body">
+      <div class="modal-body" style="max-height:80vh;overflow-y:auto;">
 
-        <div class="row g-2 mb-3">
+        <div class="row g-2 mb-2">
           <div class="col-6">
             <label class="form-label fw-semibold" style="font-size:0.8rem;">Data <span class="text-danger">*</span></label>
             <input type="date" class="form-control form-control-sm" id="modalData"
@@ -605,7 +606,7 @@
           </div>
         </div>
 
-        <div class="row g-2 mb-3">
+        <div class="row g-2 mb-2">
           <div class="col-6">
             <label class="form-label fw-semibold" style="font-size:0.8rem;">Setor <span class="text-danger">*</span></label>
             <select class="form-select form-select-sm" id="modalSetor"
@@ -626,86 +627,103 @@
         </div>
 
         <div class="mb-3">
-          <label class="form-label fw-semibold" style="font-size:0.8rem;">OP <span class="text-muted fw-normal">(opcional)</span></label>
-          <select class="form-select form-select-sm" id="modalOp"
-                  onchange="onOpChange(this,'modalModelo','modalSaldo')" style="border-radius:8px;">
-            <option value="">— Nenhuma OP —</option>
-            {% for op in ops %}
-            <option value="{{ op.id }}">{{ op.numero_op }} · {{ op.produto }} · Saldo: {{ "{:,.0f}".format(op.saldo).replace(',','.') }}</option>
-            {% endfor %}
-          </select>
-          <div id="modalSaldo" class="form-text text-primary" style="display:none;font-size:0.75rem;"></div>
+          <label class="form-label fw-semibold" style="font-size:0.8rem;">Início previsto do 1º modelo <span class="text-danger">*</span></label>
+          <input type="time" class="form-control form-control-sm" id="modalHoraInicio" style="border-radius:8px;">
+          <small id="modalHoraInicioHint" class="form-text text-primary" style="display:none;font-size:0.72rem;"></small>
         </div>
 
-        <div class="mb-3" id="rowModalFase" style="display:none;">
-          <label class="form-label fw-semibold" style="font-size:0.8rem;">Fase SMD <span class="text-danger">*</span></label>
-          <select class="form-select form-select-sm" id="modalFase" onchange="buscarMeta()" style="border-radius:8px;">
-            <option value="TOP">TOP</option>
-            <option value="BOTTOM">BOTTOM</option>
-          </select>
+        <div class="d-flex align-items-center gap-2 mb-2">
+          <span class="fw-bold text-muted text-uppercase" style="font-size:0.72rem;letter-spacing:0.8px;white-space:nowrap;">Modelos</span>
+          <hr class="flex-grow-1 m-0">
         </div>
 
-        <div class="mb-3">
-          <label class="form-label fw-semibold" style="font-size:0.8rem;">Modelo <span class="text-danger">*</span></label>
-          <div class="input-group input-group-sm">
-            <input type="text" class="form-control" id="modalModelo"
-                   placeholder="Ex: 79037313" style="border-radius:8px 0 0 8px;"
-                   oninput="agendarBuscarMeta()">
-            <button class="btn btn-outline-secondary" type="button"
-                    style="border-radius:0 8px 8px 0;font-size:0.75rem;"
-                    onclick="buscarMeta(true)" title="Buscar meta hora cadastrada">
-              <i class="bi bi-search"></i> Meta
-            </button>
-          </div>
-          <div id="modalMetaInfo" class="form-text" style="font-size:0.75rem;display:none;"></div>
-        </div>
+        <div id="modelosList"></div>
 
-        <div class="row g-2 mb-3">
-          <div class="col-4">
-            <label class="form-label fw-semibold" style="font-size:0.8rem;">Quantidade <span class="text-danger">*</span></label>
-            <input type="number" class="form-control form-control-sm" id="modalQtd"
-                   min="1" style="border-radius:8px;">
-          </div>
-          <div class="col-4">
-            <label class="form-label fw-semibold" style="font-size:0.8rem;">
-              Meta/hora
-              <span class="text-muted fw-normal" style="font-size:0.72rem;" title="Unidades por hora">(?)</span>
-            </label>
-            <input type="number" class="form-control form-control-sm" id="modalTaxa"
-                   min="0" placeholder="pç/h" style="border-radius:8px;">
-          </div>
-          <div class="col-4">
-            <label class="form-label fw-semibold" style="font-size:0.8rem;">Início previsto <span class="text-danger">*</span></label>
-            <input type="time" class="form-control form-control-sm" id="modalHoraInicio" style="border-radius:8px;">
-            <small id="modalHoraInicioHint" class="form-text text-primary" style="display:none;font-size:0.72rem;"></small>
-          </div>
-        </div>
-
-        <div class="mb-3">
-          <label class="form-label fw-semibold" style="font-size:0.8rem;">
-            Setup (min)
-            <span class="text-muted fw-normal" style="font-size:0.72rem;">(preenchido automaticamente pelo setor)</span>
-          </label>
-          <input type="number" class="form-control form-control-sm" id="modalSetup"
-                 min="0" value="0" style="border-radius:8px;">
-        </div>
-
-        <div class="mb-0">
-          <label class="form-label fw-semibold" style="font-size:0.8rem;">Observação <span class="text-muted fw-normal">(opcional)</span></label>
-          <textarea class="form-control form-control-sm" id="modalObs" rows="2"
-                    placeholder="Ex: prioridade alta, aguardar componente..." style="border-radius:8px;"></textarea>
-        </div>
+        <button type="button" class="btn btn-outline-primary btn-sm w-100 mt-1" onclick="adicionarModelo()">
+          <i class="bi bi-plus-circle me-1"></i>Adicionar outro modelo
+        </button>
 
       </div>
       <div class="modal-footer border-top" style="border-color:var(--border) !important;">
         <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
         <button type="button" class="btn btn-primary btn-sm fw-semibold" onclick="salvarPlanejamento()">
-          <i class="bi bi-calendar-plus me-1"></i>Salvar
+          <i class="bi bi-calendar-plus me-1"></i>Salvar planejamento
         </button>
       </div>
     </div>
   </div>
 </div>
+
+<!-- Template: card de modelo (clonado via JS) -->
+<template id="modeloCardTemplate">
+  <div class="modelo-card border rounded-3 mb-2 p-2" style="border-color:var(--border) !important;">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <span class="modelo-numero fw-semibold" style="font-size:0.82rem;color:var(--primary);">Modelo 1</span>
+      <button type="button" class="btn-close btn-remover-modelo" onclick="removerModelo(this)"
+              style="font-size:0.65rem;" title="Remover este modelo"></button>
+    </div>
+
+    <div class="mb-2">
+      <label class="form-label fw-semibold" style="font-size:0.8rem;">OP <span class="text-muted fw-normal">(opcional)</span></label>
+      <select class="form-select form-select-sm model-op" onchange="onOpChangeCard(this)" style="border-radius:8px;"></select>
+      <div class="model-saldo form-text text-primary" style="display:none;font-size:0.75rem;"></div>
+    </div>
+
+    <div class="mb-2 row-fase" style="display:none;">
+      <label class="form-label fw-semibold" style="font-size:0.8rem;">Fase SMD <span class="text-danger">*</span></label>
+      <select class="form-select form-select-sm model-fase"
+              onchange="buscarMetaCard(this.closest('.modelo-card'))" style="border-radius:8px;">
+        <option value="TOP">TOP</option>
+        <option value="BOTTOM">BOTTOM</option>
+      </select>
+    </div>
+
+    <div class="mb-2">
+      <label class="form-label fw-semibold" style="font-size:0.8rem;">Modelo <span class="text-danger">*</span></label>
+      <div class="input-group input-group-sm">
+        <input type="text" class="form-control model-codigo" placeholder="Ex: 79037313"
+               style="border-radius:8px 0 0 8px;"
+               oninput="agendarBuscarMetaCard(this.closest('.modelo-card'))">
+        <button class="btn btn-outline-secondary" type="button"
+                style="border-radius:0 8px 8px 0;font-size:0.75rem;"
+                onclick="buscarMetaCard(this.closest('.modelo-card'), true)">
+          <i class="bi bi-search"></i> Meta
+        </button>
+      </div>
+      <div class="model-meta-info form-text" style="font-size:0.75rem;display:none;"></div>
+    </div>
+
+    <div class="row g-2 mb-2">
+      <div class="col-6">
+        <label class="form-label fw-semibold" style="font-size:0.8rem;">Quantidade <span class="text-danger">*</span></label>
+        <input type="number" class="form-control form-control-sm model-qtd" min="1" style="border-radius:8px;">
+        <div class="form-check mt-1">
+          <input class="form-check-input model-ate-fim" type="checkbox" onchange="toggleAteFim(this)">
+          <label class="form-check-label" style="font-size:0.72rem;">Até o fim do turno</label>
+        </div>
+      </div>
+      <div class="col-6">
+        <label class="form-label fw-semibold" style="font-size:0.8rem;">
+          Meta/hora <span class="text-muted fw-normal" style="font-size:0.72rem;" title="Unidades por hora">(?)</span>
+        </label>
+        <input type="number" class="form-control form-control-sm model-taxa" min="0" placeholder="pç/h" style="border-radius:8px;">
+      </div>
+    </div>
+
+    <div class="mb-2">
+      <label class="form-label fw-semibold" style="font-size:0.8rem;">
+        Setup (min) <span class="text-muted fw-normal" style="font-size:0.72rem;">(preenchido automaticamente)</span>
+      </label>
+      <input type="number" class="form-control form-control-sm model-setup" min="0" value="0" style="border-radius:8px;">
+    </div>
+
+    <div class="mb-0">
+      <label class="form-label fw-semibold" style="font-size:0.8rem;">Observação <span class="text-muted fw-normal">(opcional)</span></label>
+      <textarea class="form-control form-control-sm model-obs" rows="2"
+                placeholder="Ex: prioridade alta, aguardar componente..." style="border-radius:8px;"></textarea>
+    </div>
+  </div>
+</template>
 
 <!-- Modal: Editar Planejamento -->
 <div class="modal fade" id="modalEditar" tabindex="-1" aria-hidden="true">
@@ -778,5 +796,5 @@
   </div>
 </div>
 
-<script src="{{ url_for('static', filename='js/planejamento.js') }}?v=6"></script>
+<script src="{{ url_for('static', filename='js/planejamento.js') }}?v={{ APP_VERSION }}"></script>
 {% endblock %}
