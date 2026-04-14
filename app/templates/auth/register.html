@@ -31,14 +31,15 @@
                placeholder="Nome completo"
                required>
 
-        <select name="user_type" class="form-select mb-2" required>
+        <select name="user_type" id="user_type" class="form-select mb-2" required>
           <option value="CLT">Colaborador CLT</option>
           <option value="PJ">Prestador de Serviço (PJ)</option>
           <option value="DIRECTOR">Diretoria</option>
           <option value="OWNER">Proprietário</option>
-        </select>        
-        
+        </select>
+
         <input name="matricula"
+               id="matricula_field"
                class="form-control mb-2"
                placeholder="Matrícula (somente CLT)">
 
@@ -129,17 +130,39 @@
 
         <h6 class="fw-bold mt-3 mb-2">Senha</h6>
 
-        <input type="password"
-               name="password"
-               class="form-control mb-2"
-               placeholder="Senha"
-               required>
+        <div class="input-group mb-2">
+          <input type="password"
+                 id="password"
+                 name="password"
+                 class="form-control"
+                 placeholder="Senha"
+                 required>
+          <button type="button" class="btn btn-outline-secondary btn-eye" data-target="password" tabindex="-1">
+            <i class="bi bi-eye"></i>
+          </button>
+        </div>
 
-        <input type="password"
-               name="password_confirm"
-               class="form-control mb-3"
-               placeholder="Confirmar senha"
-               required>
+        <div class="password-requirements" id="passwordRequirements">
+          <ul class="requirements-list">
+            <li id="req-length"><i class="bi bi-x-circle"></i> Mínimo 10 caracteres</li>
+            <li id="req-upper"><i class="bi bi-x-circle"></i> Uma letra maiúscula</li>
+            <li id="req-lower"><i class="bi bi-x-circle"></i> Uma letra minúscula</li>
+            <li id="req-number"><i class="bi bi-x-circle"></i> Um número</li>
+            <li id="req-special"><i class="bi bi-x-circle"></i> Um caractere especial (@, $, #, !, %)</li>
+          </ul>
+        </div>
+
+        <div class="input-group mb-3">
+          <input type="password"
+                 id="password_confirm"
+                 name="password_confirm"
+                 class="form-control"
+                 placeholder="Confirmar senha"
+                 required>
+          <button type="button" class="btn btn-outline-secondary btn-eye" data-target="password_confirm" tabindex="-1">
+            <i class="bi bi-eye"></i>
+          </button>
+        </div>
 
         <button class="btn btn-primary w-100 mb-2">
           Solicitar cadastro
