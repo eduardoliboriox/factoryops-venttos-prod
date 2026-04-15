@@ -308,9 +308,11 @@ function salvarPlanejamento() {
     const qtdRaw = card.querySelector(".model-qtd").value;
     const qtd    = ateFim ? 0 : (parseInt(qtdRaw) || 0);
 
+    const faseEl = card.querySelector(".model-fase");
     modelos.push({
       op_id:                (card.querySelector(".model-op").value || null),
       modelo:               (card.querySelector(".model-codigo").value || "").trim(),
+      fase:                 (faseEl && faseEl.closest(".row-fase") && faseEl.closest(".row-fase").style.display !== "none") ? (faseEl.value || null) : null,
       quantidade_planejada: qtd,
       taxa_horaria:         parseInt(card.querySelector(".model-taxa").value)  || 0,
       setup_min:            parseInt(card.querySelector(".model-setup").value) || 0,
