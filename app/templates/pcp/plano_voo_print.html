@@ -153,7 +153,7 @@
             {%- if slot.setor | upper in ['SMD', 'SMT'] and slot.fase %}Fase: {{ slot.fase }}{% endif %}
           </td>
         </tr>
-        {% set total_pecas.v = slot.total_acumulado %}
+        {% set total_pecas.v = total_pecas.v + slot.pecas %}
 
       {% elif tem_setup %}
         <tr class="row-setup">
@@ -181,7 +181,7 @@
             {%- if slot.setor | upper in ['SMD', 'SMT'] and slot.fase %}Fase: {{ slot.fase }}{% endif %}
           </td>
         </tr>
-        {% set total_pecas.v = slot.total_acumulado %}
+        {% set total_pecas.v = total_pecas.v + slot.pecas %}
       {% endif %}
     {% endfor %}
 
