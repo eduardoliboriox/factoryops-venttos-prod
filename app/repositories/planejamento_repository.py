@@ -171,7 +171,7 @@ def cliente_por_modelo(modelo: str) -> str | None:
                 (modelo,)
             )
             row = cur.fetchone()
-            return row[0] if row else None
+            return row["cliente"] if row else None
 
 
 def ops_abertas(setor: str = "") -> list:
