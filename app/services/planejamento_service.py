@@ -176,9 +176,8 @@ def gerar_plano_hora_a_hora(
             if turno_cruza_meia_noite and s < turno_inicio_min:
                 paradas_intervals.append((s + 24 * 60, e + 24 * 60, tipo))
 
-    slots         = []
-    total_acumulado = 0
-    cursor_min    = None
+    slots      = []
+    cursor_min = None
 
     for plano in planos:
         hi_min = _hhmm_to_min(plano.get("hora_inicio_prevista"))
@@ -191,6 +190,7 @@ def gerar_plano_hora_a_hora(
         taxa            = plano.get("taxa_horaria") or 0
         setup_restante  = plano.get("setup_min") or 0
         plano_concluido = False
+        total_acumulado = 0
 
         for janela_start, janela_end in janelas:
             if plano_concluido:
