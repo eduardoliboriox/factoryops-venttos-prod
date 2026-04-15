@@ -139,7 +139,8 @@ def listar_plano_de_voo(data: str, turno: str = "", setor: str = "", linha: str 
         with conn.cursor(row_factory=dict_row) as cur:
             cur.execute(f"""
                 SELECT p.id, p.linha, p.setor, p.turno, p.modelo, p.op_id,
-                       co.numero_op,
+                       co.numero_op, co.fase_modelo,
+                       (co.quantidade - co.produzido) AS saldo_op,
                        p.quantidade_planejada, p.taxa_horaria, p.setup_min,
                        p.hora_inicio_prevista, p.hora_fim_prevista, p.status
                 FROM planejamento p

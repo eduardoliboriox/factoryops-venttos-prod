@@ -246,6 +246,8 @@ def gerar_plano_hora_a_hora(
                     "hora_fim":        hora_fim_s,
                     "modelo":          plano.get("modelo", ""),
                     "op_numero":       plano.get("numero_op") or "",
+                    "setor":           plano.get("setor", ""),
+                    "fase":            (plano.get("fase_modelo") or "").strip(),
                     "setup_min":       setup_no_slot,
                     "paradas":         paradas_slot,
                     "paradas_min":     paradas_min_slot,
@@ -446,6 +448,8 @@ def opcoes_linha() -> dict:
 def planos_agrupados_por_linha(data: str) -> list:
     registros = repo.listar(data)
     grupos: dict = {}
+    planos_por_grupo: dict = {}
+
     for p in registros:
         key = (p["turno"], p["setor"], p["linha"])
         if key not in grupos:
@@ -458,8 +462,27 @@ def planos_agrupados_por_linha(data: str) -> list:
                 "meta_total":  0,
                 "hora_inicio": str(p.get("hora_inicio_prevista") or ""),
             }
+            planos_por_grupo[key] = []
         grupos[key]["modelos"].append(p["modelo"])
-        grupos[key]["meta_total"] += int(p.get("quantidade_planejada") or 0)
+        planos_por_grupo[key].append(dict(p))
+
+    for key, grupo in grupos.items():
+        planos_g = planos_por_grupo[key]
+        tem_ate_fim = any(int(p.get("quantidade_planejada") or 0) == 0 for p in planos_g)
+
+        if tem_ate_fim:
+            intervalos = repo.turno_intervalos(grupo["turno"])
+            paradas    = repo.paradas_da_linha(grupo["setor"], grupo["linha"])
+            slots_sim  = gerar_plano_hora_a_hora(
+                planos_g,
+                [dict(i) for i in intervalos],
+                [dict(p) for p in paradas],
+                grupo["data"],
+            )
+            grupo["meta_total"] = sum(s.get("pecas", 0) for s in slots_sim)
+        else:
+            grupo["meta_total"] = sum(int(p.get("quantidade_planejada") or 0) for p in planos_g)
+
     return list(grupos.values())
 
 
@@ -503,31 +526,43 @@ def dados_impressao_plano_voo(data_str: str, turno: str, setor: str, linha: str)
 
     from app.repositories import linha_lider_repository as lider_repo
 
-    primeiro     = dict(planos[0]) if planos else {}
-    modelo       = primeiro.get("modelo", "")
-    familia      = repo.familia_por_modelo(modelo) if modelo else None
-    cliente      = familia.strip().split()[0] if familia else "—"
-    meta_diaria  = sum(s.get("pecas", 0) for s in slots)
-
+    primeiro   = dict(planos[0]) if planos else {}
     setor_real = setor or primeiro.get("setor", "")
     linha_real = linha or primeiro.get("linha", "")
+    meta_total = sum(s.get("pecas", 0) for s in slots)
 
     lider_data  = lider_repo.buscar(setor_real, linha_real, turno) or {}
     lider       = lider_data.get("lider") or "—"
     hc          = lider_data.get("hc") or 0
-
     responsavel = f"{lider} / HC: {hc}" if hc else lider
 
+    modelos_info = []
+    for plano in [dict(p) for p in planos]:
+        modelo_code = plano.get("modelo", "")
+        familia     = repo.familia_por_modelo(modelo_code) if modelo_code else None
+        cliente     = familia.strip().split()[0] if familia else "—"
+        saldo_op    = plano.get("saldo_op")
+        saldo_atual = int(saldo_op) if saldo_op is not None else None
+        pcs_modelo  = sum(s.get("pecas", 0) for s in slots if s.get("modelo") == modelo_code)
+        saldo_prev  = (saldo_atual - pcs_modelo) if saldo_atual is not None else None
+        modelos_info.append({
+            "modelo":         modelo_code,
+            "op_numero":      plano.get("numero_op") or "—",
+            "cliente":        cliente,
+            "fase":           (plano.get("fase_modelo") or "—").strip() or "—",
+            "saldo_atual":    saldo_atual,
+            "saldo_previsto": saldo_prev,
+        })
+
     return {
-        "slots":  slots,
-        "data":   data_str,
+        "slots": slots,
+        "data":  data_str,
         "info": {
-            "cliente":     cliente,
-            "setor":       setor_real,
-            "linha":       linha_real,
-            "produto":     modelo,
-            "meta_diaria": meta_diaria,
-            "turno":       turno,
-            "responsavel": responsavel,
+            "setor":        setor_real,
+            "linha":        linha_real,
+            "meta_diaria":  meta_total,
+            "turno":        turno,
+            "responsavel":  responsavel,
+            "modelos_info": modelos_info,
         },
     }
