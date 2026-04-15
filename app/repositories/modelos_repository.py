@@ -6,6 +6,9 @@ from psycopg.rows import dict_row
 from psycopg import sql
 from psycopg.types.json import Json
 
+from decimal import Decimal
+from datetime import date as _date, datetime as _datetime
+
 from app.extensions import get_db
 
 
@@ -182,6 +185,18 @@ def _select_modelo_row(cur, codigo: str, fase: str, linha: Optional[str]) -> Opt
     return cur.fetchone()
 
 
+def _json_safe(obj):
+    if isinstance(obj, dict):
+        return {k: _json_safe(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_json_safe(v) for v in obj]
+    if isinstance(obj, Decimal):
+        return float(obj)
+    if isinstance(obj, (_date, _datetime)):
+        return obj.isoformat()
+    return obj
+
+
 def _audit_insert(cur, *, codigo: str, fase: str, linha: Optional[str],
                   action: str, user_id: Optional[int], username: Optional[str],
                   changes: Optional[dict]):
@@ -193,7 +208,7 @@ def _audit_insert(cur, *, codigo: str, fase: str, linha: Optional[str],
             (codigo, fase, linha, action, changed_by_user_id, changed_by_username, changes)
         VALUES (%s, %s, %s, %s, %s, %s, %s::jsonb)
         """,
-        (codigo, fase, linha, action, user_id, username, Json(changes) if changes is not None else None)
+        (codigo, fase, linha, action, user_id, username, Json(_json_safe(changes)) if changes is not None else None)
     )
 
 
@@ -259,6 +274,51 @@ def buscar_meta_por_codigo(codigo: str, setor: str = "", fase: str = "") -> Opti
                 """, (codigo,))
             row = cur.fetchone()
             return float(row["meta_padrao"]) if row else None
+
+
+def buscar_meta_com_fase(codigo: str, setor: str = "", fase: str = "") -> dict:
+    with get_db() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            if setor:
+                if setor.upper() in _SMD_SMT_ALIAS:
+                    if fase:
+                        cur.execute("""
+                            SELECT meta_padrao, fase FROM modelos
+                            WHERE UPPER(TRIM(codigo)) = %s
+                              AND setor IN ('SMD', 'SMT')
+                              AND UPPER(TRIM(fase)) = %s
+                              AND meta_padrao IS NOT NULL AND meta_padrao > 0
+                            LIMIT 1
+                        """, (codigo, fase.upper()))
+                    else:
+                        cur.execute("""
+                            SELECT meta_padrao, fase FROM modelos
+                            WHERE UPPER(TRIM(codigo)) = %s
+                              AND setor IN ('SMD', 'SMT')
+                              AND meta_padrao IS NOT NULL AND meta_padrao > 0
+                            ORDER BY fase DESC LIMIT 1
+                        """, (codigo,))
+                else:
+                    cur.execute("""
+                        SELECT meta_padrao, fase FROM modelos
+                        WHERE UPPER(TRIM(codigo)) = %s AND UPPER(TRIM(setor)) = %s
+                          AND meta_padrao IS NOT NULL AND meta_padrao > 0
+                        LIMIT 1
+                    """, (codigo, setor))
+            else:
+                cur.execute("""
+                    SELECT meta_padrao, fase FROM modelos
+                    WHERE UPPER(TRIM(codigo)) = %s
+                      AND meta_padrao IS NOT NULL AND meta_padrao > 0
+                    LIMIT 1
+                """, (codigo,))
+            row = cur.fetchone()
+            if not row:
+                return {"meta": None, "fase_encontrada": None}
+            return {
+                "meta": float(row["meta_padrao"]),
+                "fase_encontrada": (row.get("fase") or "").strip() or None,
+            }
 
 
 def buscar_candidatos_diagnostico(fragmento: str) -> list:

@@ -507,7 +507,7 @@ def dados_impressao_plano_voo(data_str: str, turno: str, setor: str, linha: str)
     modelo       = primeiro.get("modelo", "")
     familia      = repo.familia_por_modelo(modelo) if modelo else None
     cliente      = familia.strip().split()[0] if familia else "—"
-    meta_diaria  = sum(p.get("quantidade_planejada", 0) for p in planos)
+    meta_diaria  = sum(s.get("pecas", 0) for s in slots)
 
     setor_real = setor or primeiro.get("setor", "")
     linha_real = linha or primeiro.get("linha", "")

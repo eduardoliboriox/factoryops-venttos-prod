@@ -222,7 +222,7 @@ function onOpChangeCard(selectEl) {
     modelo.value = op.produto;
     saldo.textContent = "Saldo da OP: " + Number(op.saldo).toLocaleString("pt-BR");
     saldo.style.display = "";
-    buscarMetaCard(card);
+    buscarMetaCard(card, false, true);
   } else {
     modelo.value = "";
     saldo.style.display = "none";
@@ -235,13 +235,13 @@ function agendarBuscarMetaCard(card) {
   _cardMetaTimer = setTimeout(function() { buscarMetaCard(card); }, 700);
 }
 
-function buscarMetaCard(card, manual) {
+function buscarMetaCard(card, manual, fromOpSelect) {
   const info   = card.querySelector(".model-meta-info");
   const codigo = (card.querySelector(".model-codigo").value || "").trim().toUpperCase();
   const setor  = (document.getElementById("modalSetor").value || "").trim().toUpperCase();
   const linha  = (document.getElementById("modalLinha").value || "").trim().toUpperCase();
   const faseEl = card.querySelector(".model-fase");
-  const fase   = (_isSmdSetor(setor) && faseEl) ? (faseEl.value || "") : "";
+  const fase   = (!fromOpSelect && _isSmdSetor(setor) && faseEl) ? (faseEl.value || "") : "";
 
   if (!codigo) {
     if (manual) {
@@ -276,6 +276,9 @@ function buscarMetaCard(card, manual) {
         info.textContent   = "Meta encontrada: " + Math.round(data.meta) + " pç/h";
         info.className     = "model-meta-info form-text text-success";
         info.style.display = "";
+        if (data.fase_encontrada && faseEl && fromOpSelect) {
+          faseEl.value = data.fase_encontrada;
+        }
       } else {
         info.textContent   = "Modelo não cadastrado — informe a meta manualmente.";
         info.className     = "model-meta-info form-text text-warning";

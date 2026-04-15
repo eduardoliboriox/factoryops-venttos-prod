@@ -979,9 +979,13 @@ def pcp_planejamento_buscar_meta():
     fase   = request.args.get("fase",   "").strip().upper()
 
     try:
-        meta  = mr.buscar_meta_por_codigo(codigo, setor, fase) if codigo else None
+        result_meta = mr.buscar_meta_com_fase(codigo, setor, fase) if codigo else {"meta": None, "fase_encontrada": None}
+        meta = result_meta["meta"]
+        fase_encontrada = result_meta["fase_encontrada"]
         setup = svc.setup_sugerido(setor, linha)
         result = {"meta": meta, "setup_sugerido": setup}
+        if fase_encontrada:
+            result["fase_encontrada"] = fase_encontrada
         if meta is None and codigo:
             result["_debug"] = mr.buscar_candidatos_diagnostico(codigo)
         return jsonify(result)
