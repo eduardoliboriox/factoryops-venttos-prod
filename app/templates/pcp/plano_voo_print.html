@@ -136,7 +136,7 @@
           <td class="col-modelo"><span class="lbl-setup">SETUP</span></td>
           <td class="col-tempo">{{ slot.setup_min }}</td>
           <td class="col-meta">0</td>
-          <td class="col-acum"></td>
+          <td class="col-acum">{{ slot.total_acumulado if slot.total_acumulado else '' }}</td>
           <td class="col-obs" style="font-size:0.72rem;">
             SETUP
             {%- if slot.op_numero %} · {{ slot.op_numero }}{% endif %}
