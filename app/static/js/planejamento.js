@@ -159,6 +159,15 @@ function adicionarModelo() {
 
   if (_isSmdSetor(setor)) {
     card.querySelector(".row-fase").style.display = "";
+
+    // Herda a fase do último card existente (evita buscar com fase errada)
+    const cards = list.querySelectorAll(".modelo-card");
+    if (cards.length > 0) {
+      const lastFase = cards[cards.length - 1].querySelector(".model-fase");
+      if (lastFase) {
+        card.querySelector(".model-fase").value = lastFase.value;
+      }
+    }
   }
   card.querySelector(".model-setup").value = calcularSetupSugerido(setor, linha);
 
