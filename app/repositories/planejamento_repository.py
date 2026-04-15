@@ -55,11 +55,11 @@ def inserir(data: dict) -> int:
         with conn.cursor() as cur:
             cur.execute("""
                 INSERT INTO planejamento (
-                    data, turno, setor, linha, op_id, modelo,
+                    data, turno, setor, linha, op_id, modelo, fase,
                     quantidade_planejada, taxa_horaria, setup_min,
                     hora_inicio_prevista, hora_fim_prevista,
                     status, observacao, criado_por
-                ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,'PLANEJADO',%s,%s)
+                ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,'PLANEJADO',%s,%s)
                 RETURNING id
             """, (
                 data["data"],
@@ -68,6 +68,7 @@ def inserir(data: dict) -> int:
                 data["linha"],
                 data.get("op_id") or None,
                 data["modelo"],
+                data.get("fase") or None,
                 data["quantidade_planejada"],
                 data["taxa_horaria"],
                 data.get("setup_min", 0),
@@ -139,7 +140,7 @@ def listar_plano_de_voo(data: str, turno: str = "", setor: str = "", linha: str 
         with conn.cursor(row_factory=dict_row) as cur:
             cur.execute(f"""
                 SELECT p.id, p.linha, p.setor, p.turno, p.modelo, p.op_id,
-                       co.numero_op, co.fase_modelo,
+                       co.numero_op, p.fase,
                        (co.quantidade - co.produzido) AS saldo_op,
                        p.quantidade_planejada, p.taxa_horaria, p.setup_min,
                        p.hora_inicio_prevista, p.hora_fim_prevista, p.status
@@ -160,6 +161,17 @@ def familia_por_modelo(modelo: str) -> str | None:
             )
             row = cur.fetchone()
             return row["familia"] if row else None
+
+
+def cliente_por_modelo(modelo: str) -> str | None:
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT cliente FROM modelos WHERE UPPER(TRIM(codigo)) = UPPER(TRIM(%s)) AND cliente IS NOT NULL AND cliente <> '' LIMIT 1",
+                (modelo,)
+            )
+            row = cur.fetchone()
+            return row[0] if row else None
 
 
 def ops_abertas(setor: str = "") -> list:

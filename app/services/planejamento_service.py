@@ -247,7 +247,7 @@ def gerar_plano_hora_a_hora(
                     "modelo":          plano.get("modelo", ""),
                     "op_numero":       plano.get("numero_op") or "",
                     "setor":           plano.get("setor", ""),
-                    "fase":            (plano.get("fase_modelo") or "").strip(),
+                    "fase":            (plano.get("fase") or "").strip(),
                     "setup_min":       setup_no_slot,
                     "paradas":         paradas_slot,
                     "paradas_min":     paradas_min_slot,
@@ -325,6 +325,8 @@ def _validar_e_montar(form_data: dict, ate_fim: bool = False) -> dict:
     op_id_raw = form_data.get("op_id", "")
     op_id = int(op_id_raw) if op_id_raw and str(op_id_raw).strip() else None
 
+    fase = (form_data.get("fase") or "").strip().upper() or None
+
     hora_fim = calcular_hora_fim(hora_inicio, qtd, taxa, turno, setor, linha, setup)
 
     return {
@@ -334,6 +336,7 @@ def _validar_e_montar(form_data: dict, ate_fim: bool = False) -> dict:
         "linha":                 linha,
         "op_id":                 op_id,
         "modelo":                modelo,
+        "fase":                  fase,
         "quantidade_planejada":  qtd,
         "taxa_horaria":          taxa,
         "setup_min":             setup,
@@ -373,6 +376,7 @@ def criar_lote(header: dict, modelos: list, username: str = "") -> list:
         form_data = {
             **base,
             "modelo":               (m.get("modelo") or "").strip().upper(),
+            "fase":                 (m.get("fase") or "").strip().upper() or None,
             "quantidade_planejada": qtd,
             "taxa_horaria":         int(m.get("taxa_horaria") or 0),
             "setup_min":            int(m.get("setup_min") or 0),
@@ -539,8 +543,8 @@ def dados_impressao_plano_voo(data_str: str, turno: str, setor: str, linha: str)
     modelos_info = []
     for plano in [dict(p) for p in planos]:
         modelo_code = plano.get("modelo", "")
-        familia     = repo.familia_por_modelo(modelo_code) if modelo_code else None
-        cliente     = familia.strip().split()[0] if familia else "—"
+        cliente_raw = repo.cliente_por_modelo(modelo_code) if modelo_code else None
+        cliente     = cliente_raw.strip() if cliente_raw else "—"
         saldo_op    = plano.get("saldo_op")
         saldo_atual = int(saldo_op) if saldo_op is not None else None
         pcs_modelo  = sum(s.get("pecas", 0) for s in slots if s.get("modelo") == modelo_code)
@@ -549,7 +553,7 @@ def dados_impressao_plano_voo(data_str: str, turno: str, setor: str, linha: str)
             "modelo":         modelo_code,
             "op_numero":      plano.get("numero_op") or "—",
             "cliente":        cliente,
-            "fase":           (plano.get("fase_modelo") or "—").strip() or "—",
+            "fase":           (plano.get("fase") or "—").strip() or "—",
             "saldo_atual":    saldo_atual,
             "saldo_previsto": saldo_prev,
         })
