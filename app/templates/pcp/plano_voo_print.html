@@ -62,10 +62,8 @@
 <table class="pv-info">
   <thead>
     <tr>
-      <th>Cliente</th>
       <th>Setor</th>
       <th>Linha</th>
-      <th>Produto</th>
       <th>Total a Produzir</th>
       <th>Turno</th>
       <th>Responsável / HC</th>
@@ -73,16 +71,42 @@
   </thead>
   <tbody>
     <tr>
-      <td>{{ info.cliente or '—' }}</td>
       <td>{{ info.setor or '—' }}</td>
       <td>{{ info.linha or '—' }}</td>
-      <td>{{ info.produto or '—' }}</td>
-      <td>{{ info.meta_diaria or '—' }}</td>
+      <td>{{ info.meta_diaria or '—' }} pçs</td>
       <td>{{ info.turno or '—' }}</td>
       <td>{{ info.responsavel or '—' }}</td>
     </tr>
   </tbody>
 </table>
+
+<!-- Modelos planejados -->
+{% if info.modelos_info %}
+<table class="pv-info" style="margin-bottom:10px;">
+  <thead>
+    <tr>
+      <th>Modelo</th>
+      <th>OP</th>
+      <th>Cliente</th>
+      <th>Fase</th>
+      <th>Saldo Inicial</th>
+      <th>Saldo Previsto</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for m in info.modelos_info %}
+    <tr>
+      <td>{{ m.modelo or '—' }}</td>
+      <td>{{ m.op_numero or '—' }}</td>
+      <td>{{ m.cliente or '—' }}</td>
+      <td>{{ m.fase or '—' }}</td>
+      <td>{{ m.saldo_atual if m.saldo_atual is not none else '—' }}</td>
+      <td>{{ m.saldo_previsto if m.saldo_previsto is not none else '—' }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
 
 <!-- Tabela hora a hora -->
 {% if slots %}
@@ -114,7 +138,6 @@
           <td class="col-acum"></td>
           <td class="col-obs" style="font-size:0.72rem;">
             SETUP
-            {%- if slot.op_numero %} · {{ slot.op_numero }}{% endif %}
             {%- if slot.modelo %} — {{ slot.modelo }}{% endif %}
           </td>
         </tr>
@@ -126,7 +149,9 @@
           <td class="col-tempo">{{ slot.producao_min }}</td>
           <td class="col-meta">{{ slot.pecas if slot.pecas else '—' }}</td>
           <td class="col-acum">{{ slot.total_acumulado }}</td>
-          <td class="col-obs"></td>
+          <td class="col-obs" style="font-size:0.72rem;">
+            {%- if slot.setor | upper in ['SMD', 'SMT'] and slot.fase %}Fase: {{ slot.fase }}{% endif %}
+          </td>
         </tr>
         {% set total_pecas.v = slot.total_acumulado %}
 
@@ -139,7 +164,6 @@
           <td class="col-acum">{{ slot.total_acumulado if slot.total_acumulado else '' }}</td>
           <td class="col-obs" style="font-size:0.72rem;">
             SETUP
-            {%- if slot.op_numero %} · {{ slot.op_numero }}{% endif %}
             {%- if slot.modelo %} — {{ slot.modelo }}{% endif %}
           </td>
         </tr>
@@ -153,7 +177,9 @@
           <td class="col-tempo">{{ slot.producao_min }}</td>
           <td class="col-meta">{{ slot.pecas if slot.pecas else '—' }}</td>
           <td class="col-acum">{{ slot.total_acumulado }}</td>
-          <td class="col-obs"></td>
+          <td class="col-obs" style="font-size:0.72rem;">
+            {%- if slot.setor | upper in ['SMD', 'SMT'] and slot.fase %}Fase: {{ slot.fase }}{% endif %}
+          </td>
         </tr>
         {% set total_pecas.v = slot.total_acumulado %}
       {% endif %}
@@ -162,6 +188,7 @@
     <!-- Totais -->
     <tr class="row-totais">
       <td colspan="3">TOTAIS</td>
+      <td></td>
       <td>{{ total_pecas.v }}</td>
       <td></td>
     </tr>
