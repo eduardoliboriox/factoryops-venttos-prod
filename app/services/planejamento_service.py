@@ -337,7 +337,7 @@ def _validar_e_montar(form_data: dict, ate_fim: bool = False) -> dict:
         "setup_min":             setup,
         "hora_inicio_prevista":  hora_in,
         "hora_fim_prevista":     hora_fim.strftime("%H:%M") if hora_fim else None,
-        "observacao":            form_data.get("observacao", "").strip() or None,
+        "observacao":            (form_data.get("observacao") or "").strip() or None,
     }
 
 
