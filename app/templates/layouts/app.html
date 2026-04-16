@@ -45,7 +45,7 @@
   'smt_estudo_tempo','engenharia_folha_crono'
 ] %}
 {% set _pcp_menus = [
-  'pcp_controle_ops','pcp_apontamento','pcp_planejamento','pcp_entregas','pcp_producao_coletada','pcp_lancamento_producao'
+  'pcp_controle_ops','pcp_apontamento','pcp_planejamento','pcp_entregas','pcp_producao_coletada','pcp_lancamento_producao','pcp_roteiros'
 ] %}
 {% set _log_menus = [
   'logistica_resumo'
@@ -93,6 +93,7 @@
       "pcp_entregas": "Entregas",
       "pcp_lancamento_producao": "Lançamento PTH",
       "pcp_producao_coletada": "Produção Coletada",
+      "pcp_roteiros": "Roteiros",
       "logistica_resumo": "Logística",
       "config_turnos": "Turnos",
       "config_linhas": "Linhas e Setores",
@@ -262,6 +263,10 @@
             <a href="{{ url_for('pages.pcp_lancamento_producao') }}"
                class="{% if active_menu == 'pcp_lancamento_producao' %}active{% endif %}">
               <i class="bi bi-pencil-square"></i> Lançamento PTH
+            </a>
+            <a href="{{ url_for('pages.pcp_roteiros') }}"
+               class="{% if active_menu == 'pcp_roteiros' %}active{% endif %}">
+              <i class="bi bi-diagram-3"></i> Roteiros
             </a>
             {% endif %}
             <a href="{{ url_for('pages.pcp_controle_ops') }}"
