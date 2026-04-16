@@ -306,14 +306,12 @@
 </div>
 
 <style>
-.checklist-canvas { width: 1024px; transform-origin: top left; }
 @media (max-width: 768px) {
   .document-mobile-wrapper { overflow-x: hidden; overflow-y: visible; }
-  .checklist-canvas { transform: scale(var(--doc-scale, 1)); }
 }
 </style>
 <div class="document-mobile-wrapper">
-<div class="checklist-canvas">
+<div class="document-desktop-canvas">
 <div class="container-fluid">
 
   <ul class="nav nav-tabs mb-3 d-print-none" id="clTabs" role="tablist">
@@ -622,7 +620,7 @@
     </div>
   </div>
 </div>
-</div><!-- /.checklist-canvas -->
+</div><!-- /.document-desktop-canvas -->
 </div><!-- /.document-mobile-wrapper -->
 {% endblock %}
 
