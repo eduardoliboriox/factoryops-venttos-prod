@@ -1,7 +1,7 @@
 from app.repositories import parada_config_repository as repo
 from app.repositories import linha_config_repository as lc_repo
 
-TIPOS_VALIDOS = ["INTERVALO_1", "INTERVALO_2", "GINASTICA", "DDS", "REFEICAO", "SETUP", "OUTROS"]
+TIPOS_VALIDOS = ["INTERVALO_1", "INTERVALO_2", "GINASTICA", "DDS", "REFEICAO", "SETUP", "SMD_5S", "OUTROS"]
 TURNOS_VALIDOS = ["1º Turno", "2º Turno", "3º Turno"]
 DIAS_SEMANA = ["SEG", "TER", "QUA", "QUI", "SEX", "SAB", "DOM"]
 
