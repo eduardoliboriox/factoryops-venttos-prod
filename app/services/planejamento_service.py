@@ -444,7 +444,35 @@ def excluir(planejamento_id: int) -> None:
 
 
 def listar(data: str, turno: str = "", setor: str = "", linha: str = "") -> list:
-    return repo.listar(data, turno, setor, linha)
+    rows = [dict(r) for r in repo.listar(data, turno, setor, linha)]
+
+    grupos: dict = {}
+    for r in rows:
+        key = (r["turno"], r["setor"], r["linha"])
+        grupos.setdefault(key, []).append(r)
+
+    for key, grupo_rows in grupos.items():
+        if not any(int(r.get("quantidade_planejada") or 0) == 0 for r in grupo_rows):
+            continue
+        turno_g, setor_g, linha_g = key
+        intervalos = repo.turno_intervalos(turno_g)
+        paradas    = repo.paradas_da_linha(setor_g, linha_g)
+        slots_sim  = gerar_plano_hora_a_hora(
+            [dict(r) for r in grupo_rows],
+            [dict(i) for i in intervalos],
+            [dict(p) for p in paradas],
+            str(grupo_rows[0]["data"]),
+        )
+        pecas_por_modelo: dict = {}
+        for s in slots_sim:
+            m = s.get("modelo", "")
+            pecas_por_modelo[m] = pecas_por_modelo.get(m, 0) + s.get("pecas", 0)
+
+        for r in grupo_rows:
+            if int(r.get("quantidade_planejada") or 0) == 0:
+                r["quantidade_calculada"] = pecas_por_modelo.get(r["modelo"], 0)
+
+    return rows
 
 
 def ops_disponiveis(setor: str = "") -> list:
