@@ -435,12 +435,36 @@
       {% set scor = {'PTH':'primary','IM':'warning','SMD':'success','PA':'danger','VTT':'info'} %}
       {% set scor_txt = {'IM':'text-dark'} %}
       {% if fila_smd %}
+
+      <!-- Busca e legenda -->
+      <div class="d-flex gap-2 align-items-center mb-3 flex-wrap">
+        <div class="flex-grow-1" style="max-width:360px;">
+          <div class="input-group input-group-sm">
+            <span class="input-group-text" style="border-radius:8px 0 0 8px;background:var(--card);border-color:var(--border);">
+              <i class="bi bi-search text-muted"></i>
+            </span>
+            <input type="text" id="filaBusca" class="form-control form-control-sm"
+                   placeholder="Buscar por OP, produto ou descrição…"
+                   style="border-radius:0 8px 8px 0;border-color:var(--border);"
+                   oninput="filtrarFila(this.value)">
+          </div>
+        </div>
+        <div class="d-flex align-items-center gap-2 ms-auto flex-wrap">
+          <span class="d-flex align-items-center gap-1" style="font-size:0.75rem;color:var(--text-muted);">
+            <span class="badge bg-success" style="font-size:0.65rem;padding:2px 6px;">
+              <i class="bi bi-calendar-check me-1"></i>Planejado
+            </span>
+            OP vinculada ao planejamento de {{ data_selecionada }}
+          </span>
+        </div>
+      </div>
+
         {% for setor, ops in fila_smd.items() %}
         {% set ops_abertas_list = ops | selectattr('saldo', 'gt', 0) | list %}
         {% set ops_concluidas_list = ops | rejectattr('saldo', 'gt', 0) | list %}
         {% set total_saldo = ops_abertas_list | sum(attribute='saldo') %}
         {% set is_smd = setor == 'SMD' %}
-        <div class="card mb-3" style="border-radius:12px;border-color:var(--border);">
+        <div class="card mb-3 fila-setor-card" style="border-radius:12px;border-color:var(--border);">
           <div class="card-header d-flex align-items-center gap-2 py-2 px-3"
                style="border-radius:12px 12px 0 0;border-color:var(--border);background:var(--bg);">
             <span class="badge bg-{{ scor.get(setor,'secondary') }} {{ scor_txt.get(setor,'') }}"
@@ -481,7 +505,8 @@
                     <th class="text-end">Ag. BOTTOM</th>
                     <th class="text-end">Ag. TOP</th>
                     {% endif %}
-                    <th class="text-end pe-3">{{ 'Saldo (bl / pçs)' if usa_blank_header else 'Saldo' }}</th>
+                    <th class="text-end">{{ 'Saldo (bl / pçs)' if usa_blank_header else 'Saldo' }}</th>
+                    <th class="text-end pe-3">Planejado hoje</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -490,7 +515,9 @@
                   {% set usa_blank = setor in ('PTH', 'SMD') and b > 1 %}
                   {% set pct = ((op.produzido / op.quantidade) * 100) | int if op.quantidade > 0 else 0 %}
                   {% set concluida = op.saldo <= 0 %}
-                  <tr style="{{ 'opacity:0.65;' if concluida else '' }}">
+                  {% set planos_op = planos | selectattr('op_id', 'equalto', op.id) | list %}
+                  <tr class="fila-row" data-busca="{{ op.numero_op }} {{ op.produto }} {{ op.descricao or '' }}"
+                      style="{{ 'opacity:0.65;' if concluida else '' }}">
                     <td class="ps-3 fw-semibold">
                       {{ op.numero_op }}
                       {% if concluida %}
@@ -557,7 +584,7 @@
                       {% else %}<span class="text-muted">—</span>{% endif %}
                     </td>
                     {% endif %}
-                    <td class="text-end fw-semibold pe-3
+                    <td class="text-end fw-semibold
                                {% if op.saldo <= 0 %}text-success
                                {% elif op.saldo < op.quantidade * 0.2 %}text-warning{% endif %}">
                       {% if usa_blank %}
@@ -565,6 +592,29 @@
                       <div class="fw-normal text-muted" style="font-size:0.72rem;">{{ op.saldo }} pçs</div>
                       {% else %}
                       {{ op.saldo }}
+                      {% endif %}
+                    </td>
+                    <td class="text-end pe-3">
+                      {% if planos_op %}
+                        {% for p in planos_op %}
+                        <div class="d-flex flex-column align-items-end mb-1">
+                          <span class="badge bg-success" style="font-size:0.65rem;font-weight:600;">
+                            <i class="bi bi-calendar-check me-1"></i>{{ p.linha }}
+                          </span>
+                          <span style="font-size:0.68rem;color:var(--text-muted);white-space:nowrap;">
+                            {{ p.turno }} · {{ p.hora_inicio_prevista }}
+                          </span>
+                          <span style="font-size:0.68rem;color:var(--text-muted);">
+                            {% if p.quantidade_planejada == 0 %}
+                              Até fim
+                            {% else %}
+                              {{ "{:,.0f}".format(p.quantidade_planejada).replace(',','.') }} pçs
+                            {% endif %}
+                          </span>
+                        </div>
+                        {% endfor %}
+                      {% else %}
+                        <span class="text-muted" style="font-size:0.75rem;">—</span>
                       {% endif %}
                     </td>
                   </tr>
