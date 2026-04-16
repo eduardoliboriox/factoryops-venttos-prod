@@ -210,7 +210,13 @@
                   <td class="fw-semibold">{{ p.linha }}</td>
                   <td class="text-nowrap">{{ p.modelo }}</td>
                   <td class="text-muted small">{{ p.numero_op or '—' }}</td>
-                  <td class="text-end fw-bold">{{ "{:,.0f}".format(p.quantidade_planejada).replace(',','.') }}</td>
+                  <td class="text-end fw-bold">
+                    {% if p.quantidade_planejada == 0 %}
+                    <span class="text-muted fst-italic" style="font-size:0.8rem;">Até fim</span>
+                    {% else %}
+                    {{ "{:,.0f}".format(p.quantidade_planejada).replace(',','.') }}
+                    {% endif %}
+                  </td>
                   <td class="text-end text-muted small">
                     {% if p.taxa_horaria %}{{ p.taxa_horaria }}{% else %}—{% endif %}
                   </td>
