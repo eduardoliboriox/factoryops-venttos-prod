@@ -394,6 +394,153 @@ def pcp_lancamento_producao_excluir(registro_id):
     return redirect(url_for("pages.pcp_lancamento_producao"))
 
 
+@bp.route("/pcp/roteiros")
+@login_required
+@admin_required
+def pcp_roteiros():
+    from flask import request
+    from app.services import roteiro_service as svc
+
+    cliente = request.args.get("cliente", "")
+
+    try:
+        roteiros          = svc.listar(cliente)
+        clientes_roteiros = svc.clientes_roteiros()
+        clientes_modelos  = svc.clientes_modelos()
+        erro              = None
+    except Exception as e:
+        roteiros          = []
+        clientes_roteiros = []
+        clientes_modelos  = []
+        erro              = str(e)
+
+    return render_template(
+        "pcp/roteiros.html",
+        active_menu="pcp_roteiros",
+        cliente=cliente,
+        roteiros=roteiros,
+        clientes_roteiros=clientes_roteiros,
+        clientes_modelos=clientes_modelos,
+        erro=erro,
+    )
+
+
+@bp.route("/pcp/roteiros/criar", methods=["POST"])
+@login_required
+@admin_required
+def pcp_roteiros_criar():
+    from flask import request, jsonify
+    from app.services import roteiro_service as svc
+    import json
+
+    try:
+        dados = request.get_json(force=True)
+        roteiro_id = svc.criar(dados)
+        return jsonify({"ok": True, "id": roteiro_id})
+    except ValueError as e:
+        return jsonify({"ok": False, "erro": str(e)}), 400
+    except Exception:
+        return jsonify({"ok": False, "erro": "Erro inesperado ao criar roteiro."}), 500
+
+
+@bp.route("/pcp/roteiros/<int:roteiro_id>/editar", methods=["POST"])
+@login_required
+@admin_required
+def pcp_roteiros_editar(roteiro_id):
+    from flask import request, jsonify
+    from app.services import roteiro_service as svc
+
+    try:
+        dados = request.get_json(force=True)
+        svc.editar(roteiro_id, dados)
+        return jsonify({"ok": True})
+    except ValueError as e:
+        return jsonify({"ok": False, "erro": str(e)}), 400
+    except Exception:
+        return jsonify({"ok": False, "erro": "Erro inesperado ao editar roteiro."}), 500
+
+
+@bp.route("/pcp/roteiros/<int:roteiro_id>/excluir", methods=["POST"])
+@login_required
+@admin_required
+def pcp_roteiros_excluir(roteiro_id):
+    from flask import jsonify
+    from app.services import roteiro_service as svc
+
+    try:
+        svc.excluir(roteiro_id)
+        return jsonify({"ok": True})
+    except ValueError as e:
+        return jsonify({"ok": False, "erro": str(e)}), 400
+    except Exception:
+        return jsonify({"ok": False, "erro": "Erro inesperado ao excluir roteiro."}), 500
+
+
+@bp.route("/pcp/roteiros/<int:roteiro_id>/modelos", methods=["GET"])
+@login_required
+@admin_required
+def pcp_roteiros_modelos(roteiro_id):
+    from flask import jsonify
+    from app.services import roteiro_service as svc
+
+    try:
+        modelos = svc.modelos_do_roteiro(roteiro_id)
+        return jsonify({"ok": True, "modelos": modelos})
+    except Exception:
+        return jsonify({"ok": False, "erro": "Erro ao carregar modelos."}), 500
+
+
+@bp.route("/pcp/roteiros/<int:roteiro_id>/vincular-modelo", methods=["POST"])
+@login_required
+@admin_required
+def pcp_roteiros_vincular_modelo(roteiro_id):
+    from flask import request, jsonify
+    from app.services import roteiro_service as svc
+
+    try:
+        dados = request.get_json(force=True)
+        svc.vincular_modelo(roteiro_id, dados.get("codigo", ""))
+        return jsonify({"ok": True})
+    except ValueError as e:
+        return jsonify({"ok": False, "erro": str(e)}), 400
+    except Exception:
+        return jsonify({"ok": False, "erro": "Erro ao vincular modelo."}), 500
+
+
+@bp.route("/pcp/roteiros/<int:roteiro_id>/desvincular-modelo", methods=["POST"])
+@login_required
+@admin_required
+def pcp_roteiros_desvincular_modelo(roteiro_id):
+    from flask import request, jsonify
+    from app.services import roteiro_service as svc
+
+    try:
+        dados = request.get_json(force=True)
+        svc.desvincular_modelo(roteiro_id, dados.get("codigo", ""))
+        return jsonify({"ok": True})
+    except ValueError as e:
+        return jsonify({"ok": False, "erro": str(e)}), 400
+    except Exception:
+        return jsonify({"ok": False, "erro": "Erro ao desvincular modelo."}), 500
+
+
+@bp.route("/pcp/roteiros/<int:roteiro_id>/codigos-cliente")
+@login_required
+@admin_required
+def pcp_roteiros_codigos_cliente(roteiro_id):
+    from flask import jsonify
+    from app.services import roteiro_service as svc
+
+    try:
+        roteiro = svc.buscar(roteiro_id)
+        codigos = svc.codigos_por_cliente(roteiro["cliente"])
+        return jsonify({"ok": True, "codigos": codigos})
+    except ValueError as e:
+        return jsonify({"ok": False, "erro": str(e)}), 404
+    except Exception:
+        return jsonify({"ok": False, "erro": "Erro ao carregar códigos."}), 500
+
+
 @bp.route("/pcp/producao-coletada")
 @login_required
 @admin_required

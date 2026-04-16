@@ -1,0 +1,306 @@
+{% extends "layouts/app.html" %}
+{% block title %}PCP · Roteiros{% endblock %}
+
+{% block page_title %}
+<div class="page-header">
+  <div class="page-header-title">
+    <span class="page-header-section">PCP</span>
+    <h1 class="page-header-name">Roteiros</h1>
+  </div>
+  <div class="page-header-actions">
+    <span class="badge text-bg-danger me-1" style="font-size:0.7rem;padding:5px 8px;">
+      <i class="bi bi-shield-lock"></i> Admin
+    </span>
+    <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
+      <i class="bi bi-arrows-fullscreen"></i>
+    </button>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid"
+     id="roteiros-root"
+     data-url-criar="{{ url_for('pages.pcp_roteiros_criar') }}"
+     data-url-editar-tpl="{{ url_for('pages.pcp_roteiros_editar', roteiro_id=0) }}"
+     data-url-excluir-tpl="{{ url_for('pages.pcp_roteiros_excluir', roteiro_id=0) }}"
+     data-url-modelos-tpl="{{ url_for('pages.pcp_roteiros_modelos', roteiro_id=0) }}"
+     data-url-vincular-tpl="{{ url_for('pages.pcp_roteiros_vincular_modelo', roteiro_id=0) }}"
+     data-url-desvincular-tpl="{{ url_for('pages.pcp_roteiros_desvincular_modelo', roteiro_id=0) }}"
+     data-url-codigos-tpl="{{ url_for('pages.pcp_roteiros_codigos_cliente', roteiro_id=0) }}"
+     data-clientes-modelos='{{ clientes_modelos | tojson }}'>
+
+  <div id="alertArea"></div>
+
+  {% if erro %}
+  <div class="alert alert-warning d-flex align-items-center gap-2 mb-4">
+    <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+    <div><strong>Erro ao carregar:</strong> {{ erro }}</div>
+  </div>
+  {% endif %}
+
+  <!-- Filtros e ação -->
+  <div class="card mb-4" style="border-radius:12px;border-color:var(--border);">
+    <div class="card-body p-3">
+      <div class="row g-2 align-items-end">
+        <div class="col-12 col-md-4">
+          <label class="form-label fw-semibold" style="font-size:0.8rem;">Cliente</label>
+          <select class="form-select form-select-sm" style="border-radius:8px;"
+                  onchange="window.location.href='{{ url_for('pages.pcp_roteiros') }}?cliente='+encodeURIComponent(this.value)">
+            <option value="">Todos os clientes</option>
+            {% for c in clientes_roteiros %}
+            <option value="{{ c }}" {% if c == cliente %}selected{% endif %}>{{ c }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-12 col-md-8 d-flex justify-content-end">
+          <button class="btn btn-success btn-sm fw-semibold" style="border-radius:8px;"
+                  onclick="abrirModalNovo()">
+            <i class="bi bi-plus-lg me-1"></i>Novo Roteiro
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- KPIs -->
+  {% set total_roteiros = roteiros | length %}
+  {% set clientes_distintos = roteiros | map(attribute='cliente') | unique | list | length %}
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+      <div class="stat-card">
+        <div class="stat-icon-primary"><i class="bi bi-diagram-3"></i></div>
+        <div class="stat-value">{{ total_roteiros }}</div>
+        <div class="stat-label">Roteiros</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card">
+        <div class="stat-icon-success"><i class="bi bi-building"></i></div>
+        <div class="stat-value">{{ clientes_distintos }}</div>
+        <div class="stat-label">Clientes</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lista de roteiros -->
+  {% if roteiros %}
+  {% set ns = namespace(cliente_atual=None, primeiro_grupo=True) %}
+  {% for r in roteiros %}
+    {% if r.cliente != ns.cliente_atual %}
+      {% if not ns.primeiro_grupo %}</div>{% endif %}
+      {% set ns.cliente_atual = r.cliente %}
+      {% set ns.primeiro_grupo = False %}
+    <div class="mb-2 mt-3 d-flex align-items-center gap-2">
+      <span class="fw-bold text-uppercase" style="font-size:0.72rem;letter-spacing:1px;color:var(--text-muted);">
+        <i class="bi bi-building me-1"></i>{{ r.cliente }}
+      </span>
+      <hr class="flex-grow-1 m-0" style="border-color:var(--border);">
+    </div>
+    <div class="row g-3">
+    {% endif %}
+
+    <div class="col-12 col-md-6 col-xl-4">
+      <div class="card h-100 roteiro-card" data-id="{{ r.id }}"
+           style="border-radius:12px;border-color:var(--border);transition:box-shadow 0.15s ease;">
+        <div class="card-header d-flex align-items-center justify-content-between py-2 px-3"
+             style="border-radius:12px 12px 0 0;border-color:var(--border);background:var(--bg);">
+          <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-diagram-3 text-primary" style="font-size:0.9rem;"></i>
+            <span class="fw-bold" style="font-size:0.9rem;">{{ r.nome }}</span>
+          </div>
+          <div class="d-flex gap-1">
+            <button class="btn btn-outline-primary btn-sm" style="border-radius:6px;padding:2px 7px;font-size:0.72rem;"
+                    onclick="abrirModalEditar({{ r.id }}, {{ r | tojson | e }})" title="Editar">
+              <i class="bi bi-pencil"></i>
+            </button>
+            <button class="btn btn-outline-danger btn-sm" style="border-radius:6px;padding:2px 7px;font-size:0.72rem;"
+                    onclick="excluirRoteiro({{ r.id }}, '{{ r.nome | e }}')" title="Excluir">
+              <i class="bi bi-trash3"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="card-body p-3">
+          {% if r.descricao %}
+          <p class="text-muted mb-2" style="font-size:0.8rem;">{{ r.descricao }}</p>
+          {% endif %}
+
+          <!-- Etapas -->
+          <div class="mb-3">
+            <div class="fw-semibold mb-1" style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted);">
+              Etapas de produção
+            </div>
+            {% set scor = {'PTH':'primary','IM':'warning','SMD':'success','PA':'danger','VTT':'info'} %}
+            {% if r.etapas %}
+            <div class="d-flex align-items-center flex-wrap gap-1">
+              {% for e in r.etapas %}
+              <span class="badge bg-{{ scor.get(e.setor,'secondary') }}" style="font-size:0.72rem;">
+                {{ e.ordem }}. {{ e.setor }}
+              </span>
+              {% if not loop.last %}
+              <i class="bi bi-arrow-right text-muted" style="font-size:0.65rem;"></i>
+              {% endif %}
+              {% endfor %}
+            </div>
+            {% else %}
+            <span class="text-muted fst-italic" style="font-size:0.78rem;">Nenhuma etapa definida</span>
+            {% endif %}
+          </div>
+
+          <!-- Modelos vinculados -->
+          <div>
+            <div class="d-flex align-items-center justify-content-between mb-1">
+              <div class="fw-semibold" style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted);">
+                Modelos vinculados
+              </div>
+              <button class="btn btn-outline-secondary btn-sm" style="border-radius:6px;padding:1px 6px;font-size:0.68rem;"
+                      onclick="abrirModalModelos({{ r.id }}, '{{ r.nome | e }}', '{{ r.cliente | e }}')" title="Gerenciar modelos">
+                <i class="bi bi-link-45deg me-1"></i>Gerenciar
+              </button>
+            </div>
+            <div class="modelos-count-{{ r.id }}">
+              {% if r.total_modelos > 0 %}
+              <span class="badge bg-light text-dark border" style="font-size:0.72rem;">
+                <i class="bi bi-cpu me-1"></i>{{ r.total_modelos }} modelo{{ 's' if r.total_modelos != 1 }}
+              </span>
+              {% else %}
+              <span class="text-muted fst-italic" style="font-size:0.78rem;">Nenhum modelo vinculado</span>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  {% endfor %}
+  {% if not ns.primeiro_grupo %}</div>{% endif %}
+  {% else %}
+  <div class="card p-5 text-center text-muted" style="border-radius:12px;border-color:var(--border);">
+    <i class="bi bi-diagram-3 d-block fs-1 mb-3 opacity-25"></i>
+    <p class="mb-0 fw-semibold">Nenhum roteiro cadastrado</p>
+    <p class="small mt-1">Clique em <strong>+ Novo Roteiro</strong> para começar.</p>
+  </div>
+  {% endif %}
+
+</div>
+
+<!-- Modal: Novo / Editar Roteiro -->
+<div class="modal fade" id="modalRoteiro" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content" style="border-radius:12px;border-color:var(--border);">
+      <div class="modal-header border-bottom" style="border-color:var(--border) !important;">
+        <h6 class="modal-title fw-semibold" id="modalRoteiroTitulo">
+          <i class="bi bi-diagram-3 me-2 text-primary"></i>Novo Roteiro
+        </h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="roteiroId" value="">
+
+        <div class="row g-3 mb-3">
+          <div class="col-12 col-md-6">
+            <label class="form-label fw-semibold" style="font-size:0.8rem;">Nome <span class="text-danger">*</span></label>
+            <input type="text" class="form-control form-control-sm" id="roteiroNome"
+                   placeholder="Ex: Roteiro Padrão, Roteiro SMD-only…" style="border-radius:8px;"
+                   maxlength="120">
+          </div>
+          <div class="col-12 col-md-6">
+            <label class="form-label fw-semibold" style="font-size:0.8rem;">Cliente <span class="text-danger">*</span></label>
+            <input type="text" class="form-control form-control-sm" id="roteiroCliente"
+                   list="clientesSugestoes" placeholder="Nome do cliente"
+                   style="border-radius:8px;" maxlength="100">
+            <datalist id="clientesSugestoes"></datalist>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold" style="font-size:0.8rem;">Descrição <span class="text-muted fw-normal">(opcional)</span></label>
+          <textarea class="form-control form-control-sm" id="roteiroDescricao" rows="2"
+                    placeholder="Observações gerais sobre este roteiro…" style="border-radius:8px;"
+                    maxlength="500"></textarea>
+        </div>
+
+        <!-- Etapas -->
+        <div class="d-flex align-items-center gap-2 mb-2">
+          <span class="fw-bold text-muted text-uppercase" style="font-size:0.72rem;letter-spacing:0.8px;white-space:nowrap;">
+            Etapas de produção
+          </span>
+          <hr class="flex-grow-1 m-0">
+        </div>
+        <div class="mb-2 text-muted" style="font-size:0.78rem;">
+          Adicione os setores em ordem de execução. A sequência importa.
+        </div>
+
+        <div id="etapasList" class="mb-2"></div>
+
+        <div class="d-flex gap-2 flex-wrap mb-1">
+          {% for setor in ['SMD','PTH','IM','PA','VTT'] %}
+          <button type="button" class="btn btn-outline-secondary btn-sm" style="border-radius:8px;font-size:0.78rem;"
+                  onclick="adicionarEtapa('{{ setor }}')">
+            <i class="bi bi-plus-circle me-1"></i>{{ setor }}
+          </button>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="modal-footer border-top" style="border-color:var(--border) !important;">
+        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary btn-sm fw-semibold" onclick="salvarRoteiro()">
+          <i class="bi bi-check-lg me-1"></i>Salvar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Gerenciar Modelos -->
+<div class="modal fade" id="modalModelos" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content" style="border-radius:12px;border-color:var(--border);">
+      <div class="modal-header border-bottom" style="border-color:var(--border) !important;">
+        <h6 class="modal-title fw-semibold" id="modalModelosTitulo">
+          <i class="bi bi-cpu me-2 text-primary"></i>Modelos do Roteiro
+        </h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="modelosRoteiroId" value="">
+
+        <!-- Vincular novo modelo -->
+        <div class="card mb-3" style="border-radius:10px;border-color:var(--border);">
+          <div class="card-body p-3">
+            <div class="fw-semibold mb-2" style="font-size:0.82rem;">
+              <i class="bi bi-link-45deg me-1 text-primary"></i>Vincular modelo
+            </div>
+            <div class="d-flex gap-2">
+              <select class="form-select form-select-sm flex-grow-1" id="novoModeloCodigo"
+                      style="border-radius:8px;">
+                <option value="">Selecione um modelo…</option>
+              </select>
+              <button class="btn btn-primary btn-sm fw-semibold" style="border-radius:8px;white-space:nowrap;"
+                      onclick="vincularModelo()">
+                <i class="bi bi-plus-lg me-1"></i>Vincular
+              </button>
+            </div>
+            <div class="form-text text-muted mt-1" style="font-size:0.72rem;">
+              Mostrando modelos cadastrados para o cliente deste roteiro.
+            </div>
+          </div>
+        </div>
+
+        <!-- Lista de modelos vinculados -->
+        <div class="fw-semibold mb-2" style="font-size:0.82rem;">Modelos vinculados</div>
+        <div id="modelosVinculadosList">
+          <div class="text-center text-muted py-3">
+            <div class="spinner-border spinner-border-sm me-2"></div>Carregando…
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer border-top" style="border-color:var(--border) !important;">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Fechar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/roteiros.js') }}?v={{ APP_VERSION }}"></script>
+{% endblock %}
