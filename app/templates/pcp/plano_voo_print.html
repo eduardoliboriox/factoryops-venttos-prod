@@ -124,6 +124,16 @@
     </tr>
   </thead>
   <tbody>
+    {% set tipo_labels = {
+      'INTERVALO_1': 'Intervalo 1',
+      'INTERVALO_2': 'Intervalo 2',
+      'GINASTICA':   'Ginástica Laboral',
+      'DDS':         'DDS / Segurança',
+      'REFEICAO':    'Refeição',
+      'SETUP':       'Setup',
+      'SMD_5S':      'SMD - Esvaziar processo e 5S',
+      'OUTROS':      'Outros'
+    } %}
     {% set total_pecas = namespace(v=0) %}
     {% for slot in slots %}
       {% set tem_setup   = slot.setup_min > 0 %}
@@ -163,7 +173,7 @@
           <td class="col-meta">—</td>
           <td class="col-acum"></td>
           <td class="col-obs" style="font-size:0.72rem;">
-            {%- for p in slot.paradas %}{{ p.tipo }}{% if not loop.last %}, {% endif %}{% endfor %}
+            {%- for p in slot.paradas %}{{ tipo_labels.get(p.tipo, p.tipo) }}{% if not loop.last %}, {% endif %}{% endfor %}
           </td>
         </tr>
         {% endif %}
@@ -188,7 +198,7 @@
           <td class="col-meta">—</td>
           <td class="col-acum"></td>
           <td class="col-obs" style="font-size:0.72rem;">
-            {%- for p in slot.paradas %}{{ p.tipo }}{% if not loop.last %}, {% endif %}{% endfor %}
+            {%- for p in slot.paradas %}{{ tipo_labels.get(p.tipo, p.tipo) }}{% if not loop.last %}, {% endif %}{% endfor %}
           </td>
         </tr>
         {% endif %}
@@ -213,7 +223,7 @@
           <td class="col-meta">—</td>
           <td class="col-acum"></td>
           <td class="col-obs" style="font-size:0.72rem;">
-            {%- for p in slot.paradas %}{{ p.tipo }}{% if not loop.last %}, {% endif %}{% endfor %}
+            {%- for p in slot.paradas %}{{ tipo_labels.get(p.tipo, p.tipo) }}{% if not loop.last %}, {% endif %}{% endfor %}
           </td>
         </tr>
         {% endif %}
