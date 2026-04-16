@@ -250,6 +250,20 @@
         <div class="collapse {% if active_menu in _pcp_menus %}show{% endif %}"
              id="nav-pcp">
           <div class="sidebar-group-items">
+            <a href="{{ url_for('pages.pcp_planejamento') }}"
+               class="{% if active_menu == 'pcp_planejamento' %}active{% endif %}">
+              <i class="bi bi-calendar3"></i> Planejamento
+            </a>
+            {% if current_user.is_authenticated and current_user.is_admin %}
+            <a href="{{ url_for('pages.pcp_producao_coletada') }}"
+               class="{% if active_menu == 'pcp_producao_coletada' %}active{% endif %}">
+              <i class="bi bi-database-down"></i> Produção Coletada
+            </a>
+            <a href="{{ url_for('pages.pcp_lancamento_producao') }}"
+               class="{% if active_menu == 'pcp_lancamento_producao' %}active{% endif %}">
+              <i class="bi bi-pencil-square"></i> Lançamento PTH
+            </a>
+            {% endif %}
             <a href="{{ url_for('pages.pcp_controle_ops') }}"
                class="{% if active_menu == 'pcp_controle_ops' %}active{% endif %}">
               <i class="bi bi-file-earmark-text"></i> Controle de OPs
@@ -258,24 +272,10 @@
                class="{% if active_menu == 'pcp_apontamento' %}active{% endif %}">
               <i class="bi bi-clipboard-check"></i> Apontamento
             </a>
-            <a href="{{ url_for('pages.pcp_planejamento') }}"
-               class="{% if active_menu == 'pcp_planejamento' %}active{% endif %}">
-              <i class="bi bi-calendar3"></i> Planejamento
-            </a>
             <a href="{{ url_for('pages.pcp_entregas') }}"
                class="{% if active_menu == 'pcp_entregas' %}active{% endif %}">
               <i class="bi bi-truck"></i> Entregas
             </a>
-            {% if current_user.is_authenticated and current_user.is_admin %}
-            <a href="{{ url_for('pages.pcp_lancamento_producao') }}"
-               class="{% if active_menu == 'pcp_lancamento_producao' %}active{% endif %}">
-              <i class="bi bi-pencil-square"></i> Lançamento PTH
-            </a>
-            <a href="{{ url_for('pages.pcp_producao_coletada') }}"
-               class="{% if active_menu == 'pcp_producao_coletada' %}active{% endif %}">
-              <i class="bi bi-database-down"></i> Produção Coletada
-            </a>
-            {% endif %}
           </div>
         </div>
       </div>

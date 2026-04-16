@@ -482,6 +482,21 @@ document.addEventListener("DOMContentLoaded", function() {
   }
 });
 
+// ─── Busca na Fila de Produção ────────────────────────────────────────────────
+function filtrarFila(termo) {
+  const q = (termo || "").toLowerCase().trim();
+  document.querySelectorAll(".fila-setor-card").forEach(card => {
+    let visiveis = 0;
+    card.querySelectorAll("tbody .fila-row").forEach(tr => {
+      const texto = (tr.dataset.busca || "").toLowerCase();
+      const visivel = !q || texto.includes(q);
+      tr.style.display = visivel ? "" : "none";
+      if (visivel) visiveis++;
+    });
+    card.style.display = (visiveis === 0 && q) ? "none" : "";
+  });
+}
+
 // ─── Alertas ──────────────────────────────────────────────────────────────────
 function mostrarAlerta(tipo, msg) {
   const area = document.getElementById("alertArea");
