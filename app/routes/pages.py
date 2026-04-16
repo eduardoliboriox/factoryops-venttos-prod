@@ -648,7 +648,7 @@ def config_paradas():
         active_menu="config_paradas",
         paradas=paradas,
         opcoes=opcoes,
-        tipos=["INTERVALO_1", "INTERVALO_2", "GINASTICA", "DDS", "REFEICAO", "SETUP", "OUTROS"],
+        tipos=["INTERVALO_1", "INTERVALO_2", "GINASTICA", "DDS", "REFEICAO", "SETUP", "SMD_5S", "OUTROS"],
         lideres=lideres,
         erro=erro,
     )
