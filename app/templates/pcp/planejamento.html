@@ -212,7 +212,12 @@
                   <td class="text-muted small">{{ p.numero_op or '—' }}</td>
                   <td class="text-end fw-bold">
                     {% if p.quantidade_planejada == 0 %}
-                    <span class="text-muted fst-italic" style="font-size:0.8rem;">Até fim</span>
+                      {% if p.quantidade_calculada %}
+                      {{ "{:,.0f}".format(p.quantidade_calculada).replace(',','.') }}
+                      <small class="text-muted d-block" style="font-size:0.68rem;">estimado</small>
+                      {% else %}
+                      <span class="text-muted fst-italic" style="font-size:0.8rem;">Até fim</span>
+                      {% endif %}
                     {% else %}
                     {{ "{:,.0f}".format(p.quantidade_planejada).replace(',','.') }}
                     {% endif %}
