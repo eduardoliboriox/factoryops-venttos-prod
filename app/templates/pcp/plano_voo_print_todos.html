@@ -23,6 +23,8 @@
   .pv-table tbody tr:nth-child(even) { background: #f8f9fa; }
   .pv-table .row-setup td { background: #fff3cd; }
   .pv-table .row-producao td { background: #d1e7dd; }
+  .pv-table .row-parada td { background: #ffe8d6; }
+  .lbl-parada { font-size: 0.72rem; font-weight: bold; color: #7c3d00; }
   .pv-table .row-totais td { background: #343a40; color: #fff; font-weight: bold;
                              text-align: center; border: 1px solid #555; }
   .col-horario { width: 130px; text-align: center; font-size: 0.75rem; white-space: nowrap; }
@@ -114,13 +116,14 @@
     <tbody>
       {% set total_pecas = namespace(v=0) %}
       {% for slot in pv.slots %}
-        {% set tem_setup = slot.setup_min > 0 %}
-        {% set tem_prod  = slot.producao_min > 0 %}
-        {% set horario   = slot.hora_inicio ~ ' – ' ~ slot.hora_fim %}
+        {% set tem_setup  = slot.setup_min > 0 %}
+        {% set tem_prod   = slot.producao_min > 0 %}
+        {% set tem_parada = slot.paradas_min > 0 %}
+        {% set horario    = slot.hora_inicio ~ ' – ' ~ slot.hora_fim %}
 
         {% if tem_setup and tem_prod %}
           <tr class="row-setup">
-            <td class="col-horario" rowspan="2">{{ horario }}</td>
+            <td class="col-horario" rowspan="{{ 3 if tem_parada else 2 }}">{{ horario }}</td>
             <td class="col-modelo"><span class="lbl-setup">SETUP</span></td>
             <td class="col-tempo">{{ slot.setup_min }}</td>
             <td class="col-meta">0</td>
@@ -140,11 +143,22 @@
             <td class="col-acum">{{ slot.total_acumulado }}</td>
             <td class="col-obs"></td>
           </tr>
+          {% if tem_parada %}
+          <tr class="row-parada">
+            <td class="col-modelo"><span class="lbl-parada">PARADA</span></td>
+            <td class="col-tempo">{{ slot.paradas_min }}</td>
+            <td class="col-meta">—</td>
+            <td class="col-acum"></td>
+            <td class="col-obs" style="font-size:0.72rem;">
+              {%- for p in slot.paradas %}{{ p.tipo }}{% if not loop.last %}, {% endif %}{% endfor %}
+            </td>
+          </tr>
+          {% endif %}
           {% set total_pecas.v = slot.total_acumulado %}
 
         {% elif tem_setup %}
           <tr class="row-setup">
-            <td class="col-horario">{{ horario }}</td>
+            <td class="col-horario" rowspan="{{ 2 if tem_parada else 1 }}">{{ horario }}</td>
             <td class="col-modelo"><span class="lbl-setup">SETUP</span></td>
             <td class="col-tempo">{{ slot.setup_min }}</td>
             <td class="col-meta">0</td>
@@ -155,10 +169,21 @@
               {%- if slot.modelo %} — {{ slot.modelo }}{% endif %}
             </td>
           </tr>
+          {% if tem_parada %}
+          <tr class="row-parada">
+            <td class="col-modelo"><span class="lbl-parada">PARADA</span></td>
+            <td class="col-tempo">{{ slot.paradas_min }}</td>
+            <td class="col-meta">—</td>
+            <td class="col-acum"></td>
+            <td class="col-obs" style="font-size:0.72rem;">
+              {%- for p in slot.paradas %}{{ p.tipo }}{% if not loop.last %}, {% endif %}{% endfor %}
+            </td>
+          </tr>
+          {% endif %}
 
         {% else %}
           <tr class="row-producao">
-            <td class="col-horario">{{ horario }}</td>
+            <td class="col-horario" rowspan="{{ 2 if tem_parada else 1 }}">{{ horario }}</td>
             <td class="col-modelo"><span class="lbl-modelo">{{ slot.modelo }}</span>
               {% if slot.op_numero %}<br><small style="font-size:0.7rem;color:#555;">{{ slot.op_numero }}</small>{% endif %}
             </td>
@@ -167,6 +192,17 @@
             <td class="col-acum">{{ slot.total_acumulado }}</td>
             <td class="col-obs"></td>
           </tr>
+          {% if tem_parada %}
+          <tr class="row-parada">
+            <td class="col-modelo"><span class="lbl-parada">PARADA</span></td>
+            <td class="col-tempo">{{ slot.paradas_min }}</td>
+            <td class="col-meta">—</td>
+            <td class="col-acum"></td>
+            <td class="col-obs" style="font-size:0.72rem;">
+              {%- for p in slot.paradas %}{{ p.tipo }}{% if not loop.last %}, {% endif %}{% endfor %}
+            </td>
+          </tr>
+          {% endif %}
           {% set total_pecas.v = slot.total_acumulado %}
         {% endif %}
       {% endfor %}

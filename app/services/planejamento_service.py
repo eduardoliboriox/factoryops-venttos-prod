@@ -77,18 +77,11 @@ def calcular_hora_fim(
     if not intervalos:
         return None
 
-    paradas = repo.paradas_da_linha(setor, linha)
-    paradas_min = [
-        (_to_minutes(p["hora_inicio"]),
-         _to_minutes(p["hora_inicio"]) + p["duracao_min"])
-        for p in paradas
-    ]
-
-    minutos_restantes = minutos_necessarios
-    setup_restante    = setup_min
-    cursor_min        = _to_minutes(hora_inicio)
-
-    prev_iv_end = None
+    # Pré-processa intervalos e detecta turno que cruza meia-noite
+    ivs: list[tuple[int, int]] = []
+    turno_cruza_mn   = False
+    turno_inicio_min = None
+    prev_iv_end      = None
     for iv in intervalos:
         iv_start = _to_minutes(iv["hora_inicio"])
         iv_end   = _to_minutes(iv["hora_fim"])
@@ -97,8 +90,30 @@ def calcular_hora_fim(
         if prev_iv_end is not None and iv_start < prev_iv_end:
             iv_start += 24 * 60
             iv_end   += 24 * 60
+        if turno_inicio_min is None:
+            turno_inicio_min = iv_start
+        if iv_end > 24 * 60:
+            turno_cruza_mn = True
         prev_iv_end = iv_end
+        ivs.append((iv_start, iv_end))
 
+    # Monta paradas com ajuste de meia-noite (mesmo padrão de gerar_plano_hora_a_hora)
+    paradas_raw = repo.paradas_da_linha(setor, linha)
+    paradas_min: list[tuple[int, int]] = []
+    for p in paradas_raw:
+        if p["hora_inicio"] is None:
+            continue
+        p_s = _to_minutes(p["hora_inicio"])
+        p_e = p_s + p["duracao_min"]
+        paradas_min.append((p_s, p_e))
+        if turno_cruza_mn and turno_inicio_min is not None and p_s < turno_inicio_min:
+            paradas_min.append((p_s + 24 * 60, p_e + 24 * 60))
+
+    minutos_restantes = minutos_necessarios
+    setup_restante    = setup_min
+    cursor_min        = _to_minutes(hora_inicio)
+
+    for iv_start, iv_end in ivs:
         janela_start = max(cursor_min, iv_start)
         if janela_start >= iv_end:
             continue
@@ -168,7 +183,7 @@ def gerar_plano_hora_a_hora(
 
     paradas_intervals = []
     for p in paradas_ativas:
-        if p["hora_inicio"]:
+        if p["hora_inicio"] is not None:
             s    = _to_minutes(p["hora_inicio"])
             e    = s + p["duracao_min"]
             tipo = p.get("tipo", "PARADA")

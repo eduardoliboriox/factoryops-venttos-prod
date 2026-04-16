@@ -5,18 +5,17 @@
 
 .document-desktop-canvas {
   --doc-scale: 1;
-
-  transform: scale(var(--doc-scale));
-  transform-origin: top left;
-
-  display: inline-block;
-  width: max-content;
-
-  -webkit-font-smoothing: antialiased;
+  width: 100%;
 }
 
 @media (max-width: 768px) {
   .document-mobile-wrapper {
     overflow: hidden;
+  }
+  .document-desktop-canvas {
+    transform: scale(var(--doc-scale));
+    transform-origin: top left;
+    display: inline-block;
+    width: 1024px;
   }
 }
