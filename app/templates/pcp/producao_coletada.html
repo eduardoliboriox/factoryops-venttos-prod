@@ -210,7 +210,7 @@
           <tbody>
             {% for r in registros %}
             <tr>
-              <td class="text-nowrap">{{ r.data }}</td>
+              <td class="text-nowrap">{{ r.data.strftime('%d-%m-%Y') if r.data else '—' }}</td>
               <td>
                 <span class="badge text-bg-secondary" style="font-size:.7rem;">{{ r.setor }}</span>
               </td>

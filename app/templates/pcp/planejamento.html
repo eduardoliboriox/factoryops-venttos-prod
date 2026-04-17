@@ -205,7 +205,7 @@
                     data-hora-inicio="{{ p.hora_inicio_prevista }}"
                     data-hora-fim="{{ p.hora_fim_prevista or '' }}"
                     data-obs="{{ p.observacao or '' }}">
-                  <td class="ps-3 text-nowrap">{{ p.data }}</td>
+                  <td class="ps-3 text-nowrap">{{ p.data.strftime('%d-%m-%Y') if p.data else '—' }}</td>
                   <td class="text-muted small">{{ p.turno }}</td>
                   <td class="fw-semibold">{{ p.linha }}</td>
                   <td class="text-nowrap">{{ p.modelo }}</td>
