@@ -65,38 +65,38 @@ def buscar_por_id(roteiro_id: int) -> dict | None:
 
 def listar_clientes() -> list:
     with get_db() as conn:
-        with conn.cursor() as cur:
+        with conn.cursor(row_factory=dict_row) as cur:
             cur.execute("""
                 SELECT DISTINCT cliente
                 FROM roteiros
                 WHERE cliente IS NOT NULL AND cliente <> ''
                 ORDER BY cliente
             """)
-            return [r[0] for r in cur.fetchall()]
+            return [r["cliente"] for r in cur.fetchall()]
 
 
 def listar_clientes_modelos() -> list:
     with get_db() as conn:
-        with conn.cursor() as cur:
+        with conn.cursor(row_factory=dict_row) as cur:
             cur.execute("""
                 SELECT DISTINCT cliente
                 FROM modelos
                 WHERE cliente IS NOT NULL AND cliente <> ''
                 ORDER BY cliente
             """)
-            return [r[0] for r in cur.fetchall()]
+            return [r["cliente"] for r in cur.fetchall()]
 
 
 def listar_codigos_por_cliente(cliente: str) -> list:
     with get_db() as conn:
-        with conn.cursor() as cur:
+        with conn.cursor(row_factory=dict_row) as cur:
             cur.execute("""
                 SELECT DISTINCT codigo
                 FROM modelos
                 WHERE cliente = %s
                 ORDER BY codigo
             """, (cliente,))
-            return [r[0] for r in cur.fetchall()]
+            return [r["codigo"] for r in cur.fetchall()]
 
 
 def inserir(dados: dict) -> int:
