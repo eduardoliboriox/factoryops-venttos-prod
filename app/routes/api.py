@@ -635,3 +635,11 @@ def checklist_plano_acao_create():
         return jsonify({"sucesso": True})
     except Exception:
         return jsonify({"sucesso": False, "erro": "Erro ao salvar plano de ação"}), 500
+
+
+@bp.route("/linhas-config", methods=["GET"])
+@login_required
+def linhas_config():
+    from app.repositories import linha_config_repository as lc_repo
+    data = lc_repo.listar_por_setor()
+    return jsonify({setor: [r["linha"] for r in linhas] for setor, linhas in data.items()})

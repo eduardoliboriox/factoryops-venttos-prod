@@ -69,7 +69,6 @@
   }
   .hint { font-size: 0.72rem; color: var(--text-muted); margin-top: 4px; }
 
-  /* Filial toggle */
   .filial-toggle { display: flex; gap: 6px; }
   .filial-btn {
     padding: 5px 18px;
@@ -81,7 +80,6 @@
     font-weight: 700;
     cursor: pointer;
     transition: all 0.12s;
-    letter-spacing: 0.3px;
   }
   .filial-btn.active {
     background: var(--primary);
@@ -94,18 +92,15 @@
     color: var(--primary);
   }
 
-  /* Divider */
   .sac-divider {
     border: none;
     border-top: 1px solid var(--border);
     margin: 18px 0;
   }
 
-  /* Setor rows */
   .setor-rows { display: flex; flex-direction: column; gap: 8px; }
   .setor-row {
     display: grid;
-    grid-template-columns: 130px 1fr 130px 150px 36px;
     gap: 8px;
     align-items: end;
     background: rgba(15,23,42,0.025);
@@ -113,6 +108,8 @@
     border-radius: 10px;
     padding: 12px 14px;
   }
+  .setor-row.vte-row { grid-template-columns: 120px 1fr 120px 150px 36px; }
+  .setor-row.vtt-row { grid-template-columns: 80px 1fr 120px 150px 36px; }
   .setor-row-label {
     grid-column: 1 / -1;
     font-size: 0.68rem;
@@ -121,6 +118,19 @@
     text-transform: uppercase;
     letter-spacing: 0.5px;
     margin-bottom: 2px;
+  }
+  .vtt-filial-badge {
+    display: inline-flex;
+    align-items: center;
+    height: 38px;
+    padding: 0 12px;
+    border-radius: 8px;
+    background: rgba(13,110,253,0.08);
+    border: 1px solid rgba(13,110,253,0.2);
+    color: var(--primary);
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
   }
   .btn-remove-row {
     width: 34px; height: 34px;
@@ -147,7 +157,8 @@
   .row-result.warn { color: #f59e0b; }
 
   @media (max-width: 768px) {
-    .setor-row { grid-template-columns: 1fr 1fr; }
+    .setor-row.vte-row,
+    .setor-row.vtt-row { grid-template-columns: 1fr 1fr; }
     .btn-remove-row { grid-column: 1 / -1; width: 100%; height: 34px; }
   }
 </style>
@@ -169,7 +180,6 @@
     <div class="sac-body">
       <form id="cadastroForm">
 
-        <!-- BASE INFO -->
         <div class="sac-section-label"><i class="bi bi-info-circle"></i>Dados do modelo</div>
         <div class="row g-3 mb-1">
           <div class="col-md-3">
@@ -205,12 +215,15 @@
 
         <hr class="sac-divider">
 
-        <!-- SETORES / LINHAS / METAS -->
         <div class="d-flex align-items-center justify-content-between mb-3">
           <div class="sac-section-label mb-0"><i class="bi bi-diagram-3"></i>Setores · Linhas · Metas</div>
           <button type="button" class="btn btn-sm btn-outline-primary" id="btnAddSetor">
             <i class="bi bi-plus-lg"></i> Adicionar setor
           </button>
+        </div>
+
+        <div id="loadingLinhas" class="text-muted small mb-2" style="display:none;">
+          <span class="spinner-border spinner-border-sm me-1"></span>Carregando linhas…
         </div>
 
         <div class="setor-rows" id="setorRows"></div>
@@ -235,57 +248,69 @@
 (function () {
   "use strict";
 
-  const LINHAS = {
-    VTE: {
-      SMT: ["SMT-01","SMT-02","SMT-03","SMT-04","SMT-05","SMT-06","SMT-07","SMT-08","SMT-09"],
-      PTH: ["ADE-01","AXI-01","AXI-02","AXI-03","JUM-01","JUM-02","RAD-01","RAD-02","RAD-03","ROU-01","ROU-02","ROU-03","ROU-04"],
-      IM:  ["IM-01","IM-02","IM-03","IM-04","IM-05","IM-06","IM-07"],
-      PA:  ["IP-COM","PA-01","PA-03","PA-04","PA-07","PA-08","PA-09","PA-13","WIFI"]
-    },
-    VTT: {
-      SMT: ["VTT-SMT-01","VTT-SMT-02","VTT-SMT-03"],
-      PA:  ["VTT-PA-01","VTT-PA-02","VTT-PA-03"]
-    }
-  };
+  const SETORES_VTE = ["SMT", "PTH", "IM", "PA"];
 
   let filialAtual = "VTE";
   let rowSeq = 0;
+  let linhasDB = {};
 
-  function setoresDeFilial(filial) { return Object.keys(LINHAS[filial] || {}); }
-  function linhasDeSetor(filial, setor) { return (LINHAS[filial] || {})[setor] || []; }
+  async function carregarLinhas() {
+    document.getElementById("loadingLinhas").style.display = "block";
+    try {
+      const r = await fetch("/api/linhas-config", { headers: { "X-Requested-With": "XMLHttpRequest" } });
+      linhasDB = await r.json();
+    } catch {
+      linhasDB = {};
+    } finally {
+      document.getElementById("loadingLinhas").style.display = "none";
+    }
+  }
 
-  function optionsSetor(filial, sel) {
-    return setoresDeFilial(filial).map(s =>
+  function linhasDeSetor(setor) {
+    return linhasDB[setor] || [];
+  }
+
+  function optionsSetor(sel) {
+    return SETORES_VTE.map(s =>
       `<option value="${s}"${s === sel ? " selected" : ""}>${s}</option>`
     ).join("");
   }
 
-  function optionsLinha(filial, setor, sel) {
-    return linhasDeSetor(filial, setor).map(l =>
+  function optionsLinha(setor, sel) {
+    const linhas = linhasDeSetor(setor);
+    if (!linhas.length) return `<option value="" disabled>Sem linhas configuradas</option>`;
+    return linhas.map(l =>
       `<option value="${l}"${l === sel ? " selected" : ""}>${l}</option>`
     ).join("");
   }
 
-  function addRow(opts) {
+  function optionsLinhaVTT(sel) {
+    const linhas = linhasDeSetor("VTT");
+    if (!linhas.length) return `<option value="" disabled>Sem linhas VTT configuradas</option>`;
+    return linhas.map(l =>
+      `<option value="${l}"${l === sel ? " selected" : ""}>${l}</option>`
+    ).join("");
+  }
+
+  function addRowVTE(opts) {
     rowSeq++;
     const idx = rowSeq;
-    const defaultSetor = (opts && opts.setor) || setoresDeFilial(filialAtual)[0] || "SMT";
-    const defaultLinha = (opts && opts.linha) || linhasDeSetor(filialAtual, defaultSetor)[0] || "";
+    const defaultSetor = (opts && opts.setor) || SETORES_VTE[0];
     const defaultMeta  = (opts && opts.meta)  || "";
     const defaultTempo = (opts && opts.tempo) || "";
 
     const row = document.createElement("div");
-    row.className = "setor-row";
+    row.className = "setor-row vte-row";
     row.dataset.rowIdx = idx;
     row.innerHTML = `
       <div class="setor-row-label">Setor ${idx}</div>
       <div>
         <label class="form-label">Setor</label>
-        <select class="form-select setor-sel">${optionsSetor(filialAtual, defaultSetor)}</select>
+        <select class="form-select setor-sel">${optionsSetor(defaultSetor)}</select>
       </div>
       <div>
         <label class="form-label">Linha</label>
-        <select class="form-select linha-sel">${optionsLinha(filialAtual, defaultSetor, defaultLinha)}</select>
+        <select class="form-select linha-sel">${optionsLinha(defaultSetor, "")}</select>
       </div>
       <div>
         <label class="form-label">Meta / hora</label>
@@ -304,23 +329,66 @@
     document.getElementById("setorRows").appendChild(row);
 
     row.querySelector(".setor-sel").addEventListener("change", function () {
-      row.querySelector(".linha-sel").innerHTML = optionsLinha(filialAtual, this.value, "");
+      row.querySelector(".linha-sel").innerHTML = optionsLinha(this.value, "");
     });
-
     row.querySelector(".btn-remove-row").addEventListener("click", () => {
-      row.remove();
-      refreshRemoveVisibility();
+      row.remove(); refreshRemove();
     });
   }
 
-  function refreshRemoveVisibility() {
+  function addRowVTT(opts) {
+    rowSeq++;
+    const idx = rowSeq;
+    const defaultMeta  = (opts && opts.meta)  || "";
+    const defaultTempo = (opts && opts.tempo) || "";
+
+    const row = document.createElement("div");
+    row.className = "setor-row vtt-row";
+    row.dataset.rowIdx = idx;
+    row.innerHTML = `
+      <div class="setor-row-label">Linha VTT ${idx}</div>
+      <div>
+        <label class="form-label">Filial</label>
+        <div class="vtt-filial-badge">VTT</div>
+      </div>
+      <div>
+        <label class="form-label">Linha</label>
+        <select class="form-select linha-sel">${optionsLinhaVTT("")}</select>
+      </div>
+      <div>
+        <label class="form-label">Meta / hora</label>
+        <input class="form-control meta-inp" type="number" min="1" placeholder="Ex: 570" value="${defaultMeta}">
+      </div>
+      <div>
+        <label class="form-label">Montagem (seg)</label>
+        <input class="form-control tempo-inp" type="number" step="0.01" min="0" placeholder="Opcional" value="${defaultTempo}">
+      </div>
+      <button type="button" class="btn-remove-row" title="Remover">
+        <i class="bi bi-trash3"></i>
+      </button>
+      <div class="row-result" data-result="${idx}"></div>
+    `;
+
+    document.getElementById("setorRows").appendChild(row);
+    row.querySelector(".btn-remove-row").addEventListener("click", () => {
+      row.remove(); refreshRemove();
+    });
+  }
+
+  function addRow(opts) {
+    if (filialAtual === "VTT") addRowVTT(opts);
+    else addRowVTE(opts);
+    refreshRemove();
+  }
+
+  function refreshRemove() {
     const rows = document.querySelectorAll(".setor-row");
     rows.forEach(r => {
       r.querySelector(".btn-remove-row").style.visibility = rows.length > 1 ? "visible" : "hidden";
     });
   }
 
-  function rebuildRowsForFilial() {
+  function rebuildRows() {
     const rows = Array.from(document.querySelectorAll(".setor-row"));
     const saved = rows.map(r => ({
       meta:  r.querySelector(".meta-inp").value,
@@ -330,27 +398,23 @@
     rowSeq = 0;
     const count = saved.length || 1;
     for (let i = 0; i < count; i++) addRow({ meta: saved[i]?.meta, tempo: saved[i]?.tempo });
-    refreshRemoveVisibility();
   }
 
   document.getElementById("btnVTE").addEventListener("click", () => {
     filialAtual = "VTE";
     document.getElementById("btnVTE").classList.add("active");
     document.getElementById("btnVTT").classList.remove("active");
-    rebuildRowsForFilial();
+    rebuildRows();
   });
 
   document.getElementById("btnVTT").addEventListener("click", () => {
     filialAtual = "VTT";
     document.getElementById("btnVTT").classList.add("active");
     document.getElementById("btnVTE").classList.remove("active");
-    rebuildRowsForFilial();
+    rebuildRows();
   });
 
-  document.getElementById("btnAddSetor").addEventListener("click", () => {
-    addRow();
-    refreshRemoveVisibility();
-  });
+  document.getElementById("btnAddSetor").addEventListener("click", () => addRow());
 
   document.getElementById("btnLimpar").addEventListener("click", () => {
     document.getElementById("fCodigo").value = "";
@@ -363,7 +427,6 @@
     document.getElementById("setorRows").innerHTML = "";
     rowSeq = 0;
     addRow();
-    refreshRemoveVisibility();
     document.getElementById("mensagemCadastro").innerHTML = "";
   });
 
@@ -385,13 +448,10 @@
     const blank   = document.getElementById("fBlank").value;
     const fase    = document.getElementById("fFase").value;
 
-    if (!codigo || !cliente) {
-      showMsg("Preencha código e cliente.", "danger");
-      return;
-    }
+    if (!codigo || !cliente) { showMsg("Preencha código e cliente.", "danger"); return; }
 
     const rows = Array.from(document.querySelectorAll(".setor-row"));
-    if (rows.length === 0) { showMsg("Adicione ao menos um setor.", "danger"); return; }
+    if (!rows.length) { showMsg("Adicione ao menos um setor.", "danger"); return; }
 
     const btn = document.getElementById("btnCadastroSubmit");
     btn.disabled = true;
@@ -401,7 +461,8 @@
     let ok = 0; let fail = 0;
 
     for (const row of rows) {
-      const setor = row.querySelector(".setor-sel").value;
+      const isVTT = row.classList.contains("vtt-row");
+      const setor = isVTT ? "VTT" : row.querySelector(".setor-sel").value;
       const linha = row.querySelector(".linha-sel").value;
       const meta  = row.querySelector(".meta-inp").value.trim();
       const tempo = row.querySelector(".tempo-inp").value.trim();
@@ -432,9 +493,8 @@
           headers: { "X-Requested-With": "XMLHttpRequest" }
         });
         const data = await resp.json();
-        resultEl.textContent = data.sucesso
-          ? `✓ ${setor} · ${linha} — cadastrado`
-          : `✗ ${data.mensagem}`;
+        const label = isVTT ? `VTT · ${linha}` : `${setor} · ${linha}`;
+        resultEl.textContent = data.sucesso ? `✓ ${label} — cadastrado` : `✗ ${data.mensagem}`;
         resultEl.className = `row-result ${data.sucesso ? "ok" : "err"}`;
         resultEl.style.display = "block";
         if (data.sucesso) ok++; else fail++;
@@ -458,8 +518,7 @@
     }
   });
 
-  addRow();
-  refreshRemoveVisibility();
+  carregarLinhas().then(() => { addRow(); refreshRemove(); });
 }());
 </script>
 {% endblock %}
