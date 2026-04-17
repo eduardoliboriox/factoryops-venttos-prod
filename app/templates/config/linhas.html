@@ -27,6 +27,7 @@
   <div id="alertArea"></div>
 
   {% set cor_setor = {'PTH': 'primary', 'SMD': 'success', 'IM': 'warning', 'PA': 'danger', 'VTT': 'info'} %}
+  {% set setores_vte = ['PTH', 'SMD', 'IM', 'PA'] %}
 
   <div class="row g-4">
 
@@ -56,10 +57,18 @@
               <i class="bi bi-grip-vertical text-muted" style="font-size:0.75rem;"></i>
               <span class="fw-semibold">{{ linha.linha }}</span>
             </div>
-            {% if linha.setor %}
-            <span class="badge bg-{{ cor_setor.get(linha.setor, 'secondary') }}" style="font-size:0.68rem;">
-              {{ linha.setor }}
-            </span>
+            {% if linha.setor == 'VTT' %}
+            <div class="d-flex align-items-center gap-1">
+              <span class="badge bg-info" style="font-size:0.62rem;">Filial</span>
+              <span class="badge bg-info" style="font-size:0.68rem;">VTT</span>
+            </div>
+            {% elif linha.setor %}
+            <div class="d-flex align-items-center gap-1">
+              <span class="badge bg-light text-muted border" style="font-size:0.62rem;">VTE</span>
+              <span class="badge bg-{{ cor_setor.get(linha.setor, 'secondary') }}" style="font-size:0.68rem;">
+                {{ linha.setor }}
+              </span>
+            </div>
             {% else %}
             <span class="badge bg-light text-muted border" style="font-size:0.68rem;">Sem setor</span>
             {% endif %}
@@ -74,11 +83,18 @@
       </div>
     </div>
 
-    <!-- Painel direito: setores (collapsible) -->
+    <!-- Painel direito: setores agrupados por filial -->
     <div class="col-12 col-lg-8">
       <div class="d-flex flex-column gap-3" id="painelSetores">
 
-        {% for setor in setores %}
+        <!-- Filial VTE -->
+        <div class="d-flex align-items-center gap-2 mb-1" style="padding-left:4px;">
+          <span class="badge" style="background:#0f172a;color:#fff;font-size:0.72rem;padding:4px 10px;border-radius:6px;">Filial VTE</span>
+          <span style="font-size:0.75rem;color:var(--text-muted);">Unidade principal — setores PTH · SMD · IM · PA</span>
+        </div>
+
+        {% for setor in setores_vte %}
+        {% if setor in setores %}
         {% set cor = cor_setor.get(setor, 'secondary') %}
         <div class="card" style="border-radius:12px;border-color:var(--border);">
           <div class="card-header d-flex align-items-center justify-content-between py-2 px-3"
@@ -133,7 +149,73 @@
             </div>
           </div>
         </div>
+        {% endif %}
         {% endfor %}
+
+        <!-- Filial VTT -->
+        {% if 'VTT' in setores %}
+        <div class="d-flex align-items-center gap-2 mt-2 mb-1" style="padding-left:4px;">
+          <span class="badge bg-info" style="font-size:0.72rem;padding:4px 10px;border-radius:6px;">Filial VTT</span>
+          <span style="font-size:0.75rem;color:var(--text-muted);">Unidade VTT — linhas configuradas nesta filial</span>
+        </div>
+
+        <div class="card" style="border-radius:12px;border-color:rgba(13,202,240,0.3);border-width:1.5px;">
+          <div class="card-header d-flex align-items-center justify-content-between py-2 px-3"
+               style="border-radius:12px 12px 0 0;border-color:rgba(13,202,240,0.3);background:rgba(13,202,240,0.05);cursor:pointer;"
+               data-bs-toggle="collapse"
+               data-bs-target="#setor-VTT"
+               aria-expanded="true">
+            <div class="d-flex align-items-center gap-2">
+              <span class="badge bg-info" style="font-size:0.75rem;">VTT</span>
+              <span class="fw-semibold">Linhas VTT</span>
+              <span class="badge bg-light text-muted border setor-count" data-setor="VTT"
+                    style="font-size:0.7rem;">
+                {{ setores.get('VTT', []) | length }} linhas
+              </span>
+              <span class="badge" style="background:rgba(13,202,240,0.12);color:#0dcaf0;border:1px solid rgba(13,202,240,0.3);font-size:0.65rem;padding:2px 7px;border-radius:4px;">
+                Filial
+              </span>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+              <button class="btn btn-outline-info btn-sm" style="border-radius:6px;"
+                      onclick="event.stopPropagation(); abrirModalAdicionar('VTT')">
+                <i class="bi bi-plus-lg"></i>
+              </button>
+              <i class="bi bi-chevron-down" style="font-size:0.75rem;color:var(--text-muted);"></i>
+            </div>
+          </div>
+          <div class="collapse show" id="setor-VTT">
+            <div class="card-body p-2 drop-zone"
+                 data-setor="VTT"
+                 ondragover="event.preventDefault(); onDragOver(this)"
+                 ondragleave="onDragLeave(this)"
+                 ondrop="onDrop(event, 'VTT')"
+                 style="min-height:60px;border-radius:0 0 12px 12px;">
+              <div class="linhas-setor d-flex flex-wrap gap-2 p-1" id="linhas-VTT">
+                {% for item in setores.get('VTT', []) %}
+                <span class="badge-linha d-flex align-items-center gap-1 px-2 py-1"
+                      data-id="{{ item.id }}"
+                      data-linha="{{ item.linha }}"
+                      style="background:rgba(13,202,240,0.08);border:1px solid rgba(13,202,240,0.25);border-radius:6px;font-size:0.82rem;">
+                  <span>{{ item.linha }}</span>
+                  <button type="button" class="btn btn-link p-0 text-danger"
+                          style="line-height:1;font-size:0.75rem;"
+                          onclick="removerLinha({{ item.id }}, '{{ item.linha }}', 'VTT')"
+                          title="Remover">
+                    <i class="bi bi-x-lg"></i>
+                  </button>
+                </span>
+                {% else %}
+                <div class="drop-hint w-100 text-center text-muted py-2"
+                     style="font-size:0.8rem;border:2px dashed rgba(13,202,240,0.3);border-radius:8px;">
+                  <i class="bi bi-arrows-move me-1"></i>Arraste uma linha aqui ou use o botão +
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endif %}
 
       </div>
     </div>
@@ -206,7 +288,8 @@ function atribuirLinha(linha, setor) {
   .then(r => r.json())
   .then(data => {
     if (data.ok) {
-      mostrarAlerta("success", `Linha <strong>${linha}</strong> atribuída ao setor <strong>${setor}</strong>.`);
+      const labelSetor = setor === "VTT" ? `Filial <strong>VTT</strong>` : `setor <strong>${setor}</strong>`;
+      mostrarAlerta("success", `Linha <strong>${linha}</strong> atribuída ao ${labelSetor}.`);
       atualizarBadgeNaLista(linha, setor);
       adicionarLinhaNaZona(setor, linha, data.id);
     } else {
@@ -230,7 +313,8 @@ function removerLinha(id, linha, setor) {
       atualizarBadgeNaLista(linha, "");
       atualizarContador(setor);
       verificarDropHint(setor);
-      mostrarAlerta("success", `Linha <strong>${linha}</strong> removida do setor <strong>${setor}</strong>.`);
+      const labelRem = setor === "VTT" ? `Filial <strong>VTT</strong>` : `setor <strong>${setor}</strong>`;
+      mostrarAlerta("success", `Linha <strong>${linha}</strong> removida do ${labelRem}.`);
     } else {
       mostrarAlerta("danger", data.erro || "Erro ao remover linha.");
     }
@@ -312,8 +396,9 @@ function filtrarLinhas(termo) {
 function abrirModalAdicionar(setor) {
   document.getElementById("inputNovaLinha").value = "";
   document.getElementById("inputSetorModal").value = setor;
+  const tituloSetor = setor === "VTT" ? "Filial VTT" : setor;
   document.getElementById("tituloModalAdicionar").innerHTML =
-    `<i class="bi bi-plus-circle me-2 text-primary"></i>Adicionar linha — ${setor}`;
+    `<i class="bi bi-plus-circle me-2 text-primary"></i>Adicionar linha — ${tituloSetor}`;
   new bootstrap.Modal(document.getElementById("modalAdicionar")).show();
 }
 
