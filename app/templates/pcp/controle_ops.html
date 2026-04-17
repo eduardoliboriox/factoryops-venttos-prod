@@ -229,7 +229,7 @@
                 <option value="">Nenhum (OP individual)</option>
                 {% for r in roteiros %}
                 <option value="{{ r.id }}"
-                        data-etapas="{{ r.etapas | tojson | e }}"
+                        data-etapas='{{ r.etapas | tojson }}'
                         data-nome="{{ r.nome | e }}">
                   {{ r.nome }} — {{ r.cliente }}
                 </option>
