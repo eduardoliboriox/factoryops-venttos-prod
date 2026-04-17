@@ -226,6 +226,22 @@ def desvincular(apontamento_id: int) -> None:
                 """, (row["quantidade"], row["op_id"]))
 
 
+def corrigir_modelo(data: str, turno: str, setor: str, linha: str, modelo_atual: str, modelo_novo: str) -> None:
+    with get_db() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute("""
+                UPDATE producao_coletada
+                SET modelo = %s
+                WHERE data = %s AND turno = %s AND setor = %s AND linha = %s AND modelo = %s
+            """, (modelo_novo, data, turno, setor, linha, modelo_atual))
+
+            cur.execute("""
+                UPDATE apontamento
+                SET modelo = %s
+                WHERE data = %s AND turno = %s AND linha = %s AND modelo = %s
+            """, (modelo_novo, data, turno, linha, modelo_atual))
+
+
 def fila_producao() -> list:
     with get_db() as conn:
         with conn.cursor(row_factory=dict_row) as cur:

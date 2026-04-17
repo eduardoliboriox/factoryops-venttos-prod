@@ -956,6 +956,27 @@ def pcp_apontamento_desvincular():
         return jsonify({"erro": str(e)}), 400
 
 
+@bp.route("/pcp/apontamento/corrigir-modelo", methods=["POST"])
+@login_required
+def pcp_apontamento_corrigir_modelo():
+    from flask import request, jsonify
+    from app.services import apontamento_service as svc
+
+    data = request.get_json(silent=True) or {}
+    try:
+        svc.corrigir_modelo(
+            data.get("data", ""),
+            data.get("turno", ""),
+            data.get("setor", ""),
+            data.get("linha", ""),
+            data.get("modelo_atual", ""),
+            data.get("modelo_novo", ""),
+        )
+        return jsonify({"ok": True})
+    except (ValueError, Exception) as e:
+        return jsonify({"erro": str(e)}), 400
+
+
 @bp.route("/pcp/planejamento")
 @login_required
 def pcp_planejamento():
