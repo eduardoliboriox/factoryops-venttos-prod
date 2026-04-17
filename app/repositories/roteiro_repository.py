@@ -101,13 +101,13 @@ def listar_codigos_por_cliente(cliente: str) -> list:
 
 def inserir(dados: dict) -> int:
     with get_db() as conn:
-        with conn.cursor() as cur:
+        with conn.cursor(row_factory=dict_row) as cur:
             cur.execute("""
                 INSERT INTO roteiros (nome, cliente, descricao)
                 VALUES (%s, %s, %s)
                 RETURNING id
             """, (dados["nome"], dados["cliente"], dados.get("descricao") or None))
-            roteiro_id = cur.fetchone()[0]
+            roteiro_id = cur.fetchone()["id"]
 
             _salvar_etapas(cur, roteiro_id, dados.get("etapas", []))
             return roteiro_id
@@ -115,7 +115,7 @@ def inserir(dados: dict) -> int:
 
 def atualizar(roteiro_id: int, dados: dict) -> None:
     with get_db() as conn:
-        with conn.cursor() as cur:
+        with conn.cursor(row_factory=dict_row) as cur:
             cur.execute("""
                 UPDATE roteiros
                 SET nome = %s, cliente = %s, descricao = %s
@@ -128,13 +128,13 @@ def atualizar(roteiro_id: int, dados: dict) -> None:
 
 def excluir(roteiro_id: int) -> None:
     with get_db() as conn:
-        with conn.cursor() as cur:
+        with conn.cursor(row_factory=dict_row) as cur:
             cur.execute("DELETE FROM roteiros WHERE id = %s", (roteiro_id,))
 
 
 def vincular_modelo(roteiro_id: int, modelo_codigo: str) -> None:
     with get_db() as conn:
-        with conn.cursor() as cur:
+        with conn.cursor(row_factory=dict_row) as cur:
             cur.execute("""
                 INSERT INTO roteiro_modelos (roteiro_id, modelo_codigo)
                 VALUES (%s, %s)
@@ -144,7 +144,7 @@ def vincular_modelo(roteiro_id: int, modelo_codigo: str) -> None:
 
 def desvincular_modelo(roteiro_id: int, modelo_codigo: str) -> None:
     with get_db() as conn:
-        with conn.cursor() as cur:
+        with conn.cursor(row_factory=dict_row) as cur:
             cur.execute("""
                 DELETE FROM roteiro_modelos
                 WHERE roteiro_id = %s AND modelo_codigo = %s
