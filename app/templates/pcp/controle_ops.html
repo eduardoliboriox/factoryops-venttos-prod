@@ -77,6 +77,21 @@
     </div>
   </form>
 
+  <!-- Busca rápida -->
+  {% if ops %}
+  <div class="mb-3">
+    <div class="input-group input-group-sm" style="max-width:360px;">
+      <span class="input-group-text" style="border-radius:8px 0 0 8px;background:var(--card);border-color:var(--border);">
+        <i class="bi bi-search text-muted"></i>
+      </span>
+      <input type="text" id="buscaOps" class="form-control"
+             placeholder="Buscar por nº OP, produto ou descrição…"
+             style="border-radius:0 8px 8px 0;border-color:var(--border);"
+             oninput="filtrarOps(this.value)">
+    </div>
+  </div>
+  {% endif %}
+
   <!-- Tabela de OPs -->
   <div class="card" style="border-radius:12px;border-color:var(--border);">
     <div class="card-body p-0">
@@ -105,7 +120,7 @@
             {% set fcor = {'TOP':'primary','BOTTOM':'secondary','AMBAS':'success'} %}
             {% for op in ops %}
             {% set concluida = op.saldo <= 0 %}
-            <tr>
+            <tr class="op-row" data-busca="{{ op.numero_op }} {{ op.produto }} {{ op.descricao or '' }} {{ op.setor or '' }} {{ op.filial or '' }}">
               <td class="ps-3 fw-semibold">{{ op.numero_op }}</td>
               <td><span class="badge bg-secondary" style="font-size:0.7rem;">{{ op.filial }}</span></td>
               <td>
@@ -199,7 +214,8 @@
             <div class="col-12 col-sm-6">
               <label class="form-label fw-semibold" style="font-size:0.8rem;">Número da OP <span class="text-danger">*</span></label>
               <input type="text" class="form-control" name="numero_op" id="inputNumeroOP" required
-                     placeholder="Ex: EBRTME020001" style="border-radius:8px;">
+                     placeholder="Ex: EBRTME020001" style="border-radius:8px;text-transform:uppercase;"
+                     oninput="this.value=this.value.toUpperCase()">
               <div id="previewSufixo" class="mt-1" style="display:none;font-size:0.78rem;color:var(--text-muted);"></div>
             </div>
             <div class="col-12 col-sm-6">
@@ -208,7 +224,8 @@
             </div>
             <div class="col-12 col-sm-6">
               <label class="form-label fw-semibold" style="font-size:0.8rem;">Produto <span class="text-danger">*</span></label>
-              <input type="text" class="form-control" name="produto" required placeholder="Ex: PCBA-001" style="border-radius:8px;">
+              <input type="text" class="form-control" name="produto" required placeholder="Ex: PCBA-001" style="border-radius:8px;text-transform:uppercase;"
+                     oninput="this.value=this.value.toUpperCase()">
             </div>
             <div class="col-12 col-sm-6">
               <label class="form-label fw-semibold" style="font-size:0.8rem;">Armazém</label>
@@ -381,6 +398,14 @@
 
 <script>
 const OPS_DATA = {{ ops | tojson }};
+
+function filtrarOps(termo) {
+  const q = (termo || "").toLowerCase().trim();
+  document.querySelectorAll("tbody .op-row").forEach(function(tr) {
+    const texto = (tr.dataset.busca || "").toLowerCase();
+    tr.style.display = (!q || texto.includes(q)) ? "" : "none";
+  });
+}
 
 const _SETOR_CORES = { SMD: "success", PTH: "primary", IM: "warning", PA: "danger", VTT: "info" };
 
