@@ -104,14 +104,27 @@ def setores_disponiveis() -> list:
 
 def linhas_disponiveis(setor: str = "") -> list:
     with get_db() as conn:
-        with conn.cursor() as cur:
+        with conn.cursor(row_factory=dict_row) as cur:
             if setor:
-                cur.execute(
-                    "SELECT linha FROM linha_config WHERE setor = %s ORDER BY linha",
-                    (setor,)
-                )
+                cur.execute("""
+                    SELECT DISTINCT linha FROM (
+                        SELECT linha FROM linha_config
+                         WHERE setor = %s AND linha IS NOT NULL
+                        UNION
+                        SELECT DISTINCT linha FROM producao_coletada
+                         WHERE setor = %s AND linha IS NOT NULL
+                    ) sub
+                    ORDER BY linha
+                """, (setor, setor))
             else:
-                cur.execute("SELECT linha FROM linha_config ORDER BY linha")
+                cur.execute("""
+                    SELECT DISTINCT linha FROM (
+                        SELECT linha FROM linha_config WHERE linha IS NOT NULL
+                        UNION
+                        SELECT DISTINCT linha FROM producao_coletada WHERE linha IS NOT NULL
+                    ) sub
+                    ORDER BY linha
+                """)
             return [r["linha"] for r in cur.fetchall()]
 
 
