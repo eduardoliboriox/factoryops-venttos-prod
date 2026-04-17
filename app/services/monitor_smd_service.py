@@ -67,7 +67,7 @@ def get_status_atual() -> dict:
     linhas = [r["linha"] for r in linhas_por_setor.get(SETOR, [])]
     turnos = tc_repo.listar()
     turno = _turno_atual(turnos)
-    slots = _slots_turno(turno) if turno else []
+    slots = [s for s in _slots_turno(turno) if s[0].hour != 21] if turno else []
 
     with get_db() as conn:
         with conn.cursor(row_factory=dict_row) as cur:

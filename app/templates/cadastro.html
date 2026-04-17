@@ -21,118 +21,215 @@
 {% block content %}
 <style>
   .smt-action-card {
-    border: 1px solid rgba(15,23,42,0.10);
+    border: 1px solid var(--border);
     border-radius: 14px;
-    background: #fff;
+    background: var(--card);
     overflow: hidden;
-    box-shadow: 0 8px 24px rgba(15,23,42,0.06);
   }
-  .smt-action-card .sac-header {
+  .sac-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 12px;
     padding: 14px 16px;
-    border-bottom: 1px solid rgba(15,23,42,0.08);
-    background: linear-gradient(180deg, rgba(13,110,253,0.08), transparent);
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(180deg, rgba(13,110,253,0.06), transparent);
   }
-  .smt-action-card .sac-title { display: flex; align-items: center; gap: 10px; }
-  .smt-action-card .sac-icon {
+  .sac-title { display: flex; align-items: center; gap: 10px; }
+  .sac-icon {
     width: 40px; height: 40px; border-radius: 12px;
     display: grid; place-items: center; font-size: 18px;
     background: rgba(13,110,253,0.12); color: #0d6efd;
   }
-  .smt-action-card .sac-subtitle { font-size: 12px; color: rgba(15,23,42,0.65); margin-top: 2px; }
-  .smt-action-card .sac-body { padding: 16px; }
-  .smt-action-card .form-label { font-weight: 700; color: rgba(15,23,42,0.80); }
+  .sac-subtitle { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
+  .sac-body { padding: 16px; }
+  .sac-section-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .sac-section-label i { color: var(--primary); }
+  .form-label { font-weight: 600; font-size: 0.8rem; color: var(--text); }
   .smt-action-card .form-control,
-  .smt-action-card .form-select { border-radius: 12px; border-color: rgba(15,23,42,0.14); }
-  .hint { font-size: 12px; color: rgba(15,23,42,0.65); margin-top: 6px; }
+  .smt-action-card .form-select {
+    border-radius: 8px;
+    border-color: rgba(15,23,42,0.14);
+    font-size: 0.9rem;
+  }
+  .smt-action-card .form-control:focus,
+  .smt-action-card .form-select:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(13,110,253,0.12);
+  }
+  .hint { font-size: 0.72rem; color: var(--text-muted); margin-top: 4px; }
+
+  /* Filial toggle */
+  .filial-toggle { display: flex; gap: 6px; }
+  .filial-btn {
+    padding: 5px 18px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.12s;
+    letter-spacing: 0.3px;
+  }
+  .filial-btn.active {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #fff;
+  }
+  .filial-btn:hover:not(.active) {
+    background: rgba(13,110,253,0.06);
+    border-color: rgba(13,110,253,0.25);
+    color: var(--primary);
+  }
+
+  /* Divider */
+  .sac-divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 18px 0;
+  }
+
+  /* Setor rows */
+  .setor-rows { display: flex; flex-direction: column; gap: 8px; }
+  .setor-row {
+    display: grid;
+    grid-template-columns: 130px 1fr 130px 150px 36px;
+    gap: 8px;
+    align-items: end;
+    background: rgba(15,23,42,0.025);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    position: relative;
+  }
+  .setor-row-label {
+    grid-column: 1 / -1;
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 2px;
+  }
+  .btn-remove-row {
+    width: 34px; height: 34px;
+    border-radius: 8px;
+    border: 1px solid rgba(239,68,68,0.22);
+    background: rgba(239,68,68,0.05);
+    color: #dc3545;
+    display: grid; place-items: center;
+    cursor: pointer;
+    font-size: 0.88rem;
+    transition: all 0.12s;
+    flex-shrink: 0;
+    align-self: end;
+  }
+  .btn-remove-row:hover { background: rgba(239,68,68,0.13); }
+  .row-result {
+    grid-column: 1 / -1;
+    font-size: 0.75rem;
+    padding: 4px 0 0;
+    display: none;
+    font-weight: 600;
+  }
+  .row-result.ok  { color: var(--success-color); }
+  .row-result.err { color: #dc3545; }
+  .row-result.warn { color: #f59e0b; }
+
+  @media (max-width: 768px) {
+    .setor-row { grid-template-columns: 1fr 1fr; }
+    .setor-row > *:last-child { grid-column: 1 / -1; }
+    .btn-remove-row { width: 100%; height: 34px; border-radius: 8px; }
+  }
 </style>
 
 <div class="container-fluid">
-
   <div id="mensagemCadastro"></div>
 
-  <!-- ═══════════════════════════════════════════════
-       SEÇÃO 1 — CADASTRO DE MODELO
-  ════════════════════════════════════════════════ -->
   <div class="smt-action-card mb-4">
     <div class="sac-header">
       <div class="sac-title">
         <div class="sac-icon"><i class="bi bi-file-earmark-plus"></i></div>
         <div>
           <div class="fw-bold">Novo Modelo</div>
-          <div class="sac-subtitle">Preencha os dados e cadastre.</div>
+          <div class="sac-subtitle">Cadastre em um ou mais setores de uma só vez.</div>
         </div>
       </div>
       <span class="badge text-bg-primary">CREATE</span>
     </div>
     <div class="sac-body">
-      <form id="cadastroForm" class="row g-3">
-        <div class="col-md-3">
-          <label class="form-label">Código</label>
-          <input class="form-control form-control-lg" name="codigo" required placeholder="Ex: ABC123">
-          <div class="hint">Use o código do modelo conforme padrão interno.</div>
-        </div>
-        <div class="col-md-3">
-          <label class="form-label">Cliente</label>
-          <input class="form-control form-control-lg" name="cliente" required placeholder="Ex: Cliente X">
-          <div class="hint">Cliente associado ao modelo.</div>
-        </div>
-        <div class="col-md-2">
-          <label class="form-label">Setor</label>
-          <select class="form-select form-select-lg" name="setor" id="setorSelect" required>
-            <option value="SMT" selected>SMT</option>
-            <option value="PTH">PTH</option>
-            <option value="IM">IM</option>
-            <option value="PA">PA</option>
-          </select>
-          <div class="hint">Selecione o setor para habilitar as linhas corretas.</div>
-        </div>
-        <div class="col-md-2">
-          <label class="form-label">Linha</label>
-          <select class="form-select form-select-lg" name="linha" id="linhaSelect" required></select>
-          <div class="hint">As opções mudam conforme o setor.</div>
-        </div>
-        <div class="col-md-2">
-          <label class="form-label">Meta por hora</label>
-          <input class="form-control form-control-lg" name="meta_padrao" type="number" required placeholder="Ex: 570">
-          <div class="hint">Meta operacional padrão.</div>
-        </div>
-        <div class="col-md-3">
-          <label class="form-label">Tempo de montagem (seg)</label>
-          <input class="form-control form-control-lg" name="tempo_montagem" type="number" step="0.01" min="0" placeholder="Ex: 19.55">
-          <div class="hint">Opcional.</div>
-        </div>
-        <div class="col-md-3">
-          <label class="form-label">Placas por Blank</label>
-          <input class="form-control form-control-lg" name="blank" type="number" min="1" value="1" required>
-          <div class="hint">Ex.: 1 individual · 2, 4, 6… por blank.</div>
-        </div>
-        <div class="col-md-3">
-          <label class="form-label">Fase</label>
-          <select class="form-select form-select-lg" name="fase">
-            <option>TOP</option>
-            <option>BOTTOM</option>
-          </select>
-          <div class="hint">TOP ou BOTTOM conforme setup.</div>
-        </div>
-        <div class="col-12">
-          <div class="d-flex gap-2 flex-wrap">
-            <button id="btnCadastroSubmit" type="submit" class="btn btn-primary btn-lg px-4">
-              <i class="bi bi-save"></i> Cadastrar Modelo
-            </button>
-            <button type="reset" class="btn btn-outline-secondary btn-lg px-4">
-              <i class="bi bi-eraser"></i> Limpar
-            </button>
+      <form id="cadastroForm">
+
+        <!-- ── BASE INFO ── -->
+        <div class="sac-section-label"><i class="bi bi-info-circle"></i>Dados do modelo</div>
+        <div class="row g-3 mb-1">
+          <div class="col-md-3">
+            <label class="form-label">Código</label>
+            <input class="form-control form-control-lg" id="fCodigo" required placeholder="Ex: ABC123">
+            <div class="hint">Código conforme padrão interno.</div>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Cliente</label>
+            <input class="form-control form-control-lg" id="fCliente" required placeholder="Ex: Cliente X">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">Placas por Blank</label>
+            <input class="form-control form-control-lg" id="fBlank" type="number" min="1" value="1" required>
+            <div class="hint">1 individual · 2, 4, 6… por blank.</div>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">Fase</label>
+            <select class="form-select form-select-lg" id="fFase">
+              <option>TOP</option>
+              <option>BOTTOM</option>
+            </select>
+          </div>
+          <div class="col-md-2 d-flex flex-column justify-content-end">
+            <label class="form-label">Filial</label>
+            <div class="filial-toggle">
+              <button type="button" class="filial-btn active" id="btnVTE">VTE</button>
+              <button type="button" class="filial-btn" id="btnVTT">VTT</button>
+            </div>
+            <div class="hint">Unidade de produção.</div>
           </div>
         </div>
+
+        <hr class="sac-divider">
+
+        <!-- ── SETORES / LINHAS / METAS ── -->
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <div class="sac-section-label mb-0"><i class="bi bi-diagram-3"></i>Setores · Linhas · Metas</div>
+          <button type="button" class="btn btn-sm btn-outline-primary" id="btnAddSetor">
+            <i class="bi bi-plus-lg"></i> Adicionar setor
+          </button>
+        </div>
+
+        <div class="setor-rows" id="setorRows"></div>
+
+        <div class="d-flex gap-2 flex-wrap mt-4">
+          <button id="btnCadastroSubmit" type="submit" class="btn btn-primary btn-lg px-4">
+            <i class="bi bi-save"></i> Cadastrar Modelo
+          </button>
+          <button type="button" class="btn btn-outline-secondary btn-lg px-4" id="btnLimpar">
+            <i class="bi bi-eraser"></i> Limpar
+          </button>
+        </div>
+
       </form>
     </div>
   </div>
-
-
 </div>
 {% endblock %}
 
@@ -141,59 +238,232 @@
 (function () {
   "use strict";
 
-  /* ─────────────────────────────────────────────
-     SEÇÃO 1 — CADASTRO DE MODELO
-  ───────────────────────────────────────────── */
-  const LINHAS_POR_SETOR = {
-    IM:  ["IM-01","IM-02","IM-03","IM-04","IM-05","IM-06","IM-07"],
-    PA:  ["IP-COM","PA-01","PA-03","PA-04","PA-07","PA-08","PA-09","PA-13","WIFI"],
-    PTH: ["ADE-01","AXI-01","AXI-02","AXI-03","JUM-01","JUM-02","RAD-01","RAD-02","RAD-03","ROU-01","ROU-02","ROU-03","ROU-04"],
-    SMT: ["SMT-01","SMT-02","SMT-03","SMT-04","SMT-05","SMT-06","SMT-07","SMT-08","SMT-09"]
+  const LINHAS = {
+    VTE: {
+      SMT: ["SMT-01","SMT-02","SMT-03","SMT-04","SMT-05","SMT-06","SMT-07","SMT-08","SMT-09"],
+      PTH: ["ADE-01","AXI-01","AXI-02","AXI-03","JUM-01","JUM-02","RAD-01","RAD-02","RAD-03","ROU-01","ROU-02","ROU-03","ROU-04"],
+      IM:  ["IM-01","IM-02","IM-03","IM-04","IM-05","IM-06","IM-07"],
+      PA:  ["IP-COM","PA-01","PA-03","PA-04","PA-07","PA-08","PA-09","PA-13","WIFI"]
+    },
+    VTT: {
+      SMT: ["VTT-SMT-01","VTT-SMT-02","VTT-SMT-03"],
+      PA:  ["VTT-PA-01","VTT-PA-02","VTT-PA-03"]
+    }
   };
 
-  function renderLinhas(setor, keep) {
-    const sel = document.getElementById('linhaSelect');
-    if (!sel) return;
-    const linhas = LINHAS_POR_SETOR[setor] || [];
-    const prev   = keep ? sel.value : '';
-    sel.innerHTML = '';
-    for (const l of linhas) {
-      const o = document.createElement('option');
-      o.value = l; o.textContent = l;
-      sel.appendChild(o);
-    }
-    sel.value = (prev && linhas.includes(prev)) ? prev : (linhas[0] || '');
+  let filialAtual = "VTE";
+  let rowSeq = 0;
+
+  function setoresDeFilial(filial) { return Object.keys(LINHAS[filial] || {}); }
+  function linhasDeSetor(filial, setor) { return (LINHAS[filial] || {})[setor] || []; }
+
+  function optionsSetor(filial, sel) {
+    return setoresDeFilial(filial).map(s =>
+      `<option value="${s}"${s === sel ? " selected" : ""}>${s}</option>`
+    ).join("");
   }
 
-  function msgCadastro(texto, tipo) {
-    const d = document.createElement('div');
+  function optionsLinha(filial, setor, sel) {
+    return linhasDeSetor(filial, setor).map(l =>
+      `<option value="${l}"${l === sel ? " selected" : ""}>${l}</option>`
+    ).join("");
+  }
+
+  function addRow(opts) {
+    rowSeq++;
+    const idx = rowSeq;
+    const defaultSetor = (opts && opts.setor) || setoresDeFilial(filialAtual)[0] || "SMT";
+    const defaultLinha = (opts && opts.linha) || linhasDeSetor(filialAtual, defaultSetor)[0] || "";
+    const defaultMeta  = (opts && opts.meta)  || "";
+    const defaultTempo = (opts && opts.tempo) || "";
+
+    const row = document.createElement("div");
+    row.className = "setor-row";
+    row.dataset.rowIdx = idx;
+    row.innerHTML = `
+      <div class="setor-row-label">Setor ${idx}</div>
+      <div>
+        <label class="form-label">Setor</label>
+        <select class="form-select setor-sel">${optionsSetor(filialAtual, defaultSetor)}</select>
+      </div>
+      <div>
+        <label class="form-label">Linha</label>
+        <select class="form-select linha-sel">${optionsLinha(filialAtual, defaultSetor, defaultLinha)}</select>
+      </div>
+      <div>
+        <label class="form-label">Meta / hora</label>
+        <input class="form-control meta-inp" type="number" min="1" placeholder="Ex: 570" value="${defaultMeta}">
+      </div>
+      <div>
+        <label class="form-label">Montagem (seg)</label>
+        <input class="form-control tempo-inp" type="number" step="0.01" min="0" placeholder="Opcional" value="${defaultTempo}">
+      </div>
+      <button type="button" class="btn-remove-row" title="Remover">
+        <i class="bi bi-trash3"></i>
+      </button>
+      <div class="row-result" data-result="${idx}"></div>
+    `;
+
+    document.getElementById("setorRows").appendChild(row);
+
+    row.querySelector(".setor-sel").addEventListener("change", function () {
+      const linhaSel = row.querySelector(".linha-sel");
+      linhaSel.innerHTML = optionsLinha(filialAtual, this.value, "");
+    });
+
+    row.querySelector(".btn-remove-row").addEventListener("click", () => {
+      row.remove();
+      refreshRemoveVisibility();
+    });
+  }
+
+  function refreshRemoveVisibility() {
+    const rows = document.querySelectorAll(".setor-row");
+    rows.forEach(r => {
+      r.querySelector(".btn-remove-row").style.visibility = rows.length > 1 ? "visible" : "hidden";
+    });
+  }
+
+  function rebuildRowsForFilial() {
+    const rows = Array.from(document.querySelectorAll(".setor-row"));
+    const saved = rows.map(r => ({
+      meta:  r.querySelector(".meta-inp").value,
+      tempo: r.querySelector(".tempo-inp").value
+    }));
+    document.getElementById("setorRows").innerHTML = "";
+    rowSeq = 0;
+    const count = saved.length || 1;
+    for (let i = 0; i < count; i++) addRow({ meta: saved[i]?.meta, tempo: saved[i]?.tempo });
+    refreshRemoveVisibility();
+  }
+
+  document.getElementById("btnVTE").addEventListener("click", () => {
+    filialAtual = "VTE";
+    document.getElementById("btnVTE").classList.add("active");
+    document.getElementById("btnVTT").classList.remove("active");
+    rebuildRowsForFilial();
+  });
+
+  document.getElementById("btnVTT").addEventListener("click", () => {
+    filialAtual = "VTT";
+    document.getElementById("btnVTT").classList.add("active");
+    document.getElementById("btnVTE").classList.remove("active");
+    rebuildRowsForFilial();
+  });
+
+  document.getElementById("btnAddSetor").addEventListener("click", () => {
+    addRow();
+    refreshRemoveVisibility();
+  });
+
+  document.getElementById("btnLimpar").addEventListener("click", () => {
+    document.getElementById("fCodigo").value = "";
+    document.getElementById("fCliente").value = "";
+    document.getElementById("fBlank").value = "1";
+    document.getElementById("fFase").value = "TOP";
+    filialAtual = "VTE";
+    document.getElementById("btnVTE").classList.add("active");
+    document.getElementById("btnVTT").classList.remove("active");
+    document.getElementById("setorRows").innerHTML = "";
+    rowSeq = 0;
+    addRow();
+    refreshRemoveVisibility();
+    document.getElementById("mensagemCadastro").innerHTML = "";
+  });
+
+  function showMsg(texto, tipo) {
+    const d = document.createElement("div");
     d.className = `alert alert-${tipo} alert-dismissible fade show`;
     d.innerHTML = `${texto}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>`;
-    const wrap = document.getElementById('mensagemCadastro');
-    wrap.innerHTML = '';
+    const wrap = document.getElementById("mensagemCadastro");
+    wrap.innerHTML = "";
     wrap.appendChild(d);
-    setTimeout(() => bootstrap.Alert.getOrCreateInstance(d).close(), 2500);
+    if (tipo === "success") setTimeout(() => bootstrap.Alert.getOrCreateInstance(d)?.close(), 3500);
   }
 
-  document.addEventListener('DOMContentLoaded', () => {
-    const ss = document.getElementById('setorSelect');
-    if (ss) { renderLinhas(ss.value, true); ss.addEventListener('change', () => renderLinhas(ss.value, false)); }
-  });
-
-  document.getElementById('cadastroForm').addEventListener('submit', async (e) => {
+  document.getElementById("cadastroForm").addEventListener("submit", async (e) => {
     e.preventDefault();
-    const btn = document.getElementById('btnCadastroSubmit');
-    if (btn) { btn.disabled = true; btn._orig = btn.innerHTML; btn.innerHTML = `<span class="spinner-border spinner-border-sm me-2"></span>Salvando...`; }
-    try {
-      const r    = await fetch('/api/modelos', { method: 'POST', body: new FormData(e.target), headers: { 'X-Requested-With': 'XMLHttpRequest' } });
-      const data = await r.json();
-      msgCadastro(data.mensagem, data.sucesso ? 'success' : 'danger');
-      if (data.sucesso) { e.target.reset(); const ss = document.getElementById('setorSelect'); if (ss) { ss.value = 'SMT'; renderLinhas('SMT', false); } }
-    } finally {
-      if (btn) { btn.disabled = false; btn.innerHTML = btn._orig || `<i class="bi bi-save"></i> Cadastrar Modelo`; }
+
+    const codigo  = document.getElementById("fCodigo").value.trim();
+    const cliente = document.getElementById("fCliente").value.trim();
+    const blank   = document.getElementById("fBlank").value;
+    const fase    = document.getElementById("fFase").value;
+
+    if (!codigo || !cliente) {
+      showMsg("Preencha código e cliente.", "danger");
+      return;
+    }
+
+    const rows = Array.from(document.querySelectorAll(".setor-row"));
+    if (rows.length === 0) { showMsg("Adicione ao menos um setor.", "danger"); return; }
+
+    const btn = document.getElementById("btnCadastroSubmit");
+    btn.disabled = true;
+    const orig = btn.innerHTML;
+    btn.innerHTML = `<span class="spinner-border spinner-border-sm me-2"></span>Salvando...`;
+
+    let ok = 0; let fail = 0;
+
+    for (const row of rows) {
+      const setor = row.querySelector(".setor-sel").value;
+      const linha = row.querySelector(".linha-sel").value;
+      const meta  = row.querySelector(".meta-inp").value.trim();
+      const tempo = row.querySelector(".tempo-inp").value.trim();
+      const resultEl = row.querySelector("[data-result]");
+
+      if (!meta) {
+        resultEl.textContent = "⚠ Meta não preenchida — ignorado.";
+        resultEl.className = "row-result warn";
+        resultEl.style.display = "block";
+        fail++;
+        continue;
+      }
+
+      const fd = new FormData();
+      fd.append("codigo", codigo);
+      fd.append("cliente", cliente);
+      fd.append("blank", blank);
+      fd.append("fase", fase);
+      fd.append("setor", setor);
+      fd.append("linha", linha);
+      fd.append("meta_padrao", meta);
+      if (tempo) fd.append("tempo_montagem", tempo);
+
+      try {
+        const resp = await fetch("/api/modelos", {
+          method: "POST",
+          body: fd,
+          headers: { "X-Requested-With": "XMLHttpRequest" }
+        });
+        const data = await resp.json();
+        resultEl.textContent = data.sucesso
+          ? `✓ ${setor} · ${linha} — cadastrado`
+          : `✗ ${data.mensagem}`;
+        resultEl.className = `row-result ${data.sucesso ? "ok" : "err"}`;
+        resultEl.style.display = "block";
+        if (data.sucesso) ok++; else fail++;
+      } catch {
+        resultEl.textContent = "✗ Erro de comunicação.";
+        resultEl.className = "row-result err";
+        resultEl.style.display = "block";
+        fail++;
+      }
+    }
+
+    btn.disabled = false;
+    btn.innerHTML = orig;
+
+    if (ok > 0 && fail === 0) {
+      showMsg(`${ok} entrada${ok > 1 ? "s" : ""} cadastrada${ok > 1 ? "s" : ""} com sucesso.`, "success");
+    } else if (ok > 0) {
+      showMsg(`${ok} cadastrado${ok > 1 ? "s" : ""} com sucesso · ${fail} com erro.`, "warning");
+    } else {
+      showMsg("Nenhum modelo cadastrado. Verifique os erros abaixo.", "danger");
     }
   });
 
-})();
+  addRow();
+  refreshRemoveVisibility();
+}());
 </script>
 {% endblock %}
