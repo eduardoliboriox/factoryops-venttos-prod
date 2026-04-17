@@ -1,4 +1,5 @@
 import re
+import json as _json
 from app.repositories import controle_ops_repository as repo
 
 ROTEIRO_PADRAO = [
@@ -77,18 +78,85 @@ def _validar_e_montar(form_data: dict, roteiro_padrao: bool = False) -> dict:
     }
 
 
-def cadastrar(form_data: dict) -> None:
-    roteiro = form_data.get("roteiro_padrao") == "1"
-    data = _validar_e_montar(form_data, roteiro_padrao=roteiro)
+def _cadastrar_por_roteiro(form_data: dict, roteiro: dict) -> int:
+    numero_base = form_data.get("numero_op", "").strip()
+    if not _OP_RE_BASE.match(numero_base):
+        raise ValueError(
+            "Para usar um Roteiro, informe a base da OP sem sufixo: "
+            "5 letras + 4 números ou 6 letras + 3 números."
+        )
 
-    if roteiro:
+    etapas = roteiro.get("etapas") or []
+    if isinstance(etapas, str):
+        etapas = _json.loads(etapas)
+
+    if not etapas:
+        raise ValueError(f"O roteiro \"{roteiro['nome']}\" não possui etapas definidas.")
+
+    filial = form_data.get("filial", "").strip()
+    produto = form_data.get("produto", "").strip()
+    if not filial:
+        raise ValueError("Filial é obrigatória.")
+    if not produto:
+        raise ValueError("Produto é obrigatório.")
+    try:
+        quantidade = int(form_data.get("quantidade", "0"))
+    except (ValueError, TypeError):
+        raise ValueError("Quantidade deve ser um número inteiro.")
+    if quantidade <= 0:
+        raise ValueError("Quantidade deve ser maior que zero.")
+
+    fase_smd = (form_data.get("fase_smd") or "").strip() or None
+    if fase_smd and fase_smd not in FASES_VALIDAS:
+        raise ValueError(f"Fase SMD inválida: {fase_smd}.")
+
+    base = {
+        "filial":            filial,
+        "produto":           produto,
+        "descricao":         form_data.get("descricao", "").strip() or None,
+        "armazem":           form_data.get("armazem", "").strip() or None,
+        "quantidade":        quantidade,
+        "pedido_venda":      form_data.get("pedido_venda", "").strip() or None,
+        "item_pedido_venda": form_data.get("item_pedido_venda", "").strip() or None,
+    }
+
+    registros = []
+    for etapa in sorted(etapas, key=lambda e: int(e.get("ordem", 0))):
+        setor = (etapa.get("setor") or "").strip()
+        ordem = int(etapa.get("ordem", len(registros) + 1))
+        registros.append({
+            **base,
+            "numero_op":   numero_base + f"{ordem:02d}",
+            "setor":       setor or None,
+            "fase_modelo": fase_smd if setor == "SMD" else None,
+        })
+
+    repo.inserir_lote(registros)
+    return len(registros)
+
+
+def cadastrar(form_data: dict) -> dict:
+    roteiro_id_raw = (form_data.get("roteiro_id") or "").strip()
+
+    if roteiro_id_raw:
+        from app.services import roteiro_service as roteiro_svc
+        roteiro = roteiro_svc.buscar(int(roteiro_id_raw))
+        n = _cadastrar_por_roteiro(form_data, roteiro)
+        return {"tipo": "roteiro", "nome": roteiro["nome"], "n_ops": n}
+
+    roteiro_padrao = form_data.get("roteiro_padrao") == "1"
+    data = _validar_e_montar(form_data, roteiro_padrao=roteiro_padrao)
+
+    if roteiro_padrao:
         registros = [
             {**data, "numero_op": data["numero_op"] + sufixo, "setor": s}
             for s, sufixo in ROTEIRO_PADRAO
         ]
         repo.inserir_lote(registros)
-    else:
-        repo.inserir(data)
+        return {"tipo": "roteiro_padrao"}
+
+    repo.inserir(data)
+    return {"tipo": "individual"}
 
 
 def atualizar(op_id: int, form_data: dict) -> None:

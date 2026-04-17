@@ -808,19 +808,25 @@ def config_paradas():
 def pcp_controle_ops():
     from flask import request, flash, redirect, url_for
     from app.services import controle_ops_service as svc
+    from app.services import roteiro_service as roteiro_svc
 
-    erro    = None
-    ops     = []
-    filiais = []
-    filial  = request.args.get("filial", "")
-    status  = request.args.get("status", "")
-    setor   = request.args.get("setor",  "")
+    erro     = None
+    ops      = []
+    filiais  = []
+    roteiros = []
+    filial   = request.args.get("filial", "")
+    status   = request.args.get("status", "")
+    setor    = request.args.get("setor",  "")
 
     if request.method == "POST":
         try:
-            svc.cadastrar(request.form)
-            roteiro = request.form.get("roteiro_padrao") == "1"
-            flash("Roteiro criado: 3 OPs cadastradas (PTH, IM, SMD)." if roteiro else "OP cadastrada com sucesso.", "success")
+            result = svc.cadastrar(request.form)
+            if result["tipo"] == "roteiro":
+                flash(f"{result['n_ops']} OPs criadas pelo roteiro \"{result['nome']}\".", "success")
+            elif result["tipo"] == "roteiro_padrao":
+                flash("Roteiro criado: 3 OPs cadastradas (PTH, IM, SMD).", "success")
+            else:
+                flash("OP cadastrada com sucesso.", "success")
         except ValueError as e:
             flash(str(e), "danger")
         except Exception:
@@ -828,8 +834,9 @@ def pcp_controle_ops():
         return redirect(url_for("pages.pcp_controle_ops"))
 
     try:
-        ops     = svc.listar(filial, status, setor)
-        filiais = svc.filiais_disponiveis()
+        ops      = svc.listar(filial, status, setor)
+        filiais  = svc.filiais_disponiveis()
+        roteiros = roteiro_svc.listar()
     except Exception as e:
         erro = str(e)
 
@@ -838,6 +845,7 @@ def pcp_controle_ops():
         active_menu="pcp_controle_ops",
         ops=ops,
         filiais=filiais,
+        roteiros=roteiros,
         filial=filial,
         status=status,
         setor=setor,

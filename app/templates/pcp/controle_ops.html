@@ -199,7 +199,7 @@
             <div class="col-12 col-sm-6">
               <label class="form-label fw-semibold" style="font-size:0.8rem;">Número da OP <span class="text-danger">*</span></label>
               <input type="text" class="form-control" name="numero_op" id="inputNumeroOP" required
-                     placeholder="Ex: EBRTME0200" style="border-radius:8px;">
+                     placeholder="Ex: EBRTME020001" style="border-radius:8px;">
               <div id="previewSufixo" class="mt-1" style="display:none;font-size:0.78rem;color:var(--text-muted);"></div>
             </div>
             <div class="col-12 col-sm-6">
@@ -222,7 +222,23 @@
               <label class="form-label fw-semibold" style="font-size:0.8rem;">Quantidade <span class="text-danger">*</span></label>
               <input type="number" class="form-control" name="quantidade" required min="1" placeholder="0" style="border-radius:8px;">
             </div>
-            <div class="col-12 col-sm-4">
+            <div class="col-12 col-sm-8">
+              <label class="form-label fw-semibold" style="font-size:0.8rem;">Roteiro de produção</label>
+              <select class="form-select" name="roteiro_id" id="selectRoteiro"
+                      onchange="toggleModoRoteiro(this)" style="border-radius:8px;">
+                <option value="">Nenhum (OP individual)</option>
+                {% for r in roteiros %}
+                <option value="{{ r.id }}"
+                        data-etapas="{{ r.etapas | tojson | e }}"
+                        data-nome="{{ r.nome | e }}">
+                  {{ r.nome }} — {{ r.cliente }}
+                </option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <!-- Modo individual: setor + fase do modelo -->
+            <div class="col-12 col-sm-6" id="grupoSetor">
               <label class="form-label fw-semibold" style="font-size:0.8rem;">Setor</label>
               <select class="form-select" name="setor" id="selectSetor" style="border-radius:8px;">
                 <option value="">Selecione</option>
@@ -233,7 +249,7 @@
                 <option value="VTT">VTT</option>
               </select>
             </div>
-            <div class="col-12 col-sm-4">
+            <div class="col-12 col-sm-6" id="grupoFaseModelo">
               <label class="form-label fw-semibold" style="font-size:0.8rem;">Fase do modelo</label>
               <select class="form-select" name="fase_modelo" style="border-radius:8px;">
                 <option value="">—</option>
@@ -242,20 +258,33 @@
                 <option value="AMBAS">AMBAS (TOP + BOTTOM)</option>
               </select>
             </div>
-            <div class="col-12 col-sm-4 d-flex align-items-end pb-1">
-              <div class="form-check">
-                <input class="form-check-input" type="checkbox" name="roteiro_padrao" value="1"
-                       id="checkRoteiro" onchange="toggleRoteiro(this)">
-                <label class="form-check-label fw-semibold" for="checkRoteiro" style="font-size:0.8rem;">
-                  Roteiro padrão <span class="text-muted">(PTH + IM + SMD)</span>
-                </label>
+
+            <!-- Modo roteiro: preview das etapas -->
+            <div class="col-12" id="grupoPreviewRoteiro" style="display:none;">
+              <div class="p-3 rounded" style="background:var(--bg);border:1px solid var(--border);">
+                <div class="fw-semibold mb-2" style="font-size:0.78rem;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);">
+                  OPs que serão criadas
+                </div>
+                <div id="previewEtapas"></div>
               </div>
             </div>
-            <div class="col-12 col-sm-4">
+            <div class="col-12 col-sm-6" id="grupoFaseSMD" style="display:none;">
+              <label class="form-label fw-semibold" style="font-size:0.8rem;">
+                Fase SMD <span class="text-danger">*</span>
+              </label>
+              <select class="form-select" name="fase_smd" style="border-radius:8px;">
+                <option value="">—</option>
+                <option value="TOP">TOP</option>
+                <option value="BOTTOM">BOTTOM</option>
+                <option value="AMBAS">AMBAS (TOP + BOTTOM)</option>
+              </select>
+            </div>
+
+            <div class="col-12 col-sm-6">
               <label class="form-label fw-semibold" style="font-size:0.8rem;">Pedido de Venda</label>
               <input type="text" class="form-control" name="pedido_venda" placeholder="Opcional" style="border-radius:8px;">
             </div>
-            <div class="col-12 col-sm-4">
+            <div class="col-12 col-sm-6">
               <label class="form-label fw-semibold" style="font-size:0.8rem;">Item Pedido de Venda</label>
               <input type="text" class="form-control" name="item_pedido_venda" placeholder="Opcional" style="border-radius:8px;">
             </div>
@@ -353,6 +382,8 @@
 <script>
 const OPS_DATA = {{ ops | tojson }};
 
+const _SETOR_CORES = { SMD: "success", PTH: "primary", IM: "warning", PA: "danger", VTT: "info" };
+
 function abrirEditar(id) {
   const op = OPS_DATA.find(o => o.id === id);
   if (!op) return;
@@ -373,38 +404,63 @@ function abrirEditar(id) {
   new bootstrap.Modal(document.getElementById("modalEditarOP")).show();
 }
 
-function toggleRoteiro(cb) {
-  const selectSetor = document.getElementById("selectSetor");
-  const inputNumero = document.getElementById("inputNumeroOP");
-  const preview     = document.getElementById("previewSufixo");
+function toggleModoRoteiro(sel) {
+  const roteiroId  = sel.value;
+  const individual = !roteiroId;
+  const input      = document.getElementById("inputNumeroOP");
+  const preview    = document.getElementById("previewSufixo");
 
-  if (cb.checked) {
-    selectSetor.disabled  = true;
-    selectSetor.value     = "";
-    preview.style.display = "";
-    atualizarPreview(inputNumero.value);
-  } else {
-    selectSetor.disabled  = false;
+  document.getElementById("grupoSetor").style.display         = individual ? "" : "none";
+  document.getElementById("grupoFaseModelo").style.display    = individual ? "" : "none";
+  document.getElementById("grupoPreviewRoteiro").style.display = individual ? "none" : "";
+
+  if (individual) {
     preview.style.display = "none";
+    input.placeholder = "Ex: EBRTME020001";
+  } else {
+    const opt    = sel.options[sel.selectedIndex];
+    const etapas = _parseEtapas(opt.dataset.etapas);
+    const temSMD = etapas.some(function(e) { return e.setor === "SMD"; });
+
+    document.getElementById("grupoFaseSMD").style.display = temSMD ? "" : "none";
+    _renderizarPreviewEtapas(etapas, input.value);
+
+    preview.style.display = "";
+    input.placeholder = "Ex: EBRTME0200 (base, sem sufixo)";
   }
+}
+
+function _parseEtapas(raw) {
+  try { return JSON.parse(raw || "[]"); } catch (e) { return []; }
+}
+
+function _renderizarPreviewEtapas(etapas, base) {
+  const container = document.getElementById("previewEtapas");
+  if (!etapas.length) {
+    container.innerHTML = '<span class="text-muted small">Nenhuma etapa definida neste roteiro.</span>';
+    return;
+  }
+  const sorted = etapas.slice().sort(function(a, b) { return (a.ordem || 0) - (b.ordem || 0); });
+  const parts = sorted.map(function(e, i) {
+    const cor    = _SETOR_CORES[e.setor] || "secondary";
+    const sufixo = String(e.ordem || (i + 1)).padStart(2, "0");
+    const label  = base ? ("<strong>" + base + sufixo + "</strong> (" + e.setor + ")") : e.setor;
+    return '<span class="badge bg-' + cor + '" style="font-size:0.72rem;">' +
+           (e.ordem || (i + 1)) + '. ' + e.setor + '</span>' +
+           (base ? (' <span class="text-muted small" style="font-size:0.7rem;">→ ' + base + sufixo + '</span>') : "") +
+           (i < sorted.length - 1 ? ' <i class="bi bi-arrow-right text-muted mx-1" style="font-size:0.65rem;"></i>' : "");
+  });
+  container.innerHTML = '<div class="d-flex align-items-center flex-wrap gap-1">' + parts.join("") + '</div>';
 }
 
 const inputNumeroOP = document.getElementById("inputNumeroOP");
 if (inputNumeroOP) {
   inputNumeroOP.addEventListener("input", function () {
-    if (document.getElementById("checkRoteiro").checked) {
-      atualizarPreview(this.value);
-    }
+    const sel = document.getElementById("selectRoteiro");
+    if (!sel || !sel.value) return;
+    const etapas = _parseEtapas(sel.options[sel.selectedIndex].dataset.etapas);
+    _renderizarPreviewEtapas(etapas, this.value.trim());
   });
-}
-
-function atualizarPreview(base) {
-  const preview = document.getElementById("previewSufixo");
-  if (!base) { preview.textContent = ""; return; }
-  preview.innerHTML =
-    "Serão criadas: <strong>" + base + "01</strong> (PTH) · " +
-    "<strong>" + base + "02</strong> (IM) · " +
-    "<strong>" + base + "03</strong> (SMD)";
 }
 </script>
 {% endblock %}
