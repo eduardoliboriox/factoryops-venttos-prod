@@ -551,11 +551,9 @@
         <tr class="row-groups">
           <th class="th-linha" rowspan="2">Linha</th>
           <th colspan="2" class="th-group-daily">Atividades Diárias</th>
-          {% if dados.slots %}
-          <th colspan="{{ dados.slots | length }}" class="th-group-stencil">
+          <th colspan="{{ [dados.slots | length, 1] | max }}" class="th-group-stencil">
             Limpeza Stencil — Hora a Hora
           </th>
-          {% endif %}
         </tr>
         <tr class="row-subheads">
           <th class="th-sub-daily">
@@ -566,12 +564,16 @@
             Medição
             <small>Pasta</small>
           </th>
-          {% for s in dados.slots %}
-          <th class="th-sub-slot">
-            {{ s.hora }}
-            {% if s.proximo_dia %}<span class="slot-amanha">+1d</span>{% endif %}
-          </th>
-          {% endfor %}
+          {% if dados.slots %}
+            {% for s in dados.slots %}
+            <th class="th-sub-slot">
+              {{ s.hora }}
+              {% if s.proximo_dia %}<span class="slot-amanha">+1d</span>{% endif %}
+            </th>
+            {% endfor %}
+          {% else %}
+            <th class="th-sub-slot">—</th>
+          {% endif %}
         </tr>
       </thead>
       <tbody>
@@ -610,19 +612,25 @@
           </td>
 
           <!-- Limpeza Stencil por hora -->
-          {% for hora in linha.horas %}
-          <td class="td-status">
-            <div class="status-cell sm s-{{ hora.ls }}">
-              {% if hora.ls == 'green' %}
-                <i class="bi bi-check-lg"></i>
-              {% elif hora.ls == 'red' %}
-                <i class="bi bi-exclamation-lg"></i>
-              {% else %}
-                <i class="bi bi-dash"></i>
-              {% endif %}
-            </div>
-          </td>
-          {% endfor %}
+          {% if linha.horas %}
+            {% for hora in linha.horas %}
+            <td class="td-status">
+              <div class="status-cell sm s-{{ hora.ls }}">
+                {% if hora.ls == 'green' %}
+                  <i class="bi bi-check-lg"></i>
+                {% elif hora.ls == 'red' %}
+                  <i class="bi bi-exclamation-lg"></i>
+                {% else %}
+                  <i class="bi bi-dash"></i>
+                {% endif %}
+              </div>
+            </td>
+            {% endfor %}
+          {% else %}
+            <td class="td-status">
+              <div class="status-cell sm s-blue"><i class="bi bi-dash"></i></div>
+            </td>
+          {% endif %}
 
         </tr>
         {% endfor %}
