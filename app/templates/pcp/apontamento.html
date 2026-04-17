@@ -124,7 +124,20 @@
                       style="font-size:0.7rem;">{{ ap.setor }}</span>
               </td>
               <td class="fw-semibold">{{ ap.linha }}</td>
-              <td class="text-nowrap">{{ ap.modelo }}</td>
+              <td class="text-nowrap">
+                {{ ap.modelo }}
+                <button class="btn btn-link p-0 ms-1 text-muted"
+                        style="font-size:0.7rem;vertical-align:middle;"
+                        title="Corrigir modelo"
+                        onclick="abrirCorrigirModelo(this)"
+                        data-data="{{ ap.data }}"
+                        data-turno="{{ ap.turno }}"
+                        data-setor="{{ ap.setor }}"
+                        data-linha="{{ ap.linha }}"
+                        data-modelo="{{ ap.modelo }}">
+                  <i class="bi bi-pencil-fill"></i>
+                </button>
+              </td>
               <td class="text-muted small">{{ ap.familia or '—' }}</td>
               <td class="text-end fw-bold text-success">
                 {{ "{:,.0f}".format(ap.producao_total or 0).replace(',', '.') }}
@@ -245,6 +258,46 @@
 
 </div>
 
+<!-- Modal: Corrigir Modelo -->
+<div class="modal fade" id="modalCorrigirModelo" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content" style="border-radius:12px;border-color:var(--border);">
+      <div class="modal-header border-bottom" style="border-color:var(--border) !important;">
+        <h6 class="modal-title fw-semibold">
+          <i class="bi bi-pencil-fill me-2 text-primary"></i>Corrigir Modelo
+        </h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label fw-semibold" style="font-size:0.8rem;">Modelo atual</label>
+          <input type="text" class="form-control form-control-sm" id="corrigirModeloAtual"
+                 readonly style="border-radius:8px;background:var(--bg);">
+        </div>
+        <div class="mb-2">
+          <label class="form-label fw-semibold" style="font-size:0.8rem;">Novo código <span class="text-danger">*</span></label>
+          <input type="text" class="form-control form-control-sm" id="corrigirModeloNovo"
+                 placeholder="Ex: ABC123" maxlength="50"
+                 style="border-radius:8px;text-transform:uppercase;"
+                 oninput="this.value=this.value.toUpperCase()">
+        </div>
+        <div id="erroCorrigirModelo" class="alert alert-danger py-2 px-3 mt-2" style="display:none;font-size:0.82rem;border-radius:8px;"></div>
+        <input type="hidden" id="corrigirData">
+        <input type="hidden" id="corrigirTurno">
+        <input type="hidden" id="corrigirSetor">
+        <input type="hidden" id="corrigirLinha">
+      </div>
+      <div class="modal-footer border-top" style="border-color:var(--border) !important;">
+        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary btn-sm fw-semibold" id="btnConfirmarCorrigir"
+                onclick="confirmarCorrigirModelo()">
+          <i class="bi bi-check-lg me-1"></i>Salvar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Modal: Vincular OP -->
 <div class="modal fade" id="modalVincular" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog">
@@ -355,8 +408,9 @@
 </div>
 
 <script>
-const URL_VINCULAR    = "{{ url_for('pages.pcp_apontamento_vincular') }}";
-const URL_DESVINCULAR = "{{ url_for('pages.pcp_apontamento_desvincular') }}";
+const URL_VINCULAR        = "{{ url_for('pages.pcp_apontamento_vincular') }}";
+const URL_DESVINCULAR     = "{{ url_for('pages.pcp_apontamento_desvincular') }}";
+const URL_CORRIGIR_MODELO = "{{ url_for('pages.pcp_apontamento_corrigir_modelo') }}";
 
 const OPS_JSON = {{ ops | tojson }};
 
@@ -575,6 +629,62 @@ function desvincular(apontamentoId, label) {
     }
   })
   .catch(() => mostrarAlerta("danger", "Erro de conexão."));
+}
+
+function abrirCorrigirModelo(btn) {
+  const d = btn.dataset;
+  document.getElementById("corrigirModeloAtual").value = d.modelo;
+  document.getElementById("corrigirModeloNovo").value  = "";
+  document.getElementById("corrigirData").value        = d.data;
+  document.getElementById("corrigirTurno").value       = d.turno;
+  document.getElementById("corrigirSetor").value       = d.setor;
+  document.getElementById("corrigirLinha").value       = d.linha;
+  document.getElementById("erroCorrigirModelo").style.display = "none";
+  document.getElementById("btnConfirmarCorrigir").disabled = false;
+  bootstrap.Modal.getOrCreateInstance(document.getElementById("modalCorrigirModelo")).show();
+}
+
+function confirmarCorrigirModelo() {
+  const modeloNovo = document.getElementById("corrigirModeloNovo").value.trim().toUpperCase();
+  if (!modeloNovo) {
+    document.getElementById("erroCorrigirModelo").textContent = "Informe o novo código do modelo.";
+    document.getElementById("erroCorrigirModelo").style.display = "";
+    return;
+  }
+
+  const btn = document.getElementById("btnConfirmarCorrigir");
+  btn.disabled = true;
+  document.getElementById("erroCorrigirModelo").style.display = "none";
+
+  fetch(URL_CORRIGIR_MODELO, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      data:         document.getElementById("corrigirData").value,
+      turno:        document.getElementById("corrigirTurno").value,
+      setor:        document.getElementById("corrigirSetor").value,
+      linha:        document.getElementById("corrigirLinha").value,
+      modelo_atual: document.getElementById("corrigirModeloAtual").value,
+      modelo_novo:  modeloNovo,
+    }),
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.ok) {
+      bootstrap.Modal.getInstance(document.getElementById("modalCorrigirModelo")).hide();
+      mostrarAlerta("success", "Modelo corrigido com sucesso.");
+      setTimeout(() => location.reload(), 800);
+    } else {
+      document.getElementById("erroCorrigirModelo").textContent = data.erro || "Erro ao corrigir modelo.";
+      document.getElementById("erroCorrigirModelo").style.display = "";
+      btn.disabled = false;
+    }
+  })
+  .catch(() => {
+    document.getElementById("erroCorrigirModelo").textContent = "Erro de conexão. Tente novamente.";
+    document.getElementById("erroCorrigirModelo").style.display = "";
+    btn.disabled = false;
+  });
 }
 
 function mostrarAlerta(tipo, msg) {

@@ -117,6 +117,17 @@ def desvincular(apontamento_id: int) -> None:
     repo.desvincular(apontamento_id)
 
 
+def corrigir_modelo(data: str, turno: str, setor: str, linha: str, modelo_atual: str, modelo_novo: str) -> None:
+    modelo_novo = (modelo_novo or "").strip().upper()
+    if not modelo_novo:
+        raise ValueError("O novo código do modelo é obrigatório.")
+    if modelo_novo == (modelo_atual or "").strip().upper():
+        raise ValueError("O modelo novo é idêntico ao atual.")
+    if not data or not turno or not setor or not linha or not modelo_atual:
+        raise ValueError("Dados insuficientes para identificar o registro.")
+    repo.corrigir_modelo(data, turno, setor, linha, modelo_atual, modelo_novo)
+
+
 def fila_producao() -> dict:
     rows = repo.fila_producao()
     agrupado: dict = {}
