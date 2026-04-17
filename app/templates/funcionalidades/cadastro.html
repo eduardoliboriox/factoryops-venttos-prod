@@ -267,7 +267,8 @@
   }
 
   function linhasDeSetor(setor) {
-    return linhasDB[setor] || [];
+    const dbKey = setor === "SMT" ? "SMD" : setor;
+    return linhasDB[dbKey] || [];
   }
 
   function optionsSetor(sel) {
