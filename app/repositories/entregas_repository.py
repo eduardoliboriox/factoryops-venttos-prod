@@ -27,6 +27,16 @@ def listar_pedidos(status: str = "", modelo: str = "", data_inicial: str = "", d
                         SELECT SUM(pc.producao_real)
                         FROM producao_coletada pc
                         WHERE pc.modelo = p.modelo
+                          AND pc.setor = (
+                              SELECT re.setor
+                              FROM roteiro_etapas re
+                              JOIN roteiro_modelos rm ON rm.roteiro_id = re.roteiro_id
+                              JOIN roteiros r ON r.id = rm.roteiro_id
+                              WHERE rm.modelo_codigo = p.modelo
+                                AND r.cliente = p.cliente
+                              ORDER BY re.ordem DESC
+                              LIMIT 1
+                          )
                     ), 0) AS produzido,
                     e.id     AS entrega_id,
                     e.status AS entrega_status,
