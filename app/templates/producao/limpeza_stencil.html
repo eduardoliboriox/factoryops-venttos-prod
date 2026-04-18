@@ -470,7 +470,7 @@
                 <option value="VTT">VTT</option>
               </select>
             </div>
-            <div class="meta-field">
+            <div class="meta-field" id="stSetorWrapper">
               <label>Setor</label>
               <select id="stSetor">
                 <option value="">Carregando...</option>
@@ -672,7 +672,7 @@
                 <option value="VTT">VTT</option>
               </select>
             </div>
-            <div class="col-md-2">
+            <div class="col-md-2" id="filtroSetorStWrapper">
               <label class="form-label" style="font-size:0.8rem;font-weight:600;">Setor</label>
               <select class="form-select" id="filtroSetorSt">
                 <option value="">Todos</option>
@@ -751,76 +751,60 @@
 
   /* ── Setor / Linha ─────────────────────────────────────────────────── */
 
-  const _FILIAL_SETORES_ST = { VTE: ['PTH', 'SMD', 'IM', 'PA'], VTT: ['VTT'] };
-  let _allSectorsSt = [];
+  const _VTE_SETORES_ST = ['PTH', 'SMD', 'IM', 'PA'];
+  let _lcDataSt = {};
 
-  function _applyFilialFilterSt(filial, setorSel, linhasSel, linhasPlaceholder) {
-    const allowed = filial ? (_FILIAL_SETORES_ST[filial] || []) : null;
-    Array.from(setorSel.options).forEach(opt => {
-      if (!opt.value) return;
-      opt.hidden = allowed !== null && !allowed.includes(opt.value);
+  async function _loadLCSt() {
+    try {
+      const r = await fetch('/api/linhas-config', { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+      _lcDataSt = await r.json().catch(() => ({}));
+    } catch { _lcDataSt = {}; }
+  }
+
+  function _populateLinhasSt(linhaSel, linhas, placeholder) {
+    linhaSel.innerHTML = `<option value="">${placeholder}</option>`;
+    (linhas || []).forEach(l => {
+      const opt = document.createElement('option');
+      opt.value = l; opt.textContent = l;
+      linhaSel.appendChild(opt);
     });
-    if (setorSel.value && setorSel.options[setorSel.selectedIndex]?.hidden) {
-      setorSel.value = '';
+  }
+
+  function _onFilialChangeSt(filial, setorSel, setorWrapper, linhaSel, isFilter) {
+    if (filial === 'VTT') {
+      setorWrapper.style.display = 'none';
+      setorSel.value = 'VTT';
+      _populateLinhasSt(linhaSel, _lcDataSt['VTT'] || [], isFilter ? 'Todas' : 'Selecione a linha');
+    } else {
+      setorWrapper.style.display = '';
+      setorSel.innerHTML = isFilter ? '<option value="">Todos</option>' : '<option value="">Selecione o setor</option>';
+      _VTE_SETORES_ST.filter(s => _lcDataSt[s]).forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s; opt.textContent = s;
+        setorSel.appendChild(opt);
+      });
+      _populateLinhasSt(linhaSel, [], isFilter ? 'Todas' : 'Selecione o setor');
     }
-    linhasSel.innerHTML = `<option value="">${linhasPlaceholder}</option>`;
   }
 
   async function loadSectors() {
-    try {
-      const r    = await fetch('/api/production/sectors', { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
-      const data = await r.json().catch(() => ({}));
-      _allSectorsSt = data.sectors || [];
-
-      const selForm   = document.getElementById('stSetor');
-      const selFiltro = document.getElementById('filtroSetorSt');
-
-      selForm.innerHTML = '<option value="">Selecione o setor</option>';
-      _allSectorsSt.forEach(s => {
-        const opt = document.createElement('option');
-        opt.value = s; opt.textContent = s;
-        selForm.appendChild(opt);
-      });
-
-      selFiltro.innerHTML = '<option value="">Todos</option>';
-      _allSectorsSt.forEach(s => {
-        const opt = document.createElement('option');
-        opt.value = s; opt.textContent = s;
-        selFiltro.appendChild(opt);
-      });
-
-      _applyFilialFilterSt('VTE', selForm, document.getElementById('stLinha'), 'Selecione o setor');
-    } catch {}
+    await _loadLCSt();
+    _onFilialChangeSt('VTE',
+      document.getElementById('stSetor'), document.getElementById('stSetorWrapper'),
+      document.getElementById('stLinha'), false);
+    _onFilialChangeSt('',
+      document.getElementById('filtroSetorSt'), document.getElementById('filtroSetorStWrapper'),
+      document.getElementById('filtroLinhaSt'), true);
   }
 
-  async function loadLines(setor) {
+  function loadLines(setor) {
     const sel = document.getElementById('stLinha');
-    sel.innerHTML = '<option value="">Selecione a linha</option>';
-    if (!setor) return;
-    try {
-      const r    = await fetch(`/api/production/lines?setor=${encodeURIComponent(setor)}`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
-      const data = await r.json().catch(() => ({}));
-      (data.lines || []).forEach(l => {
-        const opt = document.createElement('option');
-        opt.value = l; opt.textContent = l;
-        sel.appendChild(opt);
-      });
-    } catch {}
+    _populateLinhasSt(sel, setor ? (_lcDataSt[setor] || []) : [], 'Selecione a linha');
   }
 
-  async function loadFiltroLinhas(setor) {
+  function loadFiltroLinhas(setor) {
     const sel = document.getElementById('filtroLinhaSt');
-    sel.innerHTML = '<option value="">Todas</option>';
-    if (!setor) return;
-    try {
-      const r    = await fetch(`/api/production/lines?setor=${encodeURIComponent(setor)}`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
-      const data = await r.json().catch(() => ({}));
-      (data.lines || []).forEach(l => {
-        const opt = document.createElement('option');
-        opt.value = l; opt.textContent = l;
-        sel.appendChild(opt);
-      });
-    } catch {}
+    _populateLinhasSt(sel, setor ? (_lcDataSt[setor] || []) : [], 'Todas');
   }
 
   /* ── Signature modal ───────────────────────────────────────────────── */
@@ -1052,9 +1036,18 @@
       safe('stCliente',      data.cliente);
       safe('stIdentificacao',data.identificacao_stencil);
       safe('stEspessura',    data.espessura);
-      safe('stSetor',        data.setor);
 
-      await loadLines(data.setor);
+      const isVTT = data.setor === 'VTT';
+      const filialEl = document.getElementById('stFilial');
+      if (filialEl) filialEl.value = isVTT ? 'VTT' : 'VTE';
+      _onFilialChangeSt(
+        isVTT ? 'VTT' : 'VTE',
+        document.getElementById('stSetor'),
+        document.getElementById('stSetorWrapper'),
+        document.getElementById('stLinha'),
+        false
+      );
+      if (!isVTT) safe('stSetor', data.setor);
       safe('stLinha', data.linha);
 
       if (Array.isArray(data.horarios)) {
@@ -1174,7 +1167,7 @@
 
   /* ── Init ──────────────────────────────────────────────────────────── */
 
-  document.addEventListener('DOMContentLoaded', () => {
+  document.addEventListener('DOMContentLoaded', async () => {
     const today = new Date();
     document.getElementById('stData').value = today.toISOString().slice(0, 10);
     document.getElementById('filtroDataSt').value = today.toISOString().slice(0, 10);
@@ -1185,14 +1178,18 @@
     await loadSectors();
 
     document.getElementById('stFilial').addEventListener('change', e => {
-      _applyFilialFilterSt(e.target.value, document.getElementById('stSetor'), document.getElementById('stLinha'), 'Selecione o setor');
+      _onFilialChangeSt(e.target.value, document.getElementById('stSetor'), document.getElementById('stSetorWrapper'), document.getElementById('stLinha'), false);
     });
-    document.getElementById('stSetor').addEventListener('change', e => loadLines(e.target.value));
+    document.getElementById('stSetor').addEventListener('change', e => {
+      if (document.getElementById('stFilial').value !== 'VTT') loadLines(e.target.value);
+    });
 
     document.getElementById('filtroFilialSt').addEventListener('change', e => {
-      _applyFilialFilterSt(e.target.value, document.getElementById('filtroSetorSt'), document.getElementById('filtroLinhaSt'), 'Todas');
+      _onFilialChangeSt(e.target.value, document.getElementById('filtroSetorSt'), document.getElementById('filtroSetorStWrapper'), document.getElementById('filtroLinhaSt'), true);
     });
-    document.getElementById('filtroSetorSt').addEventListener('change', e => loadFiltroLinhas(e.target.value));
+    document.getElementById('filtroSetorSt').addEventListener('change', e => {
+      if (document.getElementById('filtroFilialSt').value !== 'VTT') loadFiltroLinhas(e.target.value);
+    });
 
     document.querySelectorAll('.modelo-input').forEach(input => {
       input.addEventListener('input', () => { input.value = input.value.toUpperCase(); });

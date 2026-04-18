@@ -68,7 +68,7 @@
             <option value="VTT" {% if setor == 'VTT' %}selected{% endif %}>VTT</option>
           </select>
         </div>
-        <div class="col-6 col-md-2">
+        <div class="col-6 col-md-2" id="planSetorFiltroWrapper">
           <label class="form-label fw-semibold" style="font-size:0.8rem;">Setor</label>
           <select class="form-select form-select-sm" name="setor" id="planSetorFiltro"
                   onchange="onSetorChange(this.value,'filtroLinha'); this.form.submit()"
@@ -684,7 +684,7 @@
               <option value="VTT">VTT</option>
             </select>
           </div>
-          <div class="col-6">
+          <div class="col-6" id="modalSetorWrapper">
             <label class="form-label fw-semibold" style="font-size:0.8rem;">Setor <span class="text-danger">*</span></label>
             <select class="form-select form-select-sm" id="modalSetor"
                     onchange="onSetorModalChange(this.value)" style="border-radius:8px;">

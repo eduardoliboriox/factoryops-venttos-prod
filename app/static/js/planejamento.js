@@ -23,42 +23,74 @@ function calcularSetupSugerido(setor, linha) {
   return 0;
 }
 
-// ─── Filial → setor filtering ────────────────────────────────────────────────
-const _FILIAL_SETORES_PLAN = { VTE: ["PTH", "SMD", "IM", "PA"], VTT: ["VTT"] };
+// ─── Filial → setor/linha filtering ──────────────────────────────────────────
+const _VTE_SETORES_PLAN = ["PTH", "SMD", "IM", "PA"];
 
-function _filterSetorByFilial(filial, setorSel) {
-  const allowed = filial ? (_FILIAL_SETORES_PLAN[filial] || []) : null;
-  Array.from(setorSel.options).forEach(function(opt) {
-    if (!opt.value) return;
-    opt.hidden = allowed !== null && !allowed.includes(opt.value);
-  });
-  if (setorSel.value && setorSel.options[setorSel.selectedIndex] && setorSel.options[setorSel.selectedIndex].hidden) {
-    setorSel.value = "";
+function _applyFilialFiltro(filial) {
+  const setorWrapper = document.getElementById("planSetorFiltroWrapper");
+  const setorSel     = document.getElementById("planSetorFiltro");
+  if (!setorSel) return;
+
+  if (filial === "VTT") {
+    if (setorWrapper) setorWrapper.style.display = "none";
+    setorSel.value = "VTT";
+  } else {
+    if (setorWrapper) setorWrapper.style.display = "";
+    Array.from(setorSel.options).forEach(function(opt) {
+      if (!opt.value) return;
+      opt.hidden = filial === "VTE" && !_VTE_SETORES_PLAN.includes(opt.value);
+    });
+    if (setorSel.value && setorSel.options[setorSel.selectedIndex] && setorSel.options[setorSel.selectedIndex].hidden) {
+      setorSel.value = "";
+    }
   }
 }
 
 function onModalFilialChange(filial) {
-  const setorSel = document.getElementById("modalSetor");
+  const setorWrapper = document.getElementById("modalSetorWrapper");
+  const setorSel     = document.getElementById("modalSetor");
+  const linhaSel     = document.getElementById("modalLinha");
   if (!setorSel) return;
-  _filterSetorByFilial(filial, setorSel);
-  setorSel.value = "";
-  onSetorModalChange("");
+
+  if (filial === "VTT") {
+    if (setorWrapper) setorWrapper.style.display = "none";
+    setorSel.value = "VTT";
+    const opcoes = OPCOES_LINHA();
+    const linhas = (opcoes["VTT"] || []).slice().sort();
+    if (linhaSel) {
+      linhaSel.innerHTML = '<option value="">Selecione a linha</option>';
+      linhas.forEach(function(l) {
+        const opt = document.createElement("option");
+        opt.value = l; opt.textContent = l;
+        linhaSel.appendChild(opt);
+      });
+    }
+    onSetorModalChange("VTT");
+  } else {
+    if (setorWrapper) setorWrapper.style.display = "";
+    Array.from(setorSel.options).forEach(function(opt) {
+      if (!opt.value) return;
+      opt.hidden = !_VTE_SETORES_PLAN.includes(opt.value);
+    });
+    if (setorSel.value && setorSel.options[setorSel.selectedIndex] && setorSel.options[setorSel.selectedIndex].hidden) {
+      setorSel.value = "";
+    }
+    onSetorModalChange("");
+  }
 }
 
 document.addEventListener("DOMContentLoaded", function() {
   const planFilialFiltro = document.getElementById("planFilialFiltro");
-  const planSetorFiltro  = document.getElementById("planSetorFiltro");
-  if (planFilialFiltro && planSetorFiltro) {
-    _filterSetorByFilial(planFilialFiltro.value, planSetorFiltro);
+  if (planFilialFiltro) {
+    _applyFilialFiltro(planFilialFiltro.value);
     planFilialFiltro.addEventListener("change", function() {
-      _filterSetorByFilial(planFilialFiltro.value, planSetorFiltro);
+      _applyFilialFiltro(planFilialFiltro.value);
     });
   }
 
   const modalFilial = document.getElementById("modalFilial");
-  const modalSetor  = document.getElementById("modalSetor");
-  if (modalFilial && modalSetor) {
-    _filterSetorByFilial(modalFilial.value, modalSetor);
+  if (modalFilial) {
+    onModalFilialChange(modalFilial.value);
   }
 });
 

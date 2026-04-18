@@ -47,7 +47,7 @@
             <option value="VTT" {% if setor == 'VTT' %}selected{% endif %}>VTT</option>
           </select>
         </div>
-        <div class="col-6 col-md-2">
+        <div class="col-6 col-md-2" id="apSetorFiltroWrapper">
           <label class="form-label fw-semibold" style="font-size:0.8rem;">Setor</label>
           <select class="form-select form-select-sm" name="setor" id="apSetorFiltro" onchange="this.form.submit()" style="border-radius:8px;">
             <option value="">Todos</option>
@@ -731,28 +731,34 @@ function mostrarAlerta(tipo, msg) {
 }
 
 (function() {
-  const _FILIAL_SETORES_AP = { VTE: ['PTH', 'SMD', 'IM', 'PA'], VTT: ['VTT'] };
+  const _VTE_SETORES_AP = ['PTH', 'SMD', 'IM', 'PA'];
 
-  function applyFilialFilter(filial, setorSel) {
-    const allowed = filial ? (_FILIAL_SETORES_AP[filial] || []) : null;
-    Array.from(setorSel.options).forEach(opt => {
-      if (!opt.value) return;
-      opt.hidden = allowed !== null && !allowed.includes(opt.value);
-    });
-    if (setorSel.value && setorSel.options[setorSel.selectedIndex]?.hidden) {
-      setorSel.value = '';
+  function applyFilialFilter(filial, setorSel, setorWrapper) {
+    if (filial === 'VTT') {
+      if (setorWrapper) setorWrapper.style.display = 'none';
+      setorSel.value = 'VTT';
+    } else {
+      if (setorWrapper) setorWrapper.style.display = '';
+      Array.from(setorSel.options).forEach(opt => {
+        if (!opt.value) return;
+        opt.hidden = filial === 'VTE' && !_VTE_SETORES_AP.includes(opt.value);
+      });
+      if (setorSel.value && setorSel.options[setorSel.selectedIndex]?.hidden) {
+        setorSel.value = '';
+      }
     }
   }
 
   document.addEventListener('DOMContentLoaded', () => {
-    const filialSel = document.getElementById('apFilialFiltro');
-    const setorSel  = document.getElementById('apSetorFiltro');
+    const filialSel    = document.getElementById('apFilialFiltro');
+    const setorSel     = document.getElementById('apSetorFiltro');
+    const setorWrapper = document.getElementById('apSetorFiltroWrapper');
     if (!filialSel || !setorSel) return;
 
-    applyFilialFilter(filialSel.value, setorSel);
+    applyFilialFilter(filialSel.value, setorSel, setorWrapper);
 
     filialSel.addEventListener('change', () => {
-      applyFilialFilter(filialSel.value, setorSel);
+      applyFilialFilter(filialSel.value, setorSel, setorWrapper);
     });
   });
 })();

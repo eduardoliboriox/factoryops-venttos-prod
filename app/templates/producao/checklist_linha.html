@@ -411,7 +411,7 @@
                 <option value="VTT">VTT</option>
               </select>
             </div>
-            <div class="col-6 col-md-2">
+            <div class="col-6 col-md-2" id="clSetorWrapper">
               <div class="meta-label">Setor <span style="font-weight:400;color:var(--text-muted);font-size:.75rem;">(Sector)</span></div>
               <select class="form-select form-select-sm" id="clSetor" style="border-radius:8px;">
                 <option value="">Carregando...</option>
@@ -578,7 +578,7 @@
                 <option value="VTT">VTT</option>
               </select>
             </div>
-            <div class="col-6 col-md-2">
+            <div class="col-6 col-md-2" id="filtroSetorClWrapper">
               <div class="meta-label">Setor</div>
               <select class="form-select form-select-sm" id="filtroSetor" style="border-radius:8px;">
                 <option value="">Todos</option>
@@ -638,7 +638,7 @@
   const MESES = ["","Janeiro","Fevereiro","Março","Abril","Maio","Junho",
                  "Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
 
-  const _FILIAL_SETORES_CL = { VTE: ['PTH', 'SMD', 'IM', 'PA'], VTT: ['VTT'] };
+  const _VTE_SETORES_CL = ['PTH', 'SMD', 'IM', 'PA'];
   let _linhasDB_CL = {};
 
   async function _loadLinhasDB() {
@@ -648,16 +648,22 @@
     } catch {}
   }
 
-  function _populateSetorSelect(setorSel, filial, isFilter) {
-    const allowed = filial ? (_FILIAL_SETORES_CL[filial] || []) : null;
-    const allSetores = Object.keys(_linhasDB_CL);
-    const setores = allowed ? allSetores.filter(s => allowed.includes(s)) : allSetores;
-    setorSel.innerHTML = isFilter ? '<option value="">Todos</option>' : '<option value="">Selecione</option>';
-    setores.forEach(s => {
-      const o = document.createElement('option');
-      o.value = s; o.textContent = s;
-      setorSel.appendChild(o);
-    });
+  function _onFilialChangeCL(filial, setorSel, setorWrapper, linhaSel, isFilter) {
+    if (filial === 'VTT') {
+      if (setorWrapper) setorWrapper.style.display = 'none';
+      setorSel.value = 'VTT';
+      renderLinhas('VTT', linhaSel);
+    } else {
+      if (setorWrapper) setorWrapper.style.display = '';
+      const vteSetores = _VTE_SETORES_CL.filter(s => _linhasDB_CL[s]);
+      setorSel.innerHTML = isFilter ? '<option value="">Todos</option>' : '<option value="">Selecione</option>';
+      vteSetores.forEach(s => {
+        const o = document.createElement('option');
+        o.value = s; o.textContent = s;
+        setorSel.appendChild(o);
+      });
+      if (!isFilter) renderLinhas('', linhaSel);
+    }
   }
 
   const ITEMS = [
@@ -946,8 +952,13 @@
 
       document.getElementById('clMes').value   = String(data.mes);
       document.getElementById('clAno').value   = String(data.ano);
-      document.getElementById('clSetor').value = data.setor || 'SMD';
-      renderLinhas(data.setor || 'SMD', document.getElementById('clLinha'), data.linha);
+      const _loadedSetor = data.setor || 'SMD';
+      const _isVTTLoad   = _loadedSetor === 'VTT';
+      const _clFilialEl  = document.getElementById('clFilial');
+      if (_clFilialEl) _clFilialEl.value = _isVTTLoad ? 'VTT' : 'VTE';
+      _onFilialChangeCL(_isVTTLoad ? 'VTT' : 'VTE', document.getElementById('clSetor'), document.getElementById('clSetorWrapper'), document.getElementById('clLinha'), false);
+      if (!_isVTTLoad) document.getElementById('clSetor').value = _loadedSetor;
+      renderLinhas(_loadedSetor, document.getElementById('clLinha'), data.linha);
       document.getElementById('clTurno').value  = data.turno ? String(data.turno) : '';
       document.getElementById('clModelo').value = data.modelo || '';
 
@@ -1210,31 +1221,34 @@
 
     await _loadLinhasDB();
 
-    const clFilial = document.getElementById('clFilial');
-    const clSetor  = document.getElementById('clSetor');
-    const clLinha  = document.getElementById('clLinha');
+    const clFilial      = document.getElementById('clFilial');
+    const clSetor       = document.getElementById('clSetor');
+    const clSetorWrapper = document.getElementById('clSetorWrapper');
+    const clLinha       = document.getElementById('clLinha');
 
-    _populateSetorSelect(clSetor, clFilial.value, false);
-    renderLinhas(clSetor.value, clLinha);
+    _onFilialChangeCL(clFilial.value, clSetor, clSetorWrapper, clLinha, false);
 
     clFilial.addEventListener('change', () => {
-      _populateSetorSelect(clSetor, clFilial.value, false);
-      renderLinhas(clSetor.value, clLinha);
+      _onFilialChangeCL(clFilial.value, clSetor, clSetorWrapper, clLinha, false);
     });
-    clSetor.addEventListener('change', () => renderLinhas(clSetor.value, clLinha));
+    clSetor.addEventListener('change', () => {
+      if (clFilial.value !== 'VTT') renderLinhas(clSetor.value, clLinha);
+    });
 
-    const filtroFilialCl = document.getElementById('filtroFilialCl');
-    const filtroSetor    = document.getElementById('filtroSetor');
-    const filtroLinha    = document.getElementById('filtroLinha');
+    const filtroFilialCl       = document.getElementById('filtroFilialCl');
+    const filtroSetor          = document.getElementById('filtroSetor');
+    const filtroSetorClWrapper = document.getElementById('filtroSetorClWrapper');
+    const filtroLinha          = document.getElementById('filtroLinha');
 
-    _populateSetorSelect(filtroSetor, '', true);
+    _onFilialChangeCL('', filtroSetor, filtroSetorClWrapper, filtroLinha, true);
 
     filtroFilialCl.addEventListener('change', () => {
-      _populateSetorSelect(filtroSetor, filtroFilialCl.value, true);
-      filtroLinha.innerHTML = '<option value="">Todas</option>';
+      _onFilialChangeCL(filtroFilialCl.value, filtroSetor, filtroSetorClWrapper, filtroLinha, true);
+      if (filtroFilialCl.value !== 'VTT') filtroLinha.innerHTML = '<option value="">Todas</option>';
     });
 
     function renderFiltroLinhas() {
+      if (filtroFilialCl.value === 'VTT') return;
       const setor  = filtroSetor.value;
       const linhas = setor ? (_linhasDB_CL[setor] || []) : [];
       filtroLinha.innerHTML = '<option value="">Todas</option>';

@@ -82,7 +82,7 @@
               <option value="VTT">VTT</option>
             </select>
           </div>
-          <div class="col-6 col-md-2">
+          <div class="col-6 col-md-2" id="lpSetorFormWrapper">
             <label class="form-label">Setor</label>
             <select class="form-select" name="setor" id="setorSelect" required
                     onchange="atualizarLinhas(this.value)">
@@ -150,7 +150,7 @@
             <option value="VTT" {% if setor == 'VTT' %}selected{% endif %}>VTT</option>
           </select>
         </div>
-        <div class="col-6 col-md-2">
+        <div class="col-6 col-md-2" id="lpSetorFiltroWrapper">
           <label class="form-label">Setor</label>
           <select class="form-select" name="setor" id="lpSetorFiltro" onchange="this.form.submit()">
             <option value="">Todos</option>
@@ -268,28 +268,42 @@
 
 <script>
 (function () {
-  const _FILIAL_SETORES_LP = { VTE: ['PTH', 'SMD', 'IM', 'PA'], VTT: ['VTT'] };
+  const _VTE_SETORES_LP = ['PTH', 'SMD', 'IM', 'PA'];
   const linhasPorSetor = {{ filtros.linhas_por_setor | tojson }};
 
-  function applyFilialFilter(filial, setorSel, linhasSel) {
-    const allowed = filial ? (_FILIAL_SETORES_LP[filial] || []) : null;
-    Array.from(setorSel.options).forEach(opt => {
-      if (!opt.value) return;
-      opt.hidden = allowed !== null && !allowed.includes(opt.value);
-    });
-    if (setorSel.value && setorSel.options[setorSel.selectedIndex]?.hidden) {
-      setorSel.value = '';
-      if (linhasSel) linhasSel.innerHTML = '<option value="">Selecione</option>';
+  function applyFilialFilter(filial, setorSel, setorWrapper, linhasSel) {
+    if (filial === 'VTT') {
+      if (setorWrapper) setorWrapper.style.display = 'none';
+      setorSel.value = 'VTT';
+      if (linhasSel) {
+        linhasSel.innerHTML = '<option value="">Selecione</option>';
+        (linhasPorSetor['VTT'] || []).forEach(function(l) {
+          const opt = document.createElement('option');
+          opt.value = l; opt.textContent = l;
+          linhasSel.appendChild(opt);
+        });
+      }
+    } else {
+      if (setorWrapper) setorWrapper.style.display = '';
+      Array.from(setorSel.options).forEach(opt => {
+        if (!opt.value) return;
+        opt.hidden = filial === 'VTE' && !_VTE_SETORES_LP.includes(opt.value);
+      });
+      if (setorSel.value && setorSel.options[setorSel.selectedIndex]?.hidden) {
+        setorSel.value = '';
+        if (linhasSel) linhasSel.innerHTML = '<option value="">Selecione</option>';
+      }
     }
   }
 
   function atualizarLinhas(setor) {
     const sel = document.getElementById('linhaSelect');
+    const filial = document.getElementById('lpFilialForm')?.value;
+    if (filial === 'VTT') return;
     sel.innerHTML = '<option value="">Selecione</option>';
     (linhasPorSetor[setor] || []).forEach(function (l) {
       const opt = document.createElement('option');
-      opt.value = l;
-      opt.textContent = l;
+      opt.value = l; opt.textContent = l;
       sel.appendChild(opt);
     });
   }
@@ -297,28 +311,30 @@
   window.atualizarLinhas = atualizarLinhas;
 
   document.addEventListener('DOMContentLoaded', function () {
-    const lpFilialForm  = document.getElementById('lpFilialForm');
-    const setorSelect   = document.getElementById('setorSelect');
-    const linhaSelect   = document.getElementById('linhaSelect');
-    const lpFilialFiltro = document.getElementById('lpFilialFiltro');
-    const lpSetorFiltro  = document.getElementById('lpSetorFiltro');
+    const lpFilialForm      = document.getElementById('lpFilialForm');
+    const setorSelect       = document.getElementById('setorSelect');
+    const lpSetorFormWrapper = document.getElementById('lpSetorFormWrapper');
+    const linhaSelect       = document.getElementById('linhaSelect');
+    const lpFilialFiltro    = document.getElementById('lpFilialFiltro');
+    const lpSetorFiltro     = document.getElementById('lpSetorFiltro');
+    const lpSetorFiltroWrapper = document.getElementById('lpSetorFiltroWrapper');
 
     if (lpFilialForm && setorSelect) {
-      applyFilialFilter(lpFilialForm.value, setorSelect, linhaSelect);
+      applyFilialFilter(lpFilialForm.value, setorSelect, lpSetorFormWrapper, linhaSelect);
       lpFilialForm.addEventListener('change', function () {
-        applyFilialFilter(lpFilialForm.value, setorSelect, linhaSelect);
+        applyFilialFilter(lpFilialForm.value, setorSelect, lpSetorFormWrapper, linhaSelect);
       });
     }
 
     if (lpFilialFiltro && lpSetorFiltro) {
-      applyFilialFilter(lpFilialFiltro.value, lpSetorFiltro, null);
+      applyFilialFilter(lpFilialFiltro.value, lpSetorFiltro, lpSetorFiltroWrapper, null);
       lpFilialFiltro.addEventListener('change', function () {
-        applyFilialFilter(lpFilialFiltro.value, lpSetorFiltro, null);
+        applyFilialFilter(lpFilialFiltro.value, lpSetorFiltro, lpSetorFiltroWrapper, null);
       });
     }
 
     const setorInicial = setorSelect ? setorSelect.value : '';
-    if (setorInicial) atualizarLinhas(setorInicial);
+    if (setorInicial && lpFilialForm?.value !== 'VTT') atualizarLinhas(setorInicial);
   });
 }());
 </script>

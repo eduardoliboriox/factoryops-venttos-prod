@@ -67,50 +67,59 @@
     return { ok: resp.ok, status: resp.status, data };
   }
 
-  const _FILIAL_SETORES_TS = { VTE: ["PTH", "SMD", "IM", "PA"], VTT: ["VTT"] };
+  const _VTE_SETORES_TS = ["PTH", "SMD", "IM", "PA"];
+  let _lcDataTs = {};
 
-  async function loadSectorsForFilial(filial) {
-    const setorSel = qs("#tsSetorSelect");
-    if (!setorSel) return;
-
-    const { ok, data } = await apiJson("/api/linhas-config");
-    const allSetores = (ok && data) ? Object.keys(data) : [];
-
-    const allowed = filial ? (_FILIAL_SETORES_TS[filial] || []) : null;
-    const filtered = allowed ? allSetores.filter(s => allowed.includes(s)) : allSetores;
-
-    setorSel.innerHTML = "";
-    for (const s of filtered) {
-      const opt = document.createElement("option");
-      opt.value = s;
-      opt.textContent = s;
-      setorSel.appendChild(opt);
-    }
-
-    const firstVal = filtered[0] || "";
-    setorSel.value = firstVal;
-    await loadLinesForSector(firstVal);
+  async function _loadLCTs() {
+    try {
+      const { ok, data } = await apiJson("/api/linhas-config");
+      _lcDataTs = (ok && data) ? data : {};
+    } catch { _lcDataTs = {}; }
   }
 
-  async function loadLinesForSector(setor) {
-    const linhaSelect = qs("#tsLinhaSelect");
-    if (!linhaSelect) return;
-
-    linhaSelect.innerHTML = "";
-    const { ok, data } = await apiJson(`/api/production/lines?setor=${encodeURIComponent(setor || "")}`);
-    const lines = (ok && data && data.lines) ? data.lines : [];
-
-    if (!lines.length) {
-      linhaSelect.innerHTML = `<option value="" selected>—</option>`;
+  function _populateLinhasTs(linhaSel, linhas) {
+    linhaSel.innerHTML = "";
+    if (!linhas || !linhas.length) {
+      linhaSel.innerHTML = `<option value="">—</option>`;
       return;
     }
-
-    for (const ln of lines) {
+    for (const ln of linhas) {
       const opt = document.createElement("option");
-      opt.value = ln;
-      opt.textContent = ln;
-      linhaSelect.appendChild(opt);
+      opt.value = ln; opt.textContent = ln;
+      linhaSel.appendChild(opt);
     }
+  }
+
+  async function loadSectorsForFilial(filial) {
+    const setorSel    = qs("#tsSetorSelect");
+    const setorWrapper = qs("#tsSetorWrapper");
+    const linhaSel    = qs("#tsLinhaSelect");
+    if (!setorSel || !linhaSel) return;
+
+    if (!Object.keys(_lcDataTs).length) await _loadLCTs();
+
+    if (filial === "VTT") {
+      if (setorWrapper) setorWrapper.style.display = "none";
+      setorSel.value = "VTT";
+      _populateLinhasTs(linhaSel, _lcDataTs["VTT"] || []);
+    } else {
+      if (setorWrapper) setorWrapper.style.display = "";
+      setorSel.innerHTML = "";
+      _VTE_SETORES_TS.filter(s => _lcDataTs[s]).forEach(s => {
+        const opt = document.createElement("option");
+        opt.value = s; opt.textContent = s;
+        setorSel.appendChild(opt);
+      });
+      const firstVal = setorSel.options[0] ? setorSel.options[0].value : "";
+      setorSel.value = firstVal;
+      _populateLinhasTs(linhaSel, firstVal ? (_lcDataTs[firstVal] || []) : []);
+    }
+  }
+
+  function loadLinesForSector(setor) {
+    const linhaSel = qs("#tsLinhaSelect");
+    if (!linhaSel) return;
+    _populateLinhasTs(linhaSel, setor ? (_lcDataTs[setor] || []) : []);
   }
 
 
@@ -395,6 +404,7 @@
     const filialSel = qs("#tsFilialSelect");
     const filial = filialSel ? filialSel.value : "VTE";
     await loadSectorsForFilial(filial);
+
     await loadStudies();
 
     const created = data.study || {};
@@ -455,8 +465,9 @@
 
     const setorSel = qs("#tsSetorSelect");
     if (setorSel) {
-      setorSel.addEventListener("change", async () => {
-        await loadLinesForSector(setorSel.value);
+      setorSel.addEventListener("change", () => {
+        const filialSel = qs("#tsFilialSelect");
+        if (!filialSel || filialSel.value !== "VTT") loadLinesForSector(setorSel.value);
       });
     }
 
