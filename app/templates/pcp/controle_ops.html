@@ -40,7 +40,7 @@
         {% endfor %}
       </select>
     </div>
-    <div class="col-12 col-sm-6 col-md-2">
+    <div class="col-12 col-sm-6 col-md-2" id="coSetorFiltroWrapper">
       <label class="form-label fw-semibold" style="font-size:0.8rem;">Setor</label>
       <select name="setor" id="coSetorFiltro" class="form-select form-select-sm" style="border-radius:8px;">
         <option value="">Todos</option>
@@ -364,7 +364,7 @@
               <label class="form-label fw-semibold" style="font-size:0.8rem;">Quantidade <span class="text-danger">*</span></label>
               <input type="number" class="form-control" name="quantidade" id="edit_quantidade" required min="1" style="border-radius:8px;">
             </div>
-            <div class="col-12 col-sm-4">
+            <div class="col-12 col-sm-4" id="editSetorWrapper">
               <label class="form-label fw-semibold" style="font-size:0.8rem;">Setor</label>
               <select class="form-select" name="setor" id="edit_setor" style="border-radius:8px;">
                 <option value="">Selecione</option>
@@ -499,37 +499,43 @@ if (inputNumeroOP) {
   });
 }
 
-const _FILIAL_SETORES_CO = { VTE: ["PTH", "SMD", "IM", "PA"], VTT: ["VTT"] };
+const _VTE_SETORES_CO = ["PTH", "SMD", "IM", "PA"];
 
-function _filterSetorSel(filial, setorSelId) {
-  const setorSel = document.getElementById(setorSelId);
+function _filterSetorSel(filial, setorSelId, setorWrapperId) {
+  const setorSel     = document.getElementById(setorSelId);
+  const setorWrapper = setorWrapperId ? document.getElementById(setorWrapperId) : null;
   if (!setorSel) return;
-  const allowed = filial ? (_FILIAL_SETORES_CO[filial] || []) : null;
-  Array.from(setorSel.options).forEach(function(opt) {
-    if (!opt.value) return;
-    opt.hidden = allowed !== null && !allowed.includes(opt.value);
-  });
-  if (setorSel.value && setorSel.options[setorSel.selectedIndex] && setorSel.options[setorSel.selectedIndex].hidden) {
-    setorSel.value = "";
+
+  if (filial === "VTT") {
+    if (setorWrapper) setorWrapper.style.display = "none";
+    setorSel.value = "VTT";
+  } else {
+    if (setorWrapper) setorWrapper.style.display = "";
+    Array.from(setorSel.options).forEach(function(opt) {
+      if (!opt.value) return;
+      opt.hidden = filial === "VTE" && !_VTE_SETORES_CO.includes(opt.value);
+    });
+    if (setorSel.value && setorSel.options[setorSel.selectedIndex] && setorSel.options[setorSel.selectedIndex].hidden) {
+      setorSel.value = "";
+    }
   }
 }
 
 function onCreateFilialChange(filial) {
-  _filterSetorSel(filial, "selectSetor");
+  _filterSetorSel(filial, "selectSetor", "grupoSetor");
 }
 
 function onEditFilialChange(filial) {
-  _filterSetorSel(filial, "edit_setor");
+  _filterSetorSel(filial, "edit_setor", "editSetorWrapper");
 }
 
 function onCoFilialFiltroChange(filial) {
-  const mapped = filial === "VTT" ? "VTT" : (filial === "VTE" ? "VTE" : "");
-  _filterSetorSel(mapped, "coSetorFiltro");
+  _filterSetorSel(filial, "coSetorFiltro", "coSetorFiltroWrapper");
 }
 
 document.addEventListener("DOMContentLoaded", function() {
   const createFilial = document.getElementById("createFilial");
-  if (createFilial) _filterSetorSel(createFilial.value, "selectSetor");
+  if (createFilial) _filterSetorSel(createFilial.value, "selectSetor", "grupoSetor");
 
   const coFilialFiltro = document.getElementById("coFilialFiltro");
   if (coFilialFiltro) onCoFilialFiltroChange(coFilialFiltro.value);

@@ -604,7 +604,7 @@
                 <option value="VTT">VTT</option>
               </select>
             </div>
-            <div class="meta-field">
+            <div class="meta-field" id="mpSetorWrapper">
               <label>Setor</label>
               <select id="mpSetor">
                 <option value="">Carregando...</option>
@@ -802,7 +802,7 @@
                 <option value="VTT">VTT</option>
               </select>
             </div>
-            <div class="col-md-2">
+            <div class="col-md-2" id="filtroSetorMpWrapper">
               <label class="form-label" style="font-size:0.8rem;font-weight:600;">Setor</label>
               <select class="form-select" id="filtroSetorMp">
                 <option value="">Todos</option>
@@ -1070,54 +1070,50 @@
     btn.classList.replace('btn-primary', 'btn-success');
   }
 
-  const _FILIAL_SETORES_MP = { VTE: ['PTH', 'SMD', 'IM', 'PA'], VTT: ['VTT'] };
-  let _allSectorsMp = [];
+  const _VTE_SETORES_MP = ['PTH', 'SMD', 'IM', 'PA'];
+  let _lcDataMp = {};
 
-  function _applyFilialFilterMp(filial, setorSel, linhasSel, linhasPlaceholder) {
-    const allowed = filial ? (_FILIAL_SETORES_MP[filial] || []) : null;
-    Array.from(setorSel.options).forEach(opt => {
-      if (!opt.value) return;
-      opt.hidden = allowed !== null && !allowed.includes(opt.value);
+  async function _loadLCMp() {
+    try {
+      const r = await fetch('/api/linhas-config', { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+      _lcDataMp = await r.json().catch(() => ({}));
+    } catch { _lcDataMp = {}; }
+  }
+
+  function _populateLinhasMp(linhaSel, linhas, placeholder) {
+    linhaSel.innerHTML = `<option value="">${placeholder}</option>`;
+    (linhas || []).forEach(l => {
+      const opt = document.createElement('option');
+      opt.value = l; opt.textContent = l;
+      linhaSel.appendChild(opt);
     });
-    if (setorSel.value && setorSel.options[setorSel.selectedIndex]?.hidden) {
-      setorSel.value = '';
+  }
+
+  function _onFilialChangeMp(filial, setorSel, setorWrapper, linhaSel, isFilter) {
+    if (filial === 'VTT') {
+      setorWrapper.style.display = 'none';
+      setorSel.value = 'VTT';
+      _populateLinhasMp(linhaSel, _lcDataMp['VTT'] || [], isFilter ? 'Todas' : 'Selecione a linha');
+    } else {
+      setorWrapper.style.display = '';
+      setorSel.innerHTML = (isFilter ? '<option value="">Todos</option>' : '<option value="">Selecione o setor</option>');
+      _VTE_SETORES_MP.filter(s => _lcDataMp[s]).forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s; opt.textContent = s;
+        setorSel.appendChild(opt);
+      });
+      _populateLinhasMp(linhaSel, [], isFilter ? 'Todas' : 'Selecione o setor');
     }
-    linhasSel.innerHTML = `<option value="">${linhasPlaceholder}</option>`;
   }
 
   async function loadSectors(targetSelect, filtroSelect) {
-    try {
-      const r = await fetch('/api/production/sectors', { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
-      const data = await r.json().catch(() => ({}));
-      _allSectorsMp = data.sectors || [];
-
-      [targetSelect, filtroSelect].forEach(sel => {
-        if (!sel) return;
-        const isFilter = sel === filtroSelect;
-        sel.innerHTML = isFilter
-          ? '<option value="">Todos</option>'
-          : '<option value="">Selecione o setor</option>';
-        _allSectorsMp.forEach(s => {
-          const opt = document.createElement('option');
-          opt.value = s; opt.textContent = s;
-          sel.appendChild(opt);
-        });
-      });
-    } catch {}
+    await _loadLCMp();
+    _onFilialChangeMp('VTE', targetSelect, document.getElementById('mpSetorWrapper'), document.getElementById('mpLinha'), false);
+    _onFilialChangeMp('', filtroSelect, document.getElementById('filtroSetorMpWrapper'), document.getElementById('filtroLinhaMp'), true);
   }
 
   async function loadLines(setor, targetSelect, placeholder) {
-    targetSelect.innerHTML = `<option value="">${placeholder}</option>`;
-    if (!setor) return;
-    try {
-      const r = await fetch(`/api/production/lines?setor=${encodeURIComponent(setor)}`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
-      const data = await r.json().catch(() => ({}));
-      (data.lines || []).forEach(l => {
-        const opt = document.createElement('option');
-        opt.value = l; opt.textContent = l;
-        targetSelect.appendChild(opt);
-      });
-    } catch {}
+    _populateLinhasMp(targetSelect, setor ? (_lcDataMp[setor] || []) : [], placeholder);
   }
 
   function coletarMedicoes() {
@@ -1479,25 +1475,30 @@
     document.getElementById('planoDia').value     = today;
     document.getElementById('filtroDataMp').value = today;
 
-    const mpFilial      = document.getElementById('mpFilial');
-    const mpSetor       = document.getElementById('mpSetor');
-    const mpLinha       = document.getElementById('mpLinha');
-    const filtroFilialMp = document.getElementById('filtroFilialMp');
-    const filtroSetorMp = document.getElementById('filtroSetorMp');
-    const filtroLinhaMp = document.getElementById('filtroLinhaMp');
+    const mpFilial       = document.getElementById('mpFilial');
+    const mpSetor        = document.getElementById('mpSetor');
+    const mpLinha        = document.getElementById('mpLinha');
+    const mpSetorWrapper = document.getElementById('mpSetorWrapper');
+    const filtroFilialMp       = document.getElementById('filtroFilialMp');
+    const filtroSetorMp        = document.getElementById('filtroSetorMp');
+    const filtroLinhaMp        = document.getElementById('filtroLinhaMp');
+    const filtroSetorMpWrapper = document.getElementById('filtroSetorMpWrapper');
 
     await loadSectors(mpSetor, filtroSetorMp);
-    _applyFilialFilterMp('VTE', mpSetor, mpLinha, 'Selecione o setor');
 
     mpFilial.addEventListener('change', () => {
-      _applyFilialFilterMp(mpFilial.value, mpSetor, mpLinha, 'Selecione o setor');
+      _onFilialChangeMp(mpFilial.value, mpSetor, mpSetorWrapper, mpLinha, false);
     });
-    mpSetor.addEventListener('change', () => loadLines(mpSetor.value, mpLinha, 'Selecione a linha'));
+    mpSetor.addEventListener('change', () => {
+      if (mpFilial.value !== 'VTT') _populateLinhasMp(mpLinha, _lcDataMp[mpSetor.value] || [], 'Selecione a linha');
+    });
 
     filtroFilialMp.addEventListener('change', () => {
-      _applyFilialFilterMp(filtroFilialMp.value, filtroSetorMp, filtroLinhaMp, 'Todas');
+      _onFilialChangeMp(filtroFilialMp.value, filtroSetorMp, filtroSetorMpWrapper, filtroLinhaMp, true);
     });
-    filtroSetorMp.addEventListener('change', () => loadLines(filtroSetorMp.value, filtroLinhaMp, 'Todas'));
+    filtroSetorMp.addEventListener('change', () => {
+      if (filtroFilialMp.value !== 'VTT') _populateLinhasMp(filtroLinhaMp, _lcDataMp[filtroSetorMp.value] || [], 'Todas');
+    });
 
     document.getElementById('btnSalvarMedicao').addEventListener('click', salvarMedicao);
     document.getElementById('btnNovo').addEventListener('click', limparMedicao);
