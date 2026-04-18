@@ -376,7 +376,7 @@ def pcp_lancamento_producao_inserir():
     return redirect(url_for("pages.pcp_lancamento_producao"))
 
 
-@bp.route("/pcp/lancamento-producao/excluir/<int:registro_id>", methods=["POST"])
+@bp.route("/pcp/lancamento-producao/excluir/<int(signed=True):registro_id>", methods=["POST"])
 @login_required
 @admin_required
 def pcp_lancamento_producao_excluir(registro_id):
