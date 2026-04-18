@@ -67,6 +67,31 @@
     return { ok: resp.ok, status: resp.status, data };
   }
 
+  const _FILIAL_SETORES_TS = { VTE: ["PTH", "SMD", "IM", "PA"], VTT: ["VTT"] };
+
+  async function loadSectorsForFilial(filial) {
+    const setorSel = qs("#tsSetorSelect");
+    if (!setorSel) return;
+
+    const { ok, data } = await apiJson("/api/linhas-config");
+    const allSetores = (ok && data) ? Object.keys(data) : [];
+
+    const allowed = filial ? (_FILIAL_SETORES_TS[filial] || []) : null;
+    const filtered = allowed ? allSetores.filter(s => allowed.includes(s)) : allSetores;
+
+    setorSel.innerHTML = "";
+    for (const s of filtered) {
+      const opt = document.createElement("option");
+      opt.value = s;
+      opt.textContent = s;
+      setorSel.appendChild(opt);
+    }
+
+    const firstVal = filtered[0] || "";
+    setorSel.value = firstVal;
+    await loadLinesForSector(firstVal);
+  }
+
   async function loadLinesForSector(setor) {
     const linhaSelect = qs("#tsLinhaSelect");
     if (!linhaSelect) return;
@@ -367,10 +392,9 @@
     showMsg("tsMsgCreate", "success", "Estudo criado com sucesso.");
     form.reset();
 
-    const setor = qs("#tsSetorSelect");
-    if (setor) setor.value = "SMT";
-
-    await loadLinesForSector("SMT");
+    const filialSel = qs("#tsFilialSelect");
+    const filial = filialSel ? filialSel.value : "VTE";
+    await loadSectorsForFilial(filial);
     await loadStudies();
 
     const created = data.study || {};
@@ -422,6 +446,13 @@
     const formCreate = qs("#formCreateStudy");
     if (formCreate) formCreate.addEventListener("submit", onCreateStudySubmit);
 
+    const filialSel = qs("#tsFilialSelect");
+    if (filialSel) {
+      filialSel.addEventListener("change", async () => {
+        await loadSectorsForFilial(filialSel.value);
+      });
+    }
+
     const setorSel = qs("#tsSetorSelect");
     if (setorSel) {
       setorSel.addEventListener("change", async () => {
@@ -429,7 +460,8 @@
       });
     }
 
-    await loadLinesForSector("SMT");
+    const initialFilial = filialSel ? filialSel.value : "VTE";
+    await loadSectorsForFilial(initialFilial);
     await loadStudies();
   });
 

@@ -61,8 +61,16 @@
           </select>
         </div>
         <div class="col-6 col-md-2">
+          <label class="form-label fw-semibold" style="font-size:0.8rem;">Filial</label>
+          <select class="form-select form-select-sm" id="planFilialFiltro" style="border-radius:8px;">
+            <option value="">Todas</option>
+            <option value="VTE" {% if setor and setor != 'VTT' %}selected{% endif %}>VTE</option>
+            <option value="VTT" {% if setor == 'VTT' %}selected{% endif %}>VTT</option>
+          </select>
+        </div>
+        <div class="col-6 col-md-2">
           <label class="form-label fw-semibold" style="font-size:0.8rem;">Setor</label>
-          <select class="form-select form-select-sm" name="setor"
+          <select class="form-select form-select-sm" name="setor" id="planSetorFiltro"
                   onchange="onSetorChange(this.value,'filtroLinha'); this.form.submit()"
                   style="border-radius:8px;">
             <option value="">Todos</option>
@@ -668,6 +676,14 @@
         </div>
 
         <div class="row g-2 mb-2">
+          <div class="col-6">
+            <label class="form-label fw-semibold" style="font-size:0.8rem;">Filial <span class="text-danger">*</span></label>
+            <select class="form-select form-select-sm" id="modalFilial"
+                    onchange="onModalFilialChange(this.value)" style="border-radius:8px;">
+              <option value="VTE" selected>VTE</option>
+              <option value="VTT">VTT</option>
+            </select>
+          </div>
           <div class="col-6">
             <label class="form-label fw-semibold" style="font-size:0.8rem;">Setor <span class="text-danger">*</span></label>
             <select class="form-select form-select-sm" id="modalSetor"

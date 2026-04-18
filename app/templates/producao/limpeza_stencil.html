@@ -464,6 +464,13 @@
               <input type="text" id="stCliente" placeholder="Nome do cliente">
             </div>
             <div class="meta-field">
+              <label>Filial</label>
+              <select id="stFilial">
+                <option value="VTE" selected>VTE</option>
+                <option value="VTT">VTT</option>
+              </select>
+            </div>
+            <div class="meta-field">
               <label>Setor</label>
               <select id="stSetor">
                 <option value="">Carregando...</option>
@@ -658,6 +665,14 @@
               <input class="form-control" type="date" id="filtroDataSt">
             </div>
             <div class="col-md-2">
+              <label class="form-label" style="font-size:0.8rem;font-weight:600;">Filial</label>
+              <select class="form-select" id="filtroFilialSt">
+                <option value="">Todas</option>
+                <option value="VTE">VTE</option>
+                <option value="VTT">VTT</option>
+              </select>
+            </div>
+            <div class="col-md-2">
               <label class="form-label" style="font-size:0.8rem;font-weight:600;">Setor</label>
               <select class="form-select" id="filtroSetorSt">
                 <option value="">Todos</option>
@@ -736,28 +751,45 @@
 
   /* ── Setor / Linha ─────────────────────────────────────────────────── */
 
+  const _FILIAL_SETORES_ST = { VTE: ['PTH', 'SMD', 'IM', 'PA'], VTT: ['VTT'] };
+  let _allSectorsSt = [];
+
+  function _applyFilialFilterSt(filial, setorSel, linhasSel, linhasPlaceholder) {
+    const allowed = filial ? (_FILIAL_SETORES_ST[filial] || []) : null;
+    Array.from(setorSel.options).forEach(opt => {
+      if (!opt.value) return;
+      opt.hidden = allowed !== null && !allowed.includes(opt.value);
+    });
+    if (setorSel.value && setorSel.options[setorSel.selectedIndex]?.hidden) {
+      setorSel.value = '';
+    }
+    linhasSel.innerHTML = `<option value="">${linhasPlaceholder}</option>`;
+  }
+
   async function loadSectors() {
     try {
       const r    = await fetch('/api/production/sectors', { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
       const data = await r.json().catch(() => ({}));
-      const sectors = data.sectors || [];
+      _allSectorsSt = data.sectors || [];
 
       const selForm   = document.getElementById('stSetor');
       const selFiltro = document.getElementById('filtroSetorSt');
 
       selForm.innerHTML = '<option value="">Selecione o setor</option>';
-      sectors.forEach(s => {
+      _allSectorsSt.forEach(s => {
         const opt = document.createElement('option');
         opt.value = s; opt.textContent = s;
         selForm.appendChild(opt);
       });
 
       selFiltro.innerHTML = '<option value="">Todos</option>';
-      sectors.forEach(s => {
+      _allSectorsSt.forEach(s => {
         const opt = document.createElement('option');
         opt.value = s; opt.textContent = s;
         selFiltro.appendChild(opt);
       });
+
+      _applyFilialFilterSt('VTE', selForm, document.getElementById('stLinha'), 'Selecione o setor');
     } catch {}
   }
 
@@ -1150,9 +1182,16 @@
     const yearSuffix = document.getElementById('loadDocYearSuffix');
     if (yearSuffix) yearSuffix.textContent = `-${today.getFullYear()}`;
 
-    loadSectors();
+    await loadSectors();
 
+    document.getElementById('stFilial').addEventListener('change', e => {
+      _applyFilialFilterSt(e.target.value, document.getElementById('stSetor'), document.getElementById('stLinha'), 'Selecione o setor');
+    });
     document.getElementById('stSetor').addEventListener('change', e => loadLines(e.target.value));
+
+    document.getElementById('filtroFilialSt').addEventListener('change', e => {
+      _applyFilialFilterSt(e.target.value, document.getElementById('filtroSetorSt'), document.getElementById('filtroLinhaSt'), 'Todas');
+    });
     document.getElementById('filtroSetorSt').addEventListener('change', e => loadFiltroLinhas(e.target.value));
 
     document.querySelectorAll('.modelo-input').forEach(input => {
