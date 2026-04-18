@@ -242,8 +242,9 @@
               </td>
               <td class="text-end">
                 <form method="POST"
-                      action="{{ url_for('pages.pcp_lancamento_producao_excluir', registro_id=r.id) }}"
+                      action="{{ url_for('pages.pcp_lancamento_producao_excluir') }}"
                       onsubmit="return confirm('Excluir este lançamento?')">
+                  <input type="hidden" name="registro_id" value="{{ r.id }}">
                   <button type="submit" class="btn btn-outline-danger btn-sm" title="Excluir">
                     <i class="bi bi-trash3"></i>
                   </button>

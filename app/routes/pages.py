@@ -376,14 +376,15 @@ def pcp_lancamento_producao_inserir():
     return redirect(url_for("pages.pcp_lancamento_producao"))
 
 
-@bp.route("/pcp/lancamento-producao/excluir/<int(signed=True):registro_id>", methods=["POST"])
+@bp.route("/pcp/lancamento-producao/excluir", methods=["POST"])
 @login_required
 @admin_required
-def pcp_lancamento_producao_excluir(registro_id):
-    from flask import redirect, url_for, flash
+def pcp_lancamento_producao_excluir():
+    from flask import request, redirect, url_for, flash
     from app.services import producao_manual_service as svc
 
     try:
+        registro_id = int(request.form.get("registro_id", 0))
         svc.excluir(registro_id)
         flash("Lançamento excluído.", "success")
     except ValueError as e:
