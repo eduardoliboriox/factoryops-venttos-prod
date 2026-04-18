@@ -69,6 +69,6 @@ def inserir(form_data: dict) -> None:
 
 
 def excluir(registro_id: int) -> None:
-    if not registro_id or registro_id <= 0:
+    if registro_id == 0:
         raise ValueError("Registro inválido.")
     repo.excluir_manual(registro_id)
