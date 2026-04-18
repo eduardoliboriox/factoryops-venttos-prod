@@ -23,6 +23,45 @@ function calcularSetupSugerido(setor, linha) {
   return 0;
 }
 
+// ─── Filial → setor filtering ────────────────────────────────────────────────
+const _FILIAL_SETORES_PLAN = { VTE: ["PTH", "SMD", "IM", "PA"], VTT: ["VTT"] };
+
+function _filterSetorByFilial(filial, setorSel) {
+  const allowed = filial ? (_FILIAL_SETORES_PLAN[filial] || []) : null;
+  Array.from(setorSel.options).forEach(function(opt) {
+    if (!opt.value) return;
+    opt.hidden = allowed !== null && !allowed.includes(opt.value);
+  });
+  if (setorSel.value && setorSel.options[setorSel.selectedIndex] && setorSel.options[setorSel.selectedIndex].hidden) {
+    setorSel.value = "";
+  }
+}
+
+function onModalFilialChange(filial) {
+  const setorSel = document.getElementById("modalSetor");
+  if (!setorSel) return;
+  _filterSetorByFilial(filial, setorSel);
+  setorSel.value = "";
+  onSetorModalChange("");
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+  const planFilialFiltro = document.getElementById("planFilialFiltro");
+  const planSetorFiltro  = document.getElementById("planSetorFiltro");
+  if (planFilialFiltro && planSetorFiltro) {
+    _filterSetorByFilial(planFilialFiltro.value, planSetorFiltro);
+    planFilialFiltro.addEventListener("change", function() {
+      _filterSetorByFilial(planFilialFiltro.value, planSetorFiltro);
+    });
+  }
+
+  const modalFilial = document.getElementById("modalFilial");
+  const modalSetor  = document.getElementById("modalSetor");
+  if (modalFilial && modalSetor) {
+    _filterSetorByFilial(modalFilial.value, modalSetor);
+  }
+});
+
 // ─── Filtro dinâmico de linhas (fora do modal) ────────────────────────────────
 function onSetorChange(setor, selectLinhaId) {
   const sel    = document.getElementById(selectLinhaId);

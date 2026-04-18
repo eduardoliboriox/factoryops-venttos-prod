@@ -405,13 +405,16 @@
               <input type="number" class="form-control form-control-sm" id="clAno" min="2024" max="2040" style="border-radius:8px;">
             </div>
             <div class="col-6 col-md-2">
+              <div class="meta-label">Filial</div>
+              <select class="form-select form-select-sm" id="clFilial" style="border-radius:8px;">
+                <option value="VTE" selected>VTE</option>
+                <option value="VTT">VTT</option>
+              </select>
+            </div>
+            <div class="col-6 col-md-2">
               <div class="meta-label">Setor <span style="font-weight:400;color:var(--text-muted);font-size:.75rem;">(Sector)</span></div>
               <select class="form-select form-select-sm" id="clSetor" style="border-radius:8px;">
-                <option value="SMT">SMT</option>
-                <option value="PTH">PTH</option>
-                <option value="IM">IM</option>
-                <option value="PA">PA</option>
-                <option value="VTT">VTT</option>
+                <option value="">Carregando...</option>
               </select>
             </div>
             <div class="col-6 col-md-2">
@@ -568,14 +571,17 @@
               <input type="number" class="form-control form-control-sm" id="filtroAno" style="border-radius:8px;">
             </div>
             <div class="col-6 col-md-2">
+              <div class="meta-label">Filial</div>
+              <select class="form-select form-select-sm" id="filtroFilialCl" style="border-radius:8px;">
+                <option value="">Todas</option>
+                <option value="VTE">VTE</option>
+                <option value="VTT">VTT</option>
+              </select>
+            </div>
+            <div class="col-6 col-md-2">
               <div class="meta-label">Setor</div>
               <select class="form-select form-select-sm" id="filtroSetor" style="border-radius:8px;">
                 <option value="">Todos</option>
-                <option value="SMT">SMT</option>
-                <option value="PTH">PTH</option>
-                <option value="IM">IM</option>
-                <option value="PA">PA</option>
-                <option value="VTT">VTT</option>
               </select>
             </div>
             <div class="col-6 col-md-2">
@@ -632,13 +638,27 @@
   const MESES = ["","Janeiro","Fevereiro","Março","Abril","Maio","Junho",
                  "Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
 
-  const LINHAS = {
-    SMT: ["SMT-01","SMT-02","SMT-03","SMT-04","SMT-05","SMT-06","SMT-07","SMT-08","SMT-09"],
-    PTH: ["ADE-01","AXI-01","AXI-02","AXI-03","JUM-01","JUM-02","RAD-01","RAD-02","RAD-03","ROU-01","ROU-02","ROU-03","ROU-04"],
-    IM:  ["IM-01","IM-02","IM-03","IM-04","IM-05","IM-06","IM-07"],
-    PA:  ["IP-COM","PA-01","PA-03","PA-04","PA-07","PA-08","PA-09","PA-13","WIFI"],
-    VTT: ["VTT-01","VTT-02","VTT-03"],
-  };
+  const _FILIAL_SETORES_CL = { VTE: ['PTH', 'SMD', 'IM', 'PA'], VTT: ['VTT'] };
+  let _linhasDB_CL = {};
+
+  async function _loadLinhasDB() {
+    try {
+      const r = await fetch('/api/linhas-config', { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+      _linhasDB_CL = await r.json().catch(() => ({}));
+    } catch {}
+  }
+
+  function _populateSetorSelect(setorSel, filial, isFilter) {
+    const allowed = filial ? (_FILIAL_SETORES_CL[filial] || []) : null;
+    const allSetores = Object.keys(_linhasDB_CL);
+    const setores = allowed ? allSetores.filter(s => allowed.includes(s)) : allSetores;
+    setorSel.innerHTML = isFilter ? '<option value="">Todos</option>' : '<option value="">Selecione</option>';
+    setores.forEach(s => {
+      const o = document.createElement('option');
+      o.value = s; o.textContent = s;
+      setorSel.appendChild(o);
+    });
+  }
 
   const ITEMS = [
     { num: 1,  desc: "Todas as IDTS/formulário estão disponíveis nos postos de trabalho e atualizados conforme o sistema ?" },
@@ -702,7 +722,7 @@
   }
 
   function renderLinhas(setor, sel, selected) {
-    const linhas = LINHAS[setor] || [];
+    const linhas = _linhasDB_CL[setor] || [];
     sel.innerHTML = '';
     for (const l of linhas) {
       const o = document.createElement('option');
@@ -926,8 +946,8 @@
 
       document.getElementById('clMes').value   = String(data.mes);
       document.getElementById('clAno').value   = String(data.ano);
-      document.getElementById('clSetor').value = data.setor || 'SMT';
-      renderLinhas(data.setor || 'SMT', document.getElementById('clLinha'), data.linha);
+      document.getElementById('clSetor').value = data.setor || 'SMD';
+      renderLinhas(data.setor || 'SMD', document.getElementById('clLinha'), data.linha);
       document.getElementById('clTurno').value  = data.turno ? String(data.turno) : '';
       document.getElementById('clModelo').value = data.modelo || '';
 
@@ -1181,23 +1201,42 @@
     carregarDocumento(id);
   };
 
-  document.addEventListener('DOMContentLoaded', () => {
+  document.addEventListener('DOMContentLoaded', async () => {
     const now = new Date();
     document.getElementById('clMes').value     = String(now.getMonth() + 1);
     document.getElementById('clAno').value     = String(now.getFullYear());
     document.getElementById('filtroAno').value = String(now.getFullYear());
     document.getElementById('loadDocYearSuffix').textContent = `-${now.getFullYear()}`;
 
-    const clSetor = document.getElementById('clSetor');
-    const clLinha = document.getElementById('clLinha');
+    await _loadLinhasDB();
+
+    const clFilial = document.getElementById('clFilial');
+    const clSetor  = document.getElementById('clSetor');
+    const clLinha  = document.getElementById('clLinha');
+
+    _populateSetorSelect(clSetor, clFilial.value, false);
     renderLinhas(clSetor.value, clLinha);
+
+    clFilial.addEventListener('change', () => {
+      _populateSetorSelect(clSetor, clFilial.value, false);
+      renderLinhas(clSetor.value, clLinha);
+    });
     clSetor.addEventListener('change', () => renderLinhas(clSetor.value, clLinha));
 
-    const filtroSetor = document.getElementById('filtroSetor');
-    const filtroLinha = document.getElementById('filtroLinha');
+    const filtroFilialCl = document.getElementById('filtroFilialCl');
+    const filtroSetor    = document.getElementById('filtroSetor');
+    const filtroLinha    = document.getElementById('filtroLinha');
+
+    _populateSetorSelect(filtroSetor, '', true);
+
+    filtroFilialCl.addEventListener('change', () => {
+      _populateSetorSelect(filtroSetor, filtroFilialCl.value, true);
+      filtroLinha.innerHTML = '<option value="">Todas</option>';
+    });
+
     function renderFiltroLinhas() {
       const setor  = filtroSetor.value;
-      const linhas = setor ? (LINHAS[setor] || []) : [];
+      const linhas = setor ? (_linhasDB_CL[setor] || []) : [];
       filtroLinha.innerHTML = '<option value="">Todas</option>';
       linhas.forEach(l => {
         const o = document.createElement('option');

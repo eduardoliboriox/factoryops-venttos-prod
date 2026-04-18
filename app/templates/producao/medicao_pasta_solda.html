@@ -598,6 +598,13 @@
               </select>
             </div>
             <div class="meta-field">
+              <label>Filial</label>
+              <select id="mpFilial">
+                <option value="VTE" selected>VTE</option>
+                <option value="VTT">VTT</option>
+              </select>
+            </div>
+            <div class="meta-field">
               <label>Setor</label>
               <select id="mpSetor">
                 <option value="">Carregando...</option>
@@ -786,6 +793,14 @@
             <div class="col-md-2">
               <label class="form-label" style="font-size:0.8rem;font-weight:600;">Data</label>
               <input class="form-control" type="date" id="filtroDataMp">
+            </div>
+            <div class="col-md-2">
+              <label class="form-label" style="font-size:0.8rem;font-weight:600;">Filial</label>
+              <select class="form-select" id="filtroFilialMp">
+                <option value="">Todas</option>
+                <option value="VTE">VTE</option>
+                <option value="VTT">VTT</option>
+              </select>
             </div>
             <div class="col-md-2">
               <label class="form-label" style="font-size:0.8rem;font-weight:600;">Setor</label>
@@ -1055,11 +1070,26 @@
     btn.classList.replace('btn-primary', 'btn-success');
   }
 
+  const _FILIAL_SETORES_MP = { VTE: ['PTH', 'SMD', 'IM', 'PA'], VTT: ['VTT'] };
+  let _allSectorsMp = [];
+
+  function _applyFilialFilterMp(filial, setorSel, linhasSel, linhasPlaceholder) {
+    const allowed = filial ? (_FILIAL_SETORES_MP[filial] || []) : null;
+    Array.from(setorSel.options).forEach(opt => {
+      if (!opt.value) return;
+      opt.hidden = allowed !== null && !allowed.includes(opt.value);
+    });
+    if (setorSel.value && setorSel.options[setorSel.selectedIndex]?.hidden) {
+      setorSel.value = '';
+    }
+    linhasSel.innerHTML = `<option value="">${linhasPlaceholder}</option>`;
+  }
+
   async function loadSectors(targetSelect, filtroSelect) {
     try {
       const r = await fetch('/api/production/sectors', { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
       const data = await r.json().catch(() => ({}));
-      const sectors = data.sectors || [];
+      _allSectorsMp = data.sectors || [];
 
       [targetSelect, filtroSelect].forEach(sel => {
         if (!sel) return;
@@ -1067,7 +1097,7 @@
         sel.innerHTML = isFilter
           ? '<option value="">Todos</option>'
           : '<option value="">Selecione o setor</option>';
-        sectors.forEach(s => {
+        _allSectorsMp.forEach(s => {
           const opt = document.createElement('option');
           opt.value = s; opt.textContent = s;
           sel.appendChild(opt);
@@ -1449,14 +1479,24 @@
     document.getElementById('planoDia').value     = today;
     document.getElementById('filtroDataMp').value = today;
 
+    const mpFilial      = document.getElementById('mpFilial');
     const mpSetor       = document.getElementById('mpSetor');
     const mpLinha       = document.getElementById('mpLinha');
+    const filtroFilialMp = document.getElementById('filtroFilialMp');
     const filtroSetorMp = document.getElementById('filtroSetorMp');
     const filtroLinhaMp = document.getElementById('filtroLinhaMp');
 
     await loadSectors(mpSetor, filtroSetorMp);
+    _applyFilialFilterMp('VTE', mpSetor, mpLinha, 'Selecione o setor');
 
+    mpFilial.addEventListener('change', () => {
+      _applyFilialFilterMp(mpFilial.value, mpSetor, mpLinha, 'Selecione o setor');
+    });
     mpSetor.addEventListener('change', () => loadLines(mpSetor.value, mpLinha, 'Selecione a linha'));
+
+    filtroFilialMp.addEventListener('change', () => {
+      _applyFilialFilterMp(filtroFilialMp.value, filtroSetorMp, filtroLinhaMp, 'Todas');
+    });
     filtroSetorMp.addEventListener('change', () => loadLines(filtroSetorMp.value, filtroLinhaMp, 'Todas'));
 
     document.getElementById('btnSalvarMedicao').addEventListener('click', salvarMedicao);

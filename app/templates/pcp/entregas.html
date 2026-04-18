@@ -307,7 +307,7 @@
           </div>
           <div class="col-md-4">
             <label class="form-label fw-semibold" style="font-size:0.8rem;">Modelo <span class="text-danger">*</span></label>
-            <input type="text" class="form-control" id="inputModelo" placeholder="Ex: 240170" style="border-radius:8px;">
+            <input type="text" class="form-control" id="inputModelo" placeholder="Ex: 240170" style="border-radius:8px;text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()">
           </div>
           <div class="col-md-4">
             <label class="form-label fw-semibold" style="font-size:0.8rem;">Família</label>
@@ -408,7 +408,7 @@ function editarPedido(p) {
     '<i class="bi bi-pencil me-2 text-primary"></i>Editar Pedido';
   document.getElementById("inputNumeroPedido").value = p.numero_pedido || "";
   document.getElementById("inputCliente").value      = p.cliente || "";
-  document.getElementById("inputModelo").value       = p.modelo || "";
+  document.getElementById("inputModelo").value       = (p.modelo || "").toUpperCase();
   document.getElementById("inputFamilia").value      = p.familia || "";
   document.getElementById("inputQuantidade").value   = p.quantidade || "";
   document.getElementById("inputDataPedido").value   = p.data_pedido || "";

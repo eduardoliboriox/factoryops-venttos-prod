@@ -1,5 +1,5 @@
 {% extends "layouts/app.html" %}
-{% block title %}SMT · Estudo de Tempo{% endblock %}
+{% block title %}SMD · Estudo de Tempo{% endblock %}
 
 {% block styles %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/time-studies.css') }}?v={{ APP_VERSION }}">
@@ -8,7 +8,7 @@
 {% block page_title %}
 <div class="page-header">
   <div class="page-header-title">
-    <span class="page-header-section">SMT</span>
+    <span class="page-header-section">SMD</span>
     <h1 class="page-header-name">Estudo de Tempo</h1>
   </div>
   <div class="page-header-actions">
@@ -52,12 +52,18 @@
             </div>
 
             <div class="col-md-6">
+              <label class="form-label fw-bold">Filial</label>
+              <select class="form-select" id="tsFilialSelect">
+                <option value="">Todas as filiais</option>
+                <option value="VTE" selected>VTE</option>
+                <option value="VTT">VTT</option>
+              </select>
+            </div>
+
+            <div class="col-md-6">
               <label class="form-label fw-bold">Setor</label>
               <select class="form-select" name="setor" id="tsSetorSelect" required>
-                <option value="SMT" selected>SMT</option>
-                <option value="PTH">PTH</option>
-                <option value="IM">IM</option>
-                <option value="PA">PA</option>
+                <option value="">Carregando...</option>
               </select>
             </div>
 

@@ -76,6 +76,13 @@
             </select>
           </div>
           <div class="col-6 col-md-2">
+            <label class="form-label">Filial</label>
+            <select class="form-select" id="lpFilialForm">
+              <option value="VTE" selected>VTE</option>
+              <option value="VTT">VTT</option>
+            </select>
+          </div>
+          <div class="col-6 col-md-2">
             <label class="form-label">Setor</label>
             <select class="form-select" name="setor" id="setorSelect" required
                     onchange="atualizarLinhas(this.value)">
@@ -136,8 +143,16 @@
           <input type="date" class="form-control" name="dataFinal" value="{{ data_final }}">
         </div>
         <div class="col-6 col-md-2">
+          <label class="form-label">Filial</label>
+          <select class="form-select" id="lpFilialFiltro">
+            <option value="">Todas</option>
+            <option value="VTE" {% if setor and setor != 'VTT' %}selected{% endif %}>VTE</option>
+            <option value="VTT" {% if setor == 'VTT' %}selected{% endif %}>VTT</option>
+          </select>
+        </div>
+        <div class="col-6 col-md-2">
           <label class="form-label">Setor</label>
-          <select class="form-select" name="setor" onchange="this.form.submit()">
+          <select class="form-select" name="setor" id="lpSetorFiltro" onchange="this.form.submit()">
             <option value="">Todos</option>
             {% for s in filtros.setores %}
             <option value="{{ s }}" {% if s == setor %}selected{% endif %}>{{ s }}</option>
@@ -253,7 +268,20 @@
 
 <script>
 (function () {
+  const _FILIAL_SETORES_LP = { VTE: ['PTH', 'SMD', 'IM', 'PA'], VTT: ['VTT'] };
   const linhasPorSetor = {{ filtros.linhas_por_setor | tojson }};
+
+  function applyFilialFilter(filial, setorSel, linhasSel) {
+    const allowed = filial ? (_FILIAL_SETORES_LP[filial] || []) : null;
+    Array.from(setorSel.options).forEach(opt => {
+      if (!opt.value) return;
+      opt.hidden = allowed !== null && !allowed.includes(opt.value);
+    });
+    if (setorSel.value && setorSel.options[setorSel.selectedIndex]?.hidden) {
+      setorSel.value = '';
+      if (linhasSel) linhasSel.innerHTML = '<option value="">Selecione</option>';
+    }
+  }
 
   function atualizarLinhas(setor) {
     const sel = document.getElementById('linhaSelect');
@@ -268,8 +296,30 @@
 
   window.atualizarLinhas = atualizarLinhas;
 
-  const setorInicial = document.getElementById('setorSelect').value;
-  if (setorInicial) atualizarLinhas(setorInicial);
+  document.addEventListener('DOMContentLoaded', function () {
+    const lpFilialForm  = document.getElementById('lpFilialForm');
+    const setorSelect   = document.getElementById('setorSelect');
+    const linhaSelect   = document.getElementById('linhaSelect');
+    const lpFilialFiltro = document.getElementById('lpFilialFiltro');
+    const lpSetorFiltro  = document.getElementById('lpSetorFiltro');
+
+    if (lpFilialForm && setorSelect) {
+      applyFilialFilter(lpFilialForm.value, setorSelect, linhaSelect);
+      lpFilialForm.addEventListener('change', function () {
+        applyFilialFilter(lpFilialForm.value, setorSelect, linhaSelect);
+      });
+    }
+
+    if (lpFilialFiltro && lpSetorFiltro) {
+      applyFilialFilter(lpFilialFiltro.value, lpSetorFiltro, null);
+      lpFilialFiltro.addEventListener('change', function () {
+        applyFilialFilter(lpFilialFiltro.value, lpSetorFiltro, null);
+      });
+    }
+
+    const setorInicial = setorSelect ? setorSelect.value : '';
+    if (setorInicial) atualizarLinhas(setorInicial);
+  });
 }());
 </script>
 {% endblock %}

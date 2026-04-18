@@ -32,7 +32,8 @@
   <form method="GET" class="row g-2 mb-4 align-items-end">
     <div class="col-12 col-sm-6 col-md-3">
       <label class="form-label fw-semibold" style="font-size:0.8rem;">Filial</label>
-      <select name="filial" class="form-select form-select-sm" style="border-radius:8px;">
+      <select name="filial" id="coFilialFiltro" class="form-select form-select-sm" style="border-radius:8px;"
+              onchange="onCoFilialFiltroChange(this.value)">
         <option value="">Todas</option>
         {% for f in filiais %}
         <option value="{{ f }}" {% if filial == f %}selected{% endif %}>{{ f }}</option>
@@ -41,7 +42,7 @@
     </div>
     <div class="col-12 col-sm-6 col-md-2">
       <label class="form-label fw-semibold" style="font-size:0.8rem;">Setor</label>
-      <select name="setor" class="form-select form-select-sm" style="border-radius:8px;">
+      <select name="setor" id="coSetorFiltro" class="form-select form-select-sm" style="border-radius:8px;">
         <option value="">Todos</option>
         {% for s in ['PTH','IM','SMD','PA','VTT'] %}
         <option value="{{ s }}" {% if setor == s %}selected{% endif %}>{{ s }}</option>
@@ -220,7 +221,11 @@
             </div>
             <div class="col-12 col-sm-6">
               <label class="form-label fw-semibold" style="font-size:0.8rem;">Filial <span class="text-danger">*</span></label>
-              <input type="text" class="form-control" name="filial" required placeholder="Ex: Matriz" style="border-radius:8px;">
+              <select class="form-select" name="filial" id="createFilial" required style="border-radius:8px;"
+                      onchange="onCreateFilialChange(this.value)">
+                <option value="VTE" selected>VTE</option>
+                <option value="VTT">VTT</option>
+              </select>
             </div>
             <div class="col-12 col-sm-6">
               <label class="form-label fw-semibold" style="font-size:0.8rem;">Produto <span class="text-danger">*</span></label>
@@ -337,7 +342,11 @@
             </div>
             <div class="col-12 col-sm-6">
               <label class="form-label fw-semibold" style="font-size:0.8rem;">Filial <span class="text-danger">*</span></label>
-              <input type="text" class="form-control" name="filial" id="edit_filial" required style="border-radius:8px;">
+              <select class="form-select" name="filial" id="edit_filial" required style="border-radius:8px;"
+                      onchange="onEditFilialChange(this.value)">
+                <option value="VTE">VTE</option>
+                <option value="VTT">VTT</option>
+              </select>
             </div>
             <div class="col-12 col-sm-6">
               <label class="form-label fw-semibold" style="font-size:0.8rem;">Produto <span class="text-danger">*</span></label>
@@ -416,7 +425,9 @@ function abrirEditar(id) {
   document.getElementById("tituloEditarOP").textContent   = op.numero_op;
   document.getElementById("formEditarOP").action          = "/pcp/controle-ops/" + op.id + "/editar";
   document.getElementById("edit_numero_op").value         = op.numero_op           || "";
-  document.getElementById("edit_filial").value            = op.filial              || "";
+  const filialEdit = (op.filial === "VTT") ? "VTT" : "VTE";
+  document.getElementById("edit_filial").value            = filialEdit;
+  onEditFilialChange(filialEdit);
   document.getElementById("edit_produto").value           = op.produto             || "";
   document.getElementById("edit_armazem").value           = op.armazem             || "";
   document.getElementById("edit_descricao").value         = op.descricao           || "";
@@ -487,5 +498,41 @@ if (inputNumeroOP) {
     _renderizarPreviewEtapas(etapas, this.value.trim());
   });
 }
+
+const _FILIAL_SETORES_CO = { VTE: ["PTH", "SMD", "IM", "PA"], VTT: ["VTT"] };
+
+function _filterSetorSel(filial, setorSelId) {
+  const setorSel = document.getElementById(setorSelId);
+  if (!setorSel) return;
+  const allowed = filial ? (_FILIAL_SETORES_CO[filial] || []) : null;
+  Array.from(setorSel.options).forEach(function(opt) {
+    if (!opt.value) return;
+    opt.hidden = allowed !== null && !allowed.includes(opt.value);
+  });
+  if (setorSel.value && setorSel.options[setorSel.selectedIndex] && setorSel.options[setorSel.selectedIndex].hidden) {
+    setorSel.value = "";
+  }
+}
+
+function onCreateFilialChange(filial) {
+  _filterSetorSel(filial, "selectSetor");
+}
+
+function onEditFilialChange(filial) {
+  _filterSetorSel(filial, "edit_setor");
+}
+
+function onCoFilialFiltroChange(filial) {
+  const mapped = filial === "VTT" ? "VTT" : (filial === "VTE" ? "VTE" : "");
+  _filterSetorSel(mapped, "coSetorFiltro");
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+  const createFilial = document.getElementById("createFilial");
+  if (createFilial) _filterSetorSel(createFilial.value, "selectSetor");
+
+  const coFilialFiltro = document.getElementById("coFilialFiltro");
+  if (coFilialFiltro) onCoFilialFiltroChange(coFilialFiltro.value);
+});
 </script>
 {% endblock %}
