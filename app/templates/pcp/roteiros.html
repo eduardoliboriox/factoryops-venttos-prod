@@ -272,17 +272,16 @@
               <i class="bi bi-link-45deg me-1 text-primary"></i>Vincular modelo
             </div>
             <div class="d-flex gap-2">
-              <select class="form-select form-select-sm flex-grow-1" id="novoModeloCodigo"
-                      style="border-radius:8px;">
-                <option value="">Selecione um modelo…</option>
-              </select>
+              <input type="text" class="form-control form-control-sm flex-grow-1" id="novoModeloCodigo"
+                     placeholder="Digite o código do modelo…" style="border-radius:8px;text-transform:uppercase;"
+                     onkeydown="if(event.key==='Enter')vincularModelo()">
               <button class="btn btn-primary btn-sm fw-semibold" style="border-radius:8px;white-space:nowrap;"
                       onclick="vincularModelo()">
                 <i class="bi bi-plus-lg me-1"></i>Vincular
               </button>
             </div>
             <div class="form-text text-muted mt-1" style="font-size:0.72rem;">
-              Mostrando modelos cadastrados para o cliente deste roteiro.
+              Digite qualquer código de modelo para vincular a este roteiro.
             </div>
           </div>
         </div>

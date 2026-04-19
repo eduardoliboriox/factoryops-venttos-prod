@@ -207,7 +207,6 @@ function abrirModalModelos(roteiroId, nome, cliente) {
   document.getElementById("modalModelosTitulo").innerHTML =
     `<i class="bi bi-cpu me-2 text-primary"></i>Modelos — ${nome}`;
 
-  _carregarCodigosCliente(roteiroId);
   _carregarModelosVinculados(roteiroId);
 
   bootstrap.Modal.getOrCreateInstance(document.getElementById("modalModelos")).show();
@@ -276,10 +275,10 @@ function _carregarModelosVinculados(roteiroId) {
 
 function vincularModelo() {
   const roteiroId = document.getElementById("modelosRoteiroId").value;
-  const codigo    = document.getElementById("novoModeloCodigo").value.trim();
+  const codigo    = document.getElementById("novoModeloCodigo").value.trim().toUpperCase();
 
   if (!codigo) {
-    mostrarAlerta("danger", "Selecione um modelo.");
+    mostrarAlerta("danger", "Informe o código do modelo.");
     return;
   }
 
