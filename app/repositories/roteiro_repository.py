@@ -132,6 +132,21 @@ def excluir(roteiro_id: int) -> None:
             cur.execute("DELETE FROM roteiros WHERE id = %s", (roteiro_id,))
 
 
+def setores_do_modelo(modelo_codigo: str) -> list[str]:
+    with get_db() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute("""
+                SELECT re.setor
+                FROM roteiro_etapas re
+                JOIN roteiro_modelos rm ON rm.roteiro_id = re.roteiro_id
+                JOIN roteiros r ON r.id = rm.roteiro_id
+                WHERE rm.modelo_codigo = %s
+                  AND r.ativo = TRUE
+                ORDER BY re.ordem
+            """, (modelo_codigo,))
+            return [row["setor"] for row in cur.fetchall()]
+
+
 def vincular_modelo(roteiro_id: int, modelo_codigo: str) -> None:
     with get_db() as conn:
         with conn.cursor(row_factory=dict_row) as cur:

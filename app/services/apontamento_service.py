@@ -2,6 +2,7 @@ from datetime import date, time
 from app.repositories import apontamento_repository as repo
 from app.repositories import turno_config_repository as tc_repo
 from app.repositories import controle_ops_repository as ops_repo
+from app.repositories import roteiro_repository as roteiro_repo
 
 SETORES_SMD = {"SMD"}
 
@@ -37,6 +38,17 @@ _ORDEM_SETORES = ["PTH", "SMD", "IM", "PA", "VTT"]
 
 def ops_abertas(setor: str = "") -> list:
     return repo.ops_abertas(setor)
+
+
+def _validar_setor_roteiro(modelo: str, setor: str) -> None:
+    setores_validos = roteiro_repo.setores_do_modelo(modelo)
+    if not setores_validos:
+        return
+    if setor not in setores_validos:
+        raise ValueError(
+            f"Setor '{setor}' não faz parte do roteiro do modelo '{modelo}'. "
+            f"Setores válidos: {', '.join(setores_validos)}."
+        )
 
 
 def _validar_sequencia_roteiro(op: dict) -> None:
@@ -81,6 +93,8 @@ def vincular(data: str, turno: str, modelo: str, linha: str, op_id: int, quantid
         raise ValueError("Para SMD informe a fase: TOP ou BOTTOM.")
     if setor not in SETORES_SMD:
         fase_norm = None
+
+    _validar_setor_roteiro(modelo, setor)
 
     op = repo.buscar_op_para_vincular(op_id)
     if not op:
