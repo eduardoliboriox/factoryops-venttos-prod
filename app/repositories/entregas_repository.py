@@ -32,7 +32,8 @@ def listar_pedidos(status: str = "", modelo: str = "", data_inicial: str = "", d
                               FROM roteiro_etapas re
                               JOIN roteiro_modelos rm ON rm.roteiro_id = re.roteiro_id
                               JOIN roteiros r ON r.id = rm.roteiro_id
-                              WHERE rm.modelo_codigo = p.modelo
+                              WHERE (rm.modelo_codigo = p.modelo
+                                     OR p.modelo LIKE rm.modelo_codigo || ' %')
                                 AND r.cliente = p.cliente
                               ORDER BY re.ordem DESC
                               LIMIT 1
