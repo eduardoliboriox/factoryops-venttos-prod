@@ -24,10 +24,14 @@ def listar_pedidos(status: str = "", modelo: str = "", data_inicial: str = "", d
                 SELECT
                     p.*,
                     COALESCE((
-                        SELECT SUM(pc.producao_real)
-                        FROM producao_coletada pc
-                        WHERE pc.modelo = p.modelo
-                          AND pc.setor = (
+                        SELECT SUM(a.quantidade)
+                        FROM apontamento a
+                        JOIN controle_ops co ON co.id = a.op_id
+                        WHERE (a.modelo = p.modelo
+                               OR p.modelo LIKE a.modelo || ' %%'
+                               OR a.modelo LIKE p.modelo || ' %%')
+                          AND a.data >= p.data_pedido
+                          AND co.setor = (
                               SELECT re.setor
                               FROM roteiro_etapas re
                               JOIN roteiro_modelos rm ON rm.roteiro_id = re.roteiro_id
