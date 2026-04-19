@@ -109,6 +109,7 @@
                   <th class="ps-3 py-2">Pedido</th>
                   <th>Cliente</th>
                   <th>Modelo / Família</th>
+                  <th>OPs</th>
                   <th class="text-end">Qtd. Pedida</th>
                   <th class="text-end">Produzido</th>
                   <th>Data Pedido</th>
@@ -126,6 +127,15 @@
                   <td>
                     <div class="fw-semibold">{{ p.modelo }}</div>
                     {% if p.familia %}<div class="text-muted small">{{ p.familia }}</div>{% endif %}
+                  </td>
+                  <td>
+                    {% if p.ops %}
+                      {% for op in p.ops.split(', ') %}
+                      <span class="badge bg-light text-dark border" style="font-size:0.68rem;font-weight:600;">{{ op }}</span>
+                      {% endfor %}
+                    {% else %}
+                      <span class="text-muted small">—</span>
+                    {% endif %}
                   </td>
                   <td class="text-end fw-bold">{{ "{:,.0f}".format(p.quantidade).replace(',','.') }}</td>
                   <td class="text-end">
