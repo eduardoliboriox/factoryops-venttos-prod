@@ -57,8 +57,13 @@ def _validar_sequencia_roteiro(op: dict) -> None:
         return
     base = numero_op[:-2]
     setor_atual = op.get("setor") or ""
+
+    modelo = (op.get("produto") or "").strip().upper()
+    setores_roteiro = roteiro_repo.setores_do_modelo(modelo) if modelo else []
+    ordem_setores = setores_roteiro if setores_roteiro else _ORDEM_SETORES
+
     try:
-        idx_atual = _ORDEM_SETORES.index(setor_atual)
+        idx_atual = ordem_setores.index(setor_atual)
     except ValueError:
         return
 
@@ -68,7 +73,7 @@ def _validar_sequencia_roteiro(op: dict) -> None:
             continue
         setor_ant = anterior["setor"] or ""
         try:
-            idx_ant = _ORDEM_SETORES.index(setor_ant)
+            idx_ant = ordem_setores.index(setor_ant)
         except ValueError:
             continue
         if idx_ant < idx_atual and anterior["produzido"] == 0:

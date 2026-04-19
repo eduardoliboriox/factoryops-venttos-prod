@@ -20,18 +20,17 @@ def listar(cliente: str = "") -> list:
                     r.ativo,
                     r.criado_em,
                     COALESCE(
-                        json_agg(
-                            json_build_object('setor', e.setor, 'ordem', e.ordem, 'observacao', e.observacao)
-                            ORDER BY e.ordem, e.setor
-                        ) FILTER (WHERE e.id IS NOT NULL),
-                        '[]'
+                        (SELECT json_agg(
+                                    json_build_object('setor', e.setor, 'ordem', e.ordem, 'observacao', e.observacao)
+                                    ORDER BY e.ordem
+                                )
+                         FROM roteiro_etapas e
+                         WHERE e.roteiro_id = r.id),
+                        '[]'::json
                     ) AS etapas,
-                    COUNT(DISTINCT m.id) AS total_modelos
+                    (SELECT COUNT(*) FROM roteiro_modelos m WHERE m.roteiro_id = r.id) AS total_modelos
                 FROM roteiros r
-                LEFT JOIN roteiro_etapas e ON e.roteiro_id = r.id
-                LEFT JOIN roteiro_modelos m ON m.roteiro_id = r.id
                 {where}
-                GROUP BY r.id
                 ORDER BY r.cliente, r.nome
             """, params)
             return cur.fetchall() or []
