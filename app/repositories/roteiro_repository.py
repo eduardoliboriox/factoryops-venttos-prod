@@ -20,12 +20,13 @@ def listar(cliente: str = "") -> list:
                     r.ativo,
                     r.criado_em,
                     COALESCE(
-                        (SELECT json_agg(
-                                    json_build_object('setor', e.setor, 'ordem', e.ordem, 'observacao', e.observacao)
-                                    ORDER BY e.ordem
-                                )
-                         FROM roteiro_etapas e
-                         WHERE e.roteiro_id = r.id),
+                        (SELECT json_agg(sub ORDER BY sub.ordem)
+                         FROM (
+                             SELECT DISTINCT ON (e.setor) e.setor, e.ordem, e.observacao
+                             FROM roteiro_etapas e
+                             WHERE e.roteiro_id = r.id
+                             ORDER BY e.setor, e.ordem
+                         ) sub),
                         '[]'::json
                     ) AS etapas,
                     (SELECT COUNT(*) FROM roteiro_modelos m WHERE m.roteiro_id = r.id) AS total_modelos
@@ -48,16 +49,17 @@ def buscar_por_id(roteiro_id: int) -> dict | None:
                     r.ativo,
                     r.criado_em,
                     COALESCE(
-                        json_agg(
-                            json_build_object('setor', e.setor, 'ordem', e.ordem, 'observacao', e.observacao)
-                            ORDER BY e.ordem, e.setor
-                        ) FILTER (WHERE e.id IS NOT NULL),
-                        '[]'
+                        (SELECT json_agg(sub ORDER BY sub.ordem)
+                         FROM (
+                             SELECT DISTINCT ON (e.setor) e.setor, e.ordem, e.observacao
+                             FROM roteiro_etapas e
+                             WHERE e.roteiro_id = r.id
+                             ORDER BY e.setor, e.ordem
+                         ) sub),
+                        '[]'::json
                     ) AS etapas
                 FROM roteiros r
-                LEFT JOIN roteiro_etapas e ON e.roteiro_id = r.id
                 WHERE r.id = %s
-                GROUP BY r.id
             """, (roteiro_id,))
             return cur.fetchone()
 
@@ -139,10 +141,10 @@ def setores_do_modelo(modelo_codigo: str) -> list[str]:
                 FROM roteiro_etapas re
                 JOIN roteiro_modelos rm ON rm.roteiro_id = re.roteiro_id
                 JOIN roteiros r ON r.id = rm.roteiro_id
-                WHERE rm.modelo_codigo = %s
+                WHERE (rm.modelo_codigo = %s OR %s LIKE rm.modelo_codigo || ' %%')
                   AND r.ativo = TRUE
                 ORDER BY re.ordem
-            """, (modelo_codigo,))
+            """, (modelo_codigo, modelo_codigo))
             return [row["setor"] for row in cur.fetchall()]
 
 
