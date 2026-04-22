@@ -100,10 +100,27 @@ def buscar_entrega(entrega_id: int) -> dict | None:
     return repo.buscar_entrega(entrega_id)
 
 
-def criar_entrega(pedido_id: int, nota_fiscal: str) -> int:
-    if not repo.buscar_pedido(pedido_id):
+def listar_remessas_pedido(pedido_id: int) -> list:
+    rows = repo.listar_remessas_pedido(pedido_id)
+    for row in rows:
+        row["status_label"] = STATUS_LABEL.get(row["status"], row["status"])
+        row["status_cor"] = STATUS_COR.get(row["status"], "secondary")
+    return rows
+
+
+def criar_entrega(pedido_id: int, quantidade: int, nota_fiscal: str = "") -> int:
+    pedido = repo.buscar_pedido(pedido_id)
+    if not pedido:
         raise ValueError("Pedido não encontrado.")
-    return repo.criar_entrega(pedido_id, nota_fiscal)
+    if quantidade <= 0:
+        raise ValueError("Quantidade deve ser maior que zero.")
+    qtd_ja_em_remessa = repo.soma_remessas_pedido(pedido_id)
+    disponivel = pedido["quantidade"] - qtd_ja_em_remessa
+    if quantidade > disponivel:
+        raise ValueError(
+            f"Quantidade ({quantidade}) supera o saldo disponível para remessa ({disponivel})."
+        )
+    return repo.criar_entrega(pedido_id, quantidade, nota_fiscal)
 
 
 def atualizar_status_entrega(entrega_id: int, status: str,

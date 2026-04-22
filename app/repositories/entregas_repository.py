@@ -49,11 +49,15 @@ def listar_pedidos(status: str = "", modelo: str = "", data_inicial: str = "", d
                         WHERE co.produto = p.modelo
                            OR p.modelo LIKE co.produto || ' %%'
                     ) AS ops,
-                    e.id          AS entrega_id,
-                    e.status      AS entrega_status,
-                    e.nota_fiscal AS entrega_nf
+                    COALESCE((
+                        SELECT SUM(e.quantidade) FROM entrega e WHERE e.pedido_id = p.id
+                    ), 0) AS qtd_em_remessa,
+                    COALESCE((
+                        SELECT SUM(e.quantidade) FROM entrega e
+                        WHERE e.pedido_id = p.id AND e.status = 'entregue'
+                    ), 0) AS qtd_entregue,
+                    (SELECT COUNT(*) FROM entrega e WHERE e.pedido_id = p.id) AS total_remessas
                 FROM pedido_cliente p
-                LEFT JOIN entrega e ON e.pedido_id = p.id
                 WHERE {where}
                 ORDER BY p.data_entrega ASC
             """, params)
@@ -108,7 +112,7 @@ def listar_entregas() -> list:
                 SELECT
                     e.*,
                     p.numero_pedido, p.cliente, p.modelo, p.familia,
-                    p.quantidade, p.data_entrega AS data_entrega_prevista,
+                    p.quantidade AS qtd_pedido, p.data_entrega AS data_entrega_prevista,
                     m.nome AS motorista_nome, m.telefone AS motorista_telefone,
                     COALESCE((
                         SELECT JSON_AGG(JSON_BUILD_OBJECT('id', eq.id, 'nome', eq.nome, 'tipo', eq.tipo))
@@ -124,6 +128,27 @@ def listar_entregas() -> list:
             return cur.fetchall()
 
 
+def listar_remessas_pedido(pedido_id: int) -> list:
+    with get_db() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute("""
+                SELECT
+                    e.id,
+                    e.quantidade,
+                    e.nota_fiscal,
+                    e.status,
+                    e.data_saida,
+                    e.data_entrega_real,
+                    e.criado_em,
+                    m.nome AS motorista_nome
+                FROM entrega e
+                LEFT JOIN equipe_entrega m ON m.id = e.motorista_id
+                WHERE e.pedido_id = %s
+                ORDER BY e.criado_em ASC
+            """, (pedido_id,))
+            return cur.fetchall()
+
+
 def buscar_entrega(entrega_id: int) -> dict | None:
     with get_db() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
@@ -131,7 +156,7 @@ def buscar_entrega(entrega_id: int) -> dict | None:
                 SELECT
                     e.*,
                     p.numero_pedido, p.cliente, p.modelo, p.familia,
-                    p.quantidade, p.data_entrega AS data_entrega_prevista,
+                    p.quantidade AS qtd_pedido, p.data_entrega AS data_entrega_prevista,
                     m.nome AS motorista_nome, m.telefone AS motorista_telefone
                 FROM entrega e
                 JOIN pedido_cliente p ON p.id = e.pedido_id
@@ -141,14 +166,24 @@ def buscar_entrega(entrega_id: int) -> dict | None:
             return cur.fetchone()
 
 
-def criar_entrega(pedido_id: int, nota_fiscal: str) -> int:
+def soma_remessas_pedido(pedido_id: int) -> int:
+    with get_db() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                "SELECT COALESCE(SUM(quantidade), 0) AS total FROM entrega WHERE pedido_id = %s",
+                (pedido_id,)
+            )
+            return int(cur.fetchone()["total"])
+
+
+def criar_entrega(pedido_id: int, quantidade: int, nota_fiscal: str) -> int:
     with get_db() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
             cur.execute("""
-                INSERT INTO entrega (pedido_id, nota_fiscal)
-                VALUES (%s, %s)
+                INSERT INTO entrega (pedido_id, quantidade, nota_fiscal)
+                VALUES (%s, %s, %s)
                 RETURNING id
-            """, (pedido_id, nota_fiscal or None))
+            """, (pedido_id, quantidade, nota_fiscal or None))
             entrega_id = cur.fetchone()["id"]
             cur.execute(
                 "UPDATE pedido_cliente SET status = 'em_producao', atualizado_em = NOW() WHERE id = %s AND status = 'aberto'",
@@ -179,7 +214,13 @@ def atualizar_status_entrega(entrega_id: int, status: str,
                 cur.execute("""
                     UPDATE pedido_cliente SET status = 'entregue', atualizado_em = NOW()
                     WHERE id = (SELECT pedido_id FROM entrega WHERE id = %s)
-                """, (entrega_id,))
+                      AND quantidade <= (
+                          SELECT COALESCE(SUM(e2.quantidade), 0)
+                          FROM entrega e2
+                          WHERE e2.pedido_id = (SELECT pedido_id FROM entrega WHERE id = %s)
+                            AND (e2.id = %s OR e2.status = 'entregue')
+                      )
+                """, (entrega_id, entrega_id, entrega_id))
 
 
 def atualizar_localizacao(entrega_id: int, lat: float, lng: float) -> None:
