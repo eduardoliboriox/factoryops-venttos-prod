@@ -110,7 +110,7 @@
                   <th>Cliente</th>
                   <th>Modelo / Família</th>
                   <th>OPs</th>
-                  <th class="text-end">Qtd. Pedida</th>
+                  <th class="text-end">Qtd. Pedida / Remessa</th>
                   <th class="text-end">Produzido</th>
                   <th>Data Pedido</th>
                   <th>Data Entrega</th>
@@ -137,7 +137,14 @@
                       <span class="text-muted small">—</span>
                     {% endif %}
                   </td>
-                  <td class="text-end fw-bold">{{ "{:,.0f}".format(p.quantidade).replace(',','.') }}</td>
+                  <td class="text-end fw-bold">
+                    {{ "{:,.0f}".format(p.quantidade).replace(',','.') }}
+                    {% if p.qtd_em_remessa > 0 %}
+                    <div class="text-muted" style="font-size:0.72rem;font-weight:500;">
+                      {{ "{:,.0f}".format(p.qtd_em_remessa).replace(',','.') }} em remessa
+                    </div>
+                    {% endif %}
+                  </td>
                   <td class="text-end">
                     <div>{{ "{:,.0f}".format(p.produzido).replace(',','.') }}</div>
                     <div class="progress mt-1" style="height:4px;width:60px;margin-left:auto;">
@@ -155,11 +162,18 @@
                   </td>
                   <td class="text-end pe-3">
                     <div class="d-flex gap-1 justify-content-end">
-                      {% if not p.entrega_id and p.status != 'entregue' %}
+                      {% if p.qtd_em_remessa < p.quantidade and p.status != 'entregue' %}
                       <button class="btn btn-outline-success btn-sm" style="border-radius:6px;font-size:0.75rem;"
-                              onclick="iniciarEntrega({{ p.id }}, '{{ p.numero_pedido | e }}')"
-                              title="Iniciar entrega">
+                              onclick='novaRemessa({{ p | tojson }})'
+                              title="Nova remessa parcial">
                         <i class="bi bi-truck"></i>
+                      </button>
+                      {% endif %}
+                      {% if p.total_remessas > 0 %}
+                      <button class="btn btn-outline-info btn-sm" style="border-radius:6px;font-size:0.75rem;"
+                              onclick="verRemessas({{ p.id }}, '{{ p.numero_pedido | e }}')"
+                              title="Histórico de remessas ({{ p.total_remessas }})">
+                        <i class="bi bi-list-ul"></i>
                       </button>
                       {% endif %}
                       <button class="btn btn-outline-primary btn-sm" style="border-radius:6px;font-size:0.75rem;"
@@ -348,6 +362,59 @@
   </div>
 </div>
 
+<!-- Modal: Nova Remessa Parcial -->
+<div class="modal fade" id="modalNovaRemessa" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content" style="border-radius:12px;border-color:var(--border);">
+      <div class="modal-header border-bottom" style="border-color:var(--border) !important;">
+        <h6 class="modal-title fw-semibold">
+          <i class="bi bi-truck me-2 text-success"></i>Nova Remessa Parcial
+        </h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div id="infoRemessaPedido" class="p-3 mb-3" style="background:var(--bg);border-radius:8px;font-size:0.85rem;"></div>
+        <div class="row g-3">
+          <div class="col-12">
+            <label class="form-label fw-semibold" style="font-size:0.8rem;">Quantidade desta remessa <span class="text-danger">*</span></label>
+            <input type="number" class="form-control" id="inputQtdRemessa" min="1" style="border-radius:8px;">
+            <div class="form-text" id="textoSaldoRemessa"></div>
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-semibold" style="font-size:0.8rem;">Nota Fiscal</label>
+            <input type="text" class="form-control" id="inputNFRemessa"
+                   placeholder="Ex: NF-001234 (pode ser preenchida depois)" style="border-radius:8px;">
+          </div>
+        </div>
+        <div id="erroNovaRemessaModal" class="alert alert-danger py-2 px-3 mt-3 mb-0" style="display:none;font-size:0.82rem;border-radius:8px;"></div>
+      </div>
+      <div class="modal-footer border-top" style="border-color:var(--border) !important;">
+        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-success btn-sm fw-semibold" id="btnSalvarRemessa" onclick="salvarRemessa()">
+          <i class="bi bi-check-lg me-1"></i>Criar Remessa
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Histórico de Remessas -->
+<div class="modal fade" id="modalHistoricoRemessas" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content" style="border-radius:12px;border-color:var(--border);">
+      <div class="modal-header border-bottom" style="border-color:var(--border) !important;">
+        <h6 class="modal-title fw-semibold" id="tituloHistoricoRemessas">
+          <i class="bi bi-list-ul me-2 text-info"></i>Histórico de Remessas
+        </h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-0">
+        <div id="conteudoHistoricoRemessas" class="p-3"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Modal: Avançar Status -->
 <div class="modal fade" id="modalStatus" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog">
@@ -394,10 +461,13 @@ const URL_PEDIDO_EDITAR  = (id) => `/pcp/entregas/pedido/${id}/editar`;
 const URL_PEDIDO_EXCLUIR = (id) => `/pcp/entregas/pedido/${id}/excluir`;
 const URL_ENTREGA_NOVA   = "{{ url_for('pages.pcp_entregas_entrega_nova') }}";
 const URL_ENTREGA_STATUS = (id) => `/pcp/entregas/entrega/${id}/status`;
+const URL_REMESSAS       = (id) => `/pcp/entregas/pedido/${id}/remessas`;
 
-let _pedidoIdEditando = null;
-let _entregaIdAtual   = null;
-let _novoStatusAtual  = null;
+let _pedidoIdEditando  = null;
+let _entregaIdAtual    = null;
+let _novoStatusAtual   = null;
+let _pedidoIdRemessa   = null;
+let _saldoRemessa      = 0;
 
 function abrirModalPedido() {
   _pedidoIdEditando = null;
@@ -471,23 +541,138 @@ function excluirPedido(id, numero) {
     .catch(() => mostrarAlerta("danger", "Erro de conexão."));
 }
 
-function iniciarEntrega(pedidoId, numero) {
-  if (!confirm(`Iniciar processo de entrega para o pedido "${numero}"?`)) return;
+function novaRemessa(p) {
+  _pedidoIdRemessa = p.id;
+  const qtdTotal      = p.quantidade || 0;
+  const qtdEmRemessa  = p.qtd_em_remessa || 0;
+  const produzido     = p.produzido || 0;
+  _saldoRemessa = qtdTotal - qtdEmRemessa;
+
+  document.getElementById("infoRemessaPedido").innerHTML = `
+    <div class="row g-1">
+      <div class="col-6"><span class="text-muted">Pedido:</span> <strong>${p.numero_pedido}</strong></div>
+      <div class="col-6"><span class="text-muted">Cliente:</span> <strong>${p.cliente}</strong></div>
+      <div class="col-4"><span class="text-muted">Qtd. total:</span> <strong>${qtdTotal.toLocaleString('pt-BR')}</strong></div>
+      <div class="col-4"><span class="text-muted">Produzido:</span> <strong>${produzido.toLocaleString('pt-BR')}</strong></div>
+      <div class="col-4"><span class="text-muted">Já em remessa:</span> <strong>${qtdEmRemessa.toLocaleString('pt-BR')}</strong></div>
+    </div>
+  `;
+
+  const sugerido = Math.max(0, produzido - qtdEmRemessa);
+  const inputQtd = document.getElementById("inputQtdRemessa");
+  inputQtd.max   = _saldoRemessa;
+  inputQtd.value = sugerido > 0 ? sugerido : _saldoRemessa;
+
+  document.getElementById("textoSaldoRemessa").textContent =
+    `Saldo disponível para remessa: ${_saldoRemessa.toLocaleString('pt-BR')} unidades`;
+  document.getElementById("inputNFRemessa").value = "";
+  document.getElementById("erroNovaRemessaModal").style.display = "none";
+  document.getElementById("btnSalvarRemessa").disabled = false;
+
+  new bootstrap.Modal(document.getElementById("modalNovaRemessa")).show();
+}
+
+function salvarRemessa() {
+  const erroBox  = document.getElementById("erroNovaRemessaModal");
+  const btn      = document.getElementById("btnSalvarRemessa");
+  erroBox.style.display = "none";
+
+  const quantidade  = parseInt(document.getElementById("inputQtdRemessa").value) || 0;
+  const nota_fiscal = document.getElementById("inputNFRemessa").value.trim();
+
+  if (quantidade <= 0) {
+    erroBox.textContent = "Informe uma quantidade maior que zero.";
+    erroBox.style.display = "";
+    return;
+  }
+  if (quantidade > _saldoRemessa) {
+    erroBox.textContent = `Quantidade não pode superar o saldo disponível (${_saldoRemessa.toLocaleString('pt-BR')}).`;
+    erroBox.style.display = "";
+    return;
+  }
+
+  btn.disabled = true;
   fetch(URL_ENTREGA_NOVA, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ pedido_id: pedidoId, nota_fiscal: "" }),
+    body: JSON.stringify({ pedido_id: _pedidoIdRemessa, quantidade, nota_fiscal }),
   })
     .then(r => r.json())
     .then(data => {
       if (data.ok) {
-        mostrarAlerta("success", "Entrega iniciada. Acesse a aba Logística.");
-        setTimeout(() => location.href = "?tab=logistica", 800);
+        bootstrap.Modal.getInstance(document.getElementById("modalNovaRemessa")).hide();
+        mostrarAlerta("success", "Remessa criada. Acesse a aba Logística para acompanhar.");
+        setTimeout(() => location.reload(), 800);
       } else {
-        mostrarAlerta("danger", data.erro || "Erro ao iniciar entrega.");
+        erroBox.textContent = data.erro || "Erro ao criar remessa.";
+        erroBox.style.display = "";
+        btn.disabled = false;
       }
     })
-    .catch(() => mostrarAlerta("danger", "Erro de conexão."));
+    .catch(() => { erroBox.textContent = "Erro de conexão."; erroBox.style.display = ""; btn.disabled = false; });
+}
+
+const _statusLabel = {
+  aguardando_nf: "Aguardando NF", nf_emitida: "NF Emitida",
+  em_carregamento: "Em Carregamento", em_transito: "Em Trânsito", entregue: "Entregue",
+};
+const _statusCor = {
+  aguardando_nf: "secondary", nf_emitida: "info",
+  em_carregamento: "warning", em_transito: "primary", entregue: "success",
+};
+
+function verRemessas(pedidoId, numeroPedido) {
+  document.getElementById("tituloHistoricoRemessas").innerHTML =
+    `<i class="bi bi-list-ul me-2 text-info"></i>Remessas — ${numeroPedido}`;
+  document.getElementById("conteudoHistoricoRemessas").innerHTML =
+    '<div class="text-center text-muted py-3"><div class="spinner-border spinner-border-sm me-2"></div>Carregando...</div>';
+
+  new bootstrap.Modal(document.getElementById("modalHistoricoRemessas")).show();
+
+  fetch(URL_REMESSAS(pedidoId))
+    .then(r => r.json())
+    .then(data => {
+      if (!data.ok || !data.remessas.length) {
+        document.getElementById("conteudoHistoricoRemessas").innerHTML =
+          '<div class="text-center text-muted py-4">Nenhuma remessa encontrada.</div>';
+        return;
+      }
+      const formatDate = (v) => v ? new Date(v).toLocaleDateString('pt-BR') : '—';
+      const rows = data.remessas.map((r, i) => `
+        <tr>
+          <td class="ps-3 text-muted small">${i + 1}</td>
+          <td class="fw-semibold">${Number(r.quantidade).toLocaleString('pt-BR')}</td>
+          <td>${r.nota_fiscal || '<span class="text-muted">—</span>'}</td>
+          <td><span class="badge bg-${_statusCor[r.status] || 'secondary'}" style="font-size:0.68rem;">${_statusLabel[r.status] || r.status}</span></td>
+          <td class="text-muted small">${r.motorista_nome || '—'}</td>
+          <td class="text-muted small">${formatDate(r.data_saida)}</td>
+          <td class="text-muted small pe-3">${formatDate(r.data_entrega_real)}</td>
+        </tr>
+      `).join('');
+
+      document.getElementById("conteudoHistoricoRemessas").innerHTML = `
+        <div class="table-responsive">
+          <table class="table mb-0" style="font-size:0.84rem;">
+            <thead style="font-size:0.72rem;text-transform:uppercase;letter-spacing:.5px;background:var(--bg);">
+              <tr>
+                <th class="ps-3 py-2">#</th>
+                <th>Quantidade</th>
+                <th>Nota Fiscal</th>
+                <th>Status</th>
+                <th>Motorista</th>
+                <th>Saída</th>
+                <th class="pe-3">Entregue em</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      `;
+    })
+    .catch(() => {
+      document.getElementById("conteudoHistoricoRemessas").innerHTML =
+        '<div class="text-center text-danger py-3">Erro ao carregar remessas.</div>';
+    });
 }
 
 function avancarStatus(entregaId, novoStatus, label, equipe) {

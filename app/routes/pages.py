@@ -1384,6 +1384,19 @@ def pcp_entregas_pedido_excluir(pedido_id):
         return jsonify({"erro": str(e)}), 400
 
 
+@bp.route("/pcp/entregas/pedido/<int:pedido_id>/remessas", methods=["GET"])
+@login_required
+def pcp_entregas_pedido_remessas(pedido_id):
+    from flask import jsonify
+    from app.services import entregas_service as svc
+
+    try:
+        remessas = svc.listar_remessas_pedido(pedido_id)
+        return jsonify({"ok": True, "remessas": [dict(r) for r in remessas]})
+    except Exception as e:
+        return jsonify({"erro": str(e)}), 400
+
+
 @bp.route("/pcp/entregas/entrega/nova", methods=["POST"])
 @login_required
 def pcp_entregas_entrega_nova():
@@ -1394,6 +1407,7 @@ def pcp_entregas_entrega_nova():
     try:
         entrega_id = svc.criar_entrega(
             int(data.get("pedido_id", 0)),
+            int(data.get("quantidade", 0)),
             data.get("nota_fiscal", ""),
         )
         return jsonify({"ok": True, "id": entrega_id})
