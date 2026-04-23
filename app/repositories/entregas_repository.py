@@ -30,7 +30,6 @@ def listar_pedidos(status: str = "", modelo: str = "", data_inicial: str = "", d
                         WHERE (a.modelo = p.modelo
                                OR p.modelo LIKE a.modelo || ' %%'
                                OR a.modelo LIKE p.modelo || ' %%')
-                          AND a.data >= p.data_pedido
                           AND co.setor = (
                               SELECT re.setor
                               FROM roteiro_etapas re
