@@ -118,6 +118,7 @@
 <script>
 const ENTREGA_ID   = {{ entrega.id }};
 const URL_LOC      = `/pcp/entregas/entrega/${ENTREGA_ID}/localizacao`;
+const URL_POSICAO  = `/pcp/entregas/entrega/${ENTREGA_ID}/posicao`;
 const LAT_INICIAL  = {{ entrega.lat or 'null' }};
 const LNG_INICIAL  = {{ entrega.lng or 'null' }};
 
@@ -207,12 +208,19 @@ function atualizarMapa(lat, lng) {
   mapa.setView([lat, lng], 14);
 }
 
-// Atualiza localização na tela a cada 30s para quem está acompanhando
-setInterval(() => {
-  if (!rastreioInt) {
-    fetch(`${URL_LOC.replace('/localizacao', '')}/localizacao`, { method: "GET" })
-      .catch(() => {});
-  }
-}, 30000);
+function buscarPosicaoAtual() {
+  if (rastreioInt) return;
+  fetch(URL_POSICAO)
+    .then(r => r.json())
+    .then(data => {
+      if (!data.ok || !data.lat || !data.lng) return;
+      atualizarMapa(data.lat, data.lng);
+      const el = document.getElementById("tsLocalizacao");
+      if (el && data.localizacao_em) el.textContent = data.localizacao_em;
+    })
+    .catch(() => {});
+}
+
+setInterval(buscarPosicaoAtual, 30000);
 </script>
 {% endblock %}

@@ -1438,6 +1438,23 @@ def pcp_entregas_entrega_status(entrega_id):
         return jsonify({"erro": str(e)}), 400
 
 
+@bp.route("/pcp/entregas/entrega/<int:entrega_id>/posicao", methods=["GET"])
+@login_required
+def pcp_entregas_entrega_posicao(entrega_id):
+    from flask import jsonify
+    from app.services import entregas_service as svc
+
+    entrega = svc.buscar_entrega(entrega_id)
+    if not entrega:
+        return jsonify({"erro": "Não encontrado"}), 404
+    return jsonify({
+        "ok": True,
+        "lat": float(entrega["lat"]) if entrega["lat"] else None,
+        "lng": float(entrega["lng"]) if entrega["lng"] else None,
+        "localizacao_em": entrega["localizacao_em"].strftime("%d/%m/%Y %H:%M") if entrega["localizacao_em"] else None,
+    })
+
+
 @bp.route("/pcp/entregas/entrega/<int:entrega_id>/localizacao", methods=["POST"])
 @login_required
 def pcp_entregas_entrega_localizacao(entrega_id):
