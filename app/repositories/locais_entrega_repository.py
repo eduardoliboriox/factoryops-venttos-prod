@@ -8,7 +8,7 @@ def listar_locais(cliente: str = "") -> list:
             if cliente:
                 cur.execute(
                     "SELECT * FROM local_entrega WHERE ativo = TRUE AND cliente ILIKE %s ORDER BY cliente, nome_local",
-                    (cliente,)
+                    (f"%{cliente}%",)
                 )
             else:
                 cur.execute(

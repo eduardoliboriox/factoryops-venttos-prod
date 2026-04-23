@@ -606,12 +606,15 @@ function carregarLocaisParaCliente(clienteOverride, preSelectId) {
   const cliente = clienteOverride || document.getElementById("inputCliente").value.trim();
   const sel = document.getElementById("selectLocalEntrega");
   if (!cliente) {
-    sel.innerHTML = '<option value="">— Nenhum —</option>';
+    sel.innerHTML = '<option value="">— Digite o cliente e clique em ↻ —</option>';
     return;
   }
+  sel.innerHTML = '<option value="">Carregando...</option>';
+  sel.disabled = true;
   fetch(`${URL_LOCAIS}?cliente=${encodeURIComponent(cliente)}`)
     .then(r => r.json())
     .then(data => {
+      sel.disabled = false;
       sel.innerHTML = '<option value="">— Nenhum —</option>';
       (data.locais || []).forEach(l => {
         const opt = document.createElement("option");
@@ -621,10 +624,13 @@ function carregarLocaisParaCliente(clienteOverride, preSelectId) {
         sel.appendChild(opt);
       });
       if (!data.locais || !data.locais.length) {
-        sel.innerHTML = '<option value="">— Nenhum local cadastrado para este cliente —</option>';
+        sel.innerHTML = `<option value="">— Nenhum local encontrado para "${cliente}" —</option>`;
       }
     })
-    .catch(() => {});
+    .catch(() => {
+      sel.disabled = false;
+      sel.innerHTML = '<option value="">— Erro ao carregar locais —</option>';
+    });
 }
 
 // ── Modal Locais ──
