@@ -1,6 +1,13 @@
 {% extends "layouts/app.html" %}
 {% block title %}PCP · Entregas{% endblock %}
 
+{% block styles %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+  #mapaLocal { height: 260px; border-radius: 8px; border: 1px solid var(--border); }
+</style>
+{% endblock %}
+
 {% block page_title %}
 <div class="page-header">
   <div class="page-header-title">
@@ -88,7 +95,11 @@
                 <i class="bi bi-x-lg"></i>
               </a>
             </div>
-            <div class="col-12 col-md-4 d-flex justify-content-end">
+            <div class="col-12 col-md-4 d-flex justify-content-end gap-2">
+              <button type="button" class="btn btn-outline-primary btn-sm fw-semibold" style="border-radius:8px;"
+                      onclick="abrirModalLocais()">
+                <i class="bi bi-geo-alt me-1"></i>Locais de Entrega
+              </button>
               <button type="button" class="btn btn-success btn-sm fw-semibold" style="border-radius:8px;"
                       onclick="abrirModalPedido()">
                 <i class="bi bi-plus-lg me-1"></i>Novo Pedido
@@ -123,7 +134,12 @@
                 {% set pct = [(p.produzido / p.quantidade * 100) | int, 100] | min if p.quantidade > 0 else 0 %}
                 <tr>
                   <td class="ps-3 fw-semibold">{{ p.numero_pedido }}</td>
-                  <td>{{ p.cliente }}</td>
+                  <td>
+                    {{ p.cliente }}
+                    {% if p.local_entrega_id %}
+                    <i class="bi bi-geo-alt-fill text-primary ms-1" title="{{ p.local_nome }}" style="font-size:0.8rem;"></i>
+                    {% endif %}
+                  </td>
                   <td>
                     <div class="fw-semibold">{{ p.modelo }}</div>
                     {% if p.familia %}<div class="text-muted small">{{ p.familia }}</div>{% endif %}
@@ -345,6 +361,25 @@
             <label class="form-label fw-semibold" style="font-size:0.8rem;">Data de Entrega <span class="text-danger">*</span></label>
             <input type="date" class="form-control" id="inputDataEntrega" style="border-radius:8px;">
           </div>
+          <div class="col-md-8">
+            <label class="form-label fw-semibold" style="font-size:0.8rem;">Local de Entrega</label>
+            <div class="input-group input-group-sm">
+              <select class="form-select" id="selectLocalEntrega" style="border-radius:8px 0 0 8px;">
+                <option value="">— Nenhum —</option>
+              </select>
+              <button type="button" class="btn btn-outline-secondary" onclick="carregarLocaisParaCliente()"
+                      title="Buscar locais do cliente digitado">
+                <i class="bi bi-arrow-clockwise"></i>
+              </button>
+            </div>
+            <div class="form-text">Digite o cliente e clique em <i class="bi bi-arrow-clockwise"></i> para carregar os locais.</div>
+          </div>
+          <div class="col-md-4 d-flex align-items-center pt-3">
+            <button type="button" class="btn btn-outline-primary btn-sm w-100" style="border-radius:8px;"
+                    onclick="abrirModalLocais()">
+              <i class="bi bi-geo-alt me-1"></i>Gerenciar Locais
+            </button>
+          </div>
           <div class="col-12">
             <label class="form-label fw-semibold" style="font-size:0.8rem;">Observação</label>
             <textarea class="form-control" id="inputObservacao" rows="2" style="border-radius:8px;"></textarea>
@@ -357,6 +392,94 @@
         <button type="button" class="btn btn-primary btn-sm fw-semibold" id="btnSalvarPedido" onclick="salvarPedido()">
           <i class="bi bi-check-lg me-1"></i>Salvar
         </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Gerenciar Locais de Entrega -->
+<div class="modal fade" id="modalLocais" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content" style="border-radius:12px;border-color:var(--border);">
+      <div class="modal-header border-bottom" style="border-color:var(--border) !important;">
+        <h6 class="modal-title fw-semibold">
+          <i class="bi bi-geo-alt me-2 text-primary"></i>Locais de Entrega por Cliente
+        </h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row g-4">
+
+          <!-- Formulário -->
+          <div class="col-12 col-lg-5">
+            <div class="p-3 rounded" style="background:var(--bg);border:1px solid var(--border);">
+              <p class="fw-semibold mb-3" style="font-size:0.88rem;" id="tituloFormLocal">
+                <i class="bi bi-plus-circle me-1 text-success"></i>Novo Local
+              </p>
+              <div class="row g-3">
+                <div class="col-12">
+                  <label class="form-label fw-semibold" style="font-size:0.8rem;">Cliente <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control form-control-sm" id="inputLocalCliente"
+                         placeholder="Ex: LG Electronics" style="border-radius:8px;">
+                </div>
+                <div class="col-12">
+                  <label class="form-label fw-semibold" style="font-size:0.8rem;">Nome do Local <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control form-control-sm" id="inputLocalNome"
+                         placeholder="Ex: Galpão Principal, Filial Centro" style="border-radius:8px;">
+                </div>
+                <div class="col-12">
+                  <label class="form-label fw-semibold" style="font-size:0.8rem;">Endereço</label>
+                  <div class="input-group input-group-sm">
+                    <input type="text" class="form-control" id="inputLocalEndereco"
+                           placeholder="Ex: Rua das Flores, 100, São Paulo" style="border-radius:8px 0 0 8px;">
+                    <button type="button" class="btn btn-outline-secondary" onclick="geocodificarEndereco()"
+                            title="Buscar no mapa">
+                      <i class="bi bi-search"></i>
+                    </button>
+                  </div>
+                  <div class="form-text">Clique em <i class="bi bi-search"></i> ou clique no mapa para marcar o pino.</div>
+                </div>
+                <div class="col-12">
+                  <div id="mapaLocal"></div>
+                  <div class="d-flex gap-2 mt-1" style="font-size:0.75rem;color:var(--text-muted);">
+                    <span>Lat: <span id="spanLat">—</span></span>
+                    <span>Lng: <span id="spanLng">—</span></span>
+                  </div>
+                </div>
+              </div>
+              <div id="erroLocalModal" class="alert alert-danger py-2 px-3 mt-3 mb-0" style="display:none;font-size:0.82rem;border-radius:8px;"></div>
+              <div class="d-flex gap-2 mt-3">
+                <button type="button" class="btn btn-primary btn-sm fw-semibold flex-fill" style="border-radius:8px;"
+                        id="btnSalvarLocal" onclick="salvarLocal()">
+                  <i class="bi bi-check-lg me-1"></i>Salvar Local
+                </button>
+                <button type="button" class="btn btn-outline-secondary btn-sm" style="border-radius:8px;"
+                        onclick="limparFormLocal()">
+                  <i class="bi bi-x-lg"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Lista -->
+          <div class="col-12 col-lg-7">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <span class="fw-semibold" style="font-size:0.88rem;">Locais Cadastrados</span>
+              <button class="btn btn-outline-secondary btn-sm" style="border-radius:6px;" onclick="carregarLocais()">
+                <i class="bi bi-arrow-clockwise me-1"></i>Atualizar
+              </button>
+            </div>
+            <div id="listaLocais" style="max-height:420px;overflow-y:auto;">
+              <div class="text-center text-muted py-4">
+                <div class="spinner-border spinner-border-sm me-2"></div>Carregando...
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+      <div class="modal-footer border-top" style="border-color:var(--border) !important;">
+        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Fechar</button>
       </div>
     </div>
   </div>
@@ -455,6 +578,7 @@
   </div>
 </div>
 
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 const URL_PEDIDO_NOVO    = "{{ url_for('pages.pcp_entregas_pedido_novo') }}";
 const URL_PEDIDO_EDITAR  = (id) => `/pcp/entregas/pedido/${id}/editar`;
@@ -462,12 +586,217 @@ const URL_PEDIDO_EXCLUIR = (id) => `/pcp/entregas/pedido/${id}/excluir`;
 const URL_ENTREGA_NOVA   = "{{ url_for('pages.pcp_entregas_entrega_nova') }}";
 const URL_ENTREGA_STATUS = (id) => `/pcp/entregas/entrega/${id}/status`;
 const URL_REMESSAS       = (id) => `/pcp/entregas/pedido/${id}/remessas`;
+const URL_LOCAIS         = "{{ url_for('pages.pcp_entregas_locais') }}";
+const URL_LOCAL_NOVO     = "{{ url_for('pages.pcp_entregas_locais_novo') }}";
+const URL_LOCAL_EDITAR   = (id) => `/pcp/entregas/locais/${id}/editar`;
+const URL_LOCAL_EXCLUIR  = (id) => `/pcp/entregas/locais/${id}/excluir`;
 
 let _pedidoIdEditando  = null;
 let _entregaIdAtual    = null;
 let _novoStatusAtual   = null;
 let _pedidoIdRemessa   = null;
 let _saldoRemessa      = 0;
+let _localIdEditando   = null;
+let _mapaLocal         = null;
+let _marcadorLocal     = null;
+let _latLocal          = null;
+let _lngLocal          = null;
+
+function carregarLocaisParaCliente(clienteOverride, preSelectId) {
+  const cliente = clienteOverride || document.getElementById("inputCliente").value.trim();
+  const sel = document.getElementById("selectLocalEntrega");
+  if (!cliente) {
+    sel.innerHTML = '<option value="">— Nenhum —</option>';
+    return;
+  }
+  fetch(`${URL_LOCAIS}?cliente=${encodeURIComponent(cliente)}`)
+    .then(r => r.json())
+    .then(data => {
+      sel.innerHTML = '<option value="">— Nenhum —</option>';
+      (data.locais || []).forEach(l => {
+        const opt = document.createElement("option");
+        opt.value = l.id;
+        opt.textContent = `${l.nome_local}${l.endereco ? ' — ' + l.endereco : ''}`;
+        if (preSelectId && l.id === preSelectId) opt.selected = true;
+        sel.appendChild(opt);
+      });
+      if (!data.locais || !data.locais.length) {
+        sel.innerHTML = '<option value="">— Nenhum local cadastrado para este cliente —</option>';
+      }
+    })
+    .catch(() => {});
+}
+
+// ── Modal Locais ──
+
+let _mapaLocaisInit = false;
+
+function abrirModalLocais() {
+  limparFormLocal();
+  carregarLocais();
+  const modal = new bootstrap.Modal(document.getElementById("modalLocais"));
+  document.getElementById("modalLocais").addEventListener("shown.bs.modal", () => {
+    if (!_mapaLocal) {
+      _mapaLocal = L.map("mapaLocal").setView([-15.7801, -47.9292], 4);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+        maxZoom: 19,
+      }).addTo(_mapaLocal);
+      _mapaLocal.on("click", (e) => setPinLocal(e.latlng.lat, e.latlng.lng));
+    }
+    _mapaLocal.invalidateSize();
+  }, { once: true });
+  modal.show();
+}
+
+function setPinLocal(lat, lng) {
+  _latLocal = lat;
+  _lngLocal = lng;
+  document.getElementById("spanLat").textContent = lat.toFixed(6);
+  document.getElementById("spanLng").textContent = lng.toFixed(6);
+  if (_marcadorLocal) {
+    _marcadorLocal.setLatLng([lat, lng]);
+  } else {
+    _marcadorLocal = L.marker([lat, lng], { draggable: true }).addTo(_mapaLocal);
+    _marcadorLocal.on("dragend", (e) => {
+      const p = e.target.getLatLng();
+      setPinLocal(p.lat, p.lng);
+    });
+  }
+  _mapaLocal.setView([lat, lng], 15);
+}
+
+async function geocodificarEndereco() {
+  const endereco = document.getElementById("inputLocalEndereco").value.trim();
+  if (!endereco) return;
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(endereco)}&format=json&limit=1&countrycodes=br`;
+    const resp = await fetch(url, { headers: { "Accept-Language": "pt-BR", "User-Agent": "FactoryOps/1.0" } });
+    const data = await resp.json();
+    if (data.length > 0) {
+      setPinLocal(parseFloat(data[0].lat), parseFloat(data[0].lon));
+    } else {
+      document.getElementById("erroLocalModal").textContent = "Endereço não encontrado. Clique no mapa para marcar manualmente.";
+      document.getElementById("erroLocalModal").style.display = "";
+    }
+  } catch {
+    document.getElementById("erroLocalModal").textContent = "Erro ao buscar endereço.";
+    document.getElementById("erroLocalModal").style.display = "";
+  }
+}
+
+function carregarLocais() {
+  const container = document.getElementById("listaLocais");
+  container.innerHTML = '<div class="text-center text-muted py-4"><div class="spinner-border spinner-border-sm me-2"></div>Carregando...</div>';
+  fetch(URL_LOCAIS)
+    .then(r => r.json())
+    .then(data => {
+      if (!data.locais || !data.locais.length) {
+        container.innerHTML = '<div class="text-center text-muted py-4">Nenhum local cadastrado.</div>';
+        return;
+      }
+      let html = '<div class="table-responsive"><table class="table table-sm mb-0" style="font-size:0.82rem;">';
+      html += '<thead style="font-size:0.72rem;text-transform:uppercase;letter-spacing:.5px;background:var(--bg);"><tr>';
+      html += '<th class="ps-2 py-2">Cliente</th><th>Local</th><th>Endereço</th><th>Coords</th><th></th></tr></thead><tbody>';
+      data.locais.forEach(l => {
+        const coords = l.lat && l.lng ? `${parseFloat(l.lat).toFixed(4)}, ${parseFloat(l.lng).toFixed(4)}` : '—';
+        html += `<tr>
+          <td class="ps-2 fw-semibold">${l.cliente}</td>
+          <td>${l.nome_local}</td>
+          <td class="text-muted">${l.endereco || '—'}</td>
+          <td class="text-muted small">${coords}</td>
+          <td class="pe-2">
+            <div class="d-flex gap-1">
+              <button class="btn btn-outline-primary btn-sm p-1" style="border-radius:6px;line-height:1;" title="Editar"
+                      onclick='editarLocal(${JSON.stringify(l)})'>
+                <i class="bi bi-pencil" style="font-size:0.75rem;"></i>
+              </button>
+              <button class="btn btn-outline-danger btn-sm p-1" style="border-radius:6px;line-height:1;" title="Excluir"
+                      onclick="excluirLocal(${l.id}, '${l.nome_local.replace(/'/g, "\\'")}')">
+                <i class="bi bi-trash" style="font-size:0.75rem;"></i>
+              </button>
+            </div>
+          </td>
+        </tr>`;
+      });
+      html += '</tbody></table></div>';
+      container.innerHTML = html;
+    })
+    .catch(() => { container.innerHTML = '<div class="text-center text-danger py-3">Erro ao carregar.</div>'; });
+}
+
+function limparFormLocal() {
+  _localIdEditando = null;
+  _latLocal = null;
+  _lngLocal = null;
+  ["inputLocalCliente", "inputLocalNome", "inputLocalEndereco"].forEach(id => {
+    document.getElementById(id).value = "";
+  });
+  document.getElementById("spanLat").textContent = "—";
+  document.getElementById("spanLng").textContent = "—";
+  document.getElementById("erroLocalModal").style.display = "none";
+  document.getElementById("tituloFormLocal").innerHTML =
+    '<i class="bi bi-plus-circle me-1 text-success"></i>Novo Local';
+  if (_marcadorLocal) { _marcadorLocal.remove(); _marcadorLocal = null; }
+}
+
+function editarLocal(l) {
+  _localIdEditando = l.id;
+  document.getElementById("inputLocalCliente").value  = l.cliente || "";
+  document.getElementById("inputLocalNome").value     = l.nome_local || "";
+  document.getElementById("inputLocalEndereco").value = l.endereco || "";
+  document.getElementById("tituloFormLocal").innerHTML =
+    '<i class="bi bi-pencil me-1 text-primary"></i>Editar Local';
+  document.getElementById("erroLocalModal").style.display = "none";
+  if (l.lat && l.lng) {
+    setPinLocal(parseFloat(l.lat), parseFloat(l.lng));
+  }
+}
+
+function salvarLocal() {
+  const erroBox = document.getElementById("erroLocalModal");
+  const btn     = document.getElementById("btnSalvarLocal");
+  erroBox.style.display = "none";
+  const body = {
+    cliente:    document.getElementById("inputLocalCliente").value.trim(),
+    nome_local: document.getElementById("inputLocalNome").value.trim(),
+    endereco:   document.getElementById("inputLocalEndereco").value.trim(),
+    lat: _latLocal,
+    lng: _lngLocal,
+  };
+  if (!body.cliente || !body.nome_local) {
+    erroBox.textContent = "Cliente e nome do local são obrigatórios.";
+    erroBox.style.display = "";
+    return;
+  }
+  btn.disabled = true;
+  const url = _localIdEditando ? URL_LOCAL_EDITAR(_localIdEditando) : URL_LOCAL_NOVO;
+  fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
+    .then(r => r.json())
+    .then(data => {
+      if (data.ok) {
+        limparFormLocal();
+        carregarLocais();
+        mostrarAlerta("success", _localIdEditando ? "Local atualizado." : "Local salvo.");
+      } else {
+        erroBox.textContent = data.erro || "Erro ao salvar.";
+        erroBox.style.display = "";
+      }
+      btn.disabled = false;
+    })
+    .catch(() => { erroBox.textContent = "Erro de conexão."; erroBox.style.display = ""; btn.disabled = false; });
+}
+
+function excluirLocal(id, nome) {
+  if (!confirm(`Excluir o local "${nome}"?`)) return;
+  fetch(URL_LOCAL_EXCLUIR(id), { method: "POST" })
+    .then(r => r.json())
+    .then(data => {
+      if (data.ok) { carregarLocais(); mostrarAlerta("success", "Local excluído."); }
+      else mostrarAlerta("danger", data.erro || "Erro ao excluir.");
+    })
+    .catch(() => mostrarAlerta("danger", "Erro de conexão."));
+}
 
 function abrirModalPedido() {
   _pedidoIdEditando = null;
@@ -495,19 +824,26 @@ function editarPedido(p) {
   document.getElementById("inputDataEntrega").value  = p.data_entrega || "";
   document.getElementById("inputObservacao").value   = p.observacao || "";
   document.getElementById("erroPedidoModal").style.display = "none";
+  if (p.cliente) {
+    carregarLocaisParaCliente(p.cliente, p.local_entrega_id);
+  } else {
+    document.getElementById("selectLocalEntrega").innerHTML = '<option value="">— Nenhum —</option>';
+  }
   new bootstrap.Modal(document.getElementById("modalPedido")).show();
 }
 
 function salvarPedido() {
+  const localId = document.getElementById("selectLocalEntrega").value;
   const body = {
-    numero_pedido: document.getElementById("inputNumeroPedido").value.trim(),
-    cliente:       document.getElementById("inputCliente").value.trim(),
-    modelo:        document.getElementById("inputModelo").value.trim(),
-    familia:       document.getElementById("inputFamilia").value.trim(),
-    quantidade:    parseInt(document.getElementById("inputQuantidade").value) || 0,
-    data_pedido:   document.getElementById("inputDataPedido").value,
-    data_entrega:  document.getElementById("inputDataEntrega").value,
-    observacao:    document.getElementById("inputObservacao").value.trim(),
+    numero_pedido:    document.getElementById("inputNumeroPedido").value.trim(),
+    cliente:          document.getElementById("inputCliente").value.trim(),
+    modelo:           document.getElementById("inputModelo").value.trim(),
+    familia:          document.getElementById("inputFamilia").value.trim(),
+    quantidade:       parseInt(document.getElementById("inputQuantidade").value) || 0,
+    data_pedido:      document.getElementById("inputDataPedido").value,
+    data_entrega:     document.getElementById("inputDataEntrega").value,
+    observacao:       document.getElementById("inputObservacao").value.trim(),
+    local_entrega_id: localId ? parseInt(localId) : null,
   };
   const erroBox = document.getElementById("erroPedidoModal");
   const btn     = document.getElementById("btnSalvarPedido");

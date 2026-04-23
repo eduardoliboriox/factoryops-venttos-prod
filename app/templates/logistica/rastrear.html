@@ -51,6 +51,15 @@
           <span class="text-muted d-block" style="font-size:0.75rem;">Status</span>
           <span class="badge bg-primary" style="font-size:0.75rem;">Em Trânsito</span>
         </div>
+        {% if entrega.local_nome %}
+        <div class="col-12 col-md-6 mt-1">
+          <span class="text-muted d-block" style="font-size:0.75rem;">Local de Entrega</span>
+          <span class="fw-semibold"><i class="bi bi-geo-alt-fill text-danger me-1"></i>{{ entrega.local_nome }}</span>
+          {% if entrega.local_endereco %}
+          <div class="text-muted small">{{ entrega.local_endereco }}</div>
+          {% endif %}
+        </div>
+        {% endif %}
       </div>
     </div>
   </div>
@@ -66,15 +75,21 @@
       </div>
     </div>
     <div class="card-body p-3">
-      {% if entrega.lat and entrega.lng %}
+      {% if entrega.lat and entrega.lng or entrega.local_lat and entrega.local_lng %}
       <div id="mapa"></div>
+      {% if entrega.lat and entrega.lng %}
       <p class="text-muted small mt-2 mb-0">
         <i class="bi bi-clock me-1"></i>
-        Última atualização:
+        Última atualização do motorista:
         <span id="tsLocalizacao">
           {{ entrega.localizacao_em.strftime('%d/%m/%Y %H:%M') if entrega.localizacao_em else '—' }}
         </span>
       </p>
+      {% else %}
+      <p class="text-muted small mt-2 mb-0">
+        <i class="bi bi-info-circle me-1"></i>Motorista ainda não compartilhou localização. Exibindo apenas o destino.
+      </p>
+      {% endif %}
       {% else %}
       <div class="p-4 text-center text-muted" style="background:var(--bg);border-radius:8px;">
         <i class="bi bi-geo-alt d-block fs-2 mb-2 opacity-25"></i>
@@ -121,10 +136,20 @@ const URL_LOC      = `/pcp/entregas/entrega/${ENTREGA_ID}/localizacao`;
 const URL_POSICAO  = `/pcp/entregas/entrega/${ENTREGA_ID}/posicao`;
 const LAT_INICIAL  = {{ entrega.lat or 'null' }};
 const LNG_INICIAL  = {{ entrega.lng or 'null' }};
+const LOCAL_LAT    = {{ entrega.local_lat or 'null' }};
+const LOCAL_LNG    = {{ entrega.local_lng or 'null' }};
+const LOCAL_NOME   = {{ (entrega.local_nome or '') | tojson }};
 
 let mapa         = null;
 let marcador     = null;
 let rastreioInt  = null;
+
+const iconeDestino = L.divIcon({
+  html: '<i class="bi bi-geo-alt-fill" style="color:#dc3545;font-size:2rem;line-height:1;display:block;margin-left:-8px;margin-top:-28px;"></i>',
+  iconSize: [16, 28],
+  iconAnchor: [8, 28],
+  className: "",
+});
 
 if (LAT_INICIAL && LNG_INICIAL) {
   mapa = L.map("mapa").setView([LAT_INICIAL, LNG_INICIAL], 14);
@@ -134,7 +159,24 @@ if (LAT_INICIAL && LNG_INICIAL) {
   }).addTo(mapa);
   marcador = L.marker([LAT_INICIAL, LNG_INICIAL])
     .addTo(mapa)
-    .bindPopup("{{ entrega.motorista_nome or 'Motorista' }}")
+    .bindPopup("🚚 {{ entrega.motorista_nome or 'Motorista' }}")
+    .openPopup();
+  if (LOCAL_LAT && LOCAL_LNG) {
+    L.marker([LOCAL_LAT, LOCAL_LNG], { icon: iconeDestino })
+      .addTo(mapa)
+      .bindPopup(`📍 ${LOCAL_NOME || 'Destino'}`);
+    const bounds = L.latLngBounds([[LAT_INICIAL, LNG_INICIAL], [LOCAL_LAT, LOCAL_LNG]]);
+    mapa.fitBounds(bounds, { padding: [40, 40] });
+  }
+} else if (LOCAL_LAT && LOCAL_LNG) {
+  mapa = L.map("mapa").setView([LOCAL_LAT, LOCAL_LNG], 14);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    maxZoom: 19,
+  }).addTo(mapa);
+  L.marker([LOCAL_LAT, LOCAL_LNG], { icon: iconeDestino })
+    .addTo(mapa)
+    .bindPopup(`📍 ${LOCAL_NOME || 'Destino'}`)
     .openPopup();
 }
 
@@ -196,13 +238,18 @@ function atualizarMapa(lat, lng) {
       attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
       maxZoom: 19,
     }).addTo(mapa);
+    if (LOCAL_LAT && LOCAL_LNG) {
+      L.marker([LOCAL_LAT, LOCAL_LNG], { icon: iconeDestino })
+        .addTo(mapa)
+        .bindPopup(`📍 ${LOCAL_NOME || 'Destino'}`);
+    }
   }
   if (marcador) {
     marcador.setLatLng([lat, lng]);
   } else {
     marcador = L.marker([lat, lng])
       .addTo(mapa)
-      .bindPopup("{{ entrega.motorista_nome or 'Motorista' }}")
+      .bindPopup("🚚 {{ entrega.motorista_nome or 'Motorista' }}")
       .openPopup();
   }
   mapa.setView([lat, lng], 14);
