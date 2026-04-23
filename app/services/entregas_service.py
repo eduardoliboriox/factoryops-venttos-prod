@@ -56,7 +56,8 @@ def buscar_pedido(pedido_id: int) -> dict | None:
 
 
 def criar_pedido(numero_pedido: str, cliente: str, modelo: str, familia: str,
-                 quantidade: int, data_pedido: str, data_entrega: str, observacao: str) -> int:
+                 quantidade: int, data_pedido: str, data_entrega: str, observacao: str,
+                 local_entrega_id: int | None = None) -> int:
     if not numero_pedido.strip() or not cliente.strip() or not modelo.strip():
         raise ValueError("Número do pedido, cliente e modelo são obrigatórios.")
     if quantidade <= 0:
@@ -65,11 +66,12 @@ def criar_pedido(numero_pedido: str, cliente: str, modelo: str, familia: str,
         raise ValueError("Data de entrega não pode ser anterior à data do pedido.")
     return repo.criar_pedido(numero_pedido.strip(), cliente.strip(), modelo.strip(),
                              familia.strip() if familia else "", quantidade,
-                             data_pedido, data_entrega, observacao)
+                             data_pedido, data_entrega, observacao, local_entrega_id)
 
 
 def atualizar_pedido(pedido_id: int, numero_pedido: str, cliente: str, modelo: str, familia: str,
-                     quantidade: int, data_pedido: str, data_entrega: str, observacao: str) -> None:
+                     quantidade: int, data_pedido: str, data_entrega: str, observacao: str,
+                     local_entrega_id: int | None = None) -> None:
     if not repo.buscar_pedido(pedido_id):
         raise ValueError("Pedido não encontrado.")
     if not numero_pedido.strip() or not cliente.strip() or not modelo.strip():
@@ -78,7 +80,7 @@ def atualizar_pedido(pedido_id: int, numero_pedido: str, cliente: str, modelo: s
         raise ValueError("Quantidade deve ser maior que zero.")
     repo.atualizar_pedido(pedido_id, numero_pedido.strip(), cliente.strip(), modelo.strip(),
                           familia.strip() if familia else "", quantidade,
-                          data_pedido, data_entrega, observacao)
+                          data_pedido, data_entrega, observacao, local_entrega_id)
 
 
 def excluir_pedido(pedido_id: int) -> None:

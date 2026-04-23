@@ -56,8 +56,13 @@ def listar_pedidos(status: str = "", modelo: str = "", data_inicial: str = "", d
                         SELECT SUM(e.quantidade) FROM entrega e
                         WHERE e.pedido_id = p.id AND e.status = 'entregue'
                     ), 0) AS qtd_entregue,
-                    (SELECT COUNT(*) FROM entrega e WHERE e.pedido_id = p.id) AS total_remessas
+                    (SELECT COUNT(*) FROM entrega e WHERE e.pedido_id = p.id) AS total_remessas,
+                    p.local_entrega_id,
+                    l.nome_local AS local_nome,
+                    l.lat AS local_lat,
+                    l.lng AS local_lng
                 FROM pedido_cliente p
+                LEFT JOIN local_entrega l ON l.id = p.local_entrega_id
                 WHERE {where}
                 ORDER BY p.data_entrega ASC
             """, params)
@@ -67,36 +72,46 @@ def listar_pedidos(status: str = "", modelo: str = "", data_inicial: str = "", d
 def buscar_pedido(pedido_id: int) -> dict | None:
     with get_db() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
-            cur.execute("SELECT * FROM pedido_cliente WHERE id = %s", (pedido_id,))
+            cur.execute("""
+                SELECT p.*, l.nome_local AS local_nome, l.endereco AS local_endereco,
+                       l.lat AS local_lat, l.lng AS local_lng
+                FROM pedido_cliente p
+                LEFT JOIN local_entrega l ON l.id = p.local_entrega_id
+                WHERE p.id = %s
+            """, (pedido_id,))
             return cur.fetchone()
 
 
 def criar_pedido(numero_pedido: str, cliente: str, modelo: str, familia: str,
-                 quantidade: int, data_pedido: str, data_entrega: str, observacao: str) -> int:
+                 quantidade: int, data_pedido: str, data_entrega: str, observacao: str,
+                 local_entrega_id: int | None = None) -> int:
     with get_db() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
             cur.execute("""
                 INSERT INTO pedido_cliente
-                    (numero_pedido, cliente, modelo, familia, quantidade, data_pedido, data_entrega, observacao)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                    (numero_pedido, cliente, modelo, familia, quantidade, data_pedido, data_entrega,
+                     observacao, local_entrega_id)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
                 RETURNING id
             """, (numero_pedido, cliente, modelo, familia or None, quantidade,
-                  data_pedido, data_entrega, observacao or None))
+                  data_pedido, data_entrega, observacao or None, local_entrega_id))
             return cur.fetchone()["id"]
 
 
 def atualizar_pedido(pedido_id: int, numero_pedido: str, cliente: str, modelo: str, familia: str,
-                     quantidade: int, data_pedido: str, data_entrega: str, observacao: str) -> None:
+                     quantidade: int, data_pedido: str, data_entrega: str, observacao: str,
+                     local_entrega_id: int | None = None) -> None:
     with get_db() as conn:
         with conn.cursor() as cur:
             cur.execute("""
                 UPDATE pedido_cliente SET
                     numero_pedido = %s, cliente = %s, modelo = %s, familia = %s,
                     quantidade = %s, data_pedido = %s, data_entrega = %s,
-                    observacao = %s, atualizado_em = NOW()
+                    observacao = %s, local_entrega_id = %s, atualizado_em = NOW()
                 WHERE id = %s
             """, (numero_pedido, cliente, modelo, familia or None,
-                  quantidade, data_pedido, data_entrega, observacao or None, pedido_id))
+                  quantidade, data_pedido, data_entrega, observacao or None,
+                  local_entrega_id, pedido_id))
 
 
 def excluir_pedido(pedido_id: int) -> None:
@@ -157,10 +172,13 @@ def buscar_entrega(entrega_id: int) -> dict | None:
                     e.*,
                     p.numero_pedido, p.cliente, p.modelo, p.familia,
                     p.quantidade AS qtd_pedido, p.data_entrega AS data_entrega_prevista,
-                    m.nome AS motorista_nome, m.telefone AS motorista_telefone
+                    m.nome AS motorista_nome, m.telefone AS motorista_telefone,
+                    l.nome_local AS local_nome, l.endereco AS local_endereco,
+                    l.lat AS local_lat, l.lng AS local_lng
                 FROM entrega e
                 JOIN pedido_cliente p ON p.id = e.pedido_id
                 LEFT JOIN equipe_entrega m ON m.id = e.motorista_id
+                LEFT JOIN local_entrega l ON l.id = p.local_entrega_id
                 WHERE e.id = %s
             """, (entrega_id,))
             return cur.fetchone()

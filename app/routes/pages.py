@@ -1324,6 +1324,71 @@ def pcp_entregas():
     )
 
 
+@bp.route("/pcp/entregas/locais", methods=["GET"])
+@login_required
+def pcp_entregas_locais():
+    from flask import request, jsonify
+    from app.services import locais_entrega_service as svc
+
+    cliente = request.args.get("cliente", "")
+    locais = svc.listar_locais(cliente)
+    return jsonify({"ok": True, "locais": [dict(l) for l in locais]})
+
+
+@bp.route("/pcp/entregas/locais/novo", methods=["POST"])
+@login_required
+def pcp_entregas_locais_novo():
+    from flask import request, jsonify
+    from app.services import locais_entrega_service as svc
+
+    data = request.get_json(silent=True) or {}
+    try:
+        local_id = svc.criar_local(
+            data.get("cliente", ""),
+            data.get("nome_local", ""),
+            data.get("endereco", ""),
+            float(data["lat"]) if data.get("lat") else None,
+            float(data["lng"]) if data.get("lng") else None,
+        )
+        return jsonify({"ok": True, "id": local_id})
+    except (ValueError, Exception) as e:
+        return jsonify({"erro": str(e)}), 400
+
+
+@bp.route("/pcp/entregas/locais/<int:local_id>/editar", methods=["POST"])
+@login_required
+def pcp_entregas_locais_editar(local_id):
+    from flask import request, jsonify
+    from app.services import locais_entrega_service as svc
+
+    data = request.get_json(silent=True) or {}
+    try:
+        svc.atualizar_local(
+            local_id,
+            data.get("cliente", ""),
+            data.get("nome_local", ""),
+            data.get("endereco", ""),
+            float(data["lat"]) if data.get("lat") else None,
+            float(data["lng"]) if data.get("lng") else None,
+        )
+        return jsonify({"ok": True})
+    except (ValueError, Exception) as e:
+        return jsonify({"erro": str(e)}), 400
+
+
+@bp.route("/pcp/entregas/locais/<int:local_id>/excluir", methods=["POST"])
+@login_required
+def pcp_entregas_locais_excluir(local_id):
+    from flask import jsonify
+    from app.services import locais_entrega_service as svc
+
+    try:
+        svc.excluir_local(local_id)
+        return jsonify({"ok": True})
+    except (ValueError, Exception) as e:
+        return jsonify({"erro": str(e)}), 400
+
+
 @bp.route("/pcp/entregas/pedido/novo", methods=["POST"])
 @login_required
 def pcp_entregas_pedido_novo():
@@ -1332,6 +1397,7 @@ def pcp_entregas_pedido_novo():
 
     data = request.get_json(silent=True) or {}
     try:
+        local_id = int(data["local_entrega_id"]) if data.get("local_entrega_id") else None
         pedido_id = svc.criar_pedido(
             data.get("numero_pedido", ""),
             data.get("cliente", ""),
@@ -1341,6 +1407,7 @@ def pcp_entregas_pedido_novo():
             data.get("data_pedido", ""),
             data.get("data_entrega", ""),
             data.get("observacao", ""),
+            local_id,
         )
         return jsonify({"ok": True, "id": pedido_id})
     except (ValueError, Exception) as e:
@@ -1355,6 +1422,7 @@ def pcp_entregas_pedido_editar(pedido_id):
 
     data = request.get_json(silent=True) or {}
     try:
+        local_id = int(data["local_entrega_id"]) if data.get("local_entrega_id") else None
         svc.atualizar_pedido(
             pedido_id,
             data.get("numero_pedido", ""),
@@ -1365,6 +1433,7 @@ def pcp_entregas_pedido_editar(pedido_id):
             data.get("data_pedido", ""),
             data.get("data_entrega", ""),
             data.get("observacao", ""),
+            local_id,
         )
         return jsonify({"ok": True})
     except (ValueError, Exception) as e:
