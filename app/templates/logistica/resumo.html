@@ -170,7 +170,7 @@
           <div class="col-6">
             <label class="form-label fw-semibold" style="font-size:0.8rem;">Telefone</label>
             <input type="text" class="form-control" id="inputTelefoneMembro" placeholder="(00) 00000-0000"
-                   maxlength="15" inputmode="numeric" style="border-radius:8px;">
+                   maxlength="15" inputmode="numeric" oninput="mascararTelefone(this)" style="border-radius:8px;">
           </div>
         </div>
         <div id="erroEquipeModal" class="alert alert-danger py-2 px-3 mt-3 mb-0" style="display:none;font-size:0.82rem;border-radius:8px;"></div>
@@ -189,20 +189,16 @@
 const URL_EQUIPE_NOVO    = "{{ url_for('pages.logistica_equipe_novo') }}";
 const URL_EQUIPE_EXCLUIR = (id) => `/logistica/equipe/${id}/excluir`;
 
-function mascararTelefone(e) {
-  const digits = e.target.value.replace(/\D/g, "").slice(0, 11);
+function mascararTelefone(el) {
+  const digits = el.value.replace(/\D/g, "").slice(0, 11);
   if (digits.length <= 2) {
-    e.target.value = digits.length ? `(${digits}` : "";
+    el.value = digits.length ? `(${digits}` : "";
   } else if (digits.length <= 7) {
-    e.target.value = `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+    el.value = `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
   } else {
-    e.target.value = `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+    el.value = `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
   }
 }
-
-document.addEventListener("DOMContentLoaded", function () {
-  document.getElementById("inputTelefoneMembro").addEventListener("input", mascararTelefone);
-});
 
 function abrirModalEquipe() {
   document.getElementById("inputNomeMembro").value    = "";
