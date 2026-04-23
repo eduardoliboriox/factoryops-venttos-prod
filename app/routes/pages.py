@@ -1287,13 +1287,20 @@ def pcp_planejamento_resumo_imprimir():
 @bp.route("/pcp/entregas")
 @login_required
 def pcp_entregas():
+    import calendar
+    from datetime import date
     from flask import request
     from app.services import entregas_service as svc
 
+    hoje = date.today()
+    ultimo_dia = calendar.monthrange(hoje.year, hoje.month)[1]
+    default_inicial = hoje.replace(day=1).strftime("%Y-%m-%d")
+    default_final   = hoje.replace(day=ultimo_dia).strftime("%Y-%m-%d")
+
     tab          = request.args.get("tab", "pedido")
     status       = request.args.get("status", "")
-    data_inicial = request.args.get("dataInicial", "")
-    data_final   = request.args.get("dataFinal", "")
+    data_inicial = request.args.get("dataInicial", default_inicial)
+    data_final   = request.args.get("dataFinal", default_final)
     data_hoje    = svc.data_padrao()
 
     try:
