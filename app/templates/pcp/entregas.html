@@ -817,6 +817,16 @@ function abrirModalPedido() {
   new bootstrap.Modal(document.getElementById("modalPedido")).show();
 }
 
+function toInputDate(val) {
+  if (!val) return "";
+  const d = new Date(val);
+  if (isNaN(d.getTime())) return "";
+  const y = d.getUTCFullYear();
+  const m = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(d.getUTCDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
 function editarPedido(p) {
   _pedidoIdEditando = p.id;
   document.getElementById("tituloModalPedido").innerHTML =
@@ -826,8 +836,8 @@ function editarPedido(p) {
   document.getElementById("inputModelo").value       = (p.modelo || "").toUpperCase();
   document.getElementById("inputFamilia").value      = p.familia || "";
   document.getElementById("inputQuantidade").value   = p.quantidade || "";
-  document.getElementById("inputDataPedido").value   = p.data_pedido || "";
-  document.getElementById("inputDataEntrega").value  = p.data_entrega || "";
+  document.getElementById("inputDataPedido").value   = toInputDate(p.data_pedido);
+  document.getElementById("inputDataEntrega").value  = toInputDate(p.data_entrega);
   document.getElementById("inputObservacao").value   = p.observacao || "";
   document.getElementById("erroPedidoModal").style.display = "none";
   if (p.cliente) {
