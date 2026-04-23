@@ -38,6 +38,16 @@
       </a>
     </div>
     <div class="col-6">
+      <a class="more-card" href="{{ url_for('pages.smt_cadastro') }}">
+        <div class="more-icon"><i class="bi bi-plus-square"></i></div>
+        <div class="more-text">
+          <div class="more-title">Cadastro</div>
+          <div class="more-subtitle">Novo modelo SMT</div>
+        </div>
+        <i class="bi bi-chevron-right more-arrow"></i>
+      </a>
+    </div>
+    <div class="col-6">
       <a class="more-card" href="{{ url_for('pages.smt_calcular') }}">
         <div class="more-icon"><i class="bi bi-calculator"></i></div>
         <div class="more-text">
@@ -121,6 +131,16 @@
         <i class="bi bi-chevron-right more-arrow"></i>
       </a>
     </div>
+    <div class="col-12">
+      <a class="more-card" href="{{ url_for('pages.smd_monitor_tv') }}">
+        <div class="more-icon is-producao"><i class="bi bi-display"></i></div>
+        <div class="more-text">
+          <div class="more-title">Monitor SMD TV</div>
+          <div class="more-subtitle">Painel de produção</div>
+        </div>
+        <i class="bi bi-chevron-right more-arrow"></i>
+      </a>
+    </div>
   </div>
 
   <div class="section-label">Engenharia</div>
@@ -150,16 +170,6 @@
   <div class="section-label">PCP</div>
   <div class="row g-2 mb-4">
     <div class="col-6">
-      <a class="more-card" href="{{ url_for('pages.pcp_controle_ops') }}">
-        <div class="more-icon is-pcp"><i class="bi bi-kanban"></i></div>
-        <div class="more-text">
-          <div class="more-title">Controle de OPs</div>
-          <div class="more-subtitle">Ordens de produção</div>
-        </div>
-        <i class="bi bi-chevron-right more-arrow"></i>
-      </a>
-    </div>
-    <div class="col-6">
       <a class="more-card" href="{{ url_for('pages.pcp_planejamento') }}">
         <div class="more-icon is-pcp"><i class="bi bi-calendar-week"></i></div>
         <div class="more-text">
@@ -169,12 +179,88 @@
         <i class="bi bi-chevron-right more-arrow"></i>
       </a>
     </div>
-    <div class="col-12">
+    <div class="col-6">
+      <a class="more-card" href="{{ url_for('pages.pcp_controle_ops') }}">
+        <div class="more-icon is-pcp"><i class="bi bi-file-earmark-text"></i></div>
+        <div class="more-text">
+          <div class="more-title">Controle de OPs</div>
+          <div class="more-subtitle">Ordens de produção</div>
+        </div>
+        <i class="bi bi-chevron-right more-arrow"></i>
+      </a>
+    </div>
+    <div class="col-6">
+      <a class="more-card" href="{{ url_for('pages.pcp_apontamento') }}">
+        <div class="more-icon is-pcp"><i class="bi bi-clipboard-check"></i></div>
+        <div class="more-text">
+          <div class="more-title">Apontamento</div>
+          <div class="more-subtitle">Registro de produção</div>
+        </div>
+        <i class="bi bi-chevron-right more-arrow"></i>
+      </a>
+    </div>
+    <div class="col-6">
       <a class="more-card" href="{{ url_for('pages.pcp_entregas') }}">
         <div class="more-icon is-pcp"><i class="bi bi-truck"></i></div>
         <div class="more-text">
           <div class="more-title">Entregas</div>
           <div class="more-subtitle">Pedidos e logística</div>
+        </div>
+        <i class="bi bi-chevron-right more-arrow"></i>
+      </a>
+    </div>
+    {% if current_user.is_authenticated and current_user.is_admin %}
+    <div class="col-6">
+      <a class="more-card" href="{{ url_for('pages.pcp_producao_coletada') }}">
+        <div class="more-icon is-pcp"><i class="bi bi-database-down"></i></div>
+        <div class="more-text">
+          <div class="more-title">Produção Coletada</div>
+          <div class="more-subtitle">Dados coletados</div>
+        </div>
+        <i class="bi bi-chevron-right more-arrow"></i>
+      </a>
+    </div>
+    <div class="col-6">
+      <a class="more-card" href="{{ url_for('pages.pcp_lancamento_producao') }}">
+        <div class="more-icon is-pcp"><i class="bi bi-pencil-square"></i></div>
+        <div class="more-text">
+          <div class="more-title">Lançamento PTH</div>
+          <div class="more-subtitle">Registro manual</div>
+        </div>
+        <i class="bi bi-chevron-right more-arrow"></i>
+      </a>
+    </div>
+    <div class="col-12">
+      <a class="more-card" href="{{ url_for('pages.pcp_roteiros') }}">
+        <div class="more-icon is-pcp"><i class="bi bi-diagram-3"></i></div>
+        <div class="more-text">
+          <div class="more-title">Roteiros</div>
+          <div class="more-subtitle">Fluxo de produção</div>
+        </div>
+        <i class="bi bi-chevron-right more-arrow"></i>
+      </a>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="section-label">Logística</div>
+  <div class="row g-2 mb-4">
+    <div class="col-6">
+      <a class="more-card" href="{{ url_for('pages.logistica_resumo') }}">
+        <div class="more-icon is-logistica"><i class="bi bi-clipboard-data"></i></div>
+        <div class="more-text">
+          <div class="more-title">Resumo do Dia</div>
+          <div class="more-subtitle">Entregas do turno</div>
+        </div>
+        <i class="bi bi-chevron-right more-arrow"></i>
+      </a>
+    </div>
+    <div class="col-6">
+      <a class="more-card" href="{{ url_for('pages.pcp_entregas') }}?tab=logistica">
+        <div class="more-icon is-logistica"><i class="bi bi-truck"></i></div>
+        <div class="more-text">
+          <div class="more-title">Entregas</div>
+          <div class="more-subtitle">Visão logística</div>
         </div>
         <i class="bi bi-chevron-right more-arrow"></i>
       </a>
