@@ -106,6 +106,72 @@
     </div>
   </div>
 
+  <!-- Remessas Pendentes -->
+  <div class="card mb-4" style="border-radius:12px;border-color:var(--border);">
+    <div class="card-header py-2 px-3 d-flex justify-content-between align-items-center"
+         style="border-color:var(--border);background:var(--bg);border-radius:12px 12px 0 0;">
+      <span class="fw-semibold" style="font-size:0.9rem;">
+        <i class="bi bi-truck me-2 text-warning"></i>Remessas em Andamento
+      </span>
+      {% if entregas_pendentes %}
+      <span class="badge bg-warning text-dark" style="font-size:0.68rem;">{{ entregas_pendentes | length }}</span>
+      {% endif %}
+    </div>
+    <div class="card-body p-0">
+      {% if entregas_pendentes %}
+      <div class="table-responsive">
+        <table class="table table-hover mb-0" style="font-size:0.84rem;">
+          <thead style="font-size:0.72rem;text-transform:uppercase;letter-spacing:.5px;background:var(--bg);">
+            <tr>
+              <th class="ps-3 py-2">Pedido</th>
+              <th>Cliente</th>
+              <th>Modelo</th>
+              <th class="text-end">Qtd.</th>
+              <th>Status</th>
+              <th>Nota Fiscal</th>
+              <th>Motorista</th>
+              <th class="pe-3"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for e in entregas_pendentes %}
+            {% set cor = status_cor.get(e.status, 'secondary') %}
+            {% set label = status_label.get(e.status, e.status) %}
+            <tr {% if e.status == 'aguardando_nf' %}style="background:rgba(255,193,7,0.06);"{% endif %}>
+              <td class="ps-3 fw-semibold">{{ e.numero_pedido }}</td>
+              <td class="text-muted">{{ e.cliente }}</td>
+              <td>{{ e.modelo }}</td>
+              <td class="text-end fw-semibold">{{ "{:,.0f}".format(e.quantidade).replace(',','.') }}</td>
+              <td>
+                <span class="badge bg-{{ cor }} {% if e.status in ('em_carregamento','aguardando_nf') %}text-dark{% endif %}"
+                      style="font-size:0.7rem;">
+                  {% if e.status == 'aguardando_nf' %}<i class="bi bi-exclamation-triangle-fill me-1"></i>{% endif %}
+                  {{ label }}
+                </span>
+              </td>
+              <td class="text-muted small">{{ e.nota_fiscal or '—' }}</td>
+              <td class="text-muted small">{{ e.motorista_nome or '—' }}</td>
+              <td class="text-end pe-3">
+                <a href="{{ url_for('pages.pcp_entregas') }}?tab=logistica"
+                   class="btn btn-outline-secondary btn-sm" style="border-radius:6px;font-size:0.72rem;"
+                   title="Ver na página de Entregas">
+                  <i class="bi bi-arrow-right"></i>
+                </a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="p-4 text-center text-muted">
+        <i class="bi bi-check-circle d-block fs-2 mb-2 text-success opacity-50"></i>
+        <p class="mb-0 fw-semibold small">Nenhuma remessa pendente</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
   <!-- Equipe cadastrada -->
   <div class="card" style="border-radius:12px;border-color:var(--border);">
     <div class="card-header py-2 px-3" style="border-color:var(--border);background:var(--bg);border-radius:12px 12px 0 0;">
