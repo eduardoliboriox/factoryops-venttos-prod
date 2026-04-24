@@ -48,7 +48,7 @@
   'pcp_controle_ops','pcp_apontamento','pcp_planejamento','pcp_entregas','pcp_producao_coletada','pcp_lancamento_producao','pcp_roteiros'
 ] %}
 {% set _log_menus = [
-  'logistica_resumo'
+  'logistica_resumo','logistica_entregas'
 ] %}
 {% set _config_menus = [
   'config_turnos','config_linhas','config_paradas'
@@ -91,6 +91,7 @@
       "pcp_apontamento": "Apontamento",
       "pcp_planejamento": "Planejamento",
       "pcp_entregas": "Entregas",
+      "logistica_entregas": "Entregas",
       "pcp_lancamento_producao": "Lançamento PTH",
       "pcp_producao_coletada": "Produção Coletada",
       "pcp_roteiros": "Roteiros",
@@ -302,7 +303,7 @@
               <i class="bi bi-clipboard-data"></i> Resumo do Dia
             </a>
             <a href="{{ url_for('pages.pcp_entregas') }}?tab=logistica"
-               class="{% if active_menu == 'pcp_entregas' %}active{% endif %}">
+               class="{% if active_menu == 'logistica_entregas' %}active{% endif %}">
               <i class="bi bi-truck"></i> Entregas
             </a>
           </div>

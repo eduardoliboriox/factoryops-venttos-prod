@@ -1316,7 +1316,7 @@ def pcp_entregas():
 
     return render_template(
         "pcp/entregas.html",
-        active_menu="pcp_entregas",
+        active_menu="logistica_entregas" if tab == "logistica" else "pcp_entregas",
         tab=tab,
         pedidos=pedidos,
         entregas=entregas,
