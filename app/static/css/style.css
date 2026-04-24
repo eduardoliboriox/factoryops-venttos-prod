@@ -377,6 +377,11 @@ body {
   .desktop-header {
     display: none;
   }
+
+  .table > thead > tr > th,
+  .table > tbody > tr > td {
+    white-space: nowrap;
+  }
 }
 
 /* =========================
