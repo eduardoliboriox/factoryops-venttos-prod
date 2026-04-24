@@ -1552,6 +1552,7 @@ def pcp_entregas_entrega_localizacao(entrega_id):
 @bp.route("/logistica")
 @login_required
 def logistica_resumo():
+    from datetime import datetime
     from flask import request
     from app.services import entregas_service as svc
 
@@ -1559,10 +1560,16 @@ def logistica_resumo():
     resumo = svc.resumo_apontamento_logistica(data)
     equipe = svc.listar_equipe()
 
+    try:
+        data_fmt = datetime.strptime(data, "%Y-%m-%d").strftime("%d/%m/%Y")
+    except (ValueError, TypeError):
+        data_fmt = data
+
     return render_template(
         "logistica/resumo.html",
         active_menu="logistica_resumo",
         data=data,
+        data_fmt=data_fmt,
         resumo=resumo,
         equipe=equipe,
     )

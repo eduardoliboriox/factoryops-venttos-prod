@@ -52,7 +52,7 @@
     <div class="card-header py-2 px-3" style="border-color:var(--border);background:var(--bg);border-radius:12px 12px 0 0;">
       <span class="fw-semibold" style="font-size:0.9rem;">
         <i class="bi bi-clipboard-data me-2 text-primary"></i>
-        Produção Apontada — {{ data | replace('-', '/') if data else '—' }}
+        Produção Apontada — {{ data_fmt }}
       </span>
     </div>
     <div class="card-body p-0">
@@ -98,7 +98,9 @@
       {% else %}
       <div class="p-5 text-center text-muted">
         <i class="bi bi-clipboard-data d-block fs-1 mb-3 opacity-25"></i>
-        <p class="mb-0 fw-semibold">Nenhum apontamento para esta data</p>
+        <p class="mb-0 fw-semibold">Nenhum apontamento registrado para {{ data_fmt }}</p>
+        <p class="small mt-2 mb-0">Os apontamentos de produção são lançados pelo PCP ao longo do dia.<br>
+        Consulte novamente mais tarde ou selecione outra data.</p>
       </div>
       {% endif %}
     </div>
