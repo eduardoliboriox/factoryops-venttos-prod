@@ -1559,6 +1559,7 @@ def logistica_resumo():
     data   = request.args.get("data", svc.data_padrao())
     resumo = svc.resumo_apontamento_logistica(data)
     equipe = svc.listar_equipe()
+    entregas_pendentes = [e for e in svc.listar_entregas() if e["status"] != "entregue"]
 
     try:
         data_fmt = datetime.strptime(data, "%Y-%m-%d").strftime("%d/%m/%Y")
@@ -1572,6 +1573,9 @@ def logistica_resumo():
         data_fmt=data_fmt,
         resumo=resumo,
         equipe=equipe,
+        entregas_pendentes=entregas_pendentes,
+        status_label=svc.STATUS_LABEL,
+        status_cor=svc.STATUS_COR,
     )
 
 
