@@ -48,6 +48,8 @@ def data_padrao() -> str:
 
 
 def listar_pedidos(status: str = "", modelo: str = "", data_inicial: str = "", data_final: str = "") -> list:
+    if status == "ordem_cliente":
+        return repo.listar_pedidos("", modelo, data_inicial, data_final, order_by="cliente")
     return repo.listar_pedidos(status, modelo, data_inicial, data_final)
 
 
