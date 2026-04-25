@@ -80,10 +80,11 @@
               <label class="form-label fw-semibold" style="font-size:0.8rem;">Status</label>
               <select class="form-select form-select-sm" name="status" style="border-radius:8px;">
                 <option value="">Todos</option>
-                <option value="aberto"      {% if status_filter == 'aberto' %}selected{% endif %}>Aberto</option>
-                <option value="em_producao" {% if status_filter == 'em_producao' %}selected{% endif %}>Em Produção</option>
-                <option value="pronto"      {% if status_filter == 'pronto' %}selected{% endif %}>Pronto</option>
-                <option value="entregue"    {% if status_filter == 'entregue' %}selected{% endif %}>Entregue</option>
+                <option value="aberto"         {% if status_filter == 'aberto' %}selected{% endif %}>Aberto</option>
+                <option value="em_producao"    {% if status_filter == 'em_producao' %}selected{% endif %}>Em Produção</option>
+                <option value="pronto"         {% if status_filter == 'pronto' %}selected{% endif %}>Pronto</option>
+                <option value="entregue"       {% if status_filter == 'entregue' %}selected{% endif %}>Entregue</option>
+                <option value="ordem_cliente"  {% if status_filter == 'ordem_cliente' %}selected{% endif %}>Em ordem de entrega</option>
               </select>
             </div>
             <div class="col-6 col-md-2 d-flex gap-2">

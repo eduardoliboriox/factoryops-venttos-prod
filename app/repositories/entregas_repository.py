@@ -2,7 +2,8 @@ from app.extensions import get_db
 from psycopg.rows import dict_row
 
 
-def listar_pedidos(status: str = "", modelo: str = "", data_inicial: str = "", data_final: str = "") -> list:
+def listar_pedidos(status: str = "", modelo: str = "", data_inicial: str = "", data_final: str = "",
+                   order_by: str = "data_entrega") -> list:
     filtros = ["1=1"]
     params = []
     if status:
@@ -18,6 +19,7 @@ def listar_pedidos(status: str = "", modelo: str = "", data_inicial: str = "", d
         filtros.append("p.data_entrega <= %s")
         params.append(data_final)
     where = " AND ".join(filtros)
+    order = "p.cliente ASC, p.data_entrega ASC" if order_by == "cliente" else "p.data_entrega ASC"
     with get_db() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
             cur.execute(f"""
@@ -63,7 +65,7 @@ def listar_pedidos(status: str = "", modelo: str = "", data_inicial: str = "", d
                 FROM pedido_cliente p
                 LEFT JOIN local_entrega l ON l.id = p.local_entrega_id
                 WHERE {where}
-                ORDER BY p.data_entrega ASC
+                ORDER BY {order}
             """, params)
             return cur.fetchall()
 
