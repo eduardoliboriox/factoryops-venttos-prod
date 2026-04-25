@@ -507,7 +507,9 @@
           <div class="col-12">
             <label class="form-label fw-semibold" style="font-size:0.8rem;">Nota Fiscal</label>
             <input type="text" class="form-control" id="inputNFRemessa"
-                   placeholder="Ex: NF-001234 (pode ser preenchida depois)" style="border-radius:8px;">
+                   placeholder="Ex: 15642 (pode ser preenchida depois)"
+                   onblur="this.value = formatNF(this.value)"
+                   style="border-radius:8px;">
           </div>
         </div>
         <div id="erroNovaRemessaModal" class="alert alert-danger py-2 px-3 mt-3 mb-0" style="display:none;font-size:0.82rem;border-radius:8px;"></div>
@@ -555,7 +557,9 @@
         </p>
         <div id="rowNF" style="display:none;" class="mb-3">
           <label class="form-label fw-semibold" style="font-size:0.8rem;">Número da NF <span class="text-danger">*</span></label>
-          <input type="text" class="form-control" id="inputNF" placeholder="Ex: NF-001234" style="border-radius:8px;">
+          <input type="text" class="form-control" id="inputNF" placeholder="Ex: 15642"
+                 onblur="this.value = formatNF(this.value)"
+                 style="border-radius:8px;">
         </div>
         <div id="rowMotorista" style="display:none;" class="mb-3">
           <label class="form-label fw-semibold" style="font-size:0.8rem;">Motorista <span class="text-danger">*</span></label>
@@ -931,7 +935,7 @@ function salvarRemessa() {
   erroBox.style.display = "none";
 
   const quantidade  = parseInt(document.getElementById("inputQtdRemessa").value) || 0;
-  const nota_fiscal = document.getElementById("inputNFRemessa").value.trim();
+  const nota_fiscal = formatNF(document.getElementById("inputNFRemessa").value.trim());
 
   if (quantidade <= 0) {
     erroBox.textContent = "Informe uma quantidade maior que zero.";
@@ -1062,7 +1066,7 @@ function confirmarStatus() {
   erroBox.style.display = "none";
   const body = { status: _novoStatusAtual };
   if (_novoStatusAtual === "nf_emitida") {
-    body.nota_fiscal = document.getElementById("inputNF").value.trim();
+    body.nota_fiscal = formatNF(document.getElementById("inputNF").value.trim());
   }
   if (_novoStatusAtual === "em_transito") {
     body.motorista_id = document.getElementById("selectMotorista").value || null;
@@ -1085,6 +1089,12 @@ function confirmarStatus() {
       }
     })
     .catch(() => { erroBox.textContent = "Erro de conexão."; erroBox.style.display = ""; });
+}
+
+function formatNF(val) {
+  const digits = val.replace(/\D/g, '');
+  if (!digits) return '';
+  return digits.padStart(9, '0');
 }
 
 function mostrarAlerta(tipo, msg) {
