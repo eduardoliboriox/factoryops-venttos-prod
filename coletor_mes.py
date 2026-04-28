@@ -100,11 +100,11 @@ def _extrair_linha_info(option_text: str) -> dict | None:
 def _extrair_turno(turno_raw: str) -> str:
     parte = turno_raw.split("|", 1)[-1].strip() if "|" in turno_raw else turno_raw.strip()
     if parte.startswith("1T"):
-        return "1 Turno"
+        return "1º Turno"
     if parte.startswith("2T"):
-        return "2 Turno"
+        return "2º Turno"
     if parte.startswith("3T"):
-        return "3 Turno"
+        return "3º Turno"
     return parte
 
 

@@ -616,6 +616,80 @@ def pcp_producao_coletada_progresso(job_id):
     return jsonify(svc.status_importacao(job_id))
 
 
+@bp.route("/pcp/producao-mes")
+@login_required
+@admin_required
+def pcp_producao_mes():
+    from flask import request
+    from app.services import producao_mes_service as svc
+
+    data_inicial_pad, data_final_pad = svc.data_padrao()
+
+    data_inicial = request.args.get("dataInicial", data_inicial_pad)
+    data_final   = request.args.get("dataFinal",   data_final_pad)
+    setor        = request.args.get("setor", "")
+    linha        = request.args.get("linha", "")
+    turno        = request.args.get("turno", "")
+
+    try:
+        registros = svc.listar(data_inicial, data_final, setor, linha, turno)
+        kpis      = svc.totais(data_inicial, data_final, setor, linha, turno)
+        filtros   = svc.filtros_disponiveis(setor)
+        erro      = None
+    except Exception as e:
+        registros = []
+        kpis      = {}
+        filtros   = {"setores": [], "linhas": []}
+        erro      = str(e)
+
+    return render_template(
+        "pcp/producao_mes.html",
+        active_menu="pcp_producao_mes",
+        data_inicial=data_inicial,
+        data_final=data_final,
+        setor=setor,
+        linha=linha,
+        turno=turno,
+        registros=registros,
+        kpis=kpis,
+        filtros=filtros,
+        erro=erro,
+    )
+
+
+@bp.route("/pcp/producao-mes/importar", methods=["POST"])
+@login_required
+@admin_required
+def pcp_producao_mes_importar():
+    from flask import request, jsonify
+    from app.services import producao_mes_service as svc
+
+    arquivo = request.files.get("arquivo_json")
+    if not arquivo or not arquivo.filename:
+        return jsonify({"erro": "Nenhum arquivo enviado."}), 400
+
+    if not arquivo.filename.endswith(".json"):
+        return jsonify({"erro": "Somente arquivos .json são aceitos."}), 400
+
+    try:
+        job_id = svc.iniciar_importacao(arquivo.read())
+        return jsonify({"job_id": job_id})
+    except ValueError as e:
+        return jsonify({"erro": str(e)}), 400
+    except Exception:
+        return jsonify({"erro": "Erro inesperado ao processar o arquivo."}), 500
+
+
+@bp.route("/pcp/producao-mes/importar/progresso/<job_id>")
+@login_required
+@admin_required
+def pcp_producao_mes_progresso(job_id):
+    from flask import jsonify
+    from app.services import producao_mes_service as svc
+
+    return jsonify(svc.status_importacao(job_id))
+
+
 # ─── CONFIGURAÇÕES DO SISTEMA ────────────────────────────────────────────────
 
 @bp.route("/pcp/turnos")
