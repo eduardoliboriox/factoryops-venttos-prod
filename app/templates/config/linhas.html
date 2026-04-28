@@ -26,8 +26,8 @@
 
   <div id="alertArea"></div>
 
-  {% set cor_setor = {'PTH': 'primary', 'SMD': 'success', 'IM': 'warning', 'PA': 'danger', 'VTT': 'info'} %}
-  {% set setores_vte = ['PTH', 'SMD', 'IM', 'PA'] %}
+  {% set cor_setor = {'PTH': 'primary', 'SMD': 'success', 'IM': 'warning', 'PA': 'danger'} %}
+  {% set setores_ordem = ['PTH', 'SMD', 'IM', 'PA'] %}
 
   <div class="row g-4">
 
@@ -57,17 +57,12 @@
               <i class="bi bi-grip-vertical text-muted" style="font-size:0.75rem;"></i>
               <span class="fw-semibold">{{ linha.linha }}</span>
             </div>
-            {% if linha.setor == 'VTT' %}
+            {% if linha.filial_config and linha.setor_config %}
             <div class="d-flex align-items-center gap-1">
-              <span class="badge bg-info" style="font-size:0.62rem;">Filial</span>
-              <span class="badge bg-info" style="font-size:0.68rem;">VTT</span>
-            </div>
-            {% elif linha.setor %}
-            <div class="d-flex align-items-center gap-1">
-              <span class="badge bg-light text-muted border" style="font-size:0.62rem;">VTE</span>
-              <span class="badge bg-{{ cor_setor.get(linha.setor, 'secondary') }}" style="font-size:0.68rem;">
-                {{ linha.setor }}
-              </span>
+              <span class="badge {% if linha.filial_config == 'VTT' %}bg-info{% else %}bg-light text-muted border{% endif %}"
+                    style="font-size:0.62rem;">{{ linha.filial_config }}</span>
+              <span class="badge bg-{{ cor_setor.get(linha.setor_config, 'secondary') }}"
+                    style="font-size:0.68rem;">{{ linha.setor_config }}</span>
             </div>
             {% else %}
             <span class="badge bg-light text-muted border" style="font-size:0.68rem;">Sem setor</span>
@@ -93,40 +88,41 @@
           <span style="font-size:0.75rem;color:var(--text-muted);">Unidade principal — setores PTH · SMD · IM · PA</span>
         </div>
 
-        {% for setor in setores_vte %}
-        {% if setor in setores %}
+        {% for setor in setores_ordem %}
         {% set cor = cor_setor.get(setor, 'secondary') %}
         <div class="card" style="border-radius:12px;border-color:var(--border);">
           <div class="card-header d-flex align-items-center justify-content-between py-2 px-3"
                style="border-radius:12px 12px 0 0;border-color:var(--border);background:var(--card);cursor:pointer;"
                data-bs-toggle="collapse"
-               data-bs-target="#setor-{{ setor }}"
+               data-bs-target="#setor-VTE-{{ setor }}"
                aria-expanded="true">
             <div class="d-flex align-items-center gap-2">
               <span class="badge bg-{{ cor }}" style="font-size:0.75rem;min-width:42px;">{{ setor }}</span>
               <span class="fw-semibold">{{ setor }}</span>
-              <span class="badge bg-light text-muted border setor-count" data-setor="{{ setor }}"
+              <span class="badge bg-light text-muted border setor-count"
+                    data-filial="VTE" data-setor="{{ setor }}"
                     style="font-size:0.7rem;">
-                {{ setores.get(setor, []) | length }} linhas
+                {{ setores.get('VTE', {}).get(setor, []) | length }} linhas
               </span>
             </div>
             <div class="d-flex align-items-center gap-2">
               <button class="btn btn-outline-primary btn-sm" style="border-radius:6px;"
-                      onclick="event.stopPropagation(); abrirModalAdicionar('{{ setor }}')">
+                      onclick="event.stopPropagation(); abrirModalAdicionar('VTE', '{{ setor }}')">
                 <i class="bi bi-plus-lg"></i>
               </button>
               <i class="bi bi-chevron-down" style="font-size:0.75rem;color:var(--text-muted);"></i>
             </div>
           </div>
-          <div class="collapse show" id="setor-{{ setor }}">
+          <div class="collapse show" id="setor-VTE-{{ setor }}">
             <div class="card-body p-2 drop-zone"
+                 data-filial="VTE"
                  data-setor="{{ setor }}"
                  ondragover="event.preventDefault(); onDragOver(this)"
                  ondragleave="onDragLeave(this)"
-                 ondrop="onDrop(event, '{{ setor }}')"
+                 ondrop="onDrop(event, 'VTE', '{{ setor }}')"
                  style="min-height:60px;border-radius:0 0 12px 12px;">
-              <div class="linhas-setor d-flex flex-wrap gap-2 p-1" id="linhas-{{ setor }}">
-                {% for item in setores.get(setor, []) %}
+              <div class="linhas-setor d-flex flex-wrap gap-2 p-1" id="linhas-VTE-{{ setor }}">
+                {% for item in setores.get('VTE', {}).get(setor, []) %}
                 <span class="badge-linha d-flex align-items-center gap-1 px-2 py-1"
                       data-id="{{ item.id }}"
                       data-linha="{{ item.linha }}"
@@ -134,7 +130,7 @@
                   <span>{{ item.linha }}</span>
                   <button type="button" class="btn btn-link p-0 text-danger"
                           style="line-height:1;font-size:0.75rem;"
-                          onclick="removerLinha({{ item.id }}, '{{ item.linha }}', '{{ setor }}')"
+                          onclick="removerLinha({{ item.id }}, '{{ item.linha }}', 'VTE', '{{ setor }}')"
                           title="Remover">
                     <i class="bi bi-x-lg"></i>
                   </button>
@@ -149,58 +145,58 @@
             </div>
           </div>
         </div>
-        {% endif %}
         {% endfor %}
 
         <!-- Filial VTT -->
-        {% if 'VTT' in setores %}
         <div class="d-flex align-items-center gap-2 mt-2 mb-1" style="padding-left:4px;">
           <span class="badge bg-info" style="font-size:0.72rem;padding:4px 10px;border-radius:6px;">Filial VTT</span>
-          <span style="font-size:0.75rem;color:var(--text-muted);">Unidade VTT — linhas configuradas nesta filial</span>
+          <span style="font-size:0.75rem;color:var(--text-muted);">Unidade VTT — setores PTH · SMD · IM · PA</span>
         </div>
 
-        <div class="card" style="border-radius:12px;border-color:rgba(13,202,240,0.3);border-width:1.5px;">
+        {% for setor in setores_ordem %}
+        {% set cor = cor_setor.get(setor, 'secondary') %}
+        <div class="card" style="border-radius:12px;border-color:rgba(13,202,240,0.25);border-width:1.5px;">
           <div class="card-header d-flex align-items-center justify-content-between py-2 px-3"
-               style="border-radius:12px 12px 0 0;border-color:rgba(13,202,240,0.3);background:rgba(13,202,240,0.05);cursor:pointer;"
+               style="border-radius:12px 12px 0 0;border-color:rgba(13,202,240,0.25);background:rgba(13,202,240,0.04);cursor:pointer;"
                data-bs-toggle="collapse"
-               data-bs-target="#setor-VTT"
+               data-bs-target="#setor-VTT-{{ setor }}"
                aria-expanded="true">
             <div class="d-flex align-items-center gap-2">
-              <span class="badge bg-info" style="font-size:0.75rem;">VTT</span>
-              <span class="fw-semibold">Linhas VTT</span>
-              <span class="badge bg-light text-muted border setor-count" data-setor="VTT"
+              <span class="badge bg-{{ cor }}" style="font-size:0.75rem;min-width:42px;">{{ setor }}</span>
+              <span class="fw-semibold">{{ setor }}</span>
+              <span class="badge bg-light text-muted border setor-count"
+                    data-filial="VTT" data-setor="{{ setor }}"
                     style="font-size:0.7rem;">
-                {{ setores.get('VTT', []) | length }} linhas
+                {{ setores.get('VTT', {}).get(setor, []) | length }} linhas
               </span>
-              <span class="badge" style="background:rgba(13,202,240,0.12);color:#0dcaf0;border:1px solid rgba(13,202,240,0.3);font-size:0.65rem;padding:2px 7px;border-radius:4px;">
-                Filial
-              </span>
+              <span class="badge bg-info" style="font-size:0.62rem;padding:2px 7px;border-radius:4px;opacity:0.75;">VTT</span>
             </div>
             <div class="d-flex align-items-center gap-2">
               <button class="btn btn-outline-info btn-sm" style="border-radius:6px;"
-                      onclick="event.stopPropagation(); abrirModalAdicionar('VTT')">
+                      onclick="event.stopPropagation(); abrirModalAdicionar('VTT', '{{ setor }}')">
                 <i class="bi bi-plus-lg"></i>
               </button>
               <i class="bi bi-chevron-down" style="font-size:0.75rem;color:var(--text-muted);"></i>
             </div>
           </div>
-          <div class="collapse show" id="setor-VTT">
+          <div class="collapse show" id="setor-VTT-{{ setor }}">
             <div class="card-body p-2 drop-zone"
-                 data-setor="VTT"
+                 data-filial="VTT"
+                 data-setor="{{ setor }}"
                  ondragover="event.preventDefault(); onDragOver(this)"
                  ondragleave="onDragLeave(this)"
-                 ondrop="onDrop(event, 'VTT')"
+                 ondrop="onDrop(event, 'VTT', '{{ setor }}')"
                  style="min-height:60px;border-radius:0 0 12px 12px;">
-              <div class="linhas-setor d-flex flex-wrap gap-2 p-1" id="linhas-VTT">
-                {% for item in setores.get('VTT', []) %}
+              <div class="linhas-setor d-flex flex-wrap gap-2 p-1" id="linhas-VTT-{{ setor }}">
+                {% for item in setores.get('VTT', {}).get(setor, []) %}
                 <span class="badge-linha d-flex align-items-center gap-1 px-2 py-1"
                       data-id="{{ item.id }}"
                       data-linha="{{ item.linha }}"
-                      style="background:rgba(13,202,240,0.08);border:1px solid rgba(13,202,240,0.25);border-radius:6px;font-size:0.82rem;">
+                      style="background:rgba(var(--bs-{{ cor }}-rgb),0.1);border:1px solid rgba(var(--bs-{{ cor }}-rgb),0.3);border-radius:6px;font-size:0.82rem;">
                   <span>{{ item.linha }}</span>
                   <button type="button" class="btn btn-link p-0 text-danger"
                           style="line-height:1;font-size:0.75rem;"
-                          onclick="removerLinha({{ item.id }}, '{{ item.linha }}', 'VTT')"
+                          onclick="removerLinha({{ item.id }}, '{{ item.linha }}', 'VTT', '{{ setor }}')"
                           title="Remover">
                     <i class="bi bi-x-lg"></i>
                   </button>
@@ -215,7 +211,7 @@
             </div>
           </div>
         </div>
-        {% endif %}
+        {% endfor %}
 
       </div>
     </div>
@@ -238,6 +234,7 @@
         <label class="form-label fw-semibold" style="font-size:0.8rem;">Nome da linha</label>
         <input type="text" class="form-control" id="inputNovaLinha"
                placeholder="Ex: Linha A1" style="border-radius:8px;">
+        <input type="hidden" id="inputFilialModal">
         <input type="hidden" id="inputSetorModal">
       </div>
       <div class="modal-footer border-top" style="border-color:var(--border) !important;">
@@ -250,6 +247,8 @@
 
 <script>
 let linhaDragging = null;
+
+const COR_SETOR = { PTH: "primary", SMD: "success", IM: "warning", PA: "danger" };
 
 function onDragStart(event, linha) {
   linhaDragging = linha;
@@ -270,28 +269,27 @@ function onDragLeave(zone) {
   zone.style.background = "";
 }
 
-function onDrop(event, setor) {
+function onDrop(event, filial, setor) {
   event.preventDefault();
   const zona = event.currentTarget;
   zona.style.background = "";
   const linha = event.dataTransfer.getData("text/plain") || linhaDragging;
   if (!linha) return;
-  atribuirLinha(linha, setor);
+  atribuirLinha(linha, filial, setor);
 }
 
-function atribuirLinha(linha, setor) {
+function atribuirLinha(linha, filial, setor) {
   fetch("{{ url_for('pages.config_linhas_atribuir') }}", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ linha, setor })
+    body: JSON.stringify({ linha, filial, setor })
   })
   .then(r => r.json())
   .then(data => {
     if (data.ok) {
-      const labelSetor = setor === "VTT" ? `Filial <strong>VTT</strong>` : `setor <strong>${setor}</strong>`;
-      mostrarAlerta("success", `Linha <strong>${linha}</strong> atribuída ao ${labelSetor}.`);
-      atualizarBadgeNaLista(linha, setor);
-      adicionarLinhaNaZona(setor, linha, data.id);
+      mostrarAlerta("success", `Linha <strong>${linha}</strong> atribuída ao setor <strong>${setor}</strong> da Filial <strong>${filial}</strong>.`);
+      atualizarBadgeNaLista(linha, filial, setor);
+      adicionarLinhaNaZona(filial, setor, linha, data.id);
     } else {
       mostrarAlerta("danger", data.erro || "Erro ao atribuir linha.");
     }
@@ -299,7 +297,7 @@ function atribuirLinha(linha, setor) {
   .catch(() => mostrarAlerta("danger", "Erro de conexão."));
 }
 
-function removerLinha(id, linha, setor) {
+function removerLinha(id, linha, filial, setor) {
   fetch("{{ url_for('pages.config_linhas_remover') }}", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -310,11 +308,10 @@ function removerLinha(id, linha, setor) {
     if (data.ok) {
       const badge = document.querySelector(`.badge-linha[data-id="${id}"]`);
       if (badge) badge.remove();
-      atualizarBadgeNaLista(linha, "");
-      atualizarContador(setor);
-      verificarDropHint(setor);
-      const labelRem = setor === "VTT" ? `Filial <strong>VTT</strong>` : `setor <strong>${setor}</strong>`;
-      mostrarAlerta("success", `Linha <strong>${linha}</strong> removida do ${labelRem}.`);
+      atualizarBadgeNaLista(linha, null, null);
+      atualizarContador(filial, setor);
+      verificarDropHint(filial, setor);
+      mostrarAlerta("success", `Linha <strong>${linha}</strong> removida do setor <strong>${setor}</strong> da Filial <strong>${filial}</strong>.`);
     } else {
       mostrarAlerta("danger", data.erro || "Erro ao remover linha.");
     }
@@ -322,34 +319,46 @@ function removerLinha(id, linha, setor) {
   .catch(() => mostrarAlerta("danger", "Erro de conexão."));
 }
 
-function atualizarBadgeNaLista(linha, setor) {
+function atualizarBadgeNaLista(linha, filial, setor) {
   const items = document.querySelectorAll(`.linha-item[data-linha="${linha}"]`);
-  const cor_setor = { PTH: "primary", SMD: "success", IM: "warning", PA: "danger", VTT: "info" };
   items.forEach(item => {
-    const badge = item.querySelector(".badge");
-    if (badge) badge.remove();
-    const cor = cor_setor[setor];
-    const newBadge = document.createElement("span");
-    if (setor) {
-      newBadge.className = `badge bg-${cor}`;
-      newBadge.style.fontSize = "0.68rem";
-      newBadge.textContent = setor;
+    const badgeArea = item.querySelector(".d-flex.align-items-center.gap-1, .badge.bg-light");
+    if (badgeArea) badgeArea.remove();
+
+    const container = document.createElement("div");
+    container.className = "d-flex align-items-center gap-1";
+
+    if (filial && setor) {
+      const bFilial = document.createElement("span");
+      bFilial.className = `badge ${filial === "VTT" ? "bg-info" : "bg-light text-muted border"}`;
+      bFilial.style.fontSize = "0.62rem";
+      bFilial.textContent = filial;
+      container.appendChild(bFilial);
+
+      const bSetor = document.createElement("span");
+      bSetor.className = `badge bg-${COR_SETOR[setor] || "secondary"}`;
+      bSetor.style.fontSize = "0.68rem";
+      bSetor.textContent = setor;
+      container.appendChild(bSetor);
     } else {
-      newBadge.className = "badge bg-light text-muted border";
-      newBadge.style.fontSize = "0.68rem";
-      newBadge.textContent = "Sem setor";
+      const bEmpty = document.createElement("span");
+      bEmpty.className = "badge bg-light text-muted border";
+      bEmpty.style.fontSize = "0.68rem";
+      bEmpty.textContent = "Sem setor";
+      container.appendChild(bEmpty);
     }
-    item.appendChild(newBadge);
+
+    item.appendChild(container);
   });
 }
 
-function adicionarLinhaNaZona(setor, linha, id) {
-  const zona = document.getElementById(`linhas-${setor}`);
+function adicionarLinhaNaZona(filial, setor, linha, id) {
+  const zona = document.getElementById(`linhas-${filial}-${setor}`);
+  if (!zona) return;
   const hint = zona.querySelector(".drop-hint");
   if (hint) hint.remove();
 
-  const cor_setor = { PTH: "primary", SMD: "success", IM: "warning", PA: "danger", VTT: "info" };
-  const cor = cor_setor[setor] || "secondary";
+  const cor = COR_SETOR[setor] || "secondary";
 
   const badge = document.createElement("span");
   badge.className = "badge-linha d-flex align-items-center gap-1 px-2 py-1";
@@ -359,27 +368,30 @@ function adicionarLinhaNaZona(setor, linha, id) {
   badge.innerHTML = `<span>${linha}</span>
     <button type="button" class="btn btn-link p-0 text-danger"
             style="line-height:1;font-size:0.75rem;"
-            onclick="removerLinha(${id}, '${linha}', '${setor}')"
+            onclick="removerLinha(${id}, '${linha}', '${filial}', '${setor}')"
             title="Remover">
       <i class="bi bi-x-lg"></i>
     </button>`;
   zona.appendChild(badge);
-  atualizarContador(setor);
+  atualizarContador(filial, setor);
 }
 
-function atualizarContador(setor) {
-  const zona = document.getElementById(`linhas-${setor}`);
+function atualizarContador(filial, setor) {
+  const zona = document.getElementById(`linhas-${filial}-${setor}`);
+  if (!zona) return;
   const count = zona.querySelectorAll(".badge-linha").length;
-  const el = document.querySelector(`.setor-count[data-setor="${setor}"]`);
+  const el = document.querySelector(`.setor-count[data-filial="${filial}"][data-setor="${setor}"]`);
   if (el) el.textContent = `${count} ${count === 1 ? "linha" : "linhas"}`;
 }
 
-function verificarDropHint(setor) {
-  const zona = document.getElementById(`linhas-${setor}`);
+function verificarDropHint(filial, setor) {
+  const zona = document.getElementById(`linhas-${filial}-${setor}`);
+  if (!zona) return;
   if (zona.querySelectorAll(".badge-linha").length === 0) {
     const hint = document.createElement("div");
     hint.className = "drop-hint w-100 text-center text-muted py-2";
-    hint.style.cssText = "font-size:0.8rem;border:2px dashed var(--border);border-radius:8px;";
+    const borderColor = filial === "VTT" ? "rgba(13,202,240,0.3)" : "var(--border)";
+    hint.style.cssText = `font-size:0.8rem;border:2px dashed ${borderColor};border-radius:8px;`;
     hint.innerHTML = '<i class="bi bi-arrows-move me-1"></i>Arraste uma linha aqui';
     zona.appendChild(hint);
   }
@@ -393,21 +405,22 @@ function filtrarLinhas(termo) {
   });
 }
 
-function abrirModalAdicionar(setor) {
+function abrirModalAdicionar(filial, setor) {
   document.getElementById("inputNovaLinha").value = "";
+  document.getElementById("inputFilialModal").value = filial;
   document.getElementById("inputSetorModal").value = setor;
-  const tituloSetor = setor === "VTT" ? "Filial VTT" : setor;
   document.getElementById("tituloModalAdicionar").innerHTML =
-    `<i class="bi bi-plus-circle me-2 text-primary"></i>Adicionar linha — ${tituloSetor}`;
+    `<i class="bi bi-plus-circle me-2 text-primary"></i>Adicionar linha — ${filial} / ${setor}`;
   new bootstrap.Modal(document.getElementById("modalAdicionar")).show();
 }
 
 function confirmarAdicionar() {
   const linha = document.getElementById("inputNovaLinha").value.trim();
-  const setor = document.getElementById("inputSetorModal").value;
+  const filial = document.getElementById("inputFilialModal").value;
+  const setor  = document.getElementById("inputSetorModal").value;
   if (!linha) return;
   bootstrap.Modal.getInstance(document.getElementById("modalAdicionar")).hide();
-  atribuirLinha(linha, setor);
+  atribuirLinha(linha, filial, setor);
 }
 
 function mostrarAlerta(tipo, msg) {

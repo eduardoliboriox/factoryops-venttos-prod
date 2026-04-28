@@ -703,13 +703,14 @@ def config_linhas_atribuir():
     from flask import request, jsonify
     from app.services import linha_config_service as svc
 
-    data  = request.get_json(silent=True) or {}
-    setor = data.get("setor", "")
-    linha = data.get("linha", "")
+    data   = request.get_json(silent=True) or {}
+    filial = data.get("filial", "")
+    setor  = data.get("setor", "")
+    linha  = data.get("linha", "")
 
     try:
-        svc.atribuir(setor, linha)
-        return jsonify({"ok": True})
+        new_id = svc.atribuir(filial, setor, linha)
+        return jsonify({"ok": True, "id": new_id})
     except ValueError as e:
         return jsonify({"erro": str(e)}), 400
     except Exception as e:
