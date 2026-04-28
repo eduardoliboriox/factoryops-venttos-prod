@@ -1,0 +1,1 @@
+ALTER TABLE producao_coletada ADD COLUMN IF NOT EXISTS meta INTEGER;

@@ -13,6 +13,11 @@ psycopg[binary]
 Flask-SQLAlchemy==3.1.1
 Flask-Migrate==4.0.7
 # ========================
+# Web scraping (MES)
+# ========================
+beautifulsoup4
+lxml
+# ========================
 # Excel import (employees)
 # ========================
 pandas
