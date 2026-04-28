@@ -121,20 +121,20 @@
                  ondragleave="onDragLeave(this)"
                  ondrop="onDrop(event, 'VTE', '{{ setor }}')"
                  style="min-height:60px;border-radius:0 0 12px 12px;">
-              <div class="linhas-setor d-flex flex-wrap gap-2 p-1" id="linhas-VTE-{{ setor }}">
-                {% for item in setores.get('VTE', {}).get(setor, []) %}
-                <span class="badge-linha d-flex align-items-center gap-1 px-2 py-1"
-                      data-id="{{ item.id }}"
-                      data-linha="{{ item.linha }}"
-                      style="background:rgba(var(--bs-{{ cor }}-rgb),0.1);border:1px solid rgba(var(--bs-{{ cor }}-rgb),0.3);border-radius:6px;font-size:0.82rem;">
-                  <span>{{ item.linha }}</span>
+              <div class="linhas-setor p-1" id="linhas-VTE-{{ setor }}">
+                {% for item in setores.get('VTE', {}).get(setor, []) | sort(attribute='linha') %}
+                <div class="badge-linha d-flex align-items-center justify-content-between px-2 py-1 mb-1"
+                     data-id="{{ item.id }}"
+                     data-linha="{{ item.linha }}"
+                     style="background:rgba(var(--bs-{{ cor }}-rgb),0.08);border:1px solid rgba(var(--bs-{{ cor }}-rgb),0.25);border-radius:6px;font-size:0.82rem;">
+                  <span class="fw-semibold">{{ item.linha }}</span>
                   <button type="button" class="btn btn-link p-0 text-danger"
                           style="line-height:1;font-size:0.75rem;"
                           onclick="removerLinha({{ item.id }}, '{{ item.linha }}', 'VTE', '{{ setor }}')"
                           title="Remover">
                     <i class="bi bi-x-lg"></i>
                   </button>
-                </span>
+                </div>
                 {% else %}
                 <div class="drop-hint w-100 text-center text-muted py-2"
                      style="font-size:0.8rem;border:2px dashed var(--border);border-radius:8px;">
@@ -187,20 +187,20 @@
                  ondragleave="onDragLeave(this)"
                  ondrop="onDrop(event, 'VTT', '{{ setor }}')"
                  style="min-height:60px;border-radius:0 0 12px 12px;">
-              <div class="linhas-setor d-flex flex-wrap gap-2 p-1" id="linhas-VTT-{{ setor }}">
-                {% for item in setores.get('VTT', {}).get(setor, []) %}
-                <span class="badge-linha d-flex align-items-center gap-1 px-2 py-1"
-                      data-id="{{ item.id }}"
-                      data-linha="{{ item.linha }}"
-                      style="background:rgba(var(--bs-{{ cor }}-rgb),0.1);border:1px solid rgba(var(--bs-{{ cor }}-rgb),0.3);border-radius:6px;font-size:0.82rem;">
-                  <span>{{ item.linha }}</span>
+              <div class="linhas-setor p-1" id="linhas-VTT-{{ setor }}">
+                {% for item in setores.get('VTT', {}).get(setor, []) | sort(attribute='linha') %}
+                <div class="badge-linha d-flex align-items-center justify-content-between px-2 py-1 mb-1"
+                     data-id="{{ item.id }}"
+                     data-linha="{{ item.linha }}"
+                     style="background:rgba(var(--bs-{{ cor }}-rgb),0.08);border:1px solid rgba(var(--bs-{{ cor }}-rgb),0.25);border-radius:6px;font-size:0.82rem;">
+                  <span class="fw-semibold">{{ item.linha }}</span>
                   <button type="button" class="btn btn-link p-0 text-danger"
                           style="line-height:1;font-size:0.75rem;"
                           onclick="removerLinha({{ item.id }}, '{{ item.linha }}', 'VTT', '{{ setor }}')"
                           title="Remover">
                     <i class="bi bi-x-lg"></i>
                   </button>
-                </span>
+                </div>
                 {% else %}
                 <div class="drop-hint w-100 text-center text-muted py-2"
                      style="font-size:0.8rem;border:2px dashed rgba(13,202,240,0.3);border-radius:8px;">
@@ -360,19 +360,23 @@ function adicionarLinhaNaZona(filial, setor, linha, id) {
 
   const cor = COR_SETOR[setor] || "secondary";
 
-  const badge = document.createElement("span");
-  badge.className = "badge-linha d-flex align-items-center gap-1 px-2 py-1";
-  badge.setAttribute("data-id", id);
-  badge.setAttribute("data-linha", linha);
-  badge.style.cssText = `background:rgba(var(--bs-${cor}-rgb),0.1);border:1px solid rgba(var(--bs-${cor}-rgb),0.3);border-radius:6px;font-size:0.82rem;`;
-  badge.innerHTML = `<span>${linha}</span>
+  const row = document.createElement("div");
+  row.className = "badge-linha d-flex align-items-center justify-content-between px-2 py-1 mb-1";
+  row.setAttribute("data-id", id);
+  row.setAttribute("data-linha", linha);
+  row.style.cssText = `background:rgba(var(--bs-${cor}-rgb),0.08);border:1px solid rgba(var(--bs-${cor}-rgb),0.25);border-radius:6px;font-size:0.82rem;`;
+  row.innerHTML = `<span class="fw-semibold">${linha}</span>
     <button type="button" class="btn btn-link p-0 text-danger"
             style="line-height:1;font-size:0.75rem;"
             onclick="removerLinha(${id}, '${linha}', '${filial}', '${setor}')"
             title="Remover">
       <i class="bi bi-x-lg"></i>
     </button>`;
-  zona.appendChild(badge);
+
+  const itens = [...zona.querySelectorAll(".badge-linha")];
+  const proximo = itens.find(el => el.getAttribute("data-linha").localeCompare(linha) > 0);
+  proximo ? zona.insertBefore(row, proximo) : zona.appendChild(row);
+
   atualizarContador(filial, setor);
 }
 
