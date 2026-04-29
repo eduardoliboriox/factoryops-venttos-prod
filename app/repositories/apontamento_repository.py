@@ -31,8 +31,8 @@ def listar_agrupado(data_inicial: str, data_final: str, setor: str = "", linha: 
         data_col = "pc.data"
 
     if setor:
-        filtros.append("pc.setor = %s")
-        params.append(setor)
+        filtros.append("(pc.setor = %s OR lc.setor = %s)")
+        params.extend([setor, setor])
     if linha:
         filtros.append("pc.linha = %s")
         params.append(linha)
@@ -46,12 +46,15 @@ def listar_agrupado(data_inicial: str, data_final: str, setor: str = "", linha: 
                 WITH agrupado AS (
                     SELECT
                         {data_col} AS data,
-                        pc.turno, pc.setor, pc.linha, pc.modelo,
+                        pc.turno,
+                        COALESCE(NULLIF(pc.setor, ''), lc.setor, '') AS setor,
+                        pc.linha, pc.modelo,
                         MAX(pc.familia)       AS familia,
                         SUM(pc.producao_real) AS producao_total
                     FROM producao_coletada pc
+                    LEFT JOIN linha_config lc ON lc.linha = pc.linha
                     WHERE {where}
-                    GROUP BY 1, pc.turno, pc.setor, pc.linha, pc.modelo
+                    GROUP BY 1, pc.turno, COALESCE(NULLIF(pc.setor, ''), lc.setor, ''), pc.linha, pc.modelo
                 )
                 SELECT
                     g.data, g.turno, g.setor, g.linha, g.modelo,
