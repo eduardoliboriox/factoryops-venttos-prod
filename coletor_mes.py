@@ -113,6 +113,13 @@ def _extrair_filial_linha(texto: str) -> tuple[str, str] | None:
     return filial, linha
 
 
+def _normalizar_modelo(codigo: str, setor: str = "") -> str | None:
+    s = re.sub(r'^\d{2}-', '', codigo.strip())
+    if setor and s.upper().endswith(setor.upper()):
+        s = s[:-len(setor)]
+    return s.strip() or None
+
+
 def _extrair_turno_api(turno_str: str) -> str:
     """Extrai '1º Turno' / '2º Turno' / '3º Turno' do campo Turno da API (ex: '00001|VTE-1T-SMD')."""
     m = re.search(r"(\d)T", turno_str, re.IGNORECASE)
@@ -489,7 +496,7 @@ def _chamar_api_relatorio(data_iso: str, filial_filtro: str,
 
         turno  = _extrair_turno_api(r.get("Turno", ""))
         setor  = mapa_setores.get(linha, "")
-        modelo = (r.get("CodProduto") or "").strip() or None
+        modelo = _normalizar_modelo((r.get("CodProduto") or "").strip(), setor)
 
         registros.append({
             "id":               _gerar_id(data_iso, linha, turno, modelo or ""),
