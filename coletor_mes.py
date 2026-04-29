@@ -115,8 +115,7 @@ def _extrair_filial_linha(texto: str) -> tuple[str, str] | None:
 
 def _normalizar_modelo(codigo: str, setor: str = "") -> str | None:
     s = re.sub(r'^\d{2}-', '', codigo.strip())
-    if setor and s.upper().endswith(setor.upper()):
-        s = s[:-len(setor)]
+    s = re.sub(r'[A-Z]{2,5}$', '', s)
     return s.strip() or None
 
 
