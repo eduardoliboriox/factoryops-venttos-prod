@@ -82,7 +82,7 @@
         </div>
         <div class="text-muted small mt-2">
           <i class="bi bi-info-circle me-1"></i>
-          O arquivo será salvo em <code>coletas/</code>. Após coletar, use o botão
+          O arquivo será salvo em <code>coletas/mes/</code>. Após coletar, use o botão
           <strong>Importar JSON</strong> para enviar ao banco.
         </div>
       </div>
@@ -303,7 +303,7 @@
               <i class="bi bi-info-circle-fill flex-shrink-0 mt-1"></i>
               <div>
                 Para gerar o arquivo, execute no PC da fábrica:<br>
-                <code>python coletor_mes.py --de 2026-04-01 --ate 2026-04-28 --json coletas/mes.json</code>
+                <code>python coletor_mes.py --de 2026-04-01 --ate 2026-04-28 --json coletas/mes/mes.json</code>
               </div>
             </div>
           </div>
@@ -475,7 +475,7 @@ function gerarComando() {
   const filial = document.getElementById("coletaFilial").value;
   if (!de || !ate) { alert("Selecione as datas."); return; }
 
-  const arquivo = "coletas/mes_" + de + "_" + ate + ".json";
+  const arquivo = "coletas/mes/mes_" + de + "_" + ate + ".json";
   let cmd = "python coletor_mes.py --de " + de + " --ate " + ate;
   if (filial) cmd += " --filial " + filial;
   cmd += " --json " + arquivo;
