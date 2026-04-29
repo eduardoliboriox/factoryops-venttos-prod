@@ -49,8 +49,10 @@ def listar_agrupado(data_inicial: str, data_final: str, setor: str = "", linha: 
                         pc.turno,
                         COALESCE(NULLIF(pc.setor, ''), lc.setor, '') AS setor,
                         pc.linha, pc.modelo,
-                        MAX(pc.familia)       AS familia,
-                        SUM(pc.producao_real) AS producao_total
+                        MAX(pc.familia)                                    AS familia,
+                        SUM(pc.producao_real)                              AS producao_total,
+                        BOOL_OR(pc.origem = 'mes')                         AS tem_mes,
+                        BOOL_OR(COALESCE(pc.origem, '') != 'mes')          AS tem_coletado
                     FROM producao_coletada pc
                     LEFT JOIN linha_config lc ON lc.linha = pc.linha
                     WHERE {where}
@@ -58,7 +60,7 @@ def listar_agrupado(data_inicial: str, data_final: str, setor: str = "", linha: 
                 )
                 SELECT
                     g.data, g.turno, g.setor, g.linha, g.modelo,
-                    g.familia, g.producao_total,
+                    g.familia, g.producao_total, g.tem_mes, g.tem_coletado,
                     COALESCE(m_blank.blank, 1) AS blank,
                     -- vínculo genérico (sem fase — usado para PTH, IM, PA, VTT)
                     a_gen.id            AS ap_id,
