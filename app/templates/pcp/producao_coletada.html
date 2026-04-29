@@ -73,7 +73,7 @@
         </div>
         <div class="text-muted small mt-2">
           <i class="bi bi-info-circle me-1"></i>
-          O arquivo será salvo em <code>coletas/</code> dentro do repositório. Após coletar, use o botão
+          O arquivo será salvo em <code>coletas/input/</code> dentro do repositório. Após coletar, use o botão
           <strong>Importar JSON</strong> abaixo para enviar ao banco.
         </div>
       </div>
@@ -475,7 +475,7 @@ function gerarComando() {
   const de  = document.getElementById("coletaDe").value;
   const ate = document.getElementById("coletaAte").value;
   if (!de || !ate) { alert("Selecione as datas."); return; }
-  const arquivo = "coletas/dados_" + de + "_" + ate + ".json";
+  const arquivo = "coletas/input/dados_" + de + "_" + ate + ".json";
   const cmd = "python coletor.py --de " + de + " --ate " + ate + " --json " + arquivo;
   document.getElementById("comandoGerado").value = cmd;
   document.getElementById("blocoComando").style.display = "";
