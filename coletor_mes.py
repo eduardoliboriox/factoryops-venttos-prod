@@ -63,9 +63,9 @@ def _agora() -> str:
 
 
 def _gerar_id(data: str, linha: str, turno: str, produto: str) -> int:
-    key    = f"mes-sum|{data}|{linha}|{turno}|{produto}"
-    digest = hashlib.md5(key.encode()).hexdigest()[:14]
-    return int(digest, 16) + 10 ** 14
+    key = f"mes-sum|{data}|{linha}|{turno}|{produto}"
+    digest = hashlib.md5(key.encode()).hexdigest()
+    return int(digest[:8], 16) % 1_000_000_000 + 1_000_000_001
 
 
 def _calcular_semana(data_iso: str) -> int | None:

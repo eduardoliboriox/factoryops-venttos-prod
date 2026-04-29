@@ -25,9 +25,9 @@ def listar(data_inicial: str, data_final: str, setor: str = "", linha: str = "",
         where_base, params = _where_turno_noturno(
             data_inicial, data_final, turno, hora_inicio_turno, hora_fim_turno
         )
-        filtros = [where_base]
+        filtros = [where_base, "origem != 'mes'"]
     else:
-        filtros = ["data BETWEEN %s AND %s"]
+        filtros = ["origem != 'mes'", "data BETWEEN %s AND %s"]
         params  = [data_inicial, data_final]
         if turno:
             filtros.append("turno = %s")
@@ -64,9 +64,9 @@ def totais(data_inicial: str, data_final: str, setor: str = "", linha: str = "",
         where_base, params = _where_turno_noturno(
             data_inicial, data_final, turno, hora_inicio_turno, hora_fim_turno
         )
-        filtros = [where_base]
+        filtros = [where_base, "origem != 'mes'"]
     else:
-        filtros = ["data BETWEEN %s AND %s"]
+        filtros = ["origem != 'mes'", "data BETWEEN %s AND %s"]
         params  = [data_inicial, data_final]
         if turno:
             filtros.append("turno = %s")
