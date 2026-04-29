@@ -210,8 +210,6 @@
               <th>Linha</th>
               <th>Turno</th>
               <th>Modelo / OP</th>
-              <th>Início</th>
-              <th>Fim</th>
               <th class="text-end">Meta</th>
               <th class="text-end">Produção</th>
               <th class="text-end">Efic%</th>
@@ -236,8 +234,6 @@
                 <span class="text-muted fw-normal" style="font-size:0.7rem;"> · {{ r.observacao }}</span>
                 {% endif %}
               </td>
-              <td>{{ r.hora_inicio }}</td>
-              <td>{{ r.hora_fim }}</td>
               <td class="text-end text-muted">{{ r.meta or '—' }}</td>
               <td class="text-end fw-bold text-success">{{ r.producao_real | default(0) }}</td>
               <td class="text-end fw-semibold">
