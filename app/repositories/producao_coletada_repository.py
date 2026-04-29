@@ -151,16 +151,16 @@ def excluir_manual(registro_id: int) -> None:
 
 def listar_mes(data_inicial: str, data_final: str, setor: str = "", linha: str = "",
                turno: str = "") -> list:
-    filtros = ["origem = 'mes'", "data BETWEEN %s AND %s"]
+    filtros = ["pc.origem = 'mes'", "pc.data BETWEEN %s AND %s"]
     params  = [data_inicial, data_final]
     if turno:
-        filtros.append("turno = %s")
+        filtros.append("pc.turno = %s")
         params.append(turno)
     if setor:
-        filtros.append("setor = %s")
-        params.append(setor)
+        filtros.append("(pc.setor = %s OR lc.setor = %s)")
+        params.extend([setor, setor])
     if linha:
-        filtros.append("linha = %s")
+        filtros.append("pc.linha = %s")
         params.append(linha)
 
     where = " AND ".join(filtros)
@@ -169,13 +169,15 @@ def listar_mes(data_inicial: str, data_final: str, setor: str = "", linha: str =
         with conn.cursor(row_factory=dict_row) as cur:
             cur.execute(f"""
                 SELECT
-                    id, data, setor, linha, turno, modelo,
-                    hora_inicio, hora_fim, intervalo,
-                    meta, producao_real, qtd_perda, defeitos,
-                    observacao, coletado_em
-                FROM producao_coletada
+                    pc.id, pc.data,
+                    COALESCE(NULLIF(pc.setor, ''), lc.setor, '') AS setor,
+                    pc.linha, pc.turno, pc.modelo,
+                    pc.meta, pc.producao_real, pc.qtd_perda, pc.defeitos,
+                    pc.observacao, pc.coletado_em
+                FROM producao_coletada pc
+                LEFT JOIN linha_config lc ON lc.linha = pc.linha
                 WHERE {where}
-                ORDER BY data DESC, setor, linha, hora_inicio
+                ORDER BY pc.data DESC, setor, pc.linha, pc.turno
             """, params)
             return cur.fetchall()
 
