@@ -1,13 +1,6 @@
 {% extends "layouts/app.html" %}
 {% block title %}PCP · Apontamento{% endblock %}
 
-{% block styles %}
-<style>
-  .ap-row-misto td { background-color: rgba(255, 193, 7, 0.05) !important; }
-  .ap-row-misto:hover td { background-color: rgba(255, 193, 7, 0.09) !important; }
-</style>
-{% endblock %}
-
 {% block page_title %}
 <div class="page-header">
   <div class="page-header-title">
@@ -143,8 +136,7 @@
             {% set is_smd = ap.setor == 'SMD' %}
             {% set tcores = {'1º Turno': 'warning', '2º Turno': 'primary', '3º Turno': 'secondary'} %}
             {% set scores = {'PTH':'primary','IM':'warning','SMD':'success','PA':'danger','VTT':'info'} %}
-            <tr class="ap-row {% if ap.tem_mes and ap.tem_coletado %}ap-row-misto{% endif %}"
-                data-busca="{{ ap.modelo }} {{ ap.linha }} {{ ap.turno }} {{ ap.setor }} {{ ap.familia or '' }}">
+            <tr class="ap-row" data-busca="{{ ap.modelo }} {{ ap.linha }} {{ ap.turno }} {{ ap.setor }} {{ ap.familia or '' }}">
               <td class="ps-3 text-nowrap">{{ ap.data.strftime('%d-%m-%Y') if ap.data else '' }}</td>
               <td>
                 <span class="badge bg-{{ tcores.get(ap.turno, 'secondary') }} {% if ap.turno == '1º Turno' %}text-dark{% endif %}"
@@ -172,19 +164,11 @@
               <td class="small">
                 <div class="d-flex flex-column gap-1">
                   <span class="text-muted">{{ ap.familia or '—' }}</span>
-                  <div class="d-flex gap-1">
-                    {% if ap.tem_mes %}
-                    <span class="badge" style="font-size:0.58rem;background:rgba(13,110,253,0.12);color:#0d6efd;border:1px solid rgba(13,110,253,0.25);">MES</span>
-                    {% endif %}
-                    {% if ap.tem_coletado %}
-                    <span class="badge" style="font-size:0.58rem;background:rgba(25,135,84,0.12);color:#198754;border:1px solid rgba(25,135,84,0.25);">COLET.</span>
-                    {% endif %}
-                    {% if ap.tem_mes and ap.tem_coletado %}
-                    <span class="badge" style="font-size:0.58rem;background:rgba(255,193,7,0.15);color:#b45309;border:1px solid rgba(255,193,7,0.35);" title="Produção coletada e do MES na mesma linha — verifique duplicidade">
-                      <i class="bi bi-exclamation-triangle-fill me-1" style="font-size:0.55rem;"></i>MISTO
-                    </span>
-                    {% endif %}
-                  </div>
+                  {% if ap.origem_grupo == 'mes' %}
+                  <span class="badge" style="font-size:0.58rem;background:rgba(13,110,253,0.12);color:#0d6efd;border:1px solid rgba(13,110,253,0.25);">MES</span>
+                  {% else %}
+                  <span class="badge" style="font-size:0.58rem;background:rgba(25,135,84,0.12);color:#198754;border:1px solid rgba(25,135,84,0.25);">COLET.</span>
+                  {% endif %}
                 </div>
               </td>
               <td class="text-end fw-bold text-success">
