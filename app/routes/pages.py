@@ -1185,6 +1185,22 @@ def pcp_planejamento_status(plan_id):
         return jsonify({"erro": str(e)}), 500
 
 
+@bp.route("/pcp/planejamento/<int:plan_id>/observacao", methods=["POST"])
+@login_required
+def pcp_planejamento_observacao(plan_id):
+    from flask import request, jsonify
+    from app.services import planejamento_service as svc
+
+    data = request.get_json(silent=True) or {}
+    try:
+        svc.atualizar_observacao(plan_id, data.get("observacao") or None)
+        return jsonify({"ok": True})
+    except ValueError as e:
+        return jsonify({"erro": str(e)}), 400
+    except Exception as e:
+        return jsonify({"erro": str(e)}), 500
+
+
 @bp.route("/pcp/planejamento/<int:plan_id>/excluir", methods=["POST"])
 @login_required
 def pcp_planejamento_excluir(plan_id):

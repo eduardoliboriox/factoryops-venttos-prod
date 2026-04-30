@@ -116,6 +116,15 @@ def atualizar_status(planejamento_id: int, status: str) -> None:
             )
 
 
+def atualizar_observacao(planejamento_id: int, observacao: str | None) -> None:
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "UPDATE planejamento SET observacao = %s WHERE id = %s",
+                (observacao or None, planejamento_id),
+            )
+
+
 def excluir(planejamento_id: int) -> None:
     with get_db() as conn:
         with conn.cursor() as cur:
