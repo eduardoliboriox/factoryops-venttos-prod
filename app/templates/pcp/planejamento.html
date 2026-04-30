@@ -421,7 +421,25 @@
                       {% if loop.first %}
                       <td class="text-end fw-bold" rowspan="{{ item.planos | length }}">{{ "{:,.0f}".format(item.meta_total).replace(',', '.') }}</td>
                       {% endif %}
-                      <td class="pe-3 text-muted small">{{ p.observacao or '' }}</td>
+                      <td class="pe-3 td-obs" data-plan-id="{{ p.id }}" style="min-width:160px;">
+                        <div class="obs-view d-flex align-items-center gap-1">
+                          <span class="obs-texto {% if not p.observacao %}d-none{% endif %}" style="font-size:0.8rem;">{{ p.observacao or '' }}</span>
+                          <span class="obs-vazia text-muted {% if p.observacao %}d-none{% endif %}" style="font-size:0.75rem;cursor:pointer;">+ obs</span>
+                          <span class="obs-actions {% if not p.observacao %}d-none{% endif %} d-flex gap-1 ms-1">
+                            <button class="btn-obs-edit p-0 border-0 bg-transparent text-muted" title="Editar" style="font-size:0.7rem;line-height:1;"><i class="bi bi-pencil"></i></button>
+                            <button class="btn-obs-del p-0 border-0 bg-transparent text-danger" title="Excluir" style="font-size:0.7rem;line-height:1;"><i class="bi bi-x-lg"></i></button>
+                          </span>
+                        </div>
+                        <div class="obs-edit d-none">
+                          <div class="d-flex gap-1 align-items-center">
+                            <input type="text" class="form-control form-control-sm obs-input"
+                                   value="{{ p.observacao or '' }}" placeholder="Observação…"
+                                   style="border-radius:6px;font-size:0.78rem;min-width:140px;">
+                            <button class="btn btn-primary btn-sm obs-save px-2" style="border-radius:6px;font-size:0.72rem;padding-top:3px;padding-bottom:3px;"><i class="bi bi-check-lg"></i></button>
+                            <button class="btn btn-outline-secondary btn-sm obs-cancel px-2" style="border-radius:6px;font-size:0.72rem;padding-top:3px;padding-bottom:3px;"><i class="bi bi-x-lg"></i></button>
+                          </div>
+                        </div>
+                      </td>
                     </tr>
                     {% endfor %}
                   {% endif %}
@@ -876,4 +894,68 @@
 </div>
 
 <script src="{{ url_for('static', filename='js/planejamento.js') }}?v={{ APP_VERSION }}"></script>
+<script>
+(function () {
+  function bindObs(td) {
+    const planId   = td.dataset.planId;
+    const obsView  = td.querySelector('.obs-view');
+    const obsEdit  = td.querySelector('.obs-edit');
+    const input    = td.querySelector('.obs-input');
+    const obsTexto = td.querySelector('.obs-texto');
+    const obsVazia = td.querySelector('.obs-vazia');
+    const obsAct   = td.querySelector('.obs-actions');
+
+    function enterEdit() {
+      obsView.classList.add('d-none');
+      obsEdit.classList.remove('d-none');
+      input.focus();
+      input.select();
+    }
+
+    function cancelEdit() {
+      obsEdit.classList.add('d-none');
+      obsView.classList.remove('d-none');
+    }
+
+    async function saveObs(valor) {
+      try {
+        const r = await fetch(`/pcp/planejamento/${planId}/observacao`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ observacao: valor || null }),
+        });
+        const data = await r.json();
+        if (!data.ok) return;
+        input.value = valor;
+        if (valor) {
+          obsTexto.textContent = valor;
+          obsTexto.classList.remove('d-none');
+          obsVazia.classList.add('d-none');
+          obsAct.classList.remove('d-none');
+        } else {
+          obsTexto.textContent = '';
+          obsTexto.classList.add('d-none');
+          obsVazia.classList.remove('d-none');
+          obsAct.classList.add('d-none');
+        }
+        cancelEdit();
+      } catch (_) {}
+    }
+
+    obsVazia.addEventListener('click', enterEdit);
+    td.querySelector('.btn-obs-edit').addEventListener('click', enterEdit);
+    td.querySelector('.btn-obs-del').addEventListener('click', () => saveObs(''));
+    td.querySelector('.obs-save').addEventListener('click', () => saveObs(input.value.trim()));
+    td.querySelector('.obs-cancel').addEventListener('click', cancelEdit);
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter')  saveObs(input.value.trim());
+      if (e.key === 'Escape') cancelEdit();
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.td-obs').forEach(bindObs);
+  });
+})();
+</script>
 {% endblock %}

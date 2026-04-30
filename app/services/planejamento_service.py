@@ -437,6 +437,12 @@ def atualizar_status(planejamento_id: int, status: str) -> None:
     repo.atualizar_status(planejamento_id, status)
 
 
+def atualizar_observacao(planejamento_id: int, observacao: str | None) -> None:
+    if not planejamento_id or planejamento_id <= 0:
+        raise ValueError("ID inválido.")
+    repo.atualizar_observacao(planejamento_id, observacao)
+
+
 def excluir(planejamento_id: int) -> None:
     if not planejamento_id or planejamento_id <= 0:
         raise ValueError("ID inválido.")
