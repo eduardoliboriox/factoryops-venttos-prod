@@ -533,6 +533,30 @@ def planos_agrupados_por_linha(data: str) -> list:
     return list(grupos.values())
 
 
+def _meta_total_por_linha(planos_linha: list, setor: str, linha: str, data_str: str) -> int:
+    from collections import defaultdict
+    planos_por_turno: dict = defaultdict(list)
+    for p in planos_linha:
+        planos_por_turno[p["turno"]].append(p)
+
+    total = 0
+    for turno_key, planos_t in planos_por_turno.items():
+        tem_ate_fim = any(int(p.get("quantidade_planejada") or 0) == 0 for p in planos_t)
+        if tem_ate_fim:
+            intervalos = repo.turno_intervalos(turno_key)
+            paradas    = repo.paradas_da_linha(setor, linha)
+            slots_sim  = gerar_plano_hora_a_hora(
+                planos_t,
+                [dict(i) for i in intervalos],
+                [dict(p) for p in paradas],
+                data_str,
+            )
+            total += sum(s.get("pecas", 0) for s in slots_sim)
+        else:
+            total += sum(int(p.get("quantidade_planejada") or 0) for p in planos_t)
+    return total
+
+
 def resumo_producao(data_str: str, turno: str = "", setor: str = "") -> list:
     linhas_config = opcoes_linha()
     registros = repo.listar(data_str, turno)
@@ -549,10 +573,12 @@ def resumo_producao(data_str: str, turno: str = "", setor: str = "") -> list:
         grupo = {"setor": s, "linhas": []}
         for linha in sorted(linhas_config[s]):
             planos_linha = planos_por_key.get((s, linha), [])
+            meta_total   = _meta_total_por_linha(planos_linha, s, linha, data_str) if planos_linha else 0
             grupo["linhas"].append({
-                "linha":     linha,
-                "planos":    planos_linha,
-                "sem_plano": not planos_linha,
+                "linha":      linha,
+                "planos":     planos_linha,
+                "sem_plano":  not planos_linha,
+                "meta_total": meta_total,
             })
         resultado.append(grupo)
 
