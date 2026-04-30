@@ -74,6 +74,14 @@
             <option value="3º Turno" {% if turno == '3º Turno' %}selected{% endif %}>3º Turno</option>
           </select>
         </div>
+        <div class="col-6 col-md-2">
+          <label class="form-label fw-semibold" style="font-size:0.8rem;">Sistema</label>
+          <select class="form-select form-select-sm" name="sistema" style="border-radius:8px;">
+            <option value="">Todos</option>
+            <option value="input" {% if sistema == 'input' %}selected{% endif %}>Input</option>
+            <option value="mes" {% if sistema == 'mes' %}selected{% endif %}>MES</option>
+          </select>
+        </div>
         <div class="col-6 col-md-2 d-flex gap-2">
           <button type="submit" class="btn btn-primary btn-sm flex-fill fw-semibold" style="border-radius:8px;">
             <i class="bi bi-search me-1"></i>Filtrar

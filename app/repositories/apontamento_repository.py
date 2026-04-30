@@ -3,7 +3,7 @@ from psycopg.rows import dict_row
 
 
 def listar_agrupado(data_inicial: str, data_final: str, setor: str = "", linha: str = "", turno: str = "",
-                    hora_inicio_turno=None, hora_fim_turno=None) -> list:
+                    hora_inicio_turno=None, hora_fim_turno=None, sistema: str = "") -> list:
     cte_extra_params = []
     if hora_inicio_turno is not None and hora_fim_turno is not None:
         filtros = [
@@ -36,6 +36,10 @@ def listar_agrupado(data_inicial: str, data_final: str, setor: str = "", linha: 
     if linha:
         filtros.append("pc.linha = %s")
         params.append(linha)
+    if sistema == "mes":
+        filtros.append("pc.origem = 'mes'")
+    elif sistema == "input":
+        filtros.append("(pc.origem IS NULL OR pc.origem != 'mes')")
 
     where = " AND ".join(filtros)
     all_params = cte_extra_params + params

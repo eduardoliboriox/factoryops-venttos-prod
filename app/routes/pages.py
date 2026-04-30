@@ -969,12 +969,13 @@ def pcp_apontamento():
     data_inicial_pad, data_final_pad = svc.data_padrao()
     data_inicial = request.args.get("dataInicial", data_inicial_pad)
     data_final   = request.args.get("dataFinal",   data_final_pad)
-    setor        = request.args.get("setor",  "")
-    linha        = request.args.get("linha",  "")
-    turno        = request.args.get("turno",  "")
+    setor        = request.args.get("setor",   "")
+    linha        = request.args.get("linha",   "")
+    turno        = request.args.get("turno",   "")
+    sistema      = request.args.get("sistema", "")
 
     try:
-        apontamentos   = svc.listar_agrupado(data_inicial, data_final, setor, linha, turno)
+        apontamentos   = svc.listar_agrupado(data_inicial, data_final, setor, linha, turno, sistema=sistema)
         ops            = svc.ops_abertas("")
         filtros        = pc_svc.filtros_disponiveis(setor)
         producao_total = sum(ap["producao_total"] or 0 for ap in apontamentos)
@@ -994,6 +995,7 @@ def pcp_apontamento():
         setor=setor,
         linha=linha,
         turno=turno,
+        sistema=sistema,
         apontamentos=apontamentos,
         ops=ops,
         filtros=filtros,
