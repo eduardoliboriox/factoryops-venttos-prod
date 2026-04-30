@@ -27,10 +27,10 @@ def _hora_params_turno_noturno(turno: str) -> tuple:
     return None, None
 
 
-def listar_agrupado(data_inicial: str, data_final: str, setor: str = "", linha: str = "", turno: str = "") -> list:
+def listar_agrupado(data_inicial: str, data_final: str, setor: str = "", linha: str = "", turno: str = "", sistema: str = "") -> list:
     hora_ini, hora_fim = _hora_params_turno_noturno(turno)
     return repo.listar_agrupado(data_inicial, data_final, setor, linha, turno,
-                                hora_inicio_turno=hora_ini, hora_fim_turno=hora_fim)
+                                hora_inicio_turno=hora_ini, hora_fim_turno=hora_fim, sistema=sistema)
 
 
 _ORDEM_SETORES = ["PTH", "SMD", "IM", "PA", "VTT"]
