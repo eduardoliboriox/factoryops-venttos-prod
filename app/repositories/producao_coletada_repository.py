@@ -140,6 +140,16 @@ def inserir_manual(data: dict) -> None:
             ))
 
 
+def buscar_manual_por_id(registro_id: int) -> dict | None:
+    with get_db() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                "SELECT id, data, turno, modelo, linha FROM producao_coletada WHERE id = %s AND origem = 'manual'",
+                (registro_id,)
+            )
+            return cur.fetchone()
+
+
 def excluir_manual(registro_id: int) -> None:
     with get_db() as conn:
         with conn.cursor() as cur:

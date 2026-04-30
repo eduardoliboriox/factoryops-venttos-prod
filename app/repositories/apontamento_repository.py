@@ -121,6 +121,18 @@ def listar_agrupado(data_inicial: str, data_final: str, setor: str = "", linha: 
             return cur.fetchall()
 
 
+def producao_etapa_anterior(modelo: str, setor_anterior: str) -> int:
+    with get_db() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute("""
+                SELECT COALESCE(SUM(co.produzido), 0) AS total
+                FROM controle_ops co
+                WHERE co.produto = %s AND co.setor = %s
+            """, (modelo, setor_anterior))
+            row = cur.fetchone()
+            return int(row["total"]) if row else 0
+
+
 def ops_abertas(setor: str = "") -> list:
     params = []
     setor_where = ""
@@ -249,6 +261,16 @@ def corrigir_modelo(data: str, turno: str, setor: str, linha: str, modelo_atual:
                 SET modelo = %s
                 WHERE data = %s AND turno = %s AND linha = %s AND modelo = %s
             """, (modelo_novo, data, turno, linha, modelo_atual))
+
+
+def buscar_vinculados_por_producao(data, turno: str, modelo: str, linha: str) -> list:
+    with get_db() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute("""
+                SELECT id FROM apontamento
+                WHERE data = %s AND turno = %s AND modelo = %s AND linha = %s AND fase IS NULL
+            """, (data, turno, modelo, linha))
+            return cur.fetchall()
 
 
 def fila_producao() -> list:
