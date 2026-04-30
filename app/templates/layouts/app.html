@@ -253,10 +253,6 @@
         <div class="collapse {% if active_menu in _pcp_menus %}show{% endif %}"
              id="nav-pcp">
           <div class="sidebar-group-items">
-            <a href="{{ url_for('pages.pcp_planejamento') }}"
-               class="{% if active_menu == 'pcp_planejamento' %}active{% endif %}">
-              <i class="bi bi-calendar3"></i> Planejamento
-            </a>
             {% if current_user.is_authenticated and current_user.is_admin %}
             <a href="{{ url_for('pages.pcp_roteiros') }}"
                class="{% if active_menu == 'pcp_roteiros' %}active{% endif %}">
@@ -284,6 +280,10 @@
             <a href="{{ url_for('pages.pcp_apontamento') }}"
                class="{% if active_menu == 'pcp_apontamento' %}active{% endif %}">
               <i class="bi bi-clipboard-check"></i> Apontamento
+            </a>
+            <a href="{{ url_for('pages.pcp_planejamento') }}"
+               class="{% if active_menu == 'pcp_planejamento' %}active{% endif %}">
+              <i class="bi bi-calendar3"></i> Planejamento
             </a>
             <a href="{{ url_for('pages.pcp_entregas') }}"
                class="{% if active_menu == 'pcp_entregas' %}active{% endif %}">
