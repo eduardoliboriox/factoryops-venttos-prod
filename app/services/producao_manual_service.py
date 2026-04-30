@@ -1,6 +1,7 @@
 from datetime import date
 from app.repositories import producao_coletada_repository as repo
 from app.repositories import linha_config_repository as lc_repo
+from app.repositories import apontamento_repository as ap_repo
 
 _TURNOS_VALIDOS = {"1º Turno", "2º Turno", "3º Turno"}
 
@@ -71,4 +72,11 @@ def inserir(form_data: dict) -> None:
 def excluir(registro_id: int) -> None:
     if registro_id == 0:
         raise ValueError("Registro inválido.")
+    registro = repo.buscar_manual_por_id(registro_id)
+    if registro:
+        vinculados = ap_repo.buscar_vinculados_por_producao(
+            registro["data"], registro["turno"], registro["modelo"], registro["linha"]
+        )
+        for ap in vinculados:
+            ap_repo.desvincular(ap["id"])
     repo.excluir_manual(registro_id)
