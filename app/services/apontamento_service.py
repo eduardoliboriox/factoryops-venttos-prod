@@ -3,6 +3,7 @@ from app.repositories import apontamento_repository as repo
 from app.repositories import turno_config_repository as tc_repo
 from app.repositories import controle_ops_repository as ops_repo
 from app.repositories import roteiro_repository as roteiro_repo
+from app.repositories import producao_coletada_repository as pc_repo
 
 SETORES_SMD = {"SMD"}
 
@@ -77,10 +78,11 @@ def _validar_sequencia_roteiro(op: dict) -> None:
         except ValueError:
             continue
         if idx_ant < idx_atual and anterior["produzido"] == 0:
-            raise ValueError(
-                f"{setor_ant} (OP {anterior['numero_op']}) ainda não tem produção apontada. "
-                "Siga o roteiro de produção."
-            )
+            if not pc_repo.tem_lancamento_manual(modelo, setor_ant):
+                raise ValueError(
+                    f"{setor_ant} (OP {anterior['numero_op']}) ainda não tem produção apontada. "
+                    "Siga o roteiro de produção."
+                )
 
 
 def vincular(data: str, turno: str, modelo: str, linha: str, op_id: int, quantidade: int,

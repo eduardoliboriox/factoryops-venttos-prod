@@ -140,6 +140,17 @@ def inserir_manual(data: dict) -> None:
             ))
 
 
+def tem_lancamento_manual(modelo: str, setor: str) -> bool:
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT 1 FROM producao_coletada
+                WHERE modelo = %s AND setor = %s AND origem = 'manual' AND producao_real > 0
+                LIMIT 1
+            """, (modelo, setor))
+            return cur.fetchone() is not None
+
+
 def buscar_manual_por_id(registro_id: int) -> dict | None:
     with get_db() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
