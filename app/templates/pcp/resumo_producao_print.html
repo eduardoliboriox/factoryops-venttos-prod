@@ -88,6 +88,8 @@
 </div>
 
 {% for grupo in resumo %}
+{% set linhas_com_plano = grupo.linhas | rejectattr('sem_plano') | list %}
+{% if linhas_com_plano %}
 <div class="rp-setor-label">{{ grupo.setor }}</div>
 <table class="rp-table">
   <thead>
@@ -102,32 +104,26 @@
     </tr>
   </thead>
   <tbody>
-    {% for item in grupo.linhas %}
-      {% if item.sem_plano %}
-      <tr class="sem-plano">
-        <td class="td-linha">{{ item.linha }}</td>
-        <td colspan="6" style="color:#94a3b8;font-style:italic;">SEM PLANO</td>
+    {% for item in linhas_com_plano %}
+      {% for p in item.planos %}
+      <tr>
+        {% if loop.first %}
+        <td class="td-linha" rowspan="{{ item.planos | length }}">{{ item.linha }}</td>
+        {% endif %}
+        <td class="td-turno">{{ p.turno }}</td>
+        <td>{{ p.modelo or '—' }}</td>
+        <td style="font-size:0.75rem;">{{ p.descricao_op or '—' }}</td>
+        <td style="font-size:0.72rem;color:#475569;">{{ p.numero_op or '—' }}</td>
+        {% if loop.first %}
+        <td class="td-total" rowspan="{{ item.planos | length }}">{{ "{:,.0f}".format(item.meta_total).replace(',', '.') }}</td>
+        {% endif %}
+        <td style="font-size:0.72rem;color:#475569;">{{ p.observacao or '' }}</td>
       </tr>
-      {% else %}
-        {% for p in item.planos %}
-        <tr>
-          {% if loop.first %}
-          <td class="td-linha" rowspan="{{ item.planos | length }}">{{ item.linha }}</td>
-          {% endif %}
-          <td class="td-turno">{{ p.turno }}</td>
-          <td>{{ p.modelo or '—' }}</td>
-          <td style="font-size:0.75rem;">{{ p.descricao_op or '—' }}</td>
-          <td style="font-size:0.72rem;color:#475569;">{{ p.numero_op or '—' }}</td>
-          {% if loop.first %}
-          <td class="td-total" rowspan="{{ item.planos | length }}">{{ "{:,.0f}".format(item.meta_total).replace(',', '.') }}</td>
-          {% endif %}
-          <td style="font-size:0.72rem;color:#475569;">{{ p.observacao or '' }}</td>
-        </tr>
-        {% endfor %}
-      {% endif %}
+      {% endfor %}
     {% endfor %}
   </tbody>
 </table>
+{% endif %}
 {% endfor %}
 
 {% if not resumo %}
