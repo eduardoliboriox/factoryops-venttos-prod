@@ -418,7 +418,9 @@
                       <td class="fw-semibold">{{ p.modelo or '—' }}</td>
                       <td class="text-muted small">{{ p.descricao_op or '—' }}</td>
                       <td class="text-muted small">{{ p.numero_op or '—' }}</td>
-                      <td class="text-end fw-bold">{{ "{:,.0f}".format(p.quantidade_planejada).replace(',', '.') }}</td>
+                      {% if loop.first %}
+                      <td class="text-end fw-bold" rowspan="{{ item.planos | length }}">{{ "{:,.0f}".format(item.meta_total).replace(',', '.') }}</td>
+                      {% endif %}
                       <td class="pe-3 text-muted small">{{ p.observacao or '' }}</td>
                     </tr>
                     {% endfor %}
