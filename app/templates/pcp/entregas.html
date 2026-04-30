@@ -340,7 +340,9 @@
           </div>
           <div class="col-md-4">
             <label class="form-label fw-semibold" style="font-size:0.8rem;">Cliente <span class="text-danger">*</span></label>
-            <input type="text" class="form-control" id="inputCliente" placeholder="Nome do cliente" style="border-radius:8px;">
+            <input type="text" class="form-control" id="inputCliente" placeholder="Nome do cliente"
+                   style="border-radius:8px;text-transform:uppercase;"
+                   oninput="this.value=this.value.toUpperCase()">
           </div>
           <div class="col-md-4">
             <label class="form-label fw-semibold" style="font-size:0.8rem;">Quantidade <span class="text-danger">*</span></label>
