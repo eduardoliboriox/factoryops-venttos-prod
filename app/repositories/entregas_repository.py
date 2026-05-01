@@ -26,23 +26,37 @@ def listar_pedidos(status: str = "", modelo: str = "", data_inicial: str = "", d
                 SELECT
                     p.*,
                     COALESCE((
-                        SELECT SUM(a.quantidade)
-                        FROM apontamento a
-                        JOIN controle_ops co ON co.id = a.op_id
-                        WHERE (a.modelo = p.modelo
-                               OR p.modelo LIKE a.modelo || ' %%'
-                               OR a.modelo LIKE p.modelo || ' %%')
-                          AND co.setor = (
-                              SELECT re.setor
-                              FROM roteiro_etapas re
-                              JOIN roteiro_modelos rm ON rm.roteiro_id = re.roteiro_id
-                              JOIN roteiros r       ON r.id = rm.roteiro_id
-                              WHERE (rm.modelo_codigo = p.modelo
-                                     OR p.modelo LIKE rm.modelo_codigo || ' %%')
-                                AND r.ativo = TRUE
-                              ORDER BY re.ordem DESC
-                              LIMIT 1
-                          )
+                        SELECT MIN(
+                            COALESCE(vinculated.prod, 0) + COALESCE(manual_nv.prod, 0)
+                        )
+                        FROM roteiro_etapas re
+                        JOIN roteiro_modelos rm ON rm.roteiro_id = re.roteiro_id
+                        JOIN roteiros r ON r.id = rm.roteiro_id
+                        LEFT JOIN LATERAL (
+                            SELECT COALESCE(SUM(co2.produzido), 0) AS prod
+                            FROM controle_ops co2
+                            WHERE (co2.produto = p.modelo OR p.modelo LIKE co2.produto || ' %%')
+                              AND co2.setor = re.setor
+                        ) vinculated ON TRUE
+                        LEFT JOIN LATERAL (
+                            SELECT COALESCE(SUM(pc.producao_real), 0) AS prod
+                            FROM producao_coletada pc
+                            WHERE pc.modelo = p.modelo
+                              AND pc.setor = re.setor
+                              AND pc.origem = 'manual'
+                              AND NOT EXISTS (
+                                  SELECT 1 FROM apontamento av
+                                  JOIN controle_ops co_av ON co_av.id = av.op_id
+                                  WHERE av.data   = pc.data
+                                    AND av.turno  = pc.turno
+                                    AND av.modelo = pc.modelo
+                                    AND av.linha  = pc.linha
+                                    AND av.fase  IS NULL
+                                    AND co_av.setor = re.setor
+                              )
+                        ) manual_nv ON TRUE
+                        WHERE (rm.modelo_codigo = p.modelo OR p.modelo LIKE rm.modelo_codigo || ' %%')
+                          AND r.ativo = TRUE
                     ), 0) AS produzido,
                     (
                         SELECT STRING_AGG(DISTINCT co.numero_op, ', ' ORDER BY co.numero_op)

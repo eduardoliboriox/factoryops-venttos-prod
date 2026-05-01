@@ -52,7 +52,7 @@ def _validar_setor_roteiro(modelo: str, setor: str) -> None:
         )
 
 
-def _validar_sequencia_roteiro(op: dict) -> None:
+def _validar_sequencia_roteiro(op: dict, quantidade: int = 0) -> None:
     numero_op = op.get("numero_op", "") or ""
     if len(numero_op) < 3:
         return
@@ -68,6 +68,8 @@ def _validar_sequencia_roteiro(op: dict) -> None:
     except ValueError:
         return
 
+    produzido_atual_op = op["quantidade"] - op["saldo"]
+
     familia = ops_repo.buscar_familia_op(base)
     for anterior in familia:
         if anterior["numero_op"] == numero_op:
@@ -77,12 +79,25 @@ def _validar_sequencia_roteiro(op: dict) -> None:
             idx_ant = ordem_setores.index(setor_ant)
         except ValueError:
             continue
-        if idx_ant < idx_atual and anterior["produzido"] == 0:
+        if idx_ant >= idx_atual:
+            continue
+
+        prod_ant = anterior["produzido"]
+        if prod_ant == 0:
             if not pc_repo.tem_lancamento_manual(modelo, setor_ant):
                 raise ValueError(
                     f"{setor_ant} (OP {anterior['numero_op']}) ainda não tem produção apontada. "
                     "Siga o roteiro de produção."
                 )
+            prod_ant = pc_repo.soma_lancamento_manual(modelo, setor_ant)
+
+        if quantidade > 0 and produzido_atual_op + quantidade > prod_ant:
+            disponivel = max(0, prod_ant - produzido_atual_op)
+            raise ValueError(
+                f"Quantidade inválida: {setor_ant} concluiu {prod_ant} unidade(s). "
+                f"Já apontado nesta etapa: {produzido_atual_op}. "
+                f"Disponível para apontar: {disponivel}."
+            )
 
 
 def vincular(data: str, turno: str, modelo: str, linha: str, op_id: int, quantidade: int,
@@ -107,7 +122,7 @@ def vincular(data: str, turno: str, modelo: str, linha: str, op_id: int, quantid
     if not op:
         raise ValueError("OP não encontrada.")
 
-    _validar_sequencia_roteiro(op)
+    _validar_sequencia_roteiro(op, quantidade)
 
     if op["produto"].strip().upper() != modelo.strip().upper():
         raise ValueError(
