@@ -283,40 +283,62 @@ def fila_producao() -> list:
                        blank
                 FROM (
                     SELECT
-                        co.setor, co.id, co.numero_op, co.produto, co.descricao,
-                        co.fase_modelo, co.quantidade, co.produzido,
-                        COALESCE(SUM(CASE WHEN a.fase = 'TOP'    THEN a.quantidade ELSE 0 END), 0) AS top_feito,
-                        COALESCE(SUM(CASE WHEN a.fase = 'BOTTOM' THEN a.quantidade ELSE 0 END), 0) AS bottom_feito,
-                        GREATEST(0,
-                            COALESCE(SUM(CASE WHEN a.fase = 'TOP'    THEN a.quantidade ELSE 0 END), 0) -
-                            COALESCE(SUM(CASE WHEN a.fase = 'BOTTOM' THEN a.quantidade ELSE 0 END), 0)
-                        ) AS aguardando_bottom,
-                        GREATEST(0,
-                            COALESCE(SUM(CASE WHEN a.fase = 'BOTTOM' THEN a.quantidade ELSE 0 END), 0) -
-                            COALESCE(SUM(CASE WHEN a.fase = 'TOP'    THEN a.quantidade ELSE 0 END), 0)
-                        ) AS aguardando_top,
-                        CASE WHEN co.fase_modelo = 'AMBAS' THEN
-                            co.quantidade - LEAST(
-                                COALESCE(SUM(CASE WHEN a.fase = 'TOP'    THEN a.quantidade ELSE 0 END), 0),
+                        sub.*,
+                        sub.produzido_vinculated + sub.manual_nao_vinculado AS produzido,
+                        CASE WHEN sub.fase_modelo = 'AMBAS' THEN
+                            sub.quantidade - LEAST(sub.top_feito, sub.bottom_feito)
+                        ELSE
+                            GREATEST(0, sub.quantidade - sub.produzido_vinculated - sub.manual_nao_vinculado)
+                        END AS saldo
+                    FROM (
+                        SELECT
+                            co.setor, co.id, co.numero_op, co.produto, co.descricao,
+                            co.fase_modelo, co.quantidade,
+                            co.produzido AS produzido_vinculated,
+                            COALESCE(SUM(CASE WHEN a.fase = 'TOP'    THEN a.quantidade ELSE 0 END), 0) AS top_feito,
+                            COALESCE(SUM(CASE WHEN a.fase = 'BOTTOM' THEN a.quantidade ELSE 0 END), 0) AS bottom_feito,
+                            GREATEST(0,
+                                COALESCE(SUM(CASE WHEN a.fase = 'TOP'    THEN a.quantidade ELSE 0 END), 0) -
                                 COALESCE(SUM(CASE WHEN a.fase = 'BOTTOM' THEN a.quantidade ELSE 0 END), 0)
-                            )
-                        ELSE (co.quantidade - co.produzido)
-                        END AS saldo,
-                        COALESCE(m_blank.blank, 1) AS blank
-                    FROM controle_ops co
-                    LEFT JOIN apontamento a ON a.op_id = co.id
-                    LEFT JOIN LATERAL (
-                        SELECT COALESCE(MAX(blank), 1) AS blank
-                        FROM modelos
-                        WHERE codigo = co.produto AND setor = co.setor
-                    ) m_blank ON TRUE
-                    GROUP BY co.setor, co.id, co.numero_op, co.produto, co.descricao,
-                             co.fase_modelo, co.quantidade, co.produzido, m_blank.blank
-                ) sub
+                            ) AS aguardando_bottom,
+                            GREATEST(0,
+                                COALESCE(SUM(CASE WHEN a.fase = 'BOTTOM' THEN a.quantidade ELSE 0 END), 0) -
+                                COALESCE(SUM(CASE WHEN a.fase = 'TOP'    THEN a.quantidade ELSE 0 END), 0)
+                            ) AS aguardando_top,
+                            COALESCE(m_blank.blank, 1) AS blank,
+                            COALESCE(manual_lote.total, 0) AS manual_nao_vinculado
+                        FROM controle_ops co
+                        LEFT JOIN apontamento a ON a.op_id = co.id
+                        LEFT JOIN LATERAL (
+                            SELECT COALESCE(MAX(blank), 1) AS blank
+                            FROM modelos
+                            WHERE codigo = co.produto AND setor = co.setor
+                        ) m_blank ON TRUE
+                        LEFT JOIN LATERAL (
+                            SELECT COALESCE(SUM(pc.producao_real), 0) AS total
+                            FROM producao_coletada pc
+                            WHERE pc.modelo = co.produto
+                              AND pc.setor   = co.setor
+                              AND pc.origem  = 'manual'
+                              AND NOT EXISTS (
+                                  SELECT 1 FROM apontamento av
+                                  WHERE av.data   = pc.data
+                                    AND av.turno  = pc.turno
+                                    AND av.modelo = pc.modelo
+                                    AND av.linha  = pc.linha
+                                    AND av.fase  IS NULL
+                                    AND av.op_id  = co.id
+                              )
+                        ) manual_lote ON TRUE
+                        GROUP BY co.setor, co.id, co.numero_op, co.produto, co.descricao,
+                                 co.fase_modelo, co.quantidade, co.produzido,
+                                 m_blank.blank, manual_lote.total
+                    ) sub
+                ) final
                 WHERE saldo > 0
                    OR (produzido > 0 AND EXISTS (
                        SELECT 1 FROM apontamento a2
-                       WHERE a2.op_id = sub.id
+                       WHERE a2.op_id = final.id
                          AND a2.data >= CURRENT_DATE - INTERVAL '30 days'
                    ))
                 ORDER BY setor NULLS LAST, saldo DESC, numero_op
