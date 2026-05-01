@@ -217,7 +217,7 @@
               <input type="text" class="form-control" name="numero_op" id="inputNumeroOP" required
                      placeholder="Ex: EBRTME020001" style="border-radius:8px;text-transform:uppercase;"
                      oninput="this.value=this.value.toUpperCase()">
-              <div id="previewSufixo" class="mt-1" style="display:none;font-size:0.78rem;color:var(--text-muted);"></div>
+              <div id="statusNumeroOP" class="mt-1" style="display:none;font-size:0.78rem;"></div>
             </div>
             <div class="col-12 col-sm-6">
               <label class="form-label fw-semibold" style="font-size:0.8rem;">Filial <span class="text-danger">*</span></label>
@@ -444,14 +444,12 @@ function toggleModoRoteiro(sel) {
   const roteiroId  = sel.value;
   const individual = !roteiroId;
   const input      = document.getElementById("inputNumeroOP");
-  const preview    = document.getElementById("previewSufixo");
 
-  document.getElementById("grupoSetor").style.display         = individual ? "" : "none";
-  document.getElementById("grupoFaseModelo").style.display    = individual ? "" : "none";
+  document.getElementById("grupoSetor").style.display          = individual ? "" : "none";
+  document.getElementById("grupoFaseModelo").style.display     = individual ? "" : "none";
   document.getElementById("grupoPreviewRoteiro").style.display = individual ? "none" : "";
 
   if (individual) {
-    preview.style.display = "none";
     input.placeholder = "Ex: EBRTME020001";
   } else {
     const opt    = sel.options[sel.selectedIndex];
@@ -461,9 +459,9 @@ function toggleModoRoteiro(sel) {
     document.getElementById("grupoFaseSMD").style.display = temSMD ? "" : "none";
     _renderizarPreviewEtapas(etapas, input.value);
 
-    preview.style.display = "";
-    input.placeholder = "Ex: EBRTME0200 (base, sem sufixo)";
+    input.placeholder = "Ex: EBRTP0200 (base, sem sufixo)";
   }
+  _validarStatusOP();
 }
 
 function _parseEtapas(raw) {
@@ -489,13 +487,61 @@ function _renderizarPreviewEtapas(etapas, base) {
   container.innerHTML = '<div class="d-flex align-items-center flex-wrap gap-1">' + parts.join("") + '</div>';
 }
 
+function _validarStatusOP() {
+  const input  = document.getElementById("inputNumeroOP");
+  const status = document.getElementById("statusNumeroOP");
+  const sel    = document.getElementById("selectRoteiro");
+  if (!input || !status) return;
+
+  const val = (input.value || "").trim();
+  if (!val) { status.style.display = "none"; return; }
+
+  const modoRoteiro = sel && !!sel.value;
+  let valido = false;
+  let mensagem = "";
+
+  if (modoRoteiro) {
+    const ok = /^[A-Za-z]{5}\d{4}$/.test(val) || /^[A-Za-z]{6}\d{3}$/.test(val);
+    valido = ok;
+    if (ok) {
+      const etapas = _parseEtapas(sel.options[sel.selectedIndex].dataset.etapas);
+      const sorted = etapas.slice().sort(function(a, b) { return (a.ordem||0) - (b.ordem||0); });
+      const sufixos = sorted.map(function(e, i) { return String(e.ordem||(i+1)).padStart(2,"0"); }).join(", ");
+      mensagem = etapas.length + " OP" + (etapas.length !== 1 ? "s" : "") + " serão criadas — sufixos: " + sufixos;
+    } else {
+      mensagem = "Informe a base sem sufixo: 5 letras + 4 números ou 6 letras + 3 números.";
+    }
+  } else {
+    const ok5_6 = /^[A-Za-z]{5}\d{6}$/.test(val);
+    const ok6_5 = /^[A-Za-z]{6}\d{5}$/.test(val);
+    if (ok5_6 || ok6_5) {
+      const sufixo = val.slice(-2);
+      if (["01","02","03","04"].includes(sufixo)) {
+        valido = true;
+        mensagem = "Formato válido.";
+      } else {
+        mensagem = "Sufixo inválido \"" + sufixo + "\": use 01, 02, 03 ou 04.";
+      }
+    } else {
+      mensagem = "Formato inválido: use 5 letras + 6 números ou 6 letras + 5 números.";
+    }
+  }
+
+  status.style.display = "";
+  status.innerHTML = valido
+    ? '<span style="color:#198754;"><i class="bi bi-check-circle-fill me-1"></i>' + mensagem + '</span>'
+    : '<span style="color:#dc3545;"><i class="bi bi-x-circle-fill me-1"></i>' + mensagem + '</span>';
+}
+
 const inputNumeroOP = document.getElementById("inputNumeroOP");
 if (inputNumeroOP) {
   inputNumeroOP.addEventListener("input", function () {
     const sel = document.getElementById("selectRoteiro");
-    if (!sel || !sel.value) return;
-    const etapas = _parseEtapas(sel.options[sel.selectedIndex].dataset.etapas);
-    _renderizarPreviewEtapas(etapas, this.value.trim());
+    if (sel && sel.value) {
+      const etapas = _parseEtapas(sel.options[sel.selectedIndex].dataset.etapas);
+      _renderizarPreviewEtapas(etapas, this.value.trim());
+    }
+    _validarStatusOP();
   });
 }
 
