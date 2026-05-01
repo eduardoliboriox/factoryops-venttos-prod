@@ -366,10 +366,23 @@
             <div class="col-6"><span class="text-muted">Modelo:</span> <strong id="infoModelo"></strong></div>
             <div class="col-6"><span class="text-muted">Linha:</span> <strong id="infoLinha"></strong></div>
             <div class="col-6 mt-1">
-              <span class="text-muted">Produção:</span>
+              <span class="text-muted">Total coletado:</span>
               <strong class="text-success" id="infoProducao"></strong>
             </div>
+            <div class="col-6 mt-1" id="rowInfoRestante" style="display:none;">
+              <span class="text-muted">Disponível:</span>
+              <strong class="text-primary" id="infoRestante"></strong>
+            </div>
           </div>
+        </div>
+
+        <!-- Vínculos adicionados nesta sessão -->
+        <div id="secaoVinculadosModal" style="display:none;background:rgba(25,135,84,0.06);border:1px solid rgba(25,135,84,0.2);" class="mb-3 p-2 rounded">
+          <div class="fw-semibold mb-1 d-flex align-items-center gap-1"
+               style="font-size:0.72rem;text-transform:uppercase;letter-spacing:.5px;color:#198754;">
+            <i class="bi bi-check-circle-fill"></i> Adicionados nesta sessão
+          </div>
+          <div id="listaVinculadosModal" class="d-flex flex-column gap-1"></div>
         </div>
 
         <!-- Fase (SMD) -->
@@ -463,34 +476,54 @@ const URL_CORRIGIR_MODELO = "{{ url_for('pages.pcp_apontamento_corrigir_modelo')
 const OPS_JSON = {{ ops | tojson }};
 
 let _setorAtivo = "";
+let _vincuouNoModal = false;
+let _restanteNoModal = 0;
+let _producaoTotalModal = 0;
+
+function _atualizarResumoModal(restante, total) {
+  document.getElementById("infoProducao").textContent = Number(total).toLocaleString("pt-BR");
+  const rowRestante = document.getElementById("rowInfoRestante");
+  if (restante < total) {
+    document.getElementById("infoRestante").textContent = Number(restante).toLocaleString("pt-BR");
+    rowRestante.style.display = "";
+  } else {
+    rowRestante.style.display = "none";
+  }
+  document.getElementById("hiddenProducao").value  = restante;
+  document.getElementById("inputQuantidade").value = restante;
+  let hint = "Total: " + Number(total).toLocaleString("pt-BR");
+  if (total !== restante) {
+    hint += " · Já vinculado: " + Number(total - restante).toLocaleString("pt-BR");
+    hint += " · Disponível: " + Number(restante).toLocaleString("pt-BR");
+  }
+  document.getElementById("qtdHint").textContent = hint;
+}
 
 function abrirVincular(btn) {
   const d = btn.dataset;
   _setorAtivo = d.setor || "";
   const restante      = parseInt(d.producao || 0);
   const producaoTotal = d.producaoTotal ? parseInt(d.producaoTotal) : restante;
-  const jaVinculado   = producaoTotal - restante;
 
-  document.getElementById("infoData").textContent     = d.data;
-  document.getElementById("infoTurno").textContent    = d.turno;
-  document.getElementById("infoModelo").textContent   = d.modelo;
-  document.getElementById("infoLinha").textContent    = d.linha;
-  document.getElementById("infoProducao").textContent = Number(producaoTotal).toLocaleString("pt-BR");
+  _vincuouNoModal    = false;
+  _restanteNoModal   = restante;
+  _producaoTotalModal = producaoTotal;
 
-  document.getElementById("hiddenData").value       = d.data;
-  document.getElementById("hiddenTurno").value      = d.turno;
-  document.getElementById("hiddenModelo").value     = d.modelo;
-  document.getElementById("hiddenLinha").value      = d.linha;
-  document.getElementById("hiddenSetor").value      = _setorAtivo;
-  document.getElementById("hiddenProducao").value   = restante;
-  document.getElementById("inputQuantidade").value  = restante;
+  document.getElementById("secaoVinculadosModal").style.display = "none";
+  document.getElementById("listaVinculadosModal").innerHTML     = "";
 
-  let hint = "Total coletado: " + Number(producaoTotal).toLocaleString("pt-BR");
-  if (jaVinculado > 0) {
-    hint += " · Já vinculado: " + Number(jaVinculado).toLocaleString("pt-BR");
-    hint += " · Disponível: " + Number(restante).toLocaleString("pt-BR");
-  }
-  document.getElementById("qtdHint").textContent = hint;
+  document.getElementById("infoData").textContent  = d.data;
+  document.getElementById("infoTurno").textContent = d.turno;
+  document.getElementById("infoModelo").textContent = d.modelo;
+  document.getElementById("infoLinha").textContent  = d.linha;
+
+  _atualizarResumoModal(restante, producaoTotal);
+
+  document.getElementById("hiddenData").value  = d.data;
+  document.getElementById("hiddenTurno").value = d.turno;
+  document.getElementById("hiddenModelo").value = d.modelo;
+  document.getElementById("hiddenLinha").value  = d.linha;
+  document.getElementById("hiddenSetor").value  = _setorAtivo;
 
   document.getElementById("inputLote").value        = "";
   document.getElementById("infoOP").style.display   = "none";
@@ -655,11 +688,38 @@ function confirmarVincular() {
   })
   .then(r => r.json())
   .then(data => {
-    console.log("[vincular] resposta:", data);
     if (data.ok) {
-      bootstrap.Modal.getInstance(document.getElementById("modalVincular")).hide();
-      mostrarAlerta("success", "OP vinculada com sucesso.");
-      setTimeout(() => location.reload(), 800);
+      _vincuouNoModal  = true;
+      _restanteNoModal -= quantidade;
+
+      const sel     = document.getElementById("selectOP");
+      const opTexto = sel.options[sel.selectedIndex].textContent.split("·")[0].trim();
+      const secao   = document.getElementById("secaoVinculadosModal");
+      const lista   = document.getElementById("listaVinculadosModal");
+      secao.style.display = "";
+      const item = document.createElement("div");
+      item.className = "d-flex align-items-center gap-2";
+      item.style.fontSize = "0.82rem";
+      item.innerHTML =
+        '<i class="bi bi-check-circle-fill text-success"></i>' +
+        '<span class="fw-semibold">' + opTexto + '</span>' +
+        '<span class="text-muted">' + Number(quantidade).toLocaleString("pt-BR") + ' pçs</span>';
+      lista.appendChild(item);
+
+      if (_restanteNoModal <= 0) {
+        bootstrap.Modal.getInstance(document.getElementById("modalVincular")).hide();
+        mostrarAlerta("success", "OPs vinculadas com sucesso.");
+        setTimeout(() => location.reload(), 800);
+      } else {
+        _atualizarResumoModal(_restanteNoModal, _producaoTotalModal);
+        sel.value = "";
+        document.getElementById("infoOP").style.display      = "none";
+        document.getElementById("avisoModelo").style.display = "none";
+        document.getElementById("avisoSaldo").style.display  = "none";
+        document.getElementById("buscaOP").value             = "";
+        document.getElementById("inputLote").value           = "";
+        btnVincular.disabled = false;
+      }
     } else {
       document.getElementById("erroModalTexto").textContent = data.erro || "Erro ao vincular.";
       erroModal.style.display = "";
@@ -672,6 +732,10 @@ function confirmarVincular() {
     btnVincular.disabled = false;
   });
 }
+
+document.getElementById("modalVincular").addEventListener("hidden.bs.modal", function () {
+  if (_vincuouNoModal) location.reload();
+});
 
 function desvincular(apontamentoId, label) {
   const msg = label ? "Desvincular " + label + "? A quantidade será estornada." : "Desvincular esta OP? A quantidade será estornada.";
