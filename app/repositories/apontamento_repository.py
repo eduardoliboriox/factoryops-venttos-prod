@@ -66,14 +66,10 @@ def listar_agrupado(data_inicial: str, data_final: str, setor: str = "", linha: 
                     g.data, g.turno, g.setor, g.linha, g.modelo,
                     g.familia, g.producao_total, g.origem_grupo,
                     COALESCE(m_blank.blank, 1) AS blank,
-                    -- vínculo genérico (sem fase — usado para PTH, IM, PA, VTT)
-                    a_gen.id            AS ap_id,
-                    a_gen.op_id         AS ap_op_id,
-                    a_gen.quantidade    AS ap_quantidade,
-                    a_gen.lote          AS ap_lote,
-                    co_gen.numero_op    AS ap_numero_op,
-                    co_gen.produto      AS ap_produto,
-                    (co_gen.quantidade - co_gen.produzido) AS ap_saldo,
+                    -- vínculos genéricos (sem fase — PTH, IM, PA, VTT)
+                    a_gen.vinculos                                            AS ap_vinculos,
+                    a_gen.qtd_vinculated                                      AS ap_qtd_vinculated,
+                    GREATEST(0, g.producao_total - a_gen.qtd_vinculated)      AS ap_restante,
                     -- vínculo SMD TOP
                     a_top.id            AS top_id,
                     a_top.op_id         AS top_op_id,
@@ -92,14 +88,30 @@ def listar_agrupado(data_inicial: str, data_final: str, setor: str = "", linha: 
                     FROM modelos
                     WHERE codigo = g.modelo AND setor = g.setor
                 ) m_blank ON TRUE
-                LEFT JOIN apontamento a_gen ON (
-                    a_gen.data   = g.data   AND
-                    a_gen.turno  = g.turno  AND
-                    a_gen.modelo = g.modelo AND
-                    a_gen.linha  = g.linha  AND
-                    a_gen.fase IS NULL
-                )
-                LEFT JOIN controle_ops co_gen ON co_gen.id = a_gen.op_id
+                LEFT JOIN LATERAL (
+                    SELECT
+                        COALESCE(
+                            JSON_AGG(
+                                JSON_BUILD_OBJECT(
+                                    'id', a.id,
+                                    'op_id', a.op_id,
+                                    'quantidade', a.quantidade,
+                                    'lote', a.lote,
+                                    'numero_op', co.numero_op,
+                                    'produto', co.produto,
+                                    'saldo', co.quantidade - co.produzido
+                                ) ORDER BY a.id
+                            ), '[]'::json
+                        ) AS vinculos,
+                        COALESCE(SUM(a.quantidade), 0) AS qtd_vinculated
+                    FROM apontamento a
+                    JOIN controle_ops co ON co.id = a.op_id
+                    WHERE a.data   = g.data
+                      AND a.turno  = g.turno
+                      AND a.modelo = g.modelo
+                      AND a.linha  = g.linha
+                      AND a.fase IS NULL
+                ) a_gen ON TRUE
                 LEFT JOIN apontamento a_top ON (
                     a_top.data   = g.data   AND
                     a_top.turno  = g.turno  AND
