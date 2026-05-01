@@ -239,39 +239,47 @@
               </td>
 
               {% else %}
-              {# Não-SMD: vínculo único, sem fase #}
+              {# Não-SMD: múltiplos vínculos, sem fase #}
               <td>
-                {% if ap.ap_id %}
-                <div class="d-flex align-items-center gap-2">
-                  <div class="d-flex flex-column" style="line-height:1.3;">
-                    <span class="fw-semibold">{{ ap.ap_numero_op }}</span>
-                    <span class="text-muted small">{{ ap.ap_produto }}</span>
+                {% if ap.ap_vinculos %}
+                <div class="d-flex flex-column gap-1">
+                  {% for v in ap.ap_vinculos %}
+                  <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <div class="d-flex flex-column" style="line-height:1.3;">
+                      <span class="fw-semibold">{{ v.numero_op }}</span>
+                      <span class="text-muted small">{{ v.produto }}</span>
+                    </div>
+                    {% if v.lote %}
+                    <span class="badge bg-light text-muted border" style="font-size:0.68rem;">{{ v.lote }}</span>
+                    {% endif %}
+                    <span class="text-muted small">{{ "{:,.0f}".format(v.quantidade or 0).replace(',','.') }} pçs · saldo: {{ "{:,.0f}".format(v.saldo or 0).replace(',','.') }}</span>
                   </div>
-                  {% if ap.ap_lote %}
-                  <span class="badge bg-light text-muted border" style="font-size:0.68rem;">{{ ap.ap_lote }}</span>
-                  {% endif %}
-                  <span class="text-muted small">saldo: {{ "{:,.0f}".format(ap.ap_saldo or 0).replace(',','.') }}</span>
+                  {% endfor %}
                 </div>
                 {% else %}
                 <span class="text-muted small">—</span>
                 {% endif %}
               </td>
               <td class="text-end pe-3">
-                {% if ap.ap_id %}
-                <button class="btn btn-outline-danger btn-sm" style="border-radius:6px;"
-                        onclick="desvincular({{ ap.ap_id }}, '')" title="Desvincular OP">
-                  <i class="bi bi-x-lg"></i>
-                </button>
-                {% else %}
-                <button class="btn btn-outline-primary btn-sm" style="border-radius:6px;"
-                        onclick="abrirVincular(this)"
-                        data-data="{{ ap.data }}" data-turno="{{ ap.turno }}"
-                        data-modelo="{{ ap.modelo }}" data-linha="{{ ap.linha }}"
-                        data-setor="{{ ap.setor }}" data-fase=""
-                        data-producao="{{ ap.producao_total | int }}">
-                  <i class="bi bi-link-45deg me-1"></i>Vincular
-                </button>
-                {% endif %}
+                <div class="d-flex flex-column gap-1 align-items-end">
+                  {% for v in ap.ap_vinculos %}
+                  <button class="btn btn-outline-danger btn-sm" style="border-radius:6px;"
+                          onclick="desvincular({{ v.id }}, '')" title="Desvincular {{ v.numero_op }}">
+                    <i class="bi bi-x-lg"></i>
+                  </button>
+                  {% endfor %}
+                  {% if ap.ap_restante > 0 %}
+                  <button class="btn btn-outline-primary btn-sm" style="border-radius:6px;"
+                          onclick="abrirVincular(this)"
+                          data-data="{{ ap.data }}" data-turno="{{ ap.turno }}"
+                          data-modelo="{{ ap.modelo }}" data-linha="{{ ap.linha }}"
+                          data-setor="{{ ap.setor }}" data-fase=""
+                          data-producao="{{ ap.ap_restante | int }}"
+                          data-producao-total="{{ ap.producao_total | int }}">
+                    <i class="bi bi-link-45deg me-1"></i>Vincular
+                  </button>
+                  {% endif %}
+                </div>
               </td>
               {% endif %}
 
@@ -459,21 +467,31 @@ let _setorAtivo = "";
 function abrirVincular(btn) {
   const d = btn.dataset;
   _setorAtivo = d.setor || "";
+  const restante      = parseInt(d.producao || 0);
+  const producaoTotal = d.producaoTotal ? parseInt(d.producaoTotal) : restante;
+  const jaVinculado   = producaoTotal - restante;
 
   document.getElementById("infoData").textContent     = d.data;
   document.getElementById("infoTurno").textContent    = d.turno;
   document.getElementById("infoModelo").textContent   = d.modelo;
   document.getElementById("infoLinha").textContent    = d.linha;
-  document.getElementById("infoProducao").textContent = Number(d.producao).toLocaleString("pt-BR");
+  document.getElementById("infoProducao").textContent = Number(producaoTotal).toLocaleString("pt-BR");
 
-  document.getElementById("hiddenData").value     = d.data;
-  document.getElementById("hiddenTurno").value    = d.turno;
-  document.getElementById("hiddenModelo").value   = d.modelo;
-  document.getElementById("hiddenLinha").value    = d.linha;
-  document.getElementById("hiddenSetor").value    = _setorAtivo;
-  document.getElementById("hiddenProducao").value   = d.producao;
-  document.getElementById("inputQuantidade").value  = d.producao;
-  document.getElementById("qtdHint").textContent    = "Total coletado: " + Number(d.producao).toLocaleString("pt-BR");
+  document.getElementById("hiddenData").value       = d.data;
+  document.getElementById("hiddenTurno").value      = d.turno;
+  document.getElementById("hiddenModelo").value     = d.modelo;
+  document.getElementById("hiddenLinha").value      = d.linha;
+  document.getElementById("hiddenSetor").value      = _setorAtivo;
+  document.getElementById("hiddenProducao").value   = restante;
+  document.getElementById("inputQuantidade").value  = restante;
+
+  let hint = "Total coletado: " + Number(producaoTotal).toLocaleString("pt-BR");
+  if (jaVinculado > 0) {
+    hint += " · Já vinculado: " + Number(jaVinculado).toLocaleString("pt-BR");
+    hint += " · Disponível: " + Number(restante).toLocaleString("pt-BR");
+  }
+  document.getElementById("qtdHint").textContent = hint;
+
   document.getElementById("inputLote").value        = "";
   document.getElementById("infoOP").style.display   = "none";
   document.getElementById("buscaOP").value          = "";
@@ -584,9 +602,13 @@ function verificarSaldo() {
   const opt        = sel.options[sel.selectedIndex];
   const saldo      = saldoEfetivo(opt);
   const quantidade = parseInt(document.getElementById("inputQuantidade").value || "0");
+  const restante   = parseInt(document.getElementById("hiddenProducao").value || "0");
 
-  if (quantidade > 0 && saldo >= 0 && quantidade > saldo) {
-    avSaldoTx.textContent = `Saldo insuficiente: disponível ${saldo.toLocaleString("pt-BR")}, solicitado ${quantidade.toLocaleString("pt-BR")}.`;
+  if (quantidade > 0 && quantidade > saldo) {
+    avSaldoTx.textContent = `Saldo insuficiente na OP: disponível ${Number(saldo).toLocaleString("pt-BR")}, solicitado ${Number(quantidade).toLocaleString("pt-BR")}.`;
+    avSaldo.style.display = "";
+  } else if (quantidade > 0 && restante > 0 && quantidade > restante) {
+    avSaldoTx.textContent = `Quantidade excede o disponível: ${Number(restante).toLocaleString("pt-BR")} restante para vincular.`;
     avSaldo.style.display = "";
   } else {
     avSaldo.style.display = "none";
